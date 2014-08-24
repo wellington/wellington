@@ -15,8 +15,16 @@ func TestCombine(t *testing.T) {
 		t.Errorf("Invalid Height found %d, wanted %d", imgs.Height(true), 279)
 	}
 
+	if imgs.Height(false) != 140 {
+		t.Errorf("Invalid Height found %d, wanted %d", imgs.Height(false), 140)
+	}
+
 	if imgs.Width(true) != 192 {
 		t.Errorf("Invalid Height found %d, wanted %d", imgs.Width(true), 192)
+	}
+
+	if imgs.Width(false) != 96 {
+		t.Errorf("Invalid Height found %d, wanted %d", imgs.Width(false), 96)
 	}
 
 	out := imgs.Combine(true)
