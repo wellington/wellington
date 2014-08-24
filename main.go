@@ -6,17 +6,38 @@ import (
 	"github.com/rainycape/magick"
 )
 
-type Image struct {
-	*magick.Image
-	x, y int
+type Is []*magick.Image
+
+type ImageList struct {
+	Is
+	Vertical bool
 }
 
-type ImageList []*magick.Image
+func (l ImageList) X(pos int) int {
+	x := 0
+	if !l.Vertical {
+		return 0
+	}
+	for i := 0; i < pos; i++ {
+		x += l.Is[i].Width()
+	}
+	return x
+}
 
-func (l ImageList) Height(sum bool) int {
+func (l ImageList) Y(pos int) int {
+	y := 0
+	for i := 0; i < pos; i++ {
+		y += l.Is[i].Height()
+	}
+	return y
+}
+
+func (l *ImageList) Height(sum bool) int {
 	h := 0
-	for _, img := range l {
-		if sum {
+	ll := *l
+
+	for _, img := range ll.Is {
+		if sum && l.Vertical {
 			h += img.Height()
 		} else {
 			h = int(math.Max(float64(h), float64(img.Height())))
@@ -25,10 +46,12 @@ func (l ImageList) Height(sum bool) int {
 	return h
 }
 
-func (l ImageList) Width(sum bool) int {
+func (l *ImageList) Width(sum bool) int {
 	w := 0
-	for _, img := range l {
-		if sum {
+	ll := *l
+
+	for _, img := range ll.Is {
+		if sum && !l.Vertical {
 			w += img.Width()
 		} else {
 			w = int(math.Max(float64(w), float64(img.Width())))
@@ -38,17 +61,19 @@ func (l ImageList) Width(sum bool) int {
 }
 
 func (l *ImageList) Decode(rest ...string) {
+	ll := *l
 	for _, path := range rest {
 		img, err := magick.DecodeFile(path)
 		if err != nil {
 			panic(err)
 		}
-		*l = append(*l, img)
+		ll.Is = append(ll.Is, img)
 	}
+	*l = ll
 }
 
 func (l *ImageList) Combine(vertical bool) *magick.Image {
-
+	l.Vertical = vertical
 	var (
 		out        *magick.Image
 		maxW, maxH int
@@ -62,15 +87,21 @@ func (l *ImageList) Combine(vertical bool) *magick.Image {
 
 	out, _ = magick.New(maxW, maxH)
 
-	currentHeight := 0
-
-	for _, img := range *l {
-		err := out.Composite(magick.CompositeCopy, img, 0, currentHeight)
+	curH, curW := 0, 0
+	ll := *l
+	for _, img := range ll.Is {
+		err := out.Composite(magick.CompositeCopy, img, curW, curH)
 		if err != nil {
 			panic(err)
 		}
-		currentHeight += img.Height()
+		if vertical {
+			curH += img.Height()
+		} else {
+			curW += img.Width()
+		}
 	}
+
+	l = &ll
 
 	return out
 }
