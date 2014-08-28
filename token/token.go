@@ -11,9 +11,11 @@ type Token int
 // The list of tokens.
 const (
 	// Special tokens
-	directive_beg iota
+	directive_beg Token = iota
+	AT
 	IMPORT
 	MIXIN
+	SPRITE
 	FUNCTION
 	RETURN
 	INCLUDE
@@ -57,7 +59,7 @@ const (
 	OPERA
 	WEBKIT
 	MOZ
-	MS
+	VENDORMS
 	KHTML
 	vendor_end
 
@@ -81,9 +83,11 @@ const (
 	cssfunc_end
 )
 
-var tokens = [...]string{
+var Tokens = [...]string{
+	AT:       "@",
 	IMPORT:   "@import",
 	MIXIN:    "@mixin",
+	SPRITE:   "@sprite",
 	FUNCTION: "@function",
 	RETURN:   "@return",
 	INCLUDE:  "@include",
@@ -120,11 +124,11 @@ var tokens = [...]string{
 	HZ:   "Hz",
 	KHZ:  "kHz",
 
-	OPERA:  "-o-",
-	WEBKIT: "-webkit-",
-	MOZ:    "-moz-",
-	MS:     "-ms-",
-	KHTML:  "-khtml-",
+	OPERA:    "-o-",
+	WEBKIT:   "-webkit-",
+	MOZ:      "-moz-",
+	VENDORMS: "-ms-",
+	KHTML:    "-khtml-",
 
 	CHARSET:    "@charset",
 	MEDIA:      "@media",
@@ -152,8 +156,8 @@ var tokens = [...]string{
 //
 func (tok Token) String() string {
 	s := ""
-	if 0 <= tok && tok < Token(len(tokens)) {
-		s = tokens[tok]
+	if 0 <= tok && tok < Token(len(Tokens)) {
+		s = Tokens[tok]
 	}
 	if s == "" {
 		s = "token(" + strconv.Itoa(int(tok)) + ")"
@@ -173,42 +177,22 @@ const (
 	HighestPrec = 7
 )
 
-// Precedence returns the operator precedence of the binary
-// operator op. If op is not a binary operator, the result
-// is LowestPrecedence.
-//
-func (op Token) Precedence() int {
-	switch op {
-	case LOR:
-		return 1
-	case LAND:
-		return 2
-	case EQL, NEQ, LSS, LEQ, GTR, GEQ:
-		return 3
-	case ADD, SUB, OR, XOR:
-		return 4
-	case MUL, QUO, REM, SHL, SHR, AND, AND_NOT:
-		return 5
-	}
-	return LowestPrec
-}
-
-var keywords map[string]Token
+var directives map[string]Token
 
 func init() {
-	keywords = make(map[string]Token)
-	for i := keyword_beg + 1; i < keyword_end; i++ {
-		keywords[tokens[i]] = i
+	directives = make(map[string]Token)
+	for i := directive_beg + 1; i < directive_end; i++ {
+		directives[Tokens[i]] = i
 	}
 }
 
 // Lookup maps an identifier to its keyword token or IDENT (if not a keyword).
 //
 func Lookup(ident string) Token {
-	if tok, is_keyword := keywords[ident]; is_keyword {
+	if tok, is_keyword := directives[ident]; is_keyword {
 		return tok
 	}
-	return IDENT
+	return 0
 }
 
 // Predicates
