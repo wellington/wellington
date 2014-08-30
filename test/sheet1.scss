@@ -2,4 +2,6 @@ $images: sprite-map("*.png");
 
 div {
     background: sprite($images, "one.png");
+    color: red;
+    font-size: 14pt;
 }
