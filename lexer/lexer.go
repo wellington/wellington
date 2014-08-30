@@ -19,16 +19,17 @@ of methods to manipulate its position and and prepare lexemes to be emitted.
 Lexer errors are emitted to the parser using the Errorf method which keeps the
 scanner-parser interface uniform.
 
-Common lexer methods used in a scanner are the Accept[Run][Range] family of
-methods.  Accept* methods take a set and advance the lexer if incoming runes
-are in the set. The AcceptRun* subfamily advance the lexer as far as possible.
+Common lexer methods used in a scanner are the Accept[Run][Range]
+family of methods.  Accept* methods take a set and advance the
+lexer if incoming runes are in the set. The AcceptRun* subfamily
+advance the lexer as far as possible.
 
-For scanning known sequences of bytes (e.g. keywords) the AcceptString method
-avoids a lot of branching that would be incurred using methods that match
-character classes.
+For scanning known sequences of bytes (e.g. keywords) the
+AcceptString method avoids a lot of branching that would be
+incurred using methods that match character classes.
 
-The remaining methods provide low level functionality that can be combined to
-address corner cases.
+The remaining methods provide low level functionality that can
+be combined to address corner cases.
 */
 package lexer
 
@@ -189,8 +190,8 @@ func (l *Lexer) AcceptRun(valid string) (n int) {
 	return
 }
 
-// AcceptRunFunc advances l's position as long as fn returns true for the next
-// input rune.
+// AcceptRunFunc advances l's position as long as fn returns
+// true for the next input rune.
 func (l *Lexer) AcceptRunFunc(fn func(rune) bool) int {
 	var n int
 	for l.AcceptFunc(fn) {
@@ -199,7 +200,8 @@ func (l *Lexer) AcceptRunFunc(fn func(rune) bool) int {
 	return n
 }
 
-// AcceptRunRange advances l's possition as long as the current rune is in tab.
+// AcceptRunRange advances l's possition as long as the current
+// rune is in tab.
 func (l *Lexer) AcceptRunRange(tab *unicode.RangeTable) (n int) {
 	for l.AcceptRange(tab) {
 		n++
@@ -207,8 +209,8 @@ func (l *Lexer) AcceptRunRange(tab *unicode.RangeTable) (n int) {
 	return
 }
 
-// AcceptString advances the lexer len(s) bytes if the next len(s) bytes equal
-// s. AcceptString returns true if l advanced.
+// AcceptString advances the lexer len(s) bytes if the next
+// len(s) bytes equal s. AcceptString returns true if l advanced.
 func (l *Lexer) AcceptString(s string) (ok bool) {
 	if strings.HasPrefix(l.input[l.pos:], s) {
 		l.pos += len(s)
@@ -273,19 +275,29 @@ type ItemType uint16
 const (
 	ItemEOF ItemType = math.MaxUint16 - iota
 	ItemError
+	EXTRA
+	CMD
+	VAR
+	FILE
 	AT
 	SPRITE
 	NUMBER
 	TEXT
+	DOLLAR
 )
 
 var Tokens = [...]string{
 	ItemEOF:   "eof",
 	ItemError: "error",
+	EXTRA:     "extra",
+	CMD:       "command",
+	VAR:       "variable",
+	FILE:      "file",
 	AT:        "@",
 	SPRITE:    "sprite",
 	NUMBER:    "number",
 	TEXT:      "text",
+	DOLLAR:    "$",
 }
 
 func (i ItemType) String() string {
@@ -328,53 +340,67 @@ func (err *Error) Error() string {
 	return (*Item)(err).String()
 }
 
+const alphanumeric = `*1234567890-_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`
+
 func (l *Lexer) Action() StateFn {
 	for {
 		switch r, _ := l.Advance(); {
-		case r == EOF || r == '\n':
+		case r == EOF: // || r == '\n':
 			l.enqueue(&Item{
 				ItemEOF,
 				l.start,
 				"",
 			})
 			return nil
-			//return l.Errorf("unclosed action")
 		case IsSpace(r):
 			l.Ignore()
-		case r == 's':
-			return l.SpriteAction()
+		case IsSymbol(r):
+			l.Ignore()
+		case r == '"':
+			return l.File()
+		case r == '$':
+			return l.Var()
+		case strings.ContainsRune(alphanumeric, r):
+			return l.Text()
+		default:
+			//l.Advance()
+			//l.Emit(EXTRA)
 		}
 	}
 }
 
+func IsSymbol(r rune) bool {
+	return strings.ContainsRune("(),;{}", r)
+}
 func IsSpace(r rune) bool {
-	return r == ' '
+	return strings.ContainsRune(" \n", r)
 }
 
-func (l *Lexer) SpriteAction() StateFn {
-	l.AcceptRun("sprite")
-	l.Emit(SPRITE)
-	return l.SpriteVar()
+func (l *Lexer) Var() StateFn {
+	l.Accept("$")
+	l.AcceptRun(alphanumeric)
+	l.Emit(VAR)
+	return l.Action()
 }
 
-func (l *Lexer) SpriteVar() StateFn {
-	l.Accept("(")
-	l.Ignore()
-	l.AcceptRun("$abcdefghijklmnopqrstuvwxyz")
-	l.Emit(TEXT)
-	return l.SpriteSprite()
+func (l *Lexer) Text() StateFn {
+	l.AcceptRun(alphanumeric)
+	if l.Current() == "sprite-map" {
+		l.Emit(CMD)
+	} else {
+		l.Emit(TEXT)
+	}
+	return l.Action()
 }
 
-func (l *Lexer) SpriteSprite() StateFn {
-	l.Accept(",")
+func (l *Lexer) File() StateFn {
 	l.Ignore()
-	l.Accept(`"`)
-	l.Ignore()
-	l.AcceptRun(`abcdefghijklmnopqrstuvwxyz123456789.`)
-	l.Emit(TEXT)
-	l.Accept(`"`)
-	l.Ignore()
-	l.Accept(";")
-	l.Ignore()
+	if !l.Accept(alphanumeric) {
+		return l.Action()
+	}
+	l.AcceptRun(alphanumeric)
+	l.Accept(".")
+	l.AcceptRun(alphanumeric)
+	l.Emit(FILE)
 	return l.Action()
 }
