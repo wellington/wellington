@@ -385,9 +385,15 @@ func (l *Lexer) Var() StateFn {
 
 func (l *Lexer) Text() StateFn {
 	l.AcceptRun(alphanumeric)
-	if l.Current() == "sprite-map" {
+
+	switch l.Current() {
+	case "sprite", "sprite-file", "sprite-height",
+		"sprite-map", "sprite-path", "sprite-position",
+		"sprite-width", "sprite-url":
 		l.Emit(CMD)
-	} else {
+	case "sprite-map-name", "sprite-names":
+		l.Emit(CMD)
+	default:
 		l.Emit(TEXT)
 	}
 	return l.Action()
