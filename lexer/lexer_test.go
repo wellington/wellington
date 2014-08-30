@@ -18,15 +18,27 @@ func TestSassLexer(t *testing.T) {
 		t.Errorf("Error parsing string")
 	}
 	for _, item := range items {
+		v := fmt.Sprintf("%s", item)
 		switch fmt.Sprintf("%s", item.Type) {
 		case "variable":
-			vname := fmt.Sprintf("%s", item)
-			if !strings.HasPrefix(vname, "$") {
+			if !strings.HasPrefix(v, "$") {
 				t.Errorf("Invalid variable prefix")
 			}
-			if strings.Index(vname, ":") > -1 {
+			if strings.Index(v, ":") > -1 {
 				t.Errorf("Invalid symbol in variable")
 			}
+		case "command":
+			if !strings.HasPrefix(v, "sprite") {
+				t.Errorf("Invalid command name: %s", v)
+			}
+		case "file":
+			//File globbing is a vast and varied field
+			// TODO: crib tests from http://golang.org/src/pkg/path/filepath/match_test.go
+			if !strings.HasSuffix(v, "png") {
+				t.Errorf("File safety test failed expected png$, was: %s", v)
+			}
+		default:
+			fmt.Println(item.Type)
 		}
 
 	}
