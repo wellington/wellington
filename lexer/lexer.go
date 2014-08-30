@@ -35,6 +35,7 @@ package lexer
 
 import (
 	"container/list"
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -109,11 +110,12 @@ func (l *Lexer) Last() (r rune, width int) {
 	return l.last, l.width
 }
 
-// Advance adds one rune of input to the current lexeme, increments the lexer's
-// position, and returns the input rune with its size in bytes (encoded as
-// UTF-8).  Invalid UTF-8 codepoints cause the current call and all subsequent
-// calls to return (utf8.RuneError, 1).  If there is no input the returned size
-// is zero.
+// Advance adds one rune of input to the current lexeme,
+// increments the lexer's position, and returns the input
+// rune with its size in bytes (encoded as UTF-8).  Invalid
+// UTF-8 codepoints cause the current call and all subsequent
+// calls to return (utf8.RuneError, 1).  If there is no input
+// the returned size is zero.
 func (l *Lexer) Advance() (rune, int) {
 	if l.pos >= len(l.input) {
 		l.width = 0
@@ -278,12 +280,18 @@ const (
 	EXTRA
 	CMD
 	VAR
+	VALUE
 	FILE
-	AT
 	SPRITE
 	NUMBER
 	TEXT
 	DOLLAR
+	special_beg
+	LPAREN
+	RPAREN
+	LBRACKET
+	RBRACKET
+	special_end
 )
 
 var Tokens = [...]string{
@@ -292,13 +300,19 @@ var Tokens = [...]string{
 	EXTRA:     "extra",
 	CMD:       "command",
 	VAR:       "variable",
+	VALUE:     "value",
 	FILE:      "file",
-	AT:        "@",
 	SPRITE:    "sprite",
 	NUMBER:    "number",
 	TEXT:      "text",
 	DOLLAR:    "$",
+	LPAREN:    "(",
+	RPAREN:    ")",
+	LBRACKET:  "{",
+	RBRACKET:  "}",
 }
+
+const Symbols = `/\.*1234567890-_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`
 
 func (i ItemType) String() string {
 	return Tokens[i]
@@ -311,16 +325,15 @@ type Item struct {
 	Value string
 }
 
-// Err returns the error corresponding to i, if one exists.
-func (i *Item) Err() error {
+func (i Item) Error() error {
 	if i.Type == ItemError {
-		return (*Error)(i)
+		return errors.New("Error reading input")
 	}
 	return nil
 }
 
 // String returns the raw lexeme of i.
-func (i *Item) String() string {
+func (i Item) String() string {
 	switch i.Type {
 	case ItemError:
 		return i.Value
@@ -328,19 +341,10 @@ func (i *Item) String() string {
 		return "EOF"
 	}
 	if len(i.Value) > 10 {
-		return fmt.Sprintf("%.10q...", i.Value)
+		return fmt.Sprintf("%s", i.Value)
 	}
 	return i.Value
 }
-
-// Error is an item of type ItemError
-type Error Item
-
-func (err *Error) Error() string {
-	return (*Item)(err).String()
-}
-
-const alphanumeric = `*1234567890-_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`
 
 func (l *Lexer) Action() StateFn {
 	for {
@@ -355,12 +359,12 @@ func (l *Lexer) Action() StateFn {
 		case IsSpace(r):
 			l.Ignore()
 		case IsSymbol(r):
-			l.Ignore()
+			return l.Paren()
 		case r == '"':
 			return l.File()
 		case r == '$':
 			return l.Var()
-		case strings.ContainsRune(alphanumeric, r):
+		case strings.ContainsRune(Symbols, r):
 			return l.Text()
 		default:
 			//l.Advance()
@@ -372,27 +376,51 @@ func (l *Lexer) Action() StateFn {
 func IsSymbol(r rune) bool {
 	return strings.ContainsRune("(),;{}", r)
 }
+
 func IsSpace(r rune) bool {
 	return strings.ContainsRune(" \n", r)
 }
 
+func IsPrintable(r rune) bool {
+	return true
+}
+
+func (l *Lexer) Paren() StateFn {
+	switch l.Current() {
+	case "(":
+		l.Emit(LPAREN)
+	case ")":
+		l.Emit(RPAREN)
+	case "{":
+		l.Emit(LBRACKET)
+	case "}":
+		l.Emit(RBRACKET)
+	}
+	return l.Action()
+}
+
+// $images: sprite-map("*.png");
 func (l *Lexer) Var() StateFn {
 	l.Accept("$")
-	l.AcceptRun(alphanumeric)
+	l.AcceptRun(Symbols)
 	l.Emit(VAR)
 	return l.Action()
 }
 
 func (l *Lexer) Text() StateFn {
-	l.AcceptRun(alphanumeric)
+	l.AcceptRun(Symbols)
 
 	switch l.Current() {
+	//Primary support
 	case "sprite", "sprite-file", "sprite-height",
 		"sprite-map", "sprite-path", "sprite-position",
 		"sprite-width", "sprite-url":
 		l.Emit(CMD)
+		return l.Action()
+	//Tertiary support
 	case "sprite-map-name", "sprite-names":
 		l.Emit(CMD)
+		return l.Action()
 	default:
 		l.Emit(TEXT)
 	}
@@ -401,12 +429,10 @@ func (l *Lexer) Text() StateFn {
 
 func (l *Lexer) File() StateFn {
 	l.Ignore()
-	if !l.Accept(alphanumeric) {
+	if !l.Accept(Symbols) {
 		return l.Action()
 	}
-	l.AcceptRun(alphanumeric)
-	l.Accept(".")
-	l.AcceptRun(alphanumeric)
+	l.AcceptRun(Symbols)
 	l.Emit(FILE)
 	return l.Action()
 }

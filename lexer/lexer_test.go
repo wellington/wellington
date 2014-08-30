@@ -3,6 +3,7 @@ package lexer_test
 import (
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"testing"
 
 	"github.com/drewwells/sprite-sass/lexer"
@@ -10,45 +11,55 @@ import (
 
 func TestSassLexer(t *testing.T) {
 
-	// create a StateFn to parse the language.
-	var start lexer.StateFn
-	start = func(lex *lexer.Lexer) lexer.StateFn {
-		return lex.Action()
+	fvar, _ := ioutil.ReadFile("../test/var.scss")
+
+	items, err := parse(string(fvar))
+	if err != nil {
+		t.Errorf("Error parsing string")
 	}
-
-	// create a parser for the language.
-	parse := func(input string) ([]lexer.Item, error) {
-		lex := lexer.New(start, input)
-
-		var status []lexer.Item
-		for {
-			item := lex.Next()
-			err := item.Err()
-			//fmt.Printf("Item: %s\n", item)
-			if err != nil {
-				return nil, fmt.Errorf("Error: %v (pos %d)", err, item.Pos)
+	for _, item := range items {
+		switch fmt.Sprintf("%s", item.Type) {
+		case "variable":
+			vname := fmt.Sprintf("%s", item)
+			if !strings.HasPrefix(vname, "$") {
+				t.Errorf("Invalid variable prefix")
 			}
-			switch item.Type {
-			case lexer.ItemEOF:
-				return status, nil
-			case lexer.CMD, lexer.SPRITE, lexer.TEXT, lexer.VAR, lexer.FILE:
-				status = append(status, *item)
-			case lexer.EXTRA:
-				status = append(status, *item)
-			default:
-				fmt.Printf("Default: %d %s\n", item.Pos, item)
+			if strings.Index(vname, ":") > -1 {
+				t.Errorf("Invalid symbol in variable")
 			}
 		}
+
 	}
 
-	sheet1, _ := ioutil.ReadFile("../test/sheet1.scss")
+}
 
-	// parse a valid string and print the status
-	status, err := parse(string(sheet1)) //`sprite($images,"one.png");`)
+// create a parser for the language.
+func parse(input string) ([]lexer.Item, error) {
+	lex := lexer.New(func(lex *lexer.Lexer) lexer.StateFn {
+		return lex.Action()
+	}, input)
 
-	for _, item := range status {
-		fmt.Printf("%8s: %s\n", item.Type, item.String())
+	var status []lexer.Item
+	for {
+		item := lex.Next()
+		err := item.Error()
+		if err != nil {
+			return nil, fmt.Errorf("Error: %v (pos %d)", err, item.Pos)
+		}
+		switch item.Type {
+		case lexer.ItemEOF:
+			return status, nil
+		case lexer.CMD, lexer.SPRITE, lexer.TEXT, lexer.VAR, lexer.FILE:
+			fallthrough
+		case lexer.LPAREN, lexer.RPAREN,
+			lexer.LBRACKET, lexer.RBRACKET:
+			fallthrough
+		case lexer.EXTRA:
+			fallthrough
+		case item.Type:
+			status = append(status, *item)
+		default:
+			fmt.Printf("Default: %d %s\n", item.Pos, item)
+		}
 	}
-	fmt.Printf("  Status: %s", err)
-
 }
