@@ -38,7 +38,7 @@ func TestSassLexer(t *testing.T) {
 				t.Errorf("File safety test failed expected png$, was: %s", v)
 			}
 		default:
-			fmt.Println(item.Type)
+			//fmt.Println(item.Type)
 		}
 
 	}
