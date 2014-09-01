@@ -2,6 +2,7 @@ package main
 
 import (
 	"math"
+	"os"
 
 	"github.com/rainycape/magick"
 )
@@ -10,6 +11,8 @@ type Images []*magick.Image
 
 type ImageList struct {
 	Images
+	Out      *magick.Image
+	Combined bool
 	Files    []string
 	Vertical bool
 }
@@ -71,9 +74,8 @@ func (l *ImageList) Height() int {
 // image slice.
 func (l *ImageList) Width() int {
 	w := 0
-	ll := *l
 
-	for _, img := range ll.Images {
+	for _, img := range l.Images {
 		if !l.Vertical {
 			w += img.Width()
 		} else {
@@ -87,48 +89,80 @@ func (l *ImageList) Width() int {
 // an image slice of each file path decoded into a
 // *magick.Image.
 func (l *ImageList) Decode(rest ...string) {
-	ll := *l
 	for _, path := range rest {
 		img, err := magick.DecodeFile(path)
 		if err != nil {
 			panic(err)
 		}
-		ll.Images = append(ll.Images, img)
-		ll.Files = append(ll.Files, path)
+		l.Images = append(l.Images, img)
+		l.Files = append(l.Files, path)
 	}
-	*l = ll
 }
 
 // Combine all images in the slice into a final output
 // image.
-func (l *ImageList) Combine() *magick.Image {
+func (l *ImageList) Combine() {
 
 	var (
-		out        *magick.Image
 		maxW, maxH int
 	)
 
+	if l.Out != nil {
+		return
+	}
+
 	maxW, maxH = l.Width(), l.Height()
 
-	out, _ = magick.New(maxW, maxH)
-
 	curH, curW := 0, 0
-	ll := *l
-	for _, img := range ll.Images {
-		err := out.Composite(magick.CompositeCopy, img, curW, curH)
+	l.Out, _ = magick.New(maxW, maxH)
+
+	for _, img := range l.Images {
+		err := l.Out.Composite(magick.CompositeCopy, img, curW, curH)
 		if err != nil {
 			panic(err)
 		}
-		if ll.Vertical {
+		if l.Vertical {
 			curH += img.Height()
 		} else {
 			curW += img.Width()
 		}
 	}
+	l.Combined = true
 
-	l = &ll
+}
 
-	return out
+func (l *ImageList) Export(path string) error {
+
+	fo, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+
+	//This call is cached if already run
+	l.Combine()
+
+	// Supported compressions http://www.imagemagick.org/RMagick/doc/info.html#compression
+	defer func() {
+		fo.Close()
+		err := os.Remove(path)
+
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	if err != nil {
+		return err
+	}
+
+	frmt := magick.NewInfo()
+	frmt.SetFormat("JPEG") //strings.ToUpper(filepath.Ext(path)[1:]))
+
+	err = l.Out.Encode(fo, frmt)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func main() {

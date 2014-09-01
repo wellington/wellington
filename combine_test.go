@@ -1,17 +1,13 @@
 package main
 
-import (
-	"os"
-	"testing"
-
-	"github.com/rainycape/magick"
-)
+import "testing"
 
 func TestCombine(t *testing.T) {
 	imgs := ImageList{}
 	imgs.Decode("test/139.jpg", "test/140.jpg")
 	imgs.Vertical = true
-	out := imgs.Combine()
+	imgs.Combine()
+
 	if imgs.Height() != 279 {
 		t.Errorf("Invalid Height found %d, wanted %d", imgs.Height(), 279)
 	}
@@ -36,22 +32,15 @@ func TestCombine(t *testing.T) {
 		t.Errorf("Invalid file location given found %d, expected %d", f, 1)
 	}
 
-	testFile := "test/output.jpg"
-	fo, err := os.Create(testFile)
-	defer func() {
-		fo.Close()
-		err := os.Remove(testFile)
-
-		if err != nil {
-			panic(err)
-		}
-	}()
-	if err != nil {
-		panic(err)
+	//Quick cache check
+	imgs.Combine()
+	if imgs.Height() != 279 || imgs.Width() != 96 {
+		t.Errorf("Cache invalid")
 	}
-	jpg := magick.NewInfo()
-	jpg.SetFormat("JPEG")
-	err = out.Encode(fo, jpg)
+
+	testFile := "test/output.jpg"
+	err := imgs.Export(testFile)
+
 	if err != nil {
 		panic(err)
 	}
