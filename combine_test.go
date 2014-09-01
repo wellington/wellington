@@ -27,6 +27,15 @@ func TestCombine(t *testing.T) {
 	if y := imgs.Y(1); y != 139 {
 		t.Errorf("Invalid Y found %d, wanted %d", y, 139)
 	}
+
+	if f := imgs.Lookup("test/139.jpg"); f != 0 {
+		t.Errorf("Invalid file location given found %d, expected %d", f, 0)
+	}
+
+	if f := imgs.Lookup("test/140.jpg"); f != 1 {
+		t.Errorf("Invalid file location given found %d, expected %d", f, 1)
+	}
+
 	testFile := "test/output.jpg"
 	fo, err := os.Create(testFile)
 	defer func() {

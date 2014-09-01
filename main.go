@@ -6,11 +6,21 @@ import (
 	"github.com/rainycape/magick"
 )
 
-type Is []*magick.Image
+type Images []*magick.Image
 
 type ImageList struct {
-	Is
+	Images
+	Files    []string
 	Vertical bool
+}
+
+func (l ImageList) Lookup(f string) int {
+	for i, v := range l.Files {
+		if f == v {
+			return i
+		}
+	}
+	return -1
 }
 
 // Return the X position of an image based
@@ -22,7 +32,7 @@ func (l ImageList) X(pos int) int {
 		return 0
 	}
 	for i := 0; i < pos; i++ {
-		x += l.Is[i].Width()
+		x += l.Images[i].Width()
 	}
 	return x
 }
@@ -36,7 +46,7 @@ func (l ImageList) Y(pos int) int {
 		return 0
 	}
 	for i := 0; i < pos; i++ {
-		y += l.Is[i].Height()
+		y += l.Images[i].Height()
 	}
 	return y
 }
@@ -47,7 +57,7 @@ func (l *ImageList) Height() int {
 	h := 0
 	ll := *l
 
-	for _, img := range ll.Is {
+	for _, img := range ll.Images {
 		if l.Vertical {
 			h += img.Height()
 		} else {
@@ -63,7 +73,7 @@ func (l *ImageList) Width() int {
 	w := 0
 	ll := *l
 
-	for _, img := range ll.Is {
+	for _, img := range ll.Images {
 		if !l.Vertical {
 			w += img.Width()
 		} else {
@@ -83,7 +93,8 @@ func (l *ImageList) Decode(rest ...string) {
 		if err != nil {
 			panic(err)
 		}
-		ll.Is = append(ll.Is, img)
+		ll.Images = append(ll.Images, img)
+		ll.Files = append(ll.Files, path)
 	}
 	*l = ll
 }
@@ -103,7 +114,7 @@ func (l *ImageList) Combine() *magick.Image {
 
 	curH, curW := 0, 0
 	ll := *l
-	for _, img := range ll.Is {
+	for _, img := range ll.Images {
 		err := out.Composite(magick.CompositeCopy, img, curW, curH)
 		if err != nil {
 			panic(err)
