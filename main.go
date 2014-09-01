@@ -3,6 +3,8 @@ package main
 import (
 	"math"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/rainycape/magick"
 )
@@ -88,15 +90,17 @@ func (l *ImageList) Width() int {
 // Accept a variable number of image paths returning
 // an image slice of each file path decoded into a
 // *magick.Image.
-func (l *ImageList) Decode(rest ...string) {
+func (l *ImageList) Decode(rest ...string) error {
+	l.Out = nil //&magick.Image{}
 	for _, path := range rest {
 		img, err := magick.DecodeFile(path)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		l.Images = append(l.Images, img)
 		l.Files = append(l.Files, path)
 	}
+	return nil
 }
 
 // Combine all images in the slice into a final output
@@ -149,7 +153,7 @@ func (l *ImageList) Export(path string) error {
 	}
 
 	frmt := magick.NewInfo()
-	frmt.SetFormat("JPEG") //strings.ToUpper(filepath.Ext(path)[1:]))
+	frmt.SetFormat(strings.ToUpper(filepath.Ext(path)[1:]))
 
 	err = l.Out.Encode(fo, frmt)
 	if err != nil {
