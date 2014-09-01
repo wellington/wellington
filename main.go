@@ -142,14 +142,7 @@ func (l *ImageList) Export(path string) error {
 	l.Combine()
 
 	// Supported compressions http://www.imagemagick.org/RMagick/doc/info.html#compression
-	defer func() {
-		fo.Close()
-		err := os.Remove(path)
-
-		if err != nil {
-			panic(err)
-		}
-	}()
+	defer fo.Close()
 
 	if err != nil {
 		return err

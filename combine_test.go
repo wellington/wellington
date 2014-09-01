@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"os"
+	"testing"
+)
 
 func TestCombine(t *testing.T) {
 	imgs := ImageList{}
@@ -40,6 +43,16 @@ func TestCombine(t *testing.T) {
 
 	testFile := "test/output.jpg"
 	err := imgs.Export(testFile)
+
+	defer func() {
+		//Cleanup test files
+		err := os.Remove(testFile)
+
+		if err != nil {
+			panic(err)
+		}
+
+	}()
 
 	if err != nil {
 		panic(err)
