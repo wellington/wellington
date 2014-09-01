@@ -1,4 +1,4 @@
-package main
+package sprite_sass
 
 /*
 #cgo LDFLAGS: -Llibsass -lsass -lstdc++

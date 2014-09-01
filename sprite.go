@@ -1,4 +1,4 @@
-package main
+package sprite_sass
 
 import (
 	"math"
@@ -91,7 +91,9 @@ func (l *ImageList) Width() int {
 // an image slice of each file path decoded into a
 // *magick.Image.
 func (l *ImageList) Decode(rest ...string) error {
-	l.Out = nil //&magick.Image{}
+
+	// Invalidate the composite cache
+	l.Out = nil
 	for _, path := range rest {
 		img, err := magick.DecodeFile(path)
 		if err != nil {
@@ -160,7 +162,4 @@ func (l *ImageList) Export(path string) error {
 		return err
 	}
 	return nil
-}
-
-func main() {
 }

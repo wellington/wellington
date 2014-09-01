@@ -1,4 +1,4 @@
-package main
+package sprite_sass
 
 import (
 	"io/ioutil"
