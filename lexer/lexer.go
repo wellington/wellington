@@ -280,6 +280,7 @@ const (
 	EXTRA
 	CMD
 	VAR
+	SUB
 	VALUE
 	FILE
 	SPRITE
@@ -300,6 +301,7 @@ var Tokens = [...]string{
 	EXTRA:     "extra",
 	CMD:       "command",
 	VAR:       "variable",
+	SUB:       "sub",
 	VALUE:     "value",
 	FILE:      "file",
 	SPRITE:    "sprite",
@@ -403,7 +405,13 @@ func (l *Lexer) Paren() StateFn {
 func (l *Lexer) Var() StateFn {
 	l.Accept("$")
 	l.AcceptRun(Symbols)
-	l.Emit(VAR)
+	r, _ := l.Peek()
+	//fmt.Printf("%s%q\n", l.Current(), r)
+	if r == ':' {
+		l.Emit(VAR)
+	} else {
+		l.Emit(SUB)
+	}
 	return l.Action()
 }
 

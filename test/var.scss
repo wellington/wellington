@@ -1,4 +1,5 @@
 $red: red;
 $hex: 00ff00;
+background: $hex;
 $view-sprite: sprite-map("styleguide/*.png", $spacing: 2px);
 $images: sprite-map("*.png");

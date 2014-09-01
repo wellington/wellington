@@ -15,9 +15,9 @@ func Parser(f string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	for i := 0; i < len(tokens); i = i + 1 {
 		token := tokens[i]
+		// Generate list of vars
 		if token.Type == VAR {
 			t, val := fmt.Sprintf("%s", token), ""
 			nested := false
@@ -31,6 +31,8 @@ func Parser(f string) {
 					nested = false
 				case CMD:
 					val += fmt.Sprintf("RUN: %s", token)
+				case SUB:
+					fmt.Println("SUB")
 				default:
 					val += fmt.Sprintf("%s", token)
 				}
@@ -39,25 +41,30 @@ func Parser(f string) {
 				}
 			}
 			vars[t] = val
+			//Replace subsitution tokens
+		} else if token.Type == SUB {
+			tokens[i].Value = vars[token.Value]
 		}
 	}
-	for k, v := range vars {
-		fmt.Printf("%s: %s\n", k, v)
+	for _, v := range tokens {
+		fmt.Printf("%s\n", v)
 	}
 }
 
 func parser(input string) ([]Item, error) {
+
+	var status []Item
 	lex := New(func(lex *Lexer) StateFn {
 		return lex.Action()
 	}, input)
 
-	var status []Item
 	for {
 		item := lex.Next()
 		err := item.Error()
 		if err != nil {
 			return nil, fmt.Errorf("Error: %v (pos %d)", err, item.Pos)
 		}
+
 		switch item.Type {
 		case ItemEOF:
 			return status, nil
@@ -67,8 +74,8 @@ func parser(input string) ([]Item, error) {
 			LBRACKET, RBRACKET:
 			fallthrough
 		case EXTRA:
-			fallthrough
-		case item.Type:
+			status = append(status, *item)
+		case SUB:
 			status = append(status, *item)
 		default:
 			fmt.Printf("Default: %d %s\n", item.Pos, item)
