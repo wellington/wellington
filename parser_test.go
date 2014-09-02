@@ -8,5 +8,5 @@ import (
 
 func TestParser(t *testing.T) {
 	p := Parser{}
-	p.Start("../test/var.scss")
+	p.Start("test/var.scss")
 }

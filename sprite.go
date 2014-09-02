@@ -14,14 +14,24 @@ type Images []*magick.Image
 type ImageList struct {
 	Images
 	Out      *magick.Image
+	OutFile  string
 	Combined bool
 	Files    []string
 	Vertical bool
 }
 
 func (l ImageList) Lookup(f string) int {
+	var base string
 	for i, v := range l.Files {
+
+		base = filepath.Base(v)
+		base = strings.TrimSuffix(base, ".png")
+		base = strings.TrimSuffix(base, ".jpg")
+
 		if f == v {
+			return i
+			//Do partial matches, for now
+		} else if f == base {
 			return i
 		}
 	}
@@ -147,7 +157,8 @@ func (l *ImageList) Combine() {
 
 // Export saves out the ImageList to a the specified file
 func (l *ImageList) Export(path string) error {
-
+	//This needs some sanity checking
+	l.OutFile = path
 	fo, err := os.Create(path)
 	if err != nil {
 		return err

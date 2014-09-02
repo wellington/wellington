@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+
+	//. "github.com/kr/pretty"
 )
 
 type Parser struct {
@@ -13,19 +15,23 @@ type Parser struct {
 }
 
 func (p Parser) Start(f string) {
-
 	p.Vars = make(map[string]string)
+	p.Sprites = make(map[string]ImageList)
 	fvar, _ := ioutil.ReadFile(f)
 	tokens, err := parser(string(fvar))
 
 	if err != nil {
 		log.Fatal(err)
 	}
+	var (
+		t, cmd string
+	)
 	for i := 0; i < len(tokens); i = i + 1 {
 		token := tokens[i]
 		// Generate list of vars
 		if token.Type == VAR {
-			t, val := fmt.Sprintf("%s", token), ""
+			t = fmt.Sprintf("%s", token)
+			val := ""
 			nested := false
 			for {
 				i++
@@ -36,10 +42,25 @@ func (p Parser) Start(f string) {
 				case RPAREN:
 					nested = false
 				case CMD:
-					val += fmt.Sprintf("RUN: %s", token)
+					cmd = fmt.Sprintf("%s", token)
+					val += cmd
+				case FILE:
+					if cmd == "sprite-map" {
+						imgs := ImageList{}
+						glob := fmt.Sprintf("%s", token)
+						imgs.Decode(glob)
+						imgs.Vertical = true
+						imgs.Combine()
+						p.Sprites[t] = imgs
+						//TODO: Generate filename
+						imgs.Export("generated.png")
+						cmd = ""
+					}
+					// Can this ever happen, do we care?
 				case SUB:
 					fmt.Println("SUB")
 				default:
+					//fmt.Printf("Default: %s\n", token)
 					val += fmt.Sprintf("%s", token)
 				}
 				if !nested && token.Type != CMD {
@@ -49,11 +70,22 @@ func (p Parser) Start(f string) {
 			p.Vars[t] = val
 			//Replace subsitution tokens
 		} else if token.Type == SUB {
-			tokens[i].Value = p.Vars[token.Value]
+			if cmd == "sprite" {
+				//Capture sprite
+				sprite := p.Sprites[fmt.Sprintf("%s", token)]
+				//Capture filename
+				i++
+				token = tokens[i]
+				pos := sprite.Lookup(fmt.Sprintf("%s", token))
+				x, y := sprite.X(pos), sprite.Y(pos)
+				fmt.Printf("X: %d Y: %d\n", x, y)
+				cmd = ""
+			} else {
+				tokens[i].Value = p.Vars[token.Value]
+			}
+		} else if token.Type == CMD {
+			cmd = fmt.Sprintf("%s", token)
 		}
-	}
-	for _, v := range tokens {
-		fmt.Printf("%s\n", v)
 	}
 }
 
@@ -70,26 +102,28 @@ func parser(input string) ([]Item, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Error: %v (pos %d)", err, item.Pos)
 		}
-
-		switch item.Type {
-		case ItemEOF:
+		if item.Type == ItemEOF {
 			return status, nil
-		case SPRITE, TEXT, VAR, FILE:
-			fallthrough
-		case LPAREN, RPAREN,
-			LBRACKET, RBRACKET:
-			fallthrough
-		case EXTRA:
+		} else {
 			status = append(status, *item)
-		case SUB:
-			status = append(status, *item)
-		case CMD:
-			if item.String() == "sprite-map" {
-				status = append(status, *item)
-			}
-		default:
-			fmt.Printf("Default: %d %s\n", item.Pos, item)
 		}
+		// switch item.Type {
+		// case ItemEOF:
+		// 	return status, nil
+		// case SPRITE, TEXT, VAR, FILE:
+		// 	fallthrough
+		// case LPAREN, RPAREN,
+		// 	LBRACKET, RBRACKET:
+		// 	fallthrough
+		// case EXTRA:
+		// 	status = append(status, *item)
+		// case SUB:
+		// 	status = append(status, *item)
+		// case CMD:
+		// 	status = append(status, *item)
+		// default:
+		// 	fmt.Printf("Default: %d %s\n", item.Pos, item)
+		// }
 	}
 
 }

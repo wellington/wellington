@@ -65,6 +65,10 @@ func TestLookup(t *testing.T) {
 		t.Errorf("Invalid file location given found %d, expected %d", f, 1)
 	}
 
+	if f := imgs.Lookup("140"); f != 1 {
+		t.Errorf("Invalid file location given found %d, expected %d", f, 1)
+	}
+
 	if f := imgs.Lookup("notafile.jpg"); f != -1 {
 		t.Errorf("Found a file that doesn't exist")
 	}
