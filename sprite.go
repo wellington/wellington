@@ -87,14 +87,22 @@ func (l *ImageList) Width() int {
 	return w
 }
 
-// Accept a variable number of image paths returning
-// an image slice of each file path decoded into a
-// *magick.Image.
+// Accept a variable number of image globs appending
+// them to the ImageList.
 func (l *ImageList) Decode(rest ...string) error {
 
 	// Invalidate the composite cache
 	l.Out = nil
-	for _, path := range rest {
+	var paths []string
+	for _, r := range rest {
+		matches, err := filepath.Glob(r)
+		if err != nil {
+			panic(err)
+		}
+		paths = append(paths, matches...)
+	}
+
+	for _, path := range paths {
 		img, err := magick.DecodeFile(path)
 		if err != nil {
 			return err
@@ -137,6 +145,7 @@ func (l *ImageList) Combine() {
 
 }
 
+// Export saves out the ImageList to a the specified file
 func (l *ImageList) Export(path string) error {
 
 	fo, err := os.Create(path)

@@ -66,15 +66,36 @@ func TestLookup(t *testing.T) {
 	if f := imgs.Lookup("notafile.jpg"); f != -1 {
 		t.Errorf("Found a file that doesn't exist")
 	}
+}
 
+//Test file globbing
+func TestGlob(t *testing.T) {
+	imgs := ImageList{}
+	imgs.Decode("test/*.png")
+	if f := imgs.Lookup("test/139.png"); f != 0 {
+		t.Errorf("Invalid file location given found %d, expected %d", f, 0)
+	}
+
+	if f := imgs.Lookup("test/140.png"); f != 1 {
+		t.Errorf("Invalid file location given found %d, expected %d", f, 1)
+	}
+
+	if f := imgs.Lookup("notafile.png"); f != -1 {
+		t.Errorf("Found a file that doesn't exist")
+	}
 }
 
 func TestDecode(t *testing.T) {
 	//Should fail with unable to find file
 	i := ImageList{}
 	err := i.Decode("notafile")
-	if err == nil {
-		t.Errorf("Non-existant file didn't throw an error")
+
+	if err != nil {
+		t.Errorf("Error thrown for non-existant file")
+	}
+
+	if len(i.Images) > 0 {
+		t.Errorf("Found a non-existant file")
 	}
 }
 
