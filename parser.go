@@ -53,7 +53,7 @@ func (p Parser) Start(f string) {
 						imgs.Combine()
 						p.Sprites[t] = imgs
 						//TODO: Generate filename
-						imgs.Export("generated.png")
+						//imgs.Export("generated.png")
 						cmd = ""
 					}
 					// Can this ever happen, do we care?
@@ -76,9 +76,8 @@ func (p Parser) Start(f string) {
 				//Capture filename
 				i++
 				token = tokens[i]
-				pos := sprite.Lookup(fmt.Sprintf("%s", token))
-				x, y := sprite.X(pos), sprite.Y(pos)
-				fmt.Printf("X: %d Y: %d\n", x, y)
+				fmt.Println("Sprite path generated:")
+				fmt.Println(sprite.CSS(fmt.Sprintf("%s", token)))
 				cmd = ""
 			} else {
 				tokens[i].Value = p.Vars[token.Value]

@@ -1,6 +1,7 @@
 package sprite_sass
 
 import (
+	"fmt"
 	"math"
 	"os"
 	"path/filepath"
@@ -66,6 +67,15 @@ func (l ImageList) Y(pos int) int {
 	return y
 }
 
+func (l ImageList) CSS(s string) string {
+	pos := l.Lookup(s)
+	if l.OutFile == "" {
+		return ""
+	}
+	return fmt.Sprintf(`url("%s") %dpx %dpx`,
+		l.OutFile, -l.X(pos), -l.Y(pos))
+}
+
 // Return the cumulative Height of the
 // image slice.
 func (l *ImageList) Height() int {
@@ -129,6 +139,7 @@ func (l *ImageList) Combine() {
 
 	var (
 		maxW, maxH int
+		outpath    string
 	)
 
 	if l.Out != nil {
@@ -151,8 +162,12 @@ func (l *ImageList) Combine() {
 			curW += img.Width()
 		}
 	}
-	l.Combined = true
 
+	outpath = filepath.Dir(l.Files[0])
+	outpath = strings.Replace(outpath, "/", "-", -1)
+
+	l.OutFile = outpath
+	l.Combined = true
 }
 
 // Export saves out the ImageList to a the specified file
