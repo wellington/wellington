@@ -1,8 +1,10 @@
-package sprite_sass
+package sprite_sass_test
 
 import (
 	"os"
 	"testing"
+
+	. "github.com/drewwells/sprite_sass"
 )
 
 func TestCombine(t *testing.T) {

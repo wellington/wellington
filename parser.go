@@ -1,4 +1,4 @@
-package lexer
+package sprite_sass
 
 import (
 	"fmt"
@@ -6,9 +6,15 @@ import (
 	"log"
 )
 
-func Parser(f string) {
+type Parser struct {
+	Output  string
+	Vars    map[string]string
+	Sprites map[string]ImageList
+}
 
-	vars := make(map[string]string)
+func (p Parser) Start(f string) {
+
+	p.Vars = make(map[string]string)
 	fvar, _ := ioutil.ReadFile(f)
 	tokens, err := parser(string(fvar))
 
@@ -40,10 +46,10 @@ func Parser(f string) {
 					break
 				}
 			}
-			vars[t] = val
+			p.Vars[t] = val
 			//Replace subsitution tokens
 		} else if token.Type == SUB {
-			tokens[i].Value = vars[token.Value]
+			tokens[i].Value = p.Vars[token.Value]
 		}
 	}
 	for _, v := range tokens {
@@ -68,7 +74,7 @@ func parser(input string) ([]Item, error) {
 		switch item.Type {
 		case ItemEOF:
 			return status, nil
-		case CMD, SPRITE, TEXT, VAR, FILE:
+		case SPRITE, TEXT, VAR, FILE:
 			fallthrough
 		case LPAREN, RPAREN,
 			LBRACKET, RBRACKET:
@@ -77,6 +83,10 @@ func parser(input string) ([]Item, error) {
 			status = append(status, *item)
 		case SUB:
 			status = append(status, *item)
+		case CMD:
+			if item.String() == "sprite-map" {
+				status = append(status, *item)
+			}
 		default:
 			fmt.Printf("Default: %d %s\n", item.Pos, item)
 		}

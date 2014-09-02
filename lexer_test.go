@@ -1,4 +1,4 @@
-package lexer_test
+package sprite_sass_test
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/drewwells/sprite-sass/lexer"
+	. "github.com/drewwells/sprite_sass"
 )
 
 func TestSassLexer(t *testing.T) {
@@ -19,19 +19,19 @@ func TestSassLexer(t *testing.T) {
 	}
 	for _, item := range items {
 		v := fmt.Sprintf("%s", item)
-		switch fmt.Sprintf("%s", item.Type) {
-		case "variable":
+		switch item.Type {
+		case VAR:
 			if !strings.HasPrefix(v, "$") {
 				t.Errorf("Invalid variable prefix")
 			}
 			if strings.Index(v, ":") > -1 {
 				t.Errorf("Invalid symbol in variable")
 			}
-		case "command":
+		case CMD:
 			if !strings.HasPrefix(v, "sprite") {
 				t.Errorf("Invalid command name: %s", v)
 			}
-		case "file":
+		case FILE:
 			//File globbing is a vast and varied field
 			// TODO: crib tests from http://golang.org/src/pkg/path/filepath/match_test.go
 			if !strings.HasSuffix(v, "png") {
@@ -46,12 +46,12 @@ func TestSassLexer(t *testing.T) {
 }
 
 // create a parser for the language.
-func parse(input string) ([]lexer.Item, error) {
-	lex := lexer.New(func(lex *lexer.Lexer) lexer.StateFn {
+func parse(input string) ([]Item, error) {
+	lex := New(func(lex *Lexer) StateFn {
 		return lex.Action()
 	}, input)
 
-	var status []lexer.Item
+	var status []Item
 	for {
 		item := lex.Next()
 		err := item.Error()
@@ -59,16 +59,14 @@ func parse(input string) ([]lexer.Item, error) {
 			return nil, fmt.Errorf("Error: %v (pos %d)", err, item.Pos)
 		}
 		switch item.Type {
-		case lexer.ItemEOF:
+		case ItemEOF:
 			return status, nil
-		case lexer.CMD, lexer.SPRITE, lexer.TEXT, lexer.VAR, lexer.FILE:
+		case CMD, SPRITE, TEXT, VAR, FILE:
 			fallthrough
-		case lexer.LPAREN, lexer.RPAREN,
-			lexer.LBRACKET, lexer.RBRACKET:
+		case LPAREN, RPAREN,
+			LBRACKET, RBRACKET:
 			fallthrough
-		case lexer.EXTRA:
-			fallthrough
-		case item.Type:
+		case EXTRA:
 			status = append(status, *item)
 		default:
 			fmt.Printf("Default: %d %s\n", item.Pos, item)

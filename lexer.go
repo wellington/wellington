@@ -31,7 +31,7 @@ incurred using methods that match character classes.
 The remaining methods provide low level functionality that can
 be combined to address corner cases.
 */
-package lexer
+package sprite_sass
 
 import (
 	"container/list"
