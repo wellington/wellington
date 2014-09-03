@@ -2,7 +2,6 @@ package sprite_sass
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -85,7 +84,7 @@ func (p Parser) Start(f string) string {
 				//Capture filename
 				i++
 				tokens[i].Value = sprite.CSS(fmt.Sprintf("%s",
-					token))
+					token)) + ";"
 				tokens[i].Write = true
 				cmd = ""
 			} else {
@@ -98,43 +97,56 @@ func (p Parser) Start(f string) string {
 
 	//Iterate through tokens looking for ones to write out
 	var (
-		output, buffer []byte
-		pos            int
+		output []byte
+		pos    int
 	)
-	reader := strings.NewReader(input)
+	//reader := strings.NewReader(input)
 	_ = output
-
-	for _, token := range tokens {
+	for i, token := range tokens {
 		//fmt.Printf("%s ", token)
+		//These tokens get replaced
 		if token.Write {
-			//Write out until the current pos
-			delta := token.Pos - pos
-			buffer = make([]byte, delta)
-			pos = token.Pos
-			for delta != -1 {
-				byte, err := reader.ReadByte()
-				if err != nil && err != io.EOF {
-					panic(err)
-				}
-				buffer = append(buffer, byte)
-				delta--
-			}
-			//fmt.Println("Buffer: " + string(buffer))
-			output = append(output, buffer...)
-			delta = 0
-			for {
-				if strings.ContainsRune(input, ';') {
+			//fmt.Printf("WRITE: %s %s\n", token, token.Type)
+			output = append(output, '~')
+			output = append(output, token.Value...)
+			output = append(output, '~')
+			fmt.Printf("\n%s\n", input[pos:])
+			pos = pos + strings.IndexRune(input[pos:], ';') - 1
+
+		} else {
+			//fmt.Printf("NOWRITE: %s TYPE:%s\n", token, token.Type)
+			if token.Type == CMD && token.Value == "sprite" {
+				//Don't write out CMDs
+				if i < len(tokens)-1 {
+					//output = append(output, '#')
+					output = append(output, input[pos:token.Pos]...)
+					//output = append(output, '#')
+					pos = tokens[i+1].Pos + 1
+				} else {
 					break
 				}
-				delta++
-			}
-			if delta > 0 {
-				buffer = make([]byte, delta)
-				output = append(output, token.Value...)
-				pos += delta
+			} else if pos < len(input) && token.Type != SUB && token.Type != LPAREN && token.Type != RPAREN { //&& token.Pos >= pos {
+				text := fmt.Sprintf("%s", token)
+				//fmt.Printf("NOWRITE: %s %s\n", text, token.Type)
+				l := len(text)
+				//output = append(output, '/', '|')
+				output = append(output, input[pos:token.Pos]...)
+				//output = append(output, '|', '/')
+				//output = append(output, '^')
+				output = append(output, text...)
+				//output = append(output, '^')
+				pos = token.Pos + l
+				if pos > len(input) {
+					panic("NOTHERE")
+					break
+				}
+			} else if token.Pos <= pos {
+				pos = token.Pos
+				//fmt.Printf("ERROR: %s %d < %d\n", token, token.Pos, pos)
 			}
 		}
 	}
+	//output = append(output, input[pos+1:]...)
 	fmt.Println("\nOutput")
 	fmt.Println(string(output))
 	return ""
