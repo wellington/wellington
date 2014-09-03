@@ -402,11 +402,11 @@ func IsPrintable(r rune) bool {
 func (l *Lexer) Directive() StateFn {
 
 	l.AcceptRunFunc(IsAllowedRune)
-	l.Emit(IMPORT)
 
 	switch l.Current() {
 	case "@import":
-
+		l.Emit(IMPORT)
+		break
 	}
 	return l.Action()
 }

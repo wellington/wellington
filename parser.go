@@ -76,8 +76,7 @@ func (p Parser) Start(f string) {
 				//Capture filename
 				i++
 				token = tokens[i]
-				fmt.Println("Sprite path generated:")
-				fmt.Println(sprite.CSS(fmt.Sprintf("%s", token)))
+				tokens[i].Value = sprite.CSS(fmt.Sprintf("%s", token))
 				cmd = ""
 			} else {
 				tokens[i].Value = p.Vars[token.Value]
