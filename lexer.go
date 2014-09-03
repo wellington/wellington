@@ -277,6 +277,7 @@ type ItemType uint16
 const (
 	ItemEOF ItemType = math.MaxUint16 - iota
 	ItemError
+	IMPORT
 	EXTRA
 	CMD
 	VAR
@@ -298,6 +299,7 @@ const (
 var Tokens = [...]string{
 	ItemEOF:   "eof",
 	ItemError: "error",
+	IMPORT:    "@import",
 	EXTRA:     "extra",
 	CMD:       "command",
 	VAR:       "variable",
@@ -314,7 +316,15 @@ var Tokens = [...]string{
 	RBRACKET:  "}",
 }
 
-const Symbols = `/\.*1234567890-_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`
+const (
+	Symbols = `/\.*-_`
+)
+
+func IsAllowedRune(r rune) bool {
+	return unicode.IsNumber(r) ||
+		unicode.IsLetter(r) ||
+		strings.ContainsRune(Symbols, r)
+}
 
 func (i ItemType) String() string {
 	return Tokens[i]
@@ -362,11 +372,13 @@ func (l *Lexer) Action() StateFn {
 			l.Ignore()
 		case IsSymbol(r):
 			return l.Paren()
+		case r == '@':
+			return l.Directive()
 		case r == '"':
 			return l.File()
 		case r == '$':
 			return l.Var()
-		case strings.ContainsRune(Symbols, r):
+		case IsAllowedRune(r):
 			return l.Text()
 		default:
 			//l.Advance()
@@ -387,6 +399,18 @@ func IsPrintable(r rune) bool {
 	return true
 }
 
+func (l *Lexer) Directive() StateFn {
+
+	l.AcceptRunFunc(IsAllowedRune)
+	l.Emit(IMPORT)
+
+	switch l.Current() {
+	case "@import":
+
+	}
+	return l.Action()
+}
+
 func (l *Lexer) Paren() StateFn {
 	switch l.Current() {
 	case "(":
@@ -404,9 +428,9 @@ func (l *Lexer) Paren() StateFn {
 // $images: sprite-map("*.png");
 func (l *Lexer) Var() StateFn {
 	l.Accept("$")
-	l.AcceptRun(Symbols)
+	l.AcceptRunFunc(IsAllowedRune)
 	r, _ := l.Peek()
-	//fmt.Printf("%s%q\n", l.Current(), r)
+
 	if r == ':' {
 		l.Emit(VAR)
 	} else {
@@ -416,7 +440,7 @@ func (l *Lexer) Var() StateFn {
 }
 
 func (l *Lexer) Text() StateFn {
-	l.AcceptRun(Symbols)
+	l.AcceptRunFunc(IsAllowedRune)
 
 	switch l.Current() {
 	//Primary support
@@ -437,10 +461,10 @@ func (l *Lexer) Text() StateFn {
 
 func (l *Lexer) File() StateFn {
 	l.Ignore()
-	if !l.Accept(Symbols) {
+	if !l.AcceptFunc(IsAllowedRune) {
 		return l.Action()
 	}
-	l.AcceptRun(Symbols)
+	l.AcceptRunFunc(IsAllowedRune)
 	l.Emit(FILE)
 	return l.Action()
 }

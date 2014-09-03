@@ -3,46 +3,78 @@ package sprite_sass_test
 import (
 	"fmt"
 	"io/ioutil"
-	"strings"
 	"testing"
 
 	. "github.com/drewwells/sprite_sass"
 )
 
+func TestBools(t *testing.T) {
+	if IsEOF('%', 0) != true {
+		t.Errorf("Did not detect EOF")
+	}
+}
+
 func TestSassLexer(t *testing.T) {
 
-	fvar, _ := ioutil.ReadFile("../test/var.scss")
+	fvar, _ := ioutil.ReadFile("test/var.scss")
 
 	items, err := parse(string(fvar))
+
 	if err != nil {
 		t.Errorf("Error parsing string")
 	}
-	for _, item := range items {
-		v := fmt.Sprintf("%s", item)
-		switch item.Type {
-		case VAR:
-			if !strings.HasPrefix(v, "$") {
-				t.Errorf("Invalid variable prefix")
-			}
-			if strings.Index(v, ":") > -1 {
-				t.Errorf("Invalid symbol in variable")
-			}
-		case CMD:
-			if !strings.HasPrefix(v, "sprite") {
-				t.Errorf("Invalid command name: %s", v)
-			}
-		case FILE:
-			//File globbing is a vast and varied field
-			// TODO: crib tests from http://golang.org/src/pkg/path/filepath/match_test.go
-			if !strings.HasSuffix(v, "png") {
-				t.Errorf("File safety test failed expected png$, was: %s", v)
-			}
-		default:
-			//fmt.Println(item.Type)
-		}
 
+	if e := "$red-var"; e != items[0].String() {
+		t.Errorf("Invalid VAR parsing expected: %s, was: %s",
+			e, items[0].String())
 	}
 
+	if e := "00FF00"; e != items[3].String() {
+		t.Errorf("Invalid TEXT parsing expected: %s, was: %s",
+			e, items[3].String())
+	}
+
+	if e := "sprite-map"; e != items[7].String() {
+		t.Errorf("Invalid CMD parsing expected: %s, was: %s",
+			e, items[7].String())
+	}
+
+	if e := "test/*.png"; e != items[9].String() {
+		t.Errorf("Invalid FILE parsing expected: %s, was: %s",
+			items[9].String(), e)
+	}
+
+	if e := FILE; e != items[9].Type {
+		t.Errorf("Invalid FILE type parsing expected: %s, was: %s",
+			e, items[9].Type)
+	}
+
+	if e := SUB; e != items[14].Type {
+		t.Errorf("Invalid SUB parsing expected: %s, was: %s",
+			e, items[14].Type)
+	}
+
+}
+
+func TestImport(t *testing.T) {
+	fvar, _ := ioutil.ReadFile("test/import.scss")
+	items, _ := parse(string(fvar))
+
+	if e := "background"; items[0].String() != e {
+		t.Errorf("Invalid token expected: %s, was %s", e, items[0])
+	}
+
+	if e := "purple"; items[1].String() != e {
+		t.Errorf("Invalid token expected: %s, was %s", e, items[0])
+	}
+
+	if e := "@import"; items[2].String() != e {
+		t.Errorf("Invalid token expected: %s, was %s", e, items[0])
+	}
+
+	if e := "var"; items[3].String() != e {
+		t.Errorf("Invalid token expected: %s, was %s", e, items[0])
+	}
 }
 
 // create a parser for the language.
@@ -55,21 +87,24 @@ func parse(input string) ([]Item, error) {
 	for {
 		item := lex.Next()
 		err := item.Error()
+
 		if err != nil {
 			return nil, fmt.Errorf("Error: %v (pos %d)", err, item.Pos)
 		}
 		switch item.Type {
 		case ItemEOF:
 			return status, nil
-		case CMD, SPRITE, TEXT, VAR, FILE:
+		case CMD, SPRITE, TEXT, VAR, FILE, SUB:
 			fallthrough
 		case LPAREN, RPAREN,
 			LBRACKET, RBRACKET:
 			fallthrough
+		case IMPORT:
+			fallthrough
 		case EXTRA:
 			status = append(status, *item)
 		default:
-			fmt.Printf("Default: %d %s\n", item.Pos, item)
+			//fmt.Printf("Default: %d %s\n", item.Pos, item)
 		}
 	}
 }
