@@ -16,7 +16,7 @@ func TestBools(t *testing.T) {
 
 func TestSassLexer(t *testing.T) {
 
-	fvar, _ := ioutil.ReadFile("test/var.scss")
+	fvar, _ := ioutil.ReadFile("test/_var.scss")
 
 	items, err := parse(string(fvar))
 

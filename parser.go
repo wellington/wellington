@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"path/filepath"
 
 	//. "github.com/kr/pretty"
 )
@@ -18,7 +19,7 @@ func (p Parser) Start(f string) {
 	p.Vars = make(map[string]string)
 	p.Sprites = make(map[string]ImageList)
 	fvar, _ := ioutil.ReadFile(f)
-	tokens, err := parser(string(fvar))
+	tokens, err := parser(string(fvar), filepath.Dir(f))
 
 	if err != nil {
 		log.Fatal(err)
@@ -87,9 +88,12 @@ func (p Parser) Start(f string) {
 	}
 }
 
-func parser(input string) ([]Item, error) {
+func parser(input, path string) ([]Item, error) {
 
-	var status []Item
+	var (
+		status    []Item
+		importing bool
+	)
 	lex := New(func(lex *Lexer) StateFn {
 		return lex.Action()
 	}, input)
@@ -102,26 +106,23 @@ func parser(input string) ([]Item, error) {
 		}
 		if item.Type == ItemEOF {
 			return status, nil
+		} else if item.Type == IMPORT {
+			importing = true
 		} else {
-			status = append(status, *item)
+			if importing {
+				//Load and retrieve all tokens from imported file
+				file, err := ioutil.ReadFile(fmt.Sprintf(
+					"%s/_%s.scss",
+					path, *item))
+				out, err := parser(string(file), filepath.Dir(file))
+				if err != nil {
+					panic(err)
+				}
+				status = append(status, out...)
+			} else {
+				status = append(status, *item)
+			}
 		}
-		// switch item.Type {
-		// case ItemEOF:
-		// 	return status, nil
-		// case SPRITE, TEXT, VAR, FILE:
-		// 	fallthrough
-		// case LPAREN, RPAREN,
-		// 	LBRACKET, RBRACKET:
-		// 	fallthrough
-		// case EXTRA:
-		// 	status = append(status, *item)
-		// case SUB:
-		// 	status = append(status, *item)
-		// case CMD:
-		// 	status = append(status, *item)
-		// default:
-		// 	fmt.Printf("Default: %d %s\n", item.Pos, item)
-		// }
 	}
 
 }

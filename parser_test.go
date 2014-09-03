@@ -8,5 +8,10 @@ import (
 
 func TestParser(t *testing.T) {
 	p := Parser{}
-	p.Start("test/var.scss")
+	p.Start("test/_var.scss")
+}
+
+func TestImporter(t *testing.T) {
+	p := Parser{}
+	p.Start("test/import.scss")
 }
