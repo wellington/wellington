@@ -2,9 +2,11 @@ package sprite_sass
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"path/filepath"
+	"strings"
 
 	//. "github.com/kr/pretty"
 )
@@ -15,11 +17,17 @@ type Parser struct {
 	Sprites map[string]ImageList
 }
 
-func (p Parser) Start(f string) {
+// Parser reads the tokens from the lexer and performs
+// conversions and/or substitutions for sprite*() calls.
+//
+// Parser creates a map of all variables and sprites
+// (created via sprite-map calls).
+func (p Parser) Start(f string) string {
 	p.Vars = make(map[string]string)
 	p.Sprites = make(map[string]ImageList)
 	fvar, _ := ioutil.ReadFile(f)
-	tokens, err := parser(string(fvar), filepath.Dir(f))
+	i := string(fvar)
+	tokens, input, err := parser(i, filepath.Dir(f))
 
 	if err != nil {
 		log.Fatal(err)
@@ -57,8 +65,8 @@ func (p Parser) Start(f string) {
 						//imgs.Export("generated.png")
 						cmd = ""
 					}
-					// Can this ever happen, do we care?
 				case SUB:
+					// Can this ever happen, do we care?
 					fmt.Println("SUB")
 				default:
 					//fmt.Printf("Default: %s\n", token)
@@ -76,8 +84,9 @@ func (p Parser) Start(f string) {
 				sprite := p.Sprites[fmt.Sprintf("%s", token)]
 				//Capture filename
 				i++
-				token = tokens[i]
-				tokens[i].Value = sprite.CSS(fmt.Sprintf("%s", token))
+				tokens[i].Value = sprite.CSS(fmt.Sprintf("%s",
+					token))
+				tokens[i].Write = true
 				cmd = ""
 			} else {
 				tokens[i].Value = p.Vars[token.Value]
@@ -86,14 +95,62 @@ func (p Parser) Start(f string) {
 			cmd = fmt.Sprintf("%s", token)
 		}
 	}
+
+	//Iterate through tokens looking for ones to write out
+	var (
+		output, buffer []byte
+		pos            int
+	)
+	reader := strings.NewReader(input)
+	_ = output
+
+	for _, token := range tokens {
+		//fmt.Printf("%s ", token)
+		if token.Write {
+			//Write out until the current pos
+			delta := token.Pos - pos
+			buffer = make([]byte, delta)
+			pos = token.Pos
+			for delta != -1 {
+				byte, err := reader.ReadByte()
+				if err != nil && err != io.EOF {
+					panic(err)
+				}
+				buffer = append(buffer, byte)
+				delta--
+			}
+			//fmt.Println("Buffer: " + string(buffer))
+			output = append(output, buffer...)
+			delta = 0
+			for {
+				if strings.ContainsRune(input, ';') {
+					break
+				}
+				delta++
+			}
+			if delta > 0 {
+				buffer = make([]byte, delta)
+				output = append(output, token.Value...)
+				pos += delta
+			}
+		}
+	}
+	fmt.Println("\nOutput")
+	fmt.Println(string(output))
+	return ""
 }
 
-func parser(input, path string) ([]Item, error) {
+// parser recrusively resolves all imports and tokenizes the
+// input string
+func parser(input, path string) ([]Item, string, error) {
 
 	var (
 		status    []Item
 		importing bool
+		output    []byte
+		pos       int
 	)
+
 	lex := New(func(lex *Lexer) StateFn {
 		return lex.Action()
 	}, input)
@@ -101,12 +158,15 @@ func parser(input, path string) ([]Item, error) {
 	for {
 		item := lex.Next()
 		err := item.Error()
+
 		if err != nil {
-			return nil, fmt.Errorf("Error: %v (pos %d)", err, item.Pos)
+			return nil, string(output), fmt.Errorf("Error: %v (pos %d)", err, item.Pos)
 		}
 		if item.Type == ItemEOF {
-			return status, nil
+			output = append(output, input[pos:]...)
+			return status, string(output), nil
 		} else if item.Type == IMPORT {
+			output = append(output, input[pos:item.Pos]...)
 			importing = true
 		} else {
 			if importing {
@@ -114,12 +174,17 @@ func parser(input, path string) ([]Item, error) {
 				file, err := ioutil.ReadFile(fmt.Sprintf(
 					"%s/_%s.scss",
 					path, *item))
-				out, err := parser(string(file), filepath.Dir(file))
+				pos = item.Pos + len(item.Value) + 2 //Adjust for ";
+				moreTokens, moreOutput, err := parser(string(file), filepath.Dir(path))
 				if err != nil {
 					panic(err)
 				}
-				status = append(status, out...)
+				output = append(output, moreOutput...)
+				status = append(status, moreTokens...)
+				importing = false
 			} else {
+				output = append(output, input[pos:item.Pos]...)
+				pos = item.Pos
 				status = append(status, *item)
 			}
 		}
