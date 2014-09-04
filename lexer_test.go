@@ -29,31 +29,25 @@ func TestSassLexer(t *testing.T) {
 			e, items[0].String())
 	}
 
-	if e := "00FF00"; e != items[3].String() {
+	if e := "#00FF00"; e != items[3].String() {
 		t.Errorf("Invalid TEXT parsing expected: %s, was: %s",
 			e, items[3].String())
 	}
 
-	if e := "sprite-map"; e != items[7].String() {
+	if e := "sprite-map"; e != items[9].String() {
 		t.Errorf("Invalid CMD parsing expected: %s, was: %s",
-			e, items[7].String())
+			e, items[9].String())
 	}
 
-	if e := "test/*.png"; e != items[9].String() {
+	if e := "test/*.png"; e != items[11].String() {
 		t.Errorf("Invalid FILE parsing expected: %s, was: %s",
-			items[9].String(), e)
+			items[11].String(), e)
 	}
 
-	if e := FILE; e != items[9].Type {
+	if e := FILE; e != items[11].Type {
 		t.Errorf("Invalid FILE type parsing expected: %s, was: %s",
-			e, items[9].Type)
+			e, items[11].Type)
 	}
-
-	if e := SUB; e != items[14].Type {
-		t.Errorf("Invalid SUB parsing expected: %s, was: %s",
-			e, items[14].Type)
-	}
-
 }
 
 func TestImport(t *testing.T) {
