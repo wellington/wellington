@@ -2,6 +2,7 @@ package sprite_sass
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"os"
 	"path/filepath"
@@ -69,6 +70,9 @@ func (l ImageList) Y(pos int) int {
 
 func (l ImageList) CSS(s string) string {
 	pos := l.Lookup(s)
+	if pos == -1 {
+		log.Fatal("File not found")
+	}
 	if l.OutFile == "" {
 		return ""
 	}

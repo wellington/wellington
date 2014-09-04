@@ -84,7 +84,7 @@ func (p Parser) Start(f string) string {
 				//Capture filename
 				i++
 				tokens[i].Value = sprite.CSS(fmt.Sprintf("%s",
-					token))
+					tokens[i]))
 				tokens[i].Write = true
 				tokens = append(tokens[:i-3], tokens[i:]...)
 				i = i - 3
@@ -96,8 +96,8 @@ func (p Parser) Start(f string) string {
 			cmd = fmt.Sprintf("%s", token)
 		}
 	}
-	fmt.Println(string(process(input, tokens, 0)))
-	return ""
+
+	return string(process(input, tokens, 0))
 }
 
 func process(in string, items []Item, pos int) []byte {
