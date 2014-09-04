@@ -8,11 +8,14 @@ import (
 
 func TestParser(t *testing.T) {
 	p := Parser{}
-	p.Start("test/_var.scss")
+	output := p.Start("test/_var.scss")
+	t.Errorf("\n%s", output)
 }
 
 func TestImporter(t *testing.T) {
-	//p := Parser{}
-	//p.Start("test/import.scss")
+	return
+	p := Parser{}
+	output := p.Start("test/import.scss")
+	t.Error(output)
 
 }
