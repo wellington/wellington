@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"log"
 	"path/filepath"
-	"strings"
 
 	//. "github.com/kr/pretty"
 )
@@ -60,6 +59,7 @@ func (p Parser) Start(f string) string {
 						imgs.Vertical = true
 						imgs.Combine()
 						p.Sprites[t] = imgs
+
 						//TODO: Generate filename
 						//imgs.Export("generated.png")
 						cmd = ""
@@ -84,8 +84,10 @@ func (p Parser) Start(f string) string {
 				//Capture filename
 				i++
 				tokens[i].Value = sprite.CSS(fmt.Sprintf("%s",
-					token)) + ";"
+					token))
 				tokens[i].Write = true
+				tokens = append(tokens[:i-3], tokens[i:]...)
+				i = i - 3
 				cmd = ""
 			} else {
 				tokens[i].Value = p.Vars[token.Value]
@@ -94,62 +96,50 @@ func (p Parser) Start(f string) string {
 			cmd = fmt.Sprintf("%s", token)
 		}
 	}
-
-	//Iterate through tokens looking for ones to write out
-	var (
-		output []byte
-		pos    int
-	)
-	//reader := strings.NewReader(input)
-	_ = output
-	for i, token := range tokens {
-		//fmt.Printf("%s ", token)
-		//These tokens get replaced
-		if token.Write {
-			//fmt.Printf("WRITE: %s %s\n", token, token.Type)
-			output = append(output, '~')
-			output = append(output, token.Value...)
-			output = append(output, '~')
-			fmt.Printf("\n%s\n", input[pos:])
-			pos = pos + strings.IndexRune(input[pos:], ';') - 1
-
-		} else {
-			//fmt.Printf("NOWRITE: %s TYPE:%s\n", token, token.Type)
-			if token.Type == CMD && token.Value == "sprite" {
-				//Don't write out CMDs
-				if i < len(tokens)-1 {
-					//output = append(output, '#')
-					output = append(output, input[pos:token.Pos]...)
-					//output = append(output, '#')
-					pos = tokens[i+1].Pos + 1
-				} else {
-					break
-				}
-			} else if pos < len(input) && token.Type != SUB && token.Type != LPAREN && token.Type != RPAREN { //&& token.Pos >= pos {
-				text := fmt.Sprintf("%s", token)
-				//fmt.Printf("NOWRITE: %s %s\n", text, token.Type)
-				l := len(text)
-				//output = append(output, '/', '|')
-				output = append(output, input[pos:token.Pos]...)
-				//output = append(output, '|', '/')
-				//output = append(output, '^')
-				output = append(output, text...)
-				//output = append(output, '^')
-				pos = token.Pos + l
-				if pos > len(input) {
-					panic("NOTHERE")
-					break
-				}
-			} else if token.Pos <= pos {
-				pos = token.Pos
-				//fmt.Printf("ERROR: %s %d < %d\n", token, token.Pos, pos)
-			}
-		}
-	}
-	//output = append(output, input[pos+1:]...)
-	fmt.Println("\nOutput")
-	fmt.Println(string(output))
+	fmt.Println(string(process(input, tokens, 0)))
 	return ""
+}
+
+func process(in string, items []Item, pos int) []byte {
+
+	var out []byte
+	l := len(items)
+
+	if pos >= len(in) {
+		return []byte("")
+	}
+
+	if items[0].Type == CMD && items[0].Value == "sprite" {
+		i := 1
+		//out = append(out, items[0].Value...)
+		//Skip to semicolon
+		for ; items[i].Write || i > l; i++ {
+		}
+		return append(out, process(in, items[i:], items[i].Pos)...)
+	}
+
+	if items[0].Write {
+		i := 1
+		out = append(out, items[0].Value...)
+		//Skip to semicolon
+		for ; items[i].Type != SEMIC || i > l; i++ {
+		}
+		return append(out, process(in, items[i:], pos)...)
+	}
+
+	if l > 1 {
+		if items[1].Write {
+			out = append(out, items[0].Value...)
+			out = append(out, ':', ' ')
+		} else {
+			out = append(out, in[items[0].Pos:items[1].Pos]...)
+		}
+		out = append(out, process(in, items[1:], pos)...)
+	} else {
+		out = append(out, in[items[0].Pos:]...)
+	}
+
+	return out
 }
 
 // parser recrusively resolves all imports and tokenizes the

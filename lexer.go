@@ -294,6 +294,7 @@ const (
 	RPAREN
 	LBRACKET
 	RBRACKET
+	SEMIC
 	special_end
 )
 
@@ -315,6 +316,7 @@ var Tokens = [...]string{
 	RPAREN:    ")",
 	LBRACKET:  "{",
 	RBRACKET:  "}",
+	SEMIC:     ";",
 }
 
 const (
@@ -424,6 +426,8 @@ func (l *Lexer) Paren() StateFn {
 		l.Emit(LBRACKET)
 	case "}":
 		l.Emit(RBRACKET)
+	case ";":
+		l.Emit(SEMIC)
 	}
 	return l.Action()
 }
