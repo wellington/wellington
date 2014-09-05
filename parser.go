@@ -20,7 +20,7 @@ type Parser struct {
 //
 // Parser creates a map of all variables and sprites
 // (created via sprite-map calls).
-func (p Parser) Start(f string) string {
+func (p Parser) Start(f string) []byte {
 	p.Vars = make(map[string]string)
 	p.Sprites = make(map[string]ImageList)
 	fvar, _ := ioutil.ReadFile(f)
@@ -97,7 +97,7 @@ func (p Parser) Start(f string) string {
 		}
 	}
 
-	return string(process(input, tokens, 0))
+	return process(input, tokens, 0)
 }
 
 func process(in string, items []Item, pos int) []byte {

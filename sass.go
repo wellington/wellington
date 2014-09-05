@@ -13,22 +13,43 @@ import (
 	"log"
 	"strings"
 	"unsafe"
-
-	"github.com/moovweb/gosass"
 )
 
+type Options struct {
+	OutputStyle    int
+	SourceComments bool
+	IncludePaths   []string
+	ImagePath      string
+	// eventually gonna' have things like callbacks and whatnot
+}
+
 type Context struct {
-	Sass          *gosass.Context
+	Options
+	SourceString string
+	OutputString string
+	ErrorStatus  int
+	ErrorMessage string
+}
+
+type FileContext struct {
+	Options
+	InputPath    string
+	OutputString string
+	ErrorStatus  int
+	ErrorMessage string
+}
+
+type SassContext struct {
+	Context       *Context
 	Sprites       []ImageList
 	Input, Output string
 }
 
-func (ctx Context) Compile() {
-	if ctx.Sass.SourceString == "" {
+func (ctx SassContext) Compile() {
+	if ctx.Context.SourceString == "" {
 		log.Fatal("No input/output file specified")
 	}
-	libCompile(ctx.Sass)
-
+	libCompile(ctx.Context)
 }
 
 // Constants/enums for the output style.
@@ -39,7 +60,7 @@ const (
 	COMPRESSED_STYLE
 )
 
-func libCompile(goCtx *gosass.Context) {
+func libCompile(goCtx *Context) {
 	// set up the underlying C context struct
 	cCtx := C.sass_new_context()
 	cCtx.source_string = C.CString(goCtx.SourceString)
@@ -62,7 +83,4 @@ func libCompile(goCtx *gosass.Context) {
 	goCtx.ErrorMessage = C.GoString(cCtx.error_message)
 	// don't forget to free the C context!
 	C.sass_free_context(cCtx)
-}
-
-func (ctx Context) Export() {
 }

@@ -16,7 +16,7 @@ func init() {
 
 func TestParserVar(t *testing.T) {
 	p := Parser{}
-	output := p.Start("test/_var.scss")
+	output := string(p.Start("test/_var.scss"))
 	output = rerandom.ReplaceAllString(output, "")
 
 	file, _ := ioutil.ReadFile("test/var.css")
@@ -28,7 +28,7 @@ func TestParserVar(t *testing.T) {
 func TestParserImporter(t *testing.T) {
 
 	p := Parser{}
-	output := p.Start("test/import.scss")
+	output := string(p.Start("test/import.scss"))
 	output = rerandom.ReplaceAllString(output, "")
 
 	file, _ := ioutil.ReadFile("test/import.css")
