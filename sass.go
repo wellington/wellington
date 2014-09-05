@@ -47,7 +47,7 @@ type SassContext struct {
 
 func (ctx SassContext) Compile() {
 	if ctx.Context.SourceString == "" {
-		log.Fatal("No input/output file specified")
+		log.Fatal("No input string specified")
 	}
 	libCompile(ctx.Context)
 }
@@ -81,6 +81,9 @@ func libCompile(goCtx *Context) {
 	goCtx.OutputString = C.GoString(cCtx.output_string)
 	goCtx.ErrorStatus = int(cCtx.error_status)
 	goCtx.ErrorMessage = C.GoString(cCtx.error_message)
+	if goCtx.ErrorMessage != "" {
+		log.Fatal(goCtx.ErrorMessage)
+	}
 	// don't forget to free the C context!
 	C.sass_free_context(cCtx)
 }
