@@ -1,6 +1,7 @@
 package sprite_sass
 
 import (
+	"crypto/rand"
 	"fmt"
 	"log"
 	"math"
@@ -117,13 +118,23 @@ func (l *ImageList) Decode(rest ...string) error {
 
 	// Invalidate the composite cache
 	l.Out = nil
-	var paths []string
+	var (
+		paths []string
+		ext   string
+	)
+
 	for _, r := range rest {
 		matches, err := filepath.Glob(r)
 		if err != nil {
 			panic(err)
 		}
 		paths = append(paths, matches...)
+	}
+
+	if len(paths) > 0 {
+		ext = filepath.Ext(paths[0])
+		l.OutFile = filepath.Dir(paths[0]) + "-" +
+			randString(6) + ext
 	}
 
 	for _, path := range paths {
@@ -143,7 +154,6 @@ func (l *ImageList) Combine() {
 
 	var (
 		maxW, maxH int
-		outpath    string
 	)
 
 	if l.Out != nil {
@@ -167,17 +177,26 @@ func (l *ImageList) Combine() {
 		}
 	}
 
-	outpath = filepath.Dir(l.Files[0])
-	outpath = strings.Replace(outpath, "/", "-", -1)
-
-	l.OutFile = outpath
 	l.Combined = true
+}
+
+func randString(n int) string {
+	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	var bytes = make([]byte, n)
+	rand.Read(bytes)
+	for i, b := range bytes {
+		bytes[i] = alphanum[b%byte(len(alphanum))]
+	}
+	return string(bytes)
 }
 
 // Export saves out the ImageList to a the specified file
 func (l *ImageList) Export(path string) error {
-	//This needs some sanity checking
-	l.OutFile = path
+	// Use the auto generated path if none is specified
+	if path != "" {
+		l.OutFile = path
+	}
+
 	fo, err := os.Create(path)
 	if err != nil {
 		return err
