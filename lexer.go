@@ -1,35 +1,6 @@
 /*
-Two APIs
-
-The Lexer type has two APIs, one is used byte StateFn types.  The other is
-called by the parser. These APIs are called the scanner and the parser APIs
-here.
-
-The parser API
-
-The only function the parser calls on the lexer is Next to retreive the next
-token from the input stream.  Eventually an item with type ItemEOF is returned
-at which point there are no more tokens in the stream.
-
-The scanner API
-
-The lexer uses Emit to construct complete lexemes to return from
-future/concurrent calls to Next by the parser.  The scanner uses a combination
-of methods to manipulate its position and and prepare lexemes to be emitted.
-Lexer errors are emitted to the parser using the Errorf method which keeps the
-scanner-parser interface uniform.
-
-Common lexer methods used in a scanner are the Accept[Run][Range]
-family of methods.  Accept* methods take a set and advance the
-lexer if incoming runes are in the set. The AcceptRun* subfamily
-advance the lexer as far as possible.
-
-For scanning known sequences of bytes (e.g. keywords) the
-AcceptString method avoids a lot of branching that would be
-incurred using methods that match character classes.
-
-The remaining methods provide low level functionality that can
-be combined to address corner cases.
+The lexer processes text flagging any sass extended commands
+sprite* as commands
 */
 package sprite_sass
 
