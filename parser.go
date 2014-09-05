@@ -151,6 +151,7 @@ func parser(input, path string) ([]Item, string, error) {
 		importing bool
 		output    []byte
 		pos       int
+		last      *Item
 	)
 
 	lex := New(func(lex *Lexer) StateFn {
@@ -169,6 +170,7 @@ func parser(input, path string) ([]Item, string, error) {
 			return status, string(output), nil
 		} else if item.Type == IMPORT {
 			output = append(output, input[pos:item.Pos]...)
+			last = item
 			importing = true
 		} else {
 			if importing {
@@ -182,8 +184,22 @@ func parser(input, path string) ([]Item, string, error) {
 					fullpath, _ := filepath.Abs(path)
 					log.Fatal("Cannot import path: ", fullpath)
 				}
-				pos = item.Pos + len(item.Value) + 2 //Adjust for ";
-				moreTokens, moreOutput, err := parser(string(file), filepath.Dir(path))
+				//pos = item.Pos + len(item.Value) + 2 //Adjust for ";
+				//Eat the semicolon
+				item := lex.Next()
+				pos = item.Pos + len(item.Value)
+				if item.Type != SEMIC {
+					log.Fatal("@import must be followed by ;")
+				}
+				//pos = item.Pos + len(item.Value)
+				moreTokens, moreOutput, err := parser(string(file),
+					filepath.Dir(path))
+				// Lexer needs to be adjusted for current
+				// position of end of @import
+				for i, _ := range moreTokens {
+					moreTokens[i].Pos += last.Pos
+				}
+
 				if err != nil {
 					panic(err)
 				}

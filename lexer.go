@@ -72,12 +72,13 @@ type Lexer struct {
 }
 
 // Create a new lexer. Must be given a non-nil state.
-func New(start StateFn, input string) *Lexer {
-	if start == nil {
+func New(state StateFn, input string) *Lexer {
+
+	if state == nil {
 		panic("nil start state")
 	}
 	return &Lexer{
-		state: start,
+		state: state,
 		input: input,
 		items: list.New(),
 	}
@@ -236,6 +237,7 @@ func (l *Lexer) Errorf(format string, vs ...interface{}) StateFn {
 
 // Emit the current value as an Item with the specified type.
 func (l *Lexer) Emit(t ItemType) {
+
 	l.enqueue(&Item{
 		t,
 		l.start,

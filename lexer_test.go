@@ -50,7 +50,7 @@ func TestSassLexer(t *testing.T) {
 	}
 }
 
-func TestImport(t *testing.T) {
+func TestLexerImport(t *testing.T) {
 	fvar, _ := ioutil.ReadFile("test/import.scss")
 	items, _ := parse(string(fvar))
 

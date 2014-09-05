@@ -7,7 +7,7 @@ import (
 	. "github.com/drewwells/sprite_sass"
 )
 
-func TestParser(t *testing.T) {
+func TestParserVar(t *testing.T) {
 	p := Parser{}
 	output := p.Start("test/_var.scss")
 
@@ -17,10 +17,13 @@ func TestParser(t *testing.T) {
 	}
 }
 
-func TestImporter(t *testing.T) {
+func TestParserImporter(t *testing.T) {
 
 	p := Parser{}
 	output := p.Start("test/import.scss")
-	t.Error(output)
 
+	file, _ := ioutil.ReadFile("test/import.css")
+	if string(file) != output {
+		t.Errorf("File output did not match, was:\n%s\nexpected:\n%s", output, string(file))
+	}
 }
