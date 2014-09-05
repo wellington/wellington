@@ -173,9 +173,15 @@ func parser(input, path string) ([]Item, string, error) {
 		} else {
 			if importing {
 				//Load and retrieve all tokens from imported file
-				file, err := ioutil.ReadFile(fmt.Sprintf(
+				path := fmt.Sprintf(
 					"%s/_%s.scss",
-					path, *item))
+					path, *item)
+
+				file, err := ioutil.ReadFile(path)
+				if err != nil {
+					fullpath, _ := filepath.Abs(path)
+					log.Fatal("Cannot import path: ", fullpath)
+				}
 				pos = item.Pos + len(item.Value) + 2 //Adjust for ";
 				moreTokens, moreOutput, err := parser(string(file), filepath.Dir(path))
 				if err != nil {

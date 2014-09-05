@@ -18,7 +18,7 @@ func TestParser(t *testing.T) {
 }
 
 func TestImporter(t *testing.T) {
-	return
+
 	p := Parser{}
 	output := p.Start("test/import.scss")
 	t.Error(output)
