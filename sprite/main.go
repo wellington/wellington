@@ -14,13 +14,14 @@ import "C"
 import (
 	"flag"
 	"fmt"
+	"strings"
 
 	sprite "github.com/drewwells/sprite_sass"
 )
 
 var (
-	Dir, Input, Output, Style string
-	Comments                  bool
+	Dir, Input, Output, Includes, Style string
+	Comments                            bool
 )
 
 func init() {
@@ -28,6 +29,7 @@ func init() {
 	flag.StringVar(&Input, "i", "", "Input file")
 	flag.StringVar(&Output, "output", "", "Output file")
 	flag.StringVar(&Output, "o", "", "Output file")
+	flag.StringVar(&Includes, "p", "", "SASS import path")
 	flag.StringVar(&Dir, "dir", ".", "Image directory")
 	flag.StringVar(&Dir, "d", ".", "Image directory")
 	flag.StringVar(&Style, "style", "nested", "CSS nested style")
@@ -46,6 +48,8 @@ func main() {
 		return
 	}
 
+	paths := strings.Split(Includes, ",")
+
 	style, ok := sprite.Style[Style]
 
 	if !ok {
@@ -53,9 +57,10 @@ func main() {
 	}
 
 	ctx := sprite.Context{
-		OutputStyle: style,
-		ImageDir:    Dir,
-		Comments:    Comments,
+		OutputStyle:  style,
+		ImageDir:     Dir,
+		Comments:     Comments,
+		IncludePaths: paths,
 	}
 
 	err := ctx.Run(Input, Output)

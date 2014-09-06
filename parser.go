@@ -14,13 +14,13 @@ func init() {
 }
 
 type Parser struct {
-	Input    string
-	ImageDir string
-	Output   []byte
-	Items    []Item
-	Vars     map[string]string
-	Sprites  map[string]ImageList
-	cut      [][]int
+	cut                  [][]int
+	Pwd, Input, ImageDir string
+	Includes             []string
+	Items                []Item
+	Output               []byte
+	Sprites              map[string]ImageList
+	Vars                 map[string]string
 }
 
 // Parser reads the tokens from the lexer and performs
@@ -28,7 +28,7 @@ type Parser struct {
 //
 // Parser creates a map of all variables and sprites
 // (created via sprite-map calls).
-func (p Parser) Start(f string) []byte {
+func (p *Parser) Start(f string) []byte {
 	p.Vars = make(map[string]string)
 	p.Sprites = make(map[string]ImageList)
 	fvar, err := ioutil.ReadFile(f)
@@ -36,7 +36,8 @@ func (p Parser) Start(f string) []byte {
 		panic(err)
 	}
 	i := string(fvar)
-	p.Items, p.Input, err = parser(i, filepath.Dir(f))
+
+	p.Items, p.Input, err = p.parser(filepath.Dir(f), i)
 	tokens := p.Items
 	if err != nil {
 		panic(err)
@@ -201,7 +202,7 @@ func process(in string, items []Item, pos int) []byte {
 
 // parser recrusively resolves all imports and tokenizes the
 // input string
-func parser(input, path string) ([]Item, string, error) {
+func (p *Parser) parser(pwd, input string) ([]Item, string, error) {
 
 	var (
 		status    []Item
@@ -231,26 +232,19 @@ func parser(input, path string) ([]Item, string, error) {
 			importing = true
 		} else {
 			if importing {
-				//Load and retrieve all tokens from imported file
-				path := fmt.Sprintf(
-					"%s/_%s.scss",
-					path, *item)
 
-				file, err := ioutil.ReadFile(path)
-				if err != nil {
-					fullpath, _ := filepath.Abs(path)
-					panic("Cannot import path: " + fullpath)
-				}
-				//pos = item.Pos + len(item.Value) + 2 //Adjust for ";
+				pwd, contents := p.ImportPath(pwd, fmt.Sprintf("%s", *item))
+
 				//Eat the semicolon
 				item := lex.Next()
 				pos = item.Pos + len(item.Value)
 				if item.Type != SEMIC {
 					panic("@import must be followed by ;")
 				}
-				//pos = item.Pos + len(item.Value)
-				moreTokens, moreOutput, err := parser(string(file),
-					filepath.Dir(path))
+
+				moreTokens, moreOutput, err := p.parser(
+					pwd,
+					contents)
 				// Lexer needs to be adjusted for current
 				// position of end of @import
 				for i, _ := range moreTokens {
@@ -270,5 +264,25 @@ func parser(input, path string) ([]Item, string, error) {
 			}
 		}
 	}
+}
 
+func (p *Parser) ImportPath(dir, file string) (string, string) {
+	//Load and retrieve all tokens from imported file
+	path, err := filepath.Abs(fmt.Sprintf(
+		"%s/%s.scss",
+		dir, file))
+
+	if err != nil {
+		panic(err)
+	}
+	pwd := filepath.Dir(path)
+	// Sass put _ in front of imported files
+	fpath := pwd + "/_" + filepath.Base(path)
+
+	contents, err := ioutil.ReadFile(fpath)
+	if err != nil {
+		log.Printf("Cannot import path: %s\n", fpath)
+		//panic("Cannot import path: " + fullpath)
+	}
+	return pwd, string(contents)
 }

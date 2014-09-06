@@ -59,6 +59,7 @@ func (ctx *Context) Run(ipath, opath string) error {
 	// Run the sprite_sass parser prior to passing to libsass
 	parser := Parser{
 		ImageDir: ctx.ImageDir,
+		Includes: ctx.IncludePaths,
 	}
 	bytes := parser.Start(ipath)
 	ctx.Src = string(bytes)
