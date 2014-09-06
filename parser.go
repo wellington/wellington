@@ -102,18 +102,27 @@ func (p Parser) Start(f string) []byte {
 		}
 	}
 	p.Output = process(p.Input, p.Items, 0)
-
+	p.Cut()
 	return p.Output
 }
 
-func (p Parser) Cut() {
+// Iterates through the p.cut slice deleting specified
+// portions of the output array.
+func (p *Parser) Cut() {
+	shift := 0
+	for _, c := range p.cut {
+		begin := c[0] - shift
+		end := c[1] - shift
+		shift += c[1] - c[0]
+		p.Output = append(p.Output[:begin], p.Output[end:]...)
+	}
 }
 
-func (p Parser) Mark(start, end int) {
+func (p *Parser) Mark(start, end int) {
 	p.cut = append(p.cut, []int{start, end})
 }
 
-func (p Parser) File(cmd string, pos, last int) int {
+func (p *Parser) File(cmd string, pos, last int) int {
 	item := p.Items[pos]
 	// Find the next newline, failing that find the semicolon
 	first := p.Items[last]
@@ -125,7 +134,7 @@ func (p Parser) File(cmd string, pos, last int) int {
 		}
 		i = i - 1
 		// Verify that the statement ends with semicolon
-		interest := p.Items[i+2]
+		interest := p.Items[i+3]
 		// Mark this area for deletion, since doing so now would
 		// invalidate all subsequent tokens
 		p.Mark(first.Pos, interest.Pos)
