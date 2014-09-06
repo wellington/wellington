@@ -1,13 +1,56 @@
-package sprite_sass
+package sprite_sass_test
 
 import (
 	"io/ioutil"
+	"os"
+	"strings"
 	"testing"
+
+	. "github.com/drewwells/sprite_sass"
 )
 
 func fileString(path string) string {
-	bytes, _ := ioutil.ReadFile(path)
+	bytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
 	return string(bytes)
+}
+
+func TestRun(t *testing.T) {
+
+	ipath := "test/_var.scss"
+	opath := "test/var.css.out"
+
+	parser := Parser{}
+	bytes := parser.Start(ipath)
+
+	ctx := Context{
+		OutputStyle:  NESTED_STYLE,
+		IncludePaths: make([]string, 0),
+		Src:          string(bytes),
+		Out:          "",
+	}
+
+	ctx.Run(ipath, opath)
+
+	res := fileString(opath)
+	e := fileString("test/var.css")
+	if e == "" {
+		t.Errorf("Error reading in expected file.")
+	}
+
+	res = rerandom.ReplaceAllString(res, "")
+	if strings.TrimSpace(res) !=
+		strings.TrimSpace(e) {
+		t.Errorf("Processor file did not match was: "+
+			"\n~%s~\n exp:\n~%s~", res, e)
+	}
+
+	// Clean up files
+	defer func() {
+		os.Remove(opath)
+	}()
 }
 
 func TestCompile(t *testing.T) {

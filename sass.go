@@ -11,6 +11,7 @@ import "C"
 
 import (
 	"errors"
+	"io/ioutil"
 	"log"
 	"strings"
 	"unsafe"
@@ -36,6 +37,25 @@ const (
 	COMPRESSED_STYLE
 )
 
+// Run uses the specified pathnames to read in sass and
+// export out css with generated spritesheets based on
+// the Context rules
+func (ctx *Context) Run(ipath, opath string) {
+
+	if ipath == "" || opath == "" {
+		log.Fatal("Input or output files were not specified")
+	}
+
+	ctx.Compile()
+
+	err := ioutil.WriteFile(opath, []byte(ctx.Out), 0777)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// Compile passes off the sass compliant string to
+// libsass for generating the resulting css file.
 func (ctx *Context) Compile() error {
 
 	if ctx.Precision == 0 {
