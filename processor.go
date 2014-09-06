@@ -13,7 +13,7 @@ type Processor struct {
 }
 
 func (p Processor) Run() {
-	fmt.Printf("% #v\n", p)
+
 	if p.Ipath == "" || p.Opath == "" {
 		log.Fatal("Must provide input and output files")
 	}
@@ -32,6 +32,6 @@ func (p Processor) Run() {
 		},
 	}
 	ctx.Compile()
-	fmt.Println("Hello")
+
 	fmt.Println(ctx.Context.OutputString)
 }

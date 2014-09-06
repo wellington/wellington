@@ -1,8 +1,10 @@
 $red-var: red;
 $hex: #00FF00;
-background: $hex;
-$hex: #00DD00;
-$images: sprite-map("test/*.png");
-background: sprite($images, "139");
-background: sprite($images, "140");
-font-size: 10pt;
+div {
+    background: $hex;
+    $hex: #00DD00;
+    $images: sprite-map("test/*.png");
+    background: sprite($images, "139");
+    background: sprite($images, "140");
+    font-size: 10pt;
+}
