@@ -10,46 +10,22 @@ package sprite_sass
 import "C"
 
 import (
+	"errors"
 	"log"
 	"strings"
 	"unsafe"
 )
 
-type Options struct {
-	OutputStyle    int
-	SourceComments bool
-	IncludePaths   []string
-	ImagePath      string
-	// eventually gonna' have things like callbacks and whatnot
-}
-
+// Context handles the interactions with libsass.  Context
+// exposes libsass options that are available.
 type Context struct {
-	Options
-	SourceString string
-	OutputString string
-	ErrorStatus  int
-	ErrorMessage string
-}
-
-type FileContext struct {
-	Options
-	InputPath    string
-	OutputString string
-	ErrorStatus  int
-	ErrorMessage string
-}
-
-type SassContext struct {
-	Context       *Context
+	OutputStyle   int
+	Precision     int
+	Comments      bool
+	IncludePaths  []string
+	ImagePath     string
+	Src, Out, Map string
 	Sprites       []ImageList
-	Input, Output string
-}
-
-func (ctx SassContext) Compile() {
-	if ctx.Context.SourceString == "" {
-		log.Fatal("No input string specified")
-	}
-	libCompile(ctx.Context)
 }
 
 // Constants/enums for the output style.
@@ -60,31 +36,48 @@ const (
 	COMPRESSED_STYLE
 )
 
-func libCompile(goCtx *Context) {
+func (ctx *Context) Compile() error {
+
+	if ctx.Precision == 0 {
+		ctx.Precision = 5
+	}
+
+	if ctx.Src == "" {
+		log.Fatal("No input string specified")
+	}
+
 	// set up the underlying C context struct
 	cCtx := C.sass_new_context()
-	cCtx.source_string = C.CString(goCtx.SourceString)
-	defer C.free(unsafe.Pointer(cCtx.source_string))
-	cCtx.options.output_style = C.int(goCtx.Options.OutputStyle)
-	if goCtx.Options.SourceComments {
+	cCtx.source_string = C.CString(ctx.Src)
+	cCtx.options.output_style = C.int(ctx.OutputStyle)
+	if ctx.Comments {
 		cCtx.options.source_comments = C.int(1)
 	} else {
 		cCtx.options.source_comments = C.int(0)
 	}
-	cCtx.options.include_paths = C.CString(strings.Join(goCtx.Options.IncludePaths, ":"))
-	defer C.free(unsafe.Pointer(cCtx.options.include_paths))
-	cCtx.options.image_path = C.CString(goCtx.Options.ImagePath)
-	defer C.free(unsafe.Pointer(cCtx.options.image_path))
-	// call the underlying C compile function to populate the C context
+	cCtx.options.include_paths = C.CString(strings.Join(ctx.IncludePaths, ":"))
+	cCtx.options.image_path = C.CString(ctx.ImagePath)
+	cCtx.options.precision = C.int(ctx.Precision)
+
+	defer func() {
+		C.free(unsafe.Pointer(cCtx.source_string))
+		C.free(unsafe.Pointer(cCtx.options.include_paths))
+		C.free(unsafe.Pointer(cCtx.options.image_path))
+		C.sass_free_context(cCtx)
+	}()
+
+	// Call the libsass compile function to populate the C context
 	C.sass_compile(cCtx)
-	// extract values from the C context to populate the Go context object
-	goCtx.OutputString = C.GoString(cCtx.output_string)
-	goCtx.ErrorStatus = int(cCtx.error_status)
-	goCtx.ErrorMessage = C.GoString(cCtx.error_message)
-	if goCtx.ErrorMessage != "" {
-		panic(goCtx.ErrorMessage)
-		log.Fatal(goCtx.ErrorMessage)
+
+	// Populate Gocontext with results from c compiler
+	ctx.Out = C.GoString(cCtx.output_string)
+	ctx.Map = C.GoString(cCtx.source_map_string)
+	errString := strings.TrimSpace(C.GoString(cCtx.error_message))
+	// Create Go style errors
+	err := errors.New(errString)
+	if err.Error() == "" {
+		err = nil
 	}
-	// don't forget to free the C context!
-	C.sass_free_context(cCtx)
+
+	return err
 }

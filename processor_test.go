@@ -41,6 +41,7 @@ func TestProcessor(t *testing.T) {
 			"\n~%s~\n exp:\n~%s~", res, exp)
 	}
 
+	// Clean up files
 	defer func() {
 		os.Remove(p.Opath)
 	}()
