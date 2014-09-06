@@ -82,6 +82,7 @@ func libCompile(goCtx *Context) {
 	goCtx.ErrorStatus = int(cCtx.error_status)
 	goCtx.ErrorMessage = C.GoString(cCtx.error_message)
 	if goCtx.ErrorMessage != "" {
+		panic(goCtx.ErrorMessage)
 		log.Fatal(goCtx.ErrorMessage)
 	}
 	// don't forget to free the C context!
