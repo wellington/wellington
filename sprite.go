@@ -26,11 +26,9 @@ type ImageList struct {
 func (l ImageList) Lookup(f string) int {
 	var base string
 	for i, v := range l.Files {
-
 		base = filepath.Base(v)
 		base = strings.TrimSuffix(base, ".png")
 		base = strings.TrimSuffix(base, ".jpg")
-
 		if f == v {
 			return i
 			//Do partial matches, for now

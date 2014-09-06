@@ -9,10 +9,17 @@ import (
 	//. "github.com/kr/pretty"
 )
 
+func init() {
+	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
+}
+
 type Parser struct {
-	Output  string
+	Input   string
+	Output  []byte
+	Items   []Item
 	Vars    map[string]string
 	Sprites map[string]ImageList
+	cut     [][]int
 }
 
 // Parser reads the tokens from the lexer and performs
@@ -23,21 +30,25 @@ type Parser struct {
 func (p Parser) Start(f string) []byte {
 	p.Vars = make(map[string]string)
 	p.Sprites = make(map[string]ImageList)
-	fvar, _ := ioutil.ReadFile(f)
-	i := string(fvar)
-	tokens, input, err := parser(i, filepath.Dir(f))
-
+	fvar, err := ioutil.ReadFile(f)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
+	}
+	i := string(fvar)
+	p.Items, p.Input, err = parser(i, filepath.Dir(f))
+	tokens := p.Items
+	if err != nil {
+		panic(err)
 	}
 	var (
-		t, cmd string
+		def, cmd string
 	)
 	for i := 0; i < len(tokens); i = i + 1 {
 		token := tokens[i]
+		last := i
 		// Generate list of vars
 		if token.Type == VAR {
-			t = fmt.Sprintf("%s", token)
+			def = fmt.Sprintf("%s", token)
 			val := ""
 			nested := false
 			for {
@@ -52,18 +63,9 @@ func (p Parser) Start(f string) []byte {
 					cmd = fmt.Sprintf("%s", token)
 					val += cmd
 				case FILE:
-					if cmd == "sprite-map" {
-						imgs := ImageList{}
-						glob := fmt.Sprintf("%s", token)
-						imgs.Decode(glob)
-						imgs.Vertical = true
-						imgs.Combine()
-						p.Sprites[t] = imgs
-
-						//TODO: Generate filename
-						//imgs.Export("generated.png")
-						cmd = ""
-					}
+					i = p.File(cmd, i, last)
+					def = ""
+					cmd = ""
 				case SUB:
 					// Can this ever happen, do we care?
 					fmt.Println("SUB")
@@ -71,11 +73,14 @@ func (p Parser) Start(f string) []byte {
 					//fmt.Printf("Default: %s\n", token)
 					val += fmt.Sprintf("%s", token)
 				}
-				if !nested && token.Type != CMD {
+
+				if !nested && tokens[i].Type != CMD {
 					break
 				}
 			}
-			p.Vars[t] = val
+			if def != "" {
+				p.Vars[def] = val
+			}
 			//Replace subsitution tokens
 		} else if token.Type == SUB {
 			if cmd == "sprite" {
@@ -83,8 +88,8 @@ func (p Parser) Start(f string) []byte {
 				sprite := p.Sprites[fmt.Sprintf("%s", token)]
 				//Capture filename
 				i++
-				tokens[i].Value = sprite.CSS(fmt.Sprintf("%s",
-					tokens[i]))
+				name := fmt.Sprintf("%s", tokens[i])
+				tokens[i].Value = sprite.CSS(name)
 				tokens[i].Write = true
 				tokens = append(tokens[:i-3], tokens[i:]...)
 				i = i - 3
@@ -96,8 +101,47 @@ func (p Parser) Start(f string) []byte {
 			cmd = fmt.Sprintf("%s", token)
 		}
 	}
+	p.Output = process(p.Input, p.Items, 0)
 
-	return process(input, tokens, 0)
+	return p.Output
+}
+
+func (p Parser) Cut() {
+}
+
+func (p Parser) Mark(start, end int) {
+	p.cut = append(p.cut, []int{start, end})
+}
+
+func (p Parser) File(cmd string, pos, last int) int {
+	item := p.Items[pos]
+	// Find the next newline, failing that find the semicolon
+	first := p.Items[last]
+
+	i := pos
+
+	if cmd == "sprite-map" {
+		for ; p.Items[i].Type != RPAREN; i++ {
+		}
+		i = i - 1
+		// Verify that the statement ends with semicolon
+		interest := p.Items[i+2]
+		// Mark this area for deletion, since doing so now would
+		// invalidate all subsequent tokens
+		p.Mark(first.Pos, interest.Pos)
+		//p.Input = p.Input[:first.Pos] + p.Input[interest.Pos:]
+
+		imgs := ImageList{}
+		glob := fmt.Sprintf("%s", item)
+		name := fmt.Sprintf("%s", p.Items[last])
+		imgs.Decode(glob)
+		imgs.Vertical = true
+		imgs.Combine()
+		p.Sprites[name] = imgs
+		//TODO: Generate filename
+		//imgs.Export("generated.png")
+	}
+	return i
 }
 
 func process(in string, items []Item, pos int) []byte {
@@ -127,7 +171,10 @@ func process(in string, items []Item, pos int) []byte {
 		return append(out, process(in, items[i:], pos)...)
 	}
 
-	if l > 1 {
+	// TODO: There's an error where items[1] has an invalid
+	// position.
+	if l > 1 && items[1].Pos > items[0].Pos {
+
 		if items[1].Write {
 			out = append(out, items[0].Value...)
 			out = append(out, ':', ' ')
@@ -182,14 +229,14 @@ func parser(input, path string) ([]Item, string, error) {
 				file, err := ioutil.ReadFile(path)
 				if err != nil {
 					fullpath, _ := filepath.Abs(path)
-					log.Fatal("Cannot import path: ", fullpath)
+					panic("Cannot import path: " + fullpath)
 				}
 				//pos = item.Pos + len(item.Value) + 2 //Adjust for ";
 				//Eat the semicolon
 				item := lex.Next()
 				pos = item.Pos + len(item.Value)
 				if item.Type != SEMIC {
-					log.Fatal("@import must be followed by ;")
+					panic("@import must be followed by ;")
 				}
 				//pos = item.Pos + len(item.Value)
 				moreTokens, moreOutput, err := parser(string(file),
