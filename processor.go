@@ -1,8 +1,8 @@
 package sprite_sass
 
 import (
-	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 )
 
@@ -20,7 +20,7 @@ func (p Processor) Run() {
 
 	parser := Parser{}
 	bytes := parser.Start(p.Ipath)
-	fmt.Println(string(bytes))
+
 	ctx := SassContext{
 		Context: &Context{
 			Options: Options{
@@ -33,5 +33,8 @@ func (p Processor) Run() {
 	}
 	ctx.Compile()
 
-	fmt.Println(ctx.Context.OutputString)
+	err := ioutil.WriteFile(p.Opath, []byte(ctx.Context.OutputString), 0777)
+	if err != nil {
+		panic(err)
+	}
 }
