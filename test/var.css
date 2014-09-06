@@ -2,7 +2,7 @@ $red-var: red;
 $hex: #00FF00;
 background: $hex;
 $hex: #00DD00;
-$images: sprite-map("test/*.png");
+
 background: url("test") 0px 0px;
 background: url("test") 0px -139px;
 font-size: 10pt;
