@@ -14,12 +14,13 @@ func init() {
 }
 
 type Parser struct {
-	Input   string
-	Output  []byte
-	Items   []Item
-	Vars    map[string]string
-	Sprites map[string]ImageList
-	cut     [][]int
+	Input    string
+	ImageDir string
+	Output   []byte
+	Items    []Item
+	Vars     map[string]string
+	Sprites  map[string]ImageList
+	cut      [][]int
 }
 
 // Parser reads the tokens from the lexer and performs

@@ -24,7 +24,7 @@ type Context struct {
 	Precision     int
 	Comments      bool
 	IncludePaths  []string
-	ImagePath     string
+	ImageDir      string
 	Src, Out, Map string
 	Sprites       []ImageList
 }
@@ -37,21 +37,39 @@ const (
 	COMPRESSED_STYLE
 )
 
+var Style map[string]int
+
+func init() {
+	Style = make(map[string]int)
+	Style["nested"] = NESTED_STYLE
+	Style["expanded"] = EXPANDED_STYLE
+	Style["compact"] = COMPACT_STYLE
+	Style["compressed"] = COMPRESSED_STYLE
+}
+
 // Run uses the specified pathnames to read in sass and
 // export out css with generated spritesheets based on
-// the Context rules
-func (ctx *Context) Run(ipath, opath string) {
+// the ImageDir option.
+func (ctx *Context) Run(ipath, opath string) error {
 
 	if ipath == "" || opath == "" {
 		log.Fatal("Input or output files were not specified")
 	}
 
-	ctx.Compile()
-
-	err := ioutil.WriteFile(opath, []byte(ctx.Out), 0777)
-	if err != nil {
-		panic(err)
+	// Run the sprite_sass parser prior to passing to libsass
+	parser := Parser{
+		ImageDir: ctx.ImageDir,
 	}
+	bytes := parser.Start(ipath)
+	ctx.Src = string(bytes)
+
+	err := ctx.Compile()
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(opath, []byte(ctx.Out), 0777)
+	return err
 }
 
 // Compile passes off the sass compliant string to
@@ -76,7 +94,7 @@ func (ctx *Context) Compile() error {
 		cCtx.options.source_comments = C.int(0)
 	}
 	cCtx.options.include_paths = C.CString(strings.Join(ctx.IncludePaths, ":"))
-	cCtx.options.image_path = C.CString(ctx.ImagePath)
+	cCtx.options.image_path = C.CString(ctx.ImageDir)
 	cCtx.options.precision = C.int(ctx.Precision)
 
 	defer func() {

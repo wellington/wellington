@@ -22,13 +22,9 @@ func TestRun(t *testing.T) {
 	ipath := "test/_var.scss"
 	opath := "test/var.css.out"
 
-	parser := Parser{}
-	bytes := parser.Start(ipath)
-
 	ctx := Context{
 		OutputStyle:  NESTED_STYLE,
 		IncludePaths: make([]string, 0),
-		Src:          string(bytes),
 		Out:          "",
 	}
 
