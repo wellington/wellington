@@ -209,7 +209,6 @@ func (l *Lexer) Errorf(format string, vs ...interface{}) StateFn {
 
 // Emit the current value as an Item with the specified type.
 func (l *Lexer) Emit(t ItemType) {
-
 	l.enqueue(&Item{
 		t,
 		l.start,
@@ -253,6 +252,7 @@ const (
 	ItemEOF ItemType = math.MaxUint16 - iota
 	ItemError
 	IMPORT
+	INCLUDE
 	EXTRA
 	CMD
 	VAR
@@ -277,6 +277,7 @@ var Tokens = [...]string{
 	ItemEOF:   "eof",
 	ItemError: "error",
 	IMPORT:    "@import",
+	INCLUDE:   "@include",
 	EXTRA:     "extra",
 	CMD:       "command",
 	VAR:       "variable",
@@ -375,7 +376,7 @@ func IsSymbol(r rune) bool {
 }
 
 func IsSpace(r rune) bool {
-	return strings.ContainsRune(" \n", r)
+	return unicode.IsSpace(r)
 }
 
 func IsPrintable(r rune) bool {
@@ -385,11 +386,12 @@ func IsPrintable(r rune) bool {
 func (l *Lexer) Directive() StateFn {
 
 	l.AcceptRunFunc(IsAllowedRune)
-
 	switch l.Current() {
 	case "@import":
 		l.Emit(IMPORT)
-		break
+	case "@include":
+		fmt.Println("EMITTED")
+		l.Emit(INCLUDE)
 	}
 	return l.Action()
 }
@@ -422,7 +424,15 @@ func (l *Lexer) Comment() StateFn {
 			}
 			last = r
 		}
-		//l.Accept("*/")
+		l.Emit(CMT)
+	} else if r == '/' {
+		// Single line comments
+		for {
+			r, _ := l.Advance()
+			if !unicode.IsGraphic(r) {
+				break
+			}
+		}
 		l.Emit(CMT)
 	}
 	return l.Action()
@@ -449,7 +459,7 @@ func (l *Lexer) Text() StateFn {
 	//Primary support
 	case "sprite", "sprite-file", "sprite-height",
 		"sprite-map", "sprite-path", "sprite-position",
-		"sprite-width", "sprite-url":
+		"sprite-width", "sprite-url", "sprite-dimensions":
 		l.Emit(CMD)
 		return l.Action()
 	//Tertiary support
