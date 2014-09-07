@@ -57,7 +57,6 @@ func (ctx *Context) Run(ipath, opath string) error {
 		log.Fatal("Input or output files were not specified")
 	}
 	ctx.IncludePaths = append(ctx.IncludePaths, filepath.Dir(ipath))
-
 	// Run the sprite_sass parser prior to passing to libsass
 	parser := Parser{
 		ImageDir: ctx.ImageDir,

@@ -149,7 +149,7 @@ func (p *Parser) File(cmd string, pos, last int) int {
 		imgs := ImageList{}
 		glob := fmt.Sprintf("%s", item)
 		name := fmt.Sprintf("%s", p.Items[last])
-		imgs.Decode(glob)
+		imgs.Decode(p.ImageDir + "/" + glob)
 		imgs.Vertical = true
 		imgs.Combine()
 		p.Sprites[name] = imgs

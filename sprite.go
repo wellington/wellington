@@ -23,6 +23,15 @@ type ImageList struct {
 	Vertical bool
 }
 
+func (l ImageList) String() string {
+	files := ""
+	for _, file := range l.Files {
+		files += strings.TrimSuffix(filepath.Base(file),
+			filepath.Ext(file)) + " "
+	}
+	return files
+}
+
 func (l ImageList) Lookup(f string) int {
 	var base string
 	for i, v := range l.Files {
@@ -70,7 +79,8 @@ func (l ImageList) Y(pos int) int {
 func (l ImageList) CSS(s string) string {
 	pos := l.Lookup(s)
 	if pos == -1 {
-		log.Fatal("File not found")
+		log.Printf("File not found: %s\n Try one of: %s",
+			s, l)
 	}
 	if l.OutFile == "" {
 		return ""
@@ -143,6 +153,7 @@ func (l *ImageList) Decode(rest ...string) error {
 		l.Images = append(l.Images, img)
 		l.Files = append(l.Files, path)
 	}
+
 	return nil
 }
 
