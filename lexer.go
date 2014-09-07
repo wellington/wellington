@@ -415,9 +415,9 @@ func (l *Lexer) Comment() StateFn {
 	if r == '*' {
 		// Look for the next '/' preceded with '*'
 		var last rune
-		for i := 0; i < 50; i++ {
+		for {
 			r, _ := l.Advance()
-			if r == '/' && last == '*' {
+			if last == '*' && r == '/' {
 				break
 			}
 			last = r

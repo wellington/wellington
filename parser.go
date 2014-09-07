@@ -108,6 +108,7 @@ func (p *Parser) Start(f string) []byte {
 	}
 	p.Output = process(p.Input, p.Items, 0)
 	p.Cut()
+
 	return p.Output
 }
 
@@ -224,7 +225,8 @@ func (p *Parser) parser(pwd, input string) ([]Item, string, error) {
 		err := item.Error()
 
 		if err != nil {
-			return nil, string(output), fmt.Errorf("Error: %v (pos %d)", err, item.Pos)
+			return nil, string(output),
+				fmt.Errorf("Error: %v (pos %d)", err, item.Pos)
 		}
 		if item.Type == ItemEOF {
 			output = append(output, input[pos:]...)
@@ -233,6 +235,10 @@ func (p *Parser) parser(pwd, input string) ([]Item, string, error) {
 			output = append(output, input[pos:item.Pos]...)
 			last = item
 			importing = true
+		} else if item.Type == CMT {
+			output = append(output, input[pos:item.Pos]...)
+			pos = item.Pos
+			status = append(status, *item)
 		} else {
 			if importing {
 
@@ -308,5 +314,6 @@ func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 		}
 	}
 
-	return pwd, string(contents), errors.New("Could not import: " + file + "\nTried:\n" + baseerr)
+	return pwd, string(contents), errors.New("Could not import: " +
+		file + "\nTried:\n" + baseerr)
 }
