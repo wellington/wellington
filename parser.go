@@ -1,10 +1,12 @@
 package sprite_sass
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"path/filepath"
+	"strings"
 
 	//. "github.com/kr/pretty"
 )
@@ -233,8 +235,11 @@ func (p *Parser) parser(pwd, input string) ([]Item, string, error) {
 		} else {
 			if importing {
 
-				pwd, contents := p.ImportPath(pwd, fmt.Sprintf("%s", *item))
+				pwd, contents, err := p.ImportPath(pwd, fmt.Sprintf("%s", *item))
 
+				if err != nil {
+					log.Println(err)
+				}
 				//Eat the semicolon
 				item := lex.Next()
 				pos = item.Pos + len(item.Value)
@@ -266,7 +271,8 @@ func (p *Parser) parser(pwd, input string) ([]Item, string, error) {
 	}
 }
 
-func (p *Parser) ImportPath(dir, file string) (string, string) {
+func (p *Parser) ImportPath(dir, file string) (string, string, error) {
+	baseerr := ""
 	//Load and retrieve all tokens from imported file
 	path, err := filepath.Abs(fmt.Sprintf(
 		"%s/%s.scss",
@@ -278,11 +284,28 @@ func (p *Parser) ImportPath(dir, file string) (string, string) {
 	pwd := filepath.Dir(path)
 	// Sass put _ in front of imported files
 	fpath := pwd + "/_" + filepath.Base(path)
-
 	contents, err := ioutil.ReadFile(fpath)
-	if err != nil {
-		log.Printf("Cannot import path: %s\n", fpath)
-		//panic("Cannot import path: " + fullpath)
+	if err == nil {
+		return pwd, string(contents), nil
 	}
-	return pwd, string(contents)
+	baseerr += fpath + "\n"
+
+	if strings.HasSuffix(err.Error(), "no such file or directory") {
+		// Look through the import path for the file
+		for _, lib := range p.Includes {
+			path, err := filepath.Abs(lib + "/" + file)
+			if err != nil {
+				panic(err)
+			}
+			pwd := filepath.Dir(path)
+			fpath = pwd + "/_" + filepath.Base(path) + ".scss"
+			contents, err := ioutil.ReadFile(fpath)
+			baseerr += fpath + "\n"
+			if err == nil {
+				return pwd, string(contents), nil
+			}
+		}
+	}
+
+	return pwd, string(contents), errors.New("Could not import: " + file + "\nTried:\n" + baseerr)
 }

@@ -42,13 +42,11 @@ func main() {
 	flag.Parse()
 
 	if Input == "" {
-		fmt.Println("Please specify input and output filepaths.\n")
-		fmt.Println("Available options:")
+		fmt.Println("Please specify input and output filepaths.")
+		fmt.Println("\nAvailable options:")
 		flag.PrintDefaults()
 		return
 	}
-
-	paths := strings.Split(Includes, ",")
 
 	style, ok := sprite.Style[Style]
 
@@ -57,15 +55,17 @@ func main() {
 	}
 
 	ctx := sprite.Context{
-		OutputStyle:  style,
-		ImageDir:     Dir,
-		Comments:     Comments,
-		IncludePaths: paths,
+		OutputStyle: style,
+		ImageDir:    Dir,
+		Comments:    Comments,
+	}
+
+	if Includes != "" {
+		ctx.IncludePaths = strings.Split(Includes, ",")
 	}
 
 	err := ctx.Run(Input, Output)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%+v\n", ctx)
 }

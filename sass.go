@@ -13,6 +13,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"log"
+	"path/filepath"
 	"strings"
 	"unsafe"
 )
@@ -55,6 +56,7 @@ func (ctx *Context) Run(ipath, opath string) error {
 	if ipath == "" || opath == "" {
 		log.Fatal("Input or output files were not specified")
 	}
+	ctx.IncludePaths = append(ctx.IncludePaths, filepath.Dir(ipath))
 
 	// Run the sprite_sass parser prior to passing to libsass
 	parser := Parser{
