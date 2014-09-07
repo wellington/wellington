@@ -37,3 +37,16 @@ func TestParserImporter(t *testing.T) {
 		t.Errorf("File output did not match, was:\n%s\nexpected:\n%s", output, string(file))
 	}
 }
+
+func TestParseComment(t *testing.T) {
+	p := Parser{}
+
+	res := string(p.Start("test/_comment.scss"))
+	res = strings.TrimSpace(rerandom.ReplaceAllString(res, ""))
+	e := strings.TrimSpace(fileString("test/comment.parser"))
+
+	if res != e {
+		t.Errorf("Comment parsing failed was:"+
+			"%s\n exp:%s\n", res, e)
+	}
+}

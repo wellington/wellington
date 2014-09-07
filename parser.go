@@ -73,6 +73,7 @@ func (p *Parser) Start(f string) []byte {
 				case SUB:
 					// Can this ever happen, do we care?
 					fmt.Println("SUB")
+					fmt.Println(p.Input[token.Pos-100 : token.Pos+100])
 				default:
 					//fmt.Printf("Default: %s\n", token)
 					val += fmt.Sprintf("%s", token)

@@ -156,7 +156,8 @@ func (l *Lexer) AcceptRange(tab *unicode.RangeTable) (ok bool) {
 	return
 }
 
-// AcceptRun advances l's position as long as the current rune is in valid.
+// AcceptRun advances l's position as long as the current
+// rune is in valid.
 func (l *Lexer) AcceptRun(valid string) (n int) {
 	for l.Accept(valid) {
 		n++
@@ -268,6 +269,7 @@ const (
 	LBRACKET
 	RBRACKET
 	SEMIC
+	CMT
 	special_end
 )
 
@@ -290,6 +292,7 @@ var Tokens = [...]string{
 	LBRACKET:  "{",
 	RBRACKET:  "}",
 	SEMIC:     ";",
+	CMT:       "comment",
 }
 
 const (
@@ -350,6 +353,8 @@ func (l *Lexer) Action() StateFn {
 			l.Ignore()
 		case IsSymbol(r):
 			return l.Paren()
+		case r == '/':
+			return l.Comment()
 		case r == '@':
 			return l.Directive()
 		case r == '"' || r == '\'':
@@ -401,6 +406,24 @@ func (l *Lexer) Paren() StateFn {
 		l.Emit(RBRACKET)
 	case ";":
 		l.Emit(SEMIC)
+	}
+	return l.Action()
+}
+
+func (l *Lexer) Comment() StateFn {
+	r, _ := l.Peek()
+	if r == '*' {
+		// Look for the next '/' preceded with '*'
+		var last rune
+		for i := 0; i < 50; i++ {
+			r, _ := l.Advance()
+			if r == '/' && last == '*' {
+				break
+			}
+			last = r
+		}
+		l.AcceptRun("*/")
+		l.Emit(CMT)
 	}
 	return l.Action()
 }
