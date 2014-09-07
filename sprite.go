@@ -82,7 +82,7 @@ func (l ImageList) CSS(s string) string {
 			s, l)
 	}
 	if l.OutFile == "" {
-		return ""
+		return "transparent"
 	}
 	return fmt.Sprintf(`url("%s") %dpx %dpx`,
 		l.OutFile, -l.X(pos), -l.Y(pos))
