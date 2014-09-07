@@ -422,7 +422,7 @@ func (l *Lexer) Comment() StateFn {
 			}
 			last = r
 		}
-		l.AcceptRun("*/")
+		//l.Accept("*/")
 		l.Emit(CMT)
 	}
 	return l.Action()

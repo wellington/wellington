@@ -27,7 +27,6 @@ func TestParserVar(t *testing.T) {
 }
 
 func TestParserImporter(t *testing.T) {
-
 	p := Parser{}
 	output := string(p.Start("test/import.scss"))
 	output = rerandom.ReplaceAllString(output, "")
@@ -40,7 +39,6 @@ func TestParserImporter(t *testing.T) {
 
 func TestParseComment(t *testing.T) {
 	p := Parser{}
-
 	res := string(p.Start("test/_comment.scss"))
 	res = strings.TrimSpace(rerandom.ReplaceAllString(res, ""))
 	e := strings.TrimSpace(fileString("test/comment.parser"))

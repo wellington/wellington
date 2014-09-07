@@ -31,6 +31,9 @@ type Parser struct {
 // Parser creates a map of all variables and sprites
 // (created via sprite-map calls).
 func (p *Parser) Start(f string) []byte {
+	if p.ImageDir == "" {
+		p.ImageDir = "."
+	}
 	p.Vars = make(map[string]string)
 	p.Sprites = make(map[string]ImageList)
 	fvar, err := ioutil.ReadFile(f)
@@ -73,7 +76,8 @@ func (p *Parser) Start(f string) []byte {
 				case SUB:
 					// Can this ever happen, do we care?
 					fmt.Println("SUB")
-					fmt.Println(p.Input[token.Pos-100 : token.Pos+100])
+					// fmt.Println(p.Input[token.Pos-100 : token.Pos+100])
+					// fmt.Println(token)
 				default:
 					//fmt.Printf("Default: %s\n", token)
 					val += fmt.Sprintf("%s", token)
@@ -279,12 +283,10 @@ func (p *Parser) parser(pwd, input string) ([]Item, string, error) {
 }
 
 func (p *Parser) ImportPath(dir, file string) (string, string, error) {
+	// fmt.Println("Importing: " + file)
 	baseerr := ""
 	//Load and retrieve all tokens from imported file
-	path, err := filepath.Abs(fmt.Sprintf(
-		"%s/%s.scss",
-		dir, file))
-
+	path, err := filepath.Abs(fmt.Sprintf("%s/%s.scss", dir, file))
 	if err != nil {
 		panic(err)
 	}
@@ -296,7 +298,6 @@ func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 		return pwd, string(contents), nil
 	}
 	baseerr += fpath + "\n"
-
 	if strings.HasSuffix(err.Error(), "no such file or directory") {
 		// Look through the import path for the file
 		for _, lib := range p.Includes {
