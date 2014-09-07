@@ -14,6 +14,7 @@ import "C"
 import (
 	"flag"
 	"fmt"
+	"log"
 	"strings"
 
 	sprite "github.com/drewwells/sprite_sass"
@@ -66,6 +67,6 @@ func main() {
 
 	err := ctx.Run(Input, Output)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 }

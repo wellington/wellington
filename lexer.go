@@ -202,7 +202,6 @@ func (l *Lexer) Errorf(format string, vs ...interface{}) StateFn {
 		ItemError,
 		l.start,
 		fmt.Sprintf(format, vs...),
-		false,
 	})
 	return nil
 }
@@ -213,7 +212,6 @@ func (l *Lexer) Emit(t ItemType) {
 		t,
 		l.start,
 		l.input[l.start:l.pos],
-		false,
 	})
 	l.start = l.pos
 }
@@ -226,7 +224,7 @@ func (l *Lexer) Next() (i *Item) {
 			return head
 		}
 		if l.state == nil {
-			return &Item{ItemEOF, l.start, "", false}
+			return &Item{ItemEOF, l.start, ""}
 		}
 		l.state = l.state(l)
 	}
@@ -315,7 +313,6 @@ type Item struct {
 	Type  ItemType
 	Pos   int
 	Value string
-	Write bool
 }
 
 func (i Item) Error() error {
@@ -347,7 +344,6 @@ func (l *Lexer) Action() StateFn {
 				ItemEOF,
 				l.start,
 				"",
-				false,
 			})
 			return nil
 		case IsSpace(r):
@@ -390,7 +386,6 @@ func (l *Lexer) Directive() StateFn {
 	case "@import":
 		l.Emit(IMPORT)
 	case "@include":
-		fmt.Println("EMITTED")
 		l.Emit(INCLUDE)
 	}
 	return l.Action()

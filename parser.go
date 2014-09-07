@@ -8,15 +8,21 @@ import (
 	"path/filepath"
 	"strings"
 
-	//. "github.com/kr/pretty"
+	// "github.com/kr/pretty"
 )
 
 func init() {
 	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
 }
 
+type Replace struct {
+	Start, End int
+	Value      []byte
+}
+
 type Parser struct {
-	cut                  [][]int
+	shift                int
+	Chop                 []Replace
 	Pwd, Input, ImageDir string
 	Includes             []string
 	Items                []Item
@@ -40,9 +46,8 @@ func (p *Parser) Start(f string) []byte {
 	if err != nil {
 		panic(err)
 	}
-	i := string(fvar)
 
-	p.Items, p.Input, err = p.parser(filepath.Dir(f), i)
+	p.Items, p.Input, err = p.parser(filepath.Dir(f), string(fvar))
 	tokens := p.Items
 	if err != nil {
 		panic(err)
@@ -70,7 +75,7 @@ func (p *Parser) Start(f string) []byte {
 					cmd = fmt.Sprintf("%s", token)
 					val += cmd
 				case FILE:
-					i = p.File(cmd, i, last)
+					i = p.File(cmd, last, i)
 					def = ""
 					cmd = ""
 				case SUB:
@@ -98,10 +103,23 @@ func (p *Parser) Start(f string) []byte {
 				//Capture filename
 				i++
 				name := fmt.Sprintf("%s", tokens[i])
-				tokens[i].Value = sprite.CSS(name)
-				tokens[i].Write = true
+				repl := sprite.CSS(name)
+				p.Mark(tokens[i-3].Pos, tokens[i+2].Pos, repl)
 				tokens = append(tokens[:i-3], tokens[i:]...)
 				i = i - 3
+				def = ""
+				cmd = ""
+			} else if cmd == "sprite-dimensions" {
+				sprite := p.Sprites[fmt.Sprintf("%s", token)]
+				// Walk forward to file name
+				i++
+				repl := fmt.Sprintf("width: %dpx;\n"+
+					"height: %dpx;\n",
+					sprite.Width(), sprite.Height())
+				p.Mark(tokens[i-4].Pos, tokens[i+3].Pos, repl)
+				tokens = append(tokens[:i-4], tokens[i:]...)
+				i = i - 4
+				def = ""
 				cmd = ""
 			} else {
 				tokens[i].Value = p.Vars[token.Value]
@@ -111,34 +129,43 @@ func (p *Parser) Start(f string) []byte {
 		}
 	}
 	p.Output = process(p.Input, p.Items, 0)
-	p.Cut()
-
+	p.Replace()
+	// DEBUG
+	// for _, item := range p.Items {
+	// 	fmt.Printf("%s %s\n", item.Type, item)
+	// }
 	return p.Output
 }
 
-// Iterates through the p.cut slice deleting specified
-// portions of the output array.
-func (p *Parser) Cut() {
-	shift := 0
-	for _, c := range p.cut {
-		begin := c[0] - shift
-		end := c[1] - shift
-		shift += c[1] - c[0]
-		p.Output = append(p.Output[:begin], p.Output[end:]...)
+// Replace iterates through the list of substrings to
+// cut or replace, adjusting for shift of the output
+// buffer as a result of these ops.
+func (p *Parser) Replace() {
+	for _, c := range p.Chop {
+		begin := c.Start - p.shift
+		end := c.End - p.shift
+		// fmt.Println("Cut: ", string(p.Output[begin:end]))
+		// Adjust shift for number of bytes deleted and inserted
+		p.shift += end - begin
+		p.shift -= len(c.Value)
+		suf := append(c.Value, p.Output[end:]...)
+		p.Output = append(p.Output[:begin], suf...)
 	}
 }
 
-func (p *Parser) Mark(start, end int) {
-	p.cut = append(p.cut, []int{start, end})
+// Mark segments of the input string for future deletion.
+func (p *Parser) Mark(start, end int, val string) {
+	// fmt.Println("Mark:", string(p.Input[start:end]), "~")
+	p.Chop = append(p.Chop, Replace{start, end, []byte(val)})
 }
 
-func (p *Parser) File(cmd string, pos, last int) int {
-	item := p.Items[pos]
+// Processes file which usually mean cutting some of the input
+// text.
+func (p *Parser) File(cmd string, start, end int) int {
+	first := p.Items[start]
+	item := p.Items[end]
 	// Find the next newline, failing that find the semicolon
-	first := p.Items[last]
-
-	i := pos
-
+	i := end
 	if cmd == "sprite-map" {
 		for ; p.Items[i].Type != RPAREN; i++ {
 		}
@@ -146,17 +173,17 @@ func (p *Parser) File(cmd string, pos, last int) int {
 		// Verify that the statement ends with semicolon
 		interest := p.Items[i+3]
 		// Mark this area for deletion, since doing so now would
-		// invalidate all subsequent tokens
-		p.Mark(first.Pos, interest.Pos)
-		//p.Input = p.Input[:first.Pos] + p.Input[interest.Pos:]
-
-		imgs := ImageList{}
-		glob := fmt.Sprintf("%s", item)
-		name := fmt.Sprintf("%s", p.Items[last])
-		imgs.Decode(p.ImageDir + "/" + glob)
-		imgs.Vertical = true
-		imgs.Combine()
-		p.Sprites[name] = imgs
+		// invalidate all subsequent tokens positions.
+		p.Mark(first.Pos, interest.Pos, "")
+		if cmd == "sprite-map" {
+			imgs := ImageList{}
+			glob := fmt.Sprintf("%s", item)
+			name := fmt.Sprintf("%s", p.Items[start])
+			imgs.Decode(p.ImageDir + "/" + glob)
+			imgs.Vertical = true
+			imgs.Combine()
+			p.Sprites[name] = imgs
+		}
 		//TODO: Generate filename
 		//imgs.Export("generated.png")
 	}
@@ -172,34 +199,10 @@ func process(in string, items []Item, pos int) []byte {
 		return []byte("")
 	}
 
-	if items[0].Type == CMD && items[0].Value == "sprite" {
-		i := 1
-		//out = append(out, items[0].Value...)
-		//Skip to semicolon
-		for ; items[i].Write || i > l; i++ {
-		}
-		return append(out, process(in, items[i:], items[i].Pos)...)
-	}
-
-	if items[0].Write {
-		i := 1
-		out = append(out, items[0].Value...)
-		//Skip to semicolon
-		for ; items[i].Type != SEMIC || i > l; i++ {
-		}
-		return append(out, process(in, items[i:], pos)...)
-	}
-
 	// TODO: There's an error where items[1] has an invalid
 	// position.
 	if l > 1 && items[1].Pos > items[0].Pos {
-
-		if items[1].Write {
-			out = append(out, items[0].Value...)
-			out = append(out, ':', ' ')
-		} else {
-			out = append(out, in[items[0].Pos:items[1].Pos]...)
-		}
+		out = append(out, in[items[0].Pos:items[1].Pos]...)
 		out = append(out, process(in, items[1:], pos)...)
 	} else {
 		out = append(out, in[items[0].Pos:]...)
@@ -227,23 +230,24 @@ func (p *Parser) parser(pwd, input string) ([]Item, string, error) {
 	for {
 		item := lex.Next()
 		err := item.Error()
-
+		//fmt.Println(item.Type, item.Value)
 		if err != nil {
 			return nil, string(output),
 				fmt.Errorf("Error: %v (pos %d)", err, item.Pos)
 		}
-		if item.Type == ItemEOF {
+		switch item.Type {
+		case ItemEOF:
 			output = append(output, input[pos:]...)
 			return status, string(output), nil
-		} else if item.Type == IMPORT {
+		case IMPORT:
 			output = append(output, input[pos:item.Pos]...)
 			last = item
 			importing = true
-		} else if item.Type == CMT {
+		case INCLUDE, CMT:
 			output = append(output, input[pos:item.Pos]...)
 			pos = item.Pos
 			status = append(status, *item)
-		} else {
+		default:
 			if importing {
 
 				pwd, contents, err := p.ImportPath(pwd, fmt.Sprintf("%s", *item))
