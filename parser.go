@@ -113,9 +113,7 @@ func (p *Parser) Start(f string) []byte {
 				sprite := p.Sprites[fmt.Sprintf("%s", token)]
 				// Walk forward to file name
 				i++
-				repl := fmt.Sprintf("width: %dpx;\n"+
-					"height: %dpx;\n",
-					sprite.Width(), sprite.Height())
+				repl := sprite.Dimensions(tokens[i].String())
 				p.Mark(tokens[i-4].Pos, tokens[i+3].Pos, repl)
 				tokens = append(tokens[:i-4], tokens[i:]...)
 				i = i - 4
