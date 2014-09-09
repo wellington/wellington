@@ -84,6 +84,15 @@ func TestImageDimensions(t *testing.T) {
 			imgs.Dimensions("139"), e)
 	}
 
+	if e := 139; e != imgs.ImageHeight("139") {
+		t.Errorf("Height invalid expected:%d\nwas:%d",
+			imgs.ImageHeight("139"), e)
+	}
+
+	if e := 96; e != imgs.ImageWidth("139") {
+		t.Errorf("Height invalid expected:%d\nwas:%d",
+			imgs.ImageWidth("139"), e)
+	}
 }
 
 //Test file globbing

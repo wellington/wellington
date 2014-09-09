@@ -98,6 +98,21 @@ func (l ImageList) Dimensions(s string) string {
 
 }
 
+func (l ImageList) ImageWidth(s string) int {
+	pos := l.Lookup(s)
+	if pos == -1 {
+		log.Printf("File not found: %s", s)
+	}
+	return l.Images[pos].Width()
+}
+func (l ImageList) ImageHeight(s string) int {
+	pos := l.Lookup(s)
+	if pos == -1 {
+		log.Printf("File not found: %s", s)
+	}
+	return l.Images[pos].Height()
+}
+
 // Return the cumulative Height of the
 // image slice.
 func (l *ImageList) Height() int {
