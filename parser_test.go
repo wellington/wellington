@@ -37,6 +37,17 @@ func TestParserImporter(t *testing.T) {
 	}
 }
 
+func TestParseSprite(t *testing.T) {
+	p := Parser{}
+	output := string(p.Start("test/sprite.scss"))
+	output = rerandom.ReplaceAllString(output, "")
+
+	file, _ := ioutil.ReadFile("test/sprite.parser")
+	if strings.TrimSpace(string(file)) != strings.TrimSpace(output) {
+		t.Errorf("File output did not match, was:\n%s\nexpected:\n%s", output, string(file))
+	}
+}
+
 func TestParseComment(t *testing.T) {
 	p := Parser{}
 	res := string(p.Start("test/_comment.scss"))

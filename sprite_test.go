@@ -79,7 +79,7 @@ func TestImageDimensions(t *testing.T) {
 	imgs := ImageList{}
 	imgs.Decode("test/*.png")
 
-	if e := "width: 96px; height: 139px;\n"; e != imgs.Dimensions("139") {
+	if e := "width: 96px;\nheight: 139px;\n"; e != imgs.Dimensions("139") {
 		t.Errorf("Dimensions invalid was: %s\nexpected: %s\n",
 			imgs.Dimensions("139"), e)
 	}

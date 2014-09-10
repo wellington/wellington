@@ -39,7 +39,7 @@ func TestSassLexer(t *testing.T) {
 			e, items[11].String())
 	}
 
-	if e := "test/*.png"; e != items[13].String() {
+	if e := "*.png"; e != items[13].String() {
 		t.Errorf("Invalid FILE parsing expected: %s, was: %s",
 			items[13].String(), e)
 	}

@@ -37,12 +37,12 @@ type Parser struct {
 // Parser creates a map of all variables and sprites
 // (created via sprite-map calls).
 func (p *Parser) Start(f string) []byte {
-	if p.ImageDir == "" {
-		p.ImageDir = "."
-	}
 	p.Vars = make(map[string]string)
 	p.Sprites = make(map[string]ImageList)
 	fvar, err := ioutil.ReadFile(f)
+	if p.ImageDir == "" {
+		p.ImageDir = filepath.Dir(f)
+	}
 	if err != nil {
 		panic(err)
 	}
@@ -97,29 +97,53 @@ func (p *Parser) Start(f string) []byte {
 			}
 			//Replace subsitution tokens
 		} else if token.Type == SUB {
-			if cmd == "sprite" {
+			repl := ""
+			switch cmd {
+			case "sprite":
 				//Capture sprite
 				sprite := p.Sprites[fmt.Sprintf("%s", token)]
 				//Capture filename
 				i++
 				name := fmt.Sprintf("%s", tokens[i])
-				repl := sprite.CSS(name)
+				repl = sprite.CSS(name)
 				p.Mark(tokens[i-3].Pos, tokens[i+2].Pos, repl)
 				tokens = append(tokens[:i-3], tokens[i:]...)
 				i = i - 3
 				def = ""
 				cmd = ""
-			} else if cmd == "sprite-dimensions" {
+			case "sprite-height":
 				sprite := p.Sprites[fmt.Sprintf("%s", token)]
+				repl = fmt.Sprintf("height: %dpx;",
+					sprite.ImageHeight(tokens[i+1].String()))
 				// Walk forward to file name
 				i++
-				repl := sprite.Dimensions(tokens[i].String())
 				p.Mark(tokens[i-4].Pos, tokens[i+3].Pos, repl)
 				tokens = append(tokens[:i-4], tokens[i:]...)
 				i = i - 4
 				def = ""
 				cmd = ""
-			} else {
+			case "sprite-width":
+				sprite := p.Sprites[fmt.Sprintf("%s", token)]
+				repl = fmt.Sprintf("width: %dpx;",
+					sprite.ImageWidth(tokens[i+1].String()))
+				// Walk forward to file name
+				i++
+				p.Mark(tokens[i-4].Pos, tokens[i+3].Pos, repl)
+				tokens = append(tokens[:i-4], tokens[i:]...)
+				i = i - 4
+				def = ""
+				cmd = ""
+			case "sprite-dimensions":
+				sprite := p.Sprites[fmt.Sprintf("%s", token)]
+				repl = sprite.Dimensions(tokens[i+1].String())
+				// Walk forward to file name
+				i++
+				p.Mark(tokens[i-4].Pos, tokens[i+3].Pos, repl)
+				tokens = append(tokens[:i-4], tokens[i:]...)
+				i = i - 4
+				def = ""
+				cmd = ""
+			default:
 				tokens[i].Value = p.Vars[token.Value]
 			}
 		} else if token.Type == CMD {
@@ -177,6 +201,7 @@ func (p *Parser) File(cmd string, start, end int) int {
 			imgs := ImageList{}
 			glob := fmt.Sprintf("%s", item)
 			name := fmt.Sprintf("%s", p.Items[start])
+
 			imgs.Decode(p.ImageDir + "/" + glob)
 			imgs.Vertical = true
 			imgs.Combine()

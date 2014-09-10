@@ -93,7 +93,7 @@ func (l ImageList) Dimensions(s string) string {
 	if pos == -1 {
 		log.Printf("File not found: %s", s)
 	}
-	return fmt.Sprintf("width: %dpx; height: %dpx;\n",
+	return fmt.Sprintf("width: %dpx;\nheight: %dpx;\n",
 		l.Images[pos].Width(), l.Images[pos].Height())
 
 }

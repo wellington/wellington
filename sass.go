@@ -11,7 +11,6 @@ import "C"
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -66,8 +65,8 @@ func (ctx *Context) Run(ipath, opath string) error {
 	bytes := parser.Start(ipath)
 	ctx.Src = string(bytes)
 	// DEBUG
-	fmt.Println("Sent to libsass")
-	fmt.Println(ctx.Src)
+	// fmt.Println("Sent to libsass:")
+	// fmt.Println(ctx.Src)
 	err := ctx.Compile()
 	if err != nil {
 		return err
