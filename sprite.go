@@ -44,6 +44,8 @@ func (l ImageList) Lookup(f string) int {
 			return i
 		}
 	}
+	log.Printf("File not found: %s\n Try one of %s", f, l)
+
 	return -1
 }
 
@@ -89,28 +91,26 @@ func (l ImageList) CSS(s string) string {
 }
 
 func (l ImageList) Dimensions(s string) string {
-	pos := l.Lookup(s)
-	if pos == -1 {
-		log.Printf("File not found: %s", s)
+	if pos := l.Lookup(s); pos > -1 {
+
+		return fmt.Sprintf("width: %dpx;\nheight: %dpx;\n",
+			l.Images[pos].Width(), l.Images[pos].Height())
 	}
-	return fmt.Sprintf("width: %dpx;\nheight: %dpx;\n",
-		l.Images[pos].Width(), l.Images[pos].Height())
+	return ""
 
 }
 
 func (l ImageList) ImageWidth(s string) int {
-	pos := l.Lookup(s)
-	if pos == -1 {
-		log.Printf("File not found: %s", s)
+	if pos := l.Lookup(s); pos > -1 {
+		return l.Images[pos].Width()
 	}
-	return l.Images[pos].Width()
+	return -1
 }
 func (l ImageList) ImageHeight(s string) int {
-	pos := l.Lookup(s)
-	if pos == -1 {
-		log.Printf("File not found: %s", s)
+	if pos := l.Lookup(s); pos > -1 {
+		return l.Images[pos].Height()
 	}
-	return l.Images[pos].Height()
+	return -1
 }
 
 // Return the cumulative Height of the
