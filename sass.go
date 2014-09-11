@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"log"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"unsafe"
 )
@@ -67,6 +68,7 @@ func (ctx *Context) Run(ipath, opath string) error {
 	// DEBUG
 	// fmt.Println("Sent to libsass:")
 	// fmt.Println(ctx.Src)
+
 	err := ctx.Compile()
 	if err != nil {
 		return err
@@ -115,10 +117,22 @@ func (ctx *Context) Compile() error {
 	ctx.Out = C.GoString(cCtx.output_string)
 	ctx.Map = C.GoString(cCtx.source_map_string)
 	errString := strings.TrimSpace(C.GoString(cCtx.error_message))
-	// Create Go style errors
 	err := errors.New(errString)
 	if err.Error() == "" {
 		err = nil
+	} else {
+		// Attempt to find the source error
+		split := strings.Split(err.Error(), ":")
+		if len(split) == 0 {
+			return err
+		}
+		pos, lerr := strconv.Atoi(split[1])
+		if lerr != nil {
+			return err
+		}
+		lines := strings.Split(ctx.Src, "\n")
+		// Line number is off by one from libsass
+		err = errors.New(err.Error() + "\n" + lines[pos-1])
 	}
 
 	return err

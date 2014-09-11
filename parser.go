@@ -77,10 +77,14 @@ func (p *Parser) Start(f string) []byte {
 					def = ""
 					cmd = ""
 				case SUB:
-					// Can this ever happen, do we care?
-					fmt.Println("SUB")
-					// fmt.Println(p.Input[token.Pos-100 : token.Pos+100])
-					// fmt.Println(token)
+					// fmt.Println("SUB:", tokens[i-1], tokens[i], tokens[i+1])
+					// fmt.Println(p.Input[tokens[i-20].Pos:tokens[i+20].Pos])
+					// Cowardly give up and hope these variables do not matter
+					// Cases:
+					// - @for $i from 1 through $variable
+					// - $variable: ($i - 1)
+					// -
+					fallthrough
 				default:
 					//fmt.Printf("Default: %s\n", token)
 					val += fmt.Sprintf("%s", token)
@@ -104,6 +108,7 @@ func (p *Parser) Start(f string) []byte {
 				i++
 				name := fmt.Sprintf("%s", tokens[i])
 				repl = sprite.CSS(name)
+
 				p.Mark(tokens[i-3].Pos, tokens[i+2].Pos, repl)
 				tokens = append(tokens[:i-3], tokens[i:]...)
 				i = i - 3
@@ -199,7 +204,6 @@ func (p *Parser) File(cmd string, start, end int) int {
 			imgs := ImageList{}
 			glob := fmt.Sprintf("%s", item)
 			name := fmt.Sprintf("%s", p.Items[start])
-
 			imgs.Decode(p.ImageDir + "/" + glob)
 			imgs.Vertical = true
 			imgs.Combine()
