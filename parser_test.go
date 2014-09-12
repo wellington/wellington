@@ -28,9 +28,9 @@ func TestParserVar(t *testing.T) {
 
 }
 
-/*func TestParserImporter(t *testing.T) {
+func TestParserImporter(t *testing.T) {
 	p := Parser{}
-	output := string(p.Start("test/import.scss"))
+	output := string(p.Start(fileReader("test/import.scss"), "test/"))
 	output = rerandom.ReplaceAllString(output, "")
 
 	file, _ := ioutil.ReadFile("test/import.parser")
@@ -41,7 +41,7 @@ func TestParserVar(t *testing.T) {
 
 func TestParseSprite(t *testing.T) {
 	p := Parser{}
-	output := string(p.Start("test/sprite.scss"))
+	output := string(p.Start(fileReader("test/sprite.scss"), "test/"))
 	output = rerandom.ReplaceAllString(output, "")
 
 	file, _ := ioutil.ReadFile("test/sprite.parser")
@@ -52,7 +52,7 @@ func TestParseSprite(t *testing.T) {
 
 func TestParseComment(t *testing.T) {
 	p := Parser{}
-	res := string(p.Start("test/_comment.scss"))
+	res := string(p.Start(fileReader("test/_comment.scss"), "test/"))
 	res = strings.TrimSpace(rerandom.ReplaceAllString(res, ""))
 	e := strings.TrimSpace(fileString("test/comment.parser"))
 
@@ -61,4 +61,3 @@ func TestParseComment(t *testing.T) {
 			"%s\n exp:%s\n", res, e)
 	}
 }
-*/
