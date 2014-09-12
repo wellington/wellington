@@ -15,6 +15,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	sprite "github.com/drewwells/sprite_sass"
@@ -65,7 +66,7 @@ func main() {
 		ctx.IncludePaths = strings.Split(Includes, ",")
 	}
 
-	err := ctx.Run(Input, Output)
+	err := ctx.Run(Input, os.Stdout)
 	if err != nil {
 		log.Fatal(err)
 	}

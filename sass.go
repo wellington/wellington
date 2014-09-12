@@ -10,10 +10,10 @@ package sprite_sass
 import "C"
 
 import (
+	"bytes"
 	"errors"
-	"io/ioutil"
+	"io"
 	"log"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"unsafe"
@@ -52,30 +52,36 @@ func init() {
 // Run uses the specified pathnames to read in sass and
 // export out css with generated spritesheets based on
 // the ImageDir option.
-func (ctx *Context) Run(ipath, opath string) error {
+func (ctx *Context) Run(in io.Reader, out io.Writer, pkgdir string) error {
 
-	if ipath == "" || opath == "" {
+	if in == nil {
 		log.Fatal("Input or output files were not specified")
 	}
-	ctx.IncludePaths = append(ctx.IncludePaths, filepath.Dir(ipath))
+	ctx.IncludePaths = append(ctx.IncludePaths, pkgdir)
 	// Run the sprite_sass parser prior to passing to libsass
 	parser := Parser{
 		ImageDir: ctx.ImageDir,
 		Includes: ctx.IncludePaths,
 	}
-	bytes := parser.Start(ipath)
-	ctx.Src = string(bytes)
+	_ = parser
+
 	// DEBUG
-	// fmt.Println("Sent to libsass:")
-	// fmt.Println(ctx.Src)
+	// Debug.Println("Sent to libsass:")
+	// Debug.Println(ctx.Src)
 
-	err := ctx.Compile()
-	if err != nil {
-		return err
-	}
+	go func(reader io.Reader) {
+		//buf := bytes.NewBuffer(make([]byte, 0, bytes.MinRead))
+		//buf.ReadFrom(reader)
 
-	err = ioutil.WriteFile(opath, []byte(ctx.Out), 0777)
-	return err
+		obuf := bytes.NewBuffer(parser.Start(reader,
+			pkgdir))
+		io.Copy(out, obuf)
+	}(in)
+
+	/*parsed := parser.Start(ipath)
+	multi := io.MultiWriter(w, out)
+	multi.Write(parsed)*/
+	return errors.New("")
 }
 
 // Compile passes off the sass compliant string to
@@ -132,7 +138,10 @@ func (ctx *Context) Compile() error {
 		}
 		lines := strings.Split(ctx.Src, "\n")
 		// Line number is off by one from libsass
-		err = errors.New(err.Error() + "\n" + lines[pos-1])
+		err = errors.New(err.Error() +
+			"\n" + lines[pos-2] +
+			"\n" + lines[pos-1] +
+			"\n" + lines[pos])
 	}
 
 	return err

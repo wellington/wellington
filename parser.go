@@ -1,10 +1,10 @@
 package sprite_sass
 
 import (
+	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
-	"path/filepath"
 
 	// "github.com/kr/pretty"
 )
@@ -34,19 +34,19 @@ type Parser struct {
 //
 // Parser creates a map of all variables and sprites
 // (created via sprite-map calls).
-func (p *Parser) Start(f string) []byte {
+func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 	p.Vars = make(map[string]string)
 	p.Sprites = make(map[string]ImageList)
-	fvar, err := ioutil.ReadFile(f)
-	if p.ImageDir == "" {
-		p.ImageDir = filepath.Dir(f)
-	}
-	if err != nil {
-		panic(err)
-	}
 
-	p.Items, p.Input, err = p.parser(filepath.Dir(f), string(fvar))
-	tokens := p.Items
+	if p.ImageDir == "" {
+		p.ImageDir = pkgdir
+	}
+	buf := bytes.NewBuffer(make([]byte, 0, bytes.MinRead))
+	buf.ReadFrom(in)
+
+	tokens, input, err := p.parser(pkgdir, string(buf.Bytes()))
+	p.Input = input
+	p.Items = tokens
 	if err != nil {
 		panic(err)
 	}
