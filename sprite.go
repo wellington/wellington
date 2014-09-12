@@ -44,7 +44,7 @@ func (l ImageList) Lookup(f string) int {
 			return i
 		}
 	}
-	log.Printf("File not found: %s\n Try one of %s", f, l)
+	Debug.Printf("File not found: %s\n Try one of %s", f, l)
 
 	return -1
 }
