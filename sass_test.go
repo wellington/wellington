@@ -28,6 +28,12 @@ func fileReader(path string) io.Reader {
 
 func TestRun(t *testing.T) {
 
+	ctx := Context{
+		OutputStyle:  NESTED_STYLE,
+		IncludePaths: make([]string, 0),
+		Out:          "",
+	}
+
 	var scanned []byte
 	ipath := "test/_var.scss"
 	exp, err := ioutil.ReadFile("test/var.css")
@@ -35,11 +41,6 @@ func TestRun(t *testing.T) {
 		panic(err)
 	}
 
-	ctx := Context{
-		OutputStyle:  NESTED_STYLE,
-		IncludePaths: make([]string, 0),
-		Out:          "",
-	}
 	r, w := io.Pipe()
 	go ctx.Run(fileReader(ipath), w, "test")
 
@@ -57,7 +58,7 @@ func TestRun(t *testing.T) {
 
 }
 
-/*func TestCompile(t *testing.T) {
+func TestCompile(t *testing.T) {
 	ctx := Context{
 		OutputStyle:  NESTED_STYLE,
 		IncludePaths: make([]string, 0),
@@ -91,4 +92,4 @@ func TestExport(t *testing.T) {
 		Out:          "",
 	}
 	ctx.Compile()
-}*/
+}

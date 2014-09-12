@@ -51,7 +51,8 @@ func init() {
 
 // Run uses the specified pathnames to read in sass and
 // export out css with generated spritesheets based on
-// the ImageDir option.
+// the ImageDir option.  WriteCloser is necessary to
+// notify readers when the stream is finished.
 func (ctx *Context) Run(in io.Reader, out io.WriteCloser, pkgdir string) error {
 
 	if in == nil {
