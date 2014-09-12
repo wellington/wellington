@@ -1,6 +1,7 @@
 package sprite_sass_test
 
 import (
+	"bufio"
 	"io"
 	"io/ioutil"
 	"os"
@@ -27,29 +28,32 @@ func fileReader(path string) io.Reader {
 
 func TestRun(t *testing.T) {
 
+	var scanned []byte
 	ipath := "test/_var.scss"
-	//opath := "test/var.css.out"
+	exp, err := ioutil.ReadFile("test/var.css")
+	if err != nil {
+		panic(err)
+	}
 
 	ctx := Context{
 		OutputStyle:  NESTED_STYLE,
 		IncludePaths: make([]string, 0),
 		Out:          "",
 	}
+	r, w := io.Pipe()
+	go ctx.Run(fileReader(ipath), w, "test")
 
-	ctx.Run(fileReader(ipath), os.Stdout, "test")
-
-	//res := fileString(opath)
-	e := fileString("test/var.css")
-	if e == "" {
-		t.Errorf("Error reading in expected file.")
+	scanner := bufio.NewScanner(r)
+	scanner.Split(bufio.ScanBytes)
+	for scanner.Scan() {
+		scanned = append(scanned, scanner.Bytes()...)
 	}
 
-	/*res = rerandom.ReplaceAllString(res, "")
-	if strings.TrimSpace(res) !=
-		strings.TrimSpace(e) {
+	scanned = rerandom.ReplaceAll(scanned, []byte(""))
+	if string(scanned) != string(exp) {
 		t.Errorf("Processor file did not match was: "+
-			"\n~%s~\n exp:\n~%s~", res, e)
-	}*/
+			"\n~%s~\n exp:\n~%s~", string(scanned), string(exp))
+	}
 
 }
 

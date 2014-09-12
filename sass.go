@@ -52,35 +52,28 @@ func init() {
 // Run uses the specified pathnames to read in sass and
 // export out css with generated spritesheets based on
 // the ImageDir option.
-func (ctx *Context) Run(in io.Reader, out io.Writer, pkgdir string) error {
+func (ctx *Context) Run(in io.Reader, out io.WriteCloser, pkgdir string) error {
 
 	if in == nil {
 		log.Fatal("Input or output files were not specified")
 	}
+
 	ctx.IncludePaths = append(ctx.IncludePaths, pkgdir)
 	// Run the sprite_sass parser prior to passing to libsass
 	parser := Parser{
 		ImageDir: ctx.ImageDir,
 		Includes: ctx.IncludePaths,
 	}
-	_ = parser
 
-	// DEBUG
-	// Debug.Println("Sent to libsass:")
-	// Debug.Println(ctx.Src)
+	ctx.Src = string(parser.Start(in, pkgdir))
+	ctx.Compile()
 
-	go func(reader io.Reader) {
-		//buf := bytes.NewBuffer(make([]byte, 0, bytes.MinRead))
-		//buf.ReadFrom(reader)
-
-		obuf := bytes.NewBuffer(parser.Start(reader,
-			pkgdir))
-		io.Copy(out, obuf)
-	}(in)
-
-	/*parsed := parser.Start(ipath)
-	multi := io.MultiWriter(w, out)
-	multi.Write(parsed)*/
+	obuf := bytes.NewBufferString(ctx.Out)
+	defer out.Close()
+	_, err := io.Copy(out, obuf)
+	if err != nil {
+		panic(err)
+	}
 	return errors.New("")
 }
 
