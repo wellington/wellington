@@ -44,7 +44,7 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 	buf := bytes.NewBuffer(make([]byte, 0, bytes.MinRead))
 	buf.ReadFrom(in)
 
-	tokens, input, err := p.parser(pkgdir, string(buf.Bytes()))
+	tokens, input, err := p.start(pkgdir, string(buf.Bytes()))
 	p.Input = input
 	p.Items = tokens
 	if err != nil {
@@ -238,7 +238,7 @@ func process(in string, items []Item, pos int) []byte {
 
 // parser recrusively resolves all imports and tokenizes the
 // input string
-func (p *Parser) parser(pwd, input string) ([]Item, string, error) {
+func (p *Parser) start(pwd, input string) ([]Item, string, error) {
 
 	var (
 		status    []Item
@@ -284,10 +284,10 @@ func (p *Parser) parser(pwd, input string) ([]Item, string, error) {
 				item := lex.Next()
 				pos = item.Pos + len(item.Value)
 				if item.Type != SEMIC {
-					panic("@import must be followed by ;")
+					panic("@import statement must be followed by ;")
 				}
 
-				moreTokens, moreOutput, err := p.parser(
+				moreTokens, moreOutput, err := p.start(
 					pwd,
 					contents)
 				// Lexer needs to be adjusted for current

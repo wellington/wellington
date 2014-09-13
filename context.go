@@ -67,11 +67,14 @@ func (ctx *Context) Run(in io.Reader, out io.WriteCloser, pkgdir string) error {
 	}
 
 	ctx.Src = string(parser.Start(in, pkgdir))
-	ctx.Compile()
+	err := ctx.Compile()
+	if err != nil {
+		return err
+	}
 
 	obuf := bytes.NewBufferString(ctx.Out)
 	defer out.Close()
-	_, err := io.Copy(out, obuf)
+	_, err = io.Copy(out, obuf)
 	if err != nil {
 		panic(err)
 	}
@@ -137,6 +140,5 @@ func (ctx *Context) Compile() error {
 			"\n" + lines[pos-1] +
 			"\n" + lines[pos])
 	}
-
 	return err
 }

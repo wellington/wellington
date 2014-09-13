@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	sprite "github.com/drewwells/sprite_sass"
@@ -61,12 +62,16 @@ func main() {
 		ImageDir:    Dir,
 		Comments:    Comments,
 	}
+	fRead, err := os.Open(Input)
+	if err != nil {
+		panic(err)
+	}
 
 	if Includes != "" {
 		ctx.IncludePaths = strings.Split(Includes, ",")
 	}
 
-	err := ctx.Run(Input, os.Stdout)
+	err = ctx.Run(fRead, os.Stdout, filepath.Dir(Input))
 	if err != nil {
 		log.Fatal(err)
 	}
