@@ -251,6 +251,7 @@ const (
 	ItemError
 	IMPORT
 	INCLUDE
+	MIXIN
 	EXTRA
 	CMD
 	VAR
@@ -276,6 +277,7 @@ var Tokens = [...]string{
 	ItemError: "error",
 	IMPORT:    "@import",
 	INCLUDE:   "@include",
+	MIXIN:     "@mixin",
 	EXTRA:     "extra",
 	CMD:       "command",
 	VAR:       "variable",
@@ -387,6 +389,8 @@ func (l *Lexer) Directive() StateFn {
 		l.Emit(IMPORT)
 	case "@include":
 		l.Emit(INCLUDE)
+	case "@mixin":
+		l.Emit(MIXIN)
 	}
 	return l.Action()
 }
