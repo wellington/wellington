@@ -78,7 +78,7 @@ func (ctx *Context) Run(in io.Reader, out io.WriteCloser, pkgdir string) error {
 	if err != nil {
 		panic(err)
 	}
-	return errors.New("")
+	return nil
 }
 
 // Compile passes off the sass compliant string to
@@ -135,10 +135,15 @@ func (ctx *Context) Compile() error {
 		}
 		lines := strings.Split(ctx.Src, "\n")
 		// Line number is off by one from libsass
-		err = errors.New(err.Error() +
-			"\n" + lines[pos-2] +
-			"\n" + lines[pos-1] +
-			"\n" + lines[pos])
+		// Find previous lines to maximum available
+		errLines := ""
+		for i := 10; i > -1; i-- {
+			if pos-i > 0 {
+				errLines += "\n" + lines[pos-i]
+			}
+		}
+
+		err = errors.New(err.Error() + errLines)
 	}
 	return err
 }
