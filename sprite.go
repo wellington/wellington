@@ -44,7 +44,9 @@ func (l ImageList) Lookup(f string) int {
 			return i
 		}
 	}
-	Debug.Printf("File not found: %s\n Try one of %s", f, l)
+	// TODO: Find a better way to send these to cli so tests
+	// aren't impacted.
+	// Debug.Printf("File not found: %s\n Try one of %s", f, l)
 
 	return -1
 }
