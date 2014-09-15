@@ -8,11 +8,90 @@ import (
 	"container/list"
 	"errors"
 	"fmt"
-	"math"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 )
+
+// A type for all the types of items in the language being lexed.
+type ItemType int
+
+// Special item types.
+const (
+	ItemEOF ItemType = iota
+	ItemError
+	IMPORT
+	INCLUDE
+	MIXIN
+	EXTRA
+	CMD
+	VAR
+	SUB
+	VALUE
+	FILE
+	SPRITE
+	NUMBER
+	TEXT
+	DOLLAR
+	special_beg
+	LPAREN
+	RPAREN
+	LBRACKET
+	RBRACKET
+	SEMIC
+	CMT
+	special_end
+	include_cmd_beg
+	BKND
+	include_cmd_end
+	FIN
+)
+
+var Tokens = [...]string{
+	ItemEOF:   "eof",
+	ItemError: "error",
+	IMPORT:    "@import",
+	INCLUDE:   "@include",
+	MIXIN:     "@mixin",
+	EXTRA:     "extra",
+	CMD:       "command",
+	VAR:       "variable",
+	SUB:       "sub",
+	VALUE:     "value",
+	FILE:      "file",
+	SPRITE:    "sprite",
+	NUMBER:    "number",
+	TEXT:      "text",
+	DOLLAR:    "$",
+	LPAREN:    "(",
+	RPAREN:    ")",
+	LBRACKET:  "{",
+	RBRACKET:  "}",
+	SEMIC:     ";",
+	CMT:       "comment",
+	BKND:      "background",
+	FIN:       "FINISHED",
+}
+
+func (i ItemType) String() string {
+	return Tokens[i]
+}
+
+var directives map[string]ItemType
+
+func init() {
+	directives = make(map[string]ItemType)
+	for i := ItemEOF; i < FIN; i++ {
+		directives[Tokens[i]] = i
+	}
+}
+
+func Lookup(ident string) ItemType {
+	if tok, is_keyword := directives[ident]; is_keyword {
+		return tok
+	}
+	return 0
+}
 
 const EOF rune = 0x04
 
@@ -24,6 +103,14 @@ func IsEOF(c rune, n int) bool {
 // IsInvalid returns true if c is utf8.RuneError and n is 1.
 func IsInvalid(c rune, n int) bool {
 	return c == utf8.RuneError && n == 1
+}
+
+func (l *Lexer) dequeue() *Item {
+	head := l.items.Front()
+	if head == nil {
+		return nil
+	}
+	return l.items.Remove(head).(*Item)
 }
 
 // StateFn functions scan runes from the lexer's input and emit items.  A StateFn
@@ -234,68 +321,6 @@ func (l *Lexer) enqueue(i *Item) {
 	l.items.PushBack(i)
 }
 
-func (l *Lexer) dequeue() *Item {
-	head := l.items.Front()
-	if head == nil {
-		return nil
-	}
-	return l.items.Remove(head).(*Item)
-}
-
-// A type for all the types of items in the language being lexed.
-type ItemType uint16
-
-// Special item types.
-const (
-	ItemEOF ItemType = math.MaxUint16 - iota
-	ItemError
-	IMPORT
-	INCLUDE
-	MIXIN
-	EXTRA
-	CMD
-	VAR
-	SUB
-	VALUE
-	FILE
-	SPRITE
-	NUMBER
-	TEXT
-	DOLLAR
-	special_beg
-	LPAREN
-	RPAREN
-	LBRACKET
-	RBRACKET
-	SEMIC
-	CMT
-	special_end
-)
-
-var Tokens = [...]string{
-	ItemEOF:   "eof",
-	ItemError: "error",
-	IMPORT:    "@import",
-	INCLUDE:   "@include",
-	MIXIN:     "@mixin",
-	EXTRA:     "extra",
-	CMD:       "command",
-	VAR:       "variable",
-	SUB:       "sub",
-	VALUE:     "value",
-	FILE:      "file",
-	SPRITE:    "sprite",
-	NUMBER:    "number",
-	TEXT:      "text",
-	DOLLAR:    "$",
-	LPAREN:    "(",
-	RPAREN:    ")",
-	LBRACKET:  "{",
-	RBRACKET:  "}",
-	SEMIC:     ";",
-	CMT:       "comment",
-}
-
 const (
 	Symbols = `/\.*-_`
 )
@@ -304,10 +329,6 @@ func IsAllowedRune(r rune) bool {
 	return unicode.IsNumber(r) ||
 		unicode.IsLetter(r) ||
 		strings.ContainsRune(Symbols, r)
-}
-
-func (i ItemType) String() string {
-	return Tokens[i]
 }
 
 // An individual scanned item (a lexeme).
@@ -389,6 +410,15 @@ func (l *Lexer) Directive() StateFn {
 		l.Emit(IMPORT)
 	case "@include":
 		l.Emit(INCLUDE)
+		for {
+			r, _ := l.Advance()
+			fmt.Printf(string(r))
+			if !IsSpace(r) {
+				break
+			}
+			l.Ignore()
+		}
+		return l.INCCMD()
 	case "@mixin":
 		l.Emit(MIXIN)
 	}
@@ -448,6 +478,19 @@ func (l *Lexer) Var() StateFn {
 	} else {
 		l.Emit(SUB)
 	}
+	return l.Action()
+}
+
+func (l *Lexer) INCCMD() StateFn {
+	fmt.Println("INCCMD")
+	l.AcceptRunFunc(IsAllowedRune)
+	current := Lookup(l.Current())
+	fmt.Println(l.Current(), current)
+	switch {
+	case current > include_cmd_beg && current < include_cmd_end:
+		l.Emit(current)
+	}
+
 	return l.Action()
 }
 
