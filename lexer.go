@@ -41,9 +41,9 @@ const (
 	SEMIC
 	CMT
 	special_end
-	include_cmd_beg
+	include_mixin_beg
 	BKND
-	include_cmd_end
+	include_mixin_end
 	FIN
 )
 
@@ -86,6 +86,7 @@ func init() {
 	}
 }
 
+// Lookup ItemType by token string
 func Lookup(ident string) ItemType {
 	if tok, is_keyword := directives[ident]; is_keyword {
 		return tok
@@ -418,7 +419,7 @@ func (l *Lexer) Directive() StateFn {
 			}
 			l.Ignore()
 		}
-		return l.INCCMD()
+		return l.Mixin()
 	case "@mixin":
 		l.Emit(MIXIN)
 	}
@@ -481,13 +482,12 @@ func (l *Lexer) Var() StateFn {
 	return l.Action()
 }
 
-func (l *Lexer) INCCMD() StateFn {
-	fmt.Println("INCCMD")
+func (l *Lexer) Mixin() StateFn {
 	l.AcceptRunFunc(IsAllowedRune)
 	current := Lookup(l.Current())
 	fmt.Println(l.Current(), current)
 	switch {
-	case current > include_cmd_beg && current < include_cmd_end:
+	case current > include_mixin_beg && current < include_mixin_end:
 		l.Emit(current)
 	}
 
