@@ -91,7 +91,7 @@ func Lookup(ident string) ItemType {
 	if tok, is_keyword := directives[ident]; is_keyword {
 		return tok
 	}
-	return 0
+	return -1
 }
 
 const EOF rune = 0x04
@@ -413,7 +413,6 @@ func (l *Lexer) Directive() StateFn {
 		l.Emit(INCLUDE)
 		for {
 			r, _ := l.Advance()
-			fmt.Printf(string(r))
 			if !IsSpace(r) {
 				break
 			}
@@ -484,12 +483,7 @@ func (l *Lexer) Var() StateFn {
 
 func (l *Lexer) Mixin() StateFn {
 	l.AcceptRunFunc(IsAllowedRune)
-	current := Lookup(l.Current())
-	fmt.Println(l.Current(), current)
-	switch {
-	case current > include_mixin_beg && current < include_mixin_end:
-		l.Emit(current)
-	}
+	l.Emit(CMD)
 
 	return l.Action()
 }
@@ -506,6 +500,9 @@ func (l *Lexer) Text() StateFn {
 		return l.Action()
 	//Tertiary support
 	case "sprite-map-name", "sprite-names":
+		l.Emit(CMD)
+		return l.Action()
+	case "inline-image":
 		l.Emit(CMD)
 		return l.Action()
 	default:

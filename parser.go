@@ -1,12 +1,14 @@
 package sprite_sass
 
 import (
+	"bufio"
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"log"
 
-	// "github.com/kr/pretty"
+	"github.com/rainycape/magick"
 )
 
 func init() {
@@ -19,7 +21,7 @@ type Replace struct {
 }
 
 type Parser struct {
-	shift                int
+	Index, shift         int
 	Chop                 []Replace
 	Pwd, Input, ImageDir string
 	Includes             []string
@@ -70,6 +72,7 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 				case RPAREN:
 					nested = false
 				case CMD:
+					// Changing the behavior of CMD!
 					cmd = fmt.Sprintf("%s", token)
 					val += cmd
 				case FILE:
@@ -86,7 +89,7 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 					// -
 					fallthrough
 				default:
-					//fmt.Printf("Default: %s\n", token)
+					// fmt.Printf("Default: %s\n", token)
 					val += fmt.Sprintf("%s", token)
 				}
 
@@ -150,30 +153,102 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 				tokens[i].Value = p.Vars[token.Value]
 			}
 		} else if token.Type == CMD {
+			// Sync the index during the refactor
+			p.Index = i
 			cmd = fmt.Sprintf("%s", token)
+			switch token.Value {
+			case "inline-image":
+				cmd = ""
+				p.Mixin()
+			default:
+				//log.Fatal("Danger will robinson")
+			}
+			i = p.Index
 		}
 	}
-	p.Output = process(p.Input, p.Items, 0)
+	// I don't recall the point of this, but process
+	// will result in whitespace errors in the output.
+	// p.Output = process(p.Input, p.Items, 0)
+	p.Output = []byte(p.Input)
 	p.Replace()
 	// DEBUG
-	// for _, item := range p.Items {
-	// 	fmt.Printf("%s %s\n", item.Type, item)
-	// }
+	for _, item := range p.Items {
+		_ = item
+		// fmt.Printf("%s %s\n", item.Type, item)
+	}
 	return p.Output
+}
+
+// Presented with a command state, evaluate possible arguments
+// and perform requested actions
+func (p *Parser) Mixin() {
+
+	// Commands always end in ); else panic
+	start := p.Index
+	cmd := p.Items[start]
+
+	var file Item
+	for {
+		cur := p.Items[p.Index]
+		if cur.Type == RPAREN {
+			p.Index++
+			if p.Items[p.Index].Type != SEMIC {
+				f, l := p.Items[start].Pos, p.Items[p.Index].Pos
+				log.Fatal("Commands must end with semicolon",
+					fmt.Sprintf(p.Input[f:l]))
+			} else {
+				break
+			}
+		} else if cur.Type == FILE {
+			file = cur
+		}
+		p.Index++
+	}
+	if file.Type != FILE {
+		log.Fatal("File for command was not found")
+	}
+	if cmd.Value == "inline-image" {
+		img := ImageList{}
+		info := magick.NewInfo()
+		info.SetFormat("png")
+		img.Decode(p.ImageDir + "/" + file.Value)
+		r, w := io.Pipe()
+		go func(w io.WriteCloser, info *magick.Info) {
+			err := img.Images[0].Encode(w, info)
+			if err != nil {
+				panic(err)
+			}
+			w.Close()
+		}(w, info)
+		var scanned []byte
+		scanner := bufio.NewScanner(r)
+		scanner.Split(bufio.ScanBytes)
+		for scanner.Scan() {
+			scanned = append(scanned, scanner.Bytes()...)
+		}
+		str := base64.StdEncoding.EncodeToString(scanned)
+		repl := fmt.Sprintf("url('data:image/png;base64,%s')", str[:10])
+		p.Index-- // Preserve the final semic
+		p.Mark(cmd.Pos-1, p.Items[p.Index].Pos+1, repl)
+	}
 }
 
 // Replace iterates through the list of substrings to
 // cut or replace, adjusting for shift of the output
 // buffer as a result of these ops.
 func (p *Parser) Replace() {
+
 	for _, c := range p.Chop {
+
 		begin := c.Start - p.shift
 		end := c.End - p.shift
-		// fmt.Println("Cut: ", string(p.Output[begin:end]))
+		// fmt.Println(string(p.Input[begin:end]), "~>`"+string(c.Value)+"`")
+		// fmt.Println("*******")
 		// Adjust shift for number of bytes deleted and inserted
 		p.shift += end - begin
 		p.shift -= len(c.Value)
 		suf := append(c.Value, p.Output[end:]...)
+
 		p.Output = append(p.Output[:begin], suf...)
 	}
 }
@@ -200,15 +275,13 @@ func (p *Parser) File(cmd string, start, end int) int {
 		// Mark this area for deletion, since doing so now would
 		// invalidate all subsequent tokens positions.
 		p.Mark(first.Pos, interest.Pos, "")
-		if cmd == "sprite-map" {
-			imgs := ImageList{}
-			glob := fmt.Sprintf("%s", item)
-			name := fmt.Sprintf("%s", p.Items[start])
-			imgs.Decode(p.ImageDir + "/" + glob)
-			imgs.Vertical = true
-			imgs.Combine()
-			p.Sprites[name] = imgs
-		}
+		imgs := ImageList{}
+		glob := fmt.Sprintf("%s", item)
+		name := fmt.Sprintf("%s", p.Items[start])
+		imgs.Decode(p.ImageDir + "/" + glob)
+		imgs.Vertical = true
+		imgs.Combine()
+		p.Sprites[name] = imgs
 		//TODO: Generate filename
 		//imgs.Export("generated.png")
 	}
@@ -278,7 +351,7 @@ func (p *Parser) start(pwd, input string) ([]Item, string, error) {
 				pwd, contents, err := p.ImportPath(pwd, fmt.Sprintf("%s", *item))
 
 				if err != nil {
-					log.Println(err)
+					log.Fatal(err)
 				}
 				//Eat the semicolon
 				item := lex.Next()
