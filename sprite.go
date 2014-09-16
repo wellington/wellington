@@ -1,8 +1,11 @@
 package sprite_sass
 
 import (
+	"bufio"
 	"crypto/rand"
+	"encoding/base64"
 	"fmt"
+	"io"
 	"log"
 	"math"
 	"os"
@@ -99,7 +102,27 @@ func (l ImageList) Dimensions(s string) string {
 			l.Images[pos].Width(), l.Images[pos].Height())
 	}
 	return ""
+}
 
+func (l ImageList) Inline() string {
+	info := magick.NewInfo()
+	info.SetFormat("png")
+	r, w := io.Pipe()
+	go func(w io.WriteCloser, info *magick.Info) {
+		err := l.Images[0].Encode(w, info)
+		if err != nil {
+			panic(err)
+		}
+		w.Close()
+	}(w, info)
+	var scanned []byte
+	scanner := bufio.NewScanner(r)
+	scanner.Split(bufio.ScanBytes)
+	for scanner.Scan() {
+		scanned = append(scanned, scanner.Bytes()...)
+	}
+	encstr := base64.StdEncoding.EncodeToString(scanned)
+	return fmt.Sprintf("url('data:image/png;base64,%s')", encstr)
 }
 
 func (l ImageList) ImageWidth(s string) int {

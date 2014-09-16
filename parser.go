@@ -1,14 +1,10 @@
 package sprite_sass
 
 import (
-	"bufio"
 	"bytes"
-	"encoding/base64"
 	"fmt"
 	"io"
 	"log"
-
-	"github.com/rainycape/magick"
 )
 
 func init() {
@@ -179,8 +175,8 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 	return p.Output
 }
 
-// Presented with a command state, evaluate possible arguments
-// and perform requested actions
+// Mixin processes tokens in the format @include mixin(args...)
+// and perform requested actions.
 func (p *Parser) Mixin() {
 
 	// Commands always end in ); else panic
@@ -209,25 +205,8 @@ func (p *Parser) Mixin() {
 	}
 	if cmd.Value == "inline-image" {
 		img := ImageList{}
-		info := magick.NewInfo()
-		info.SetFormat("png")
 		img.Decode(p.ImageDir + "/" + file.Value)
-		r, w := io.Pipe()
-		go func(w io.WriteCloser, info *magick.Info) {
-			err := img.Images[0].Encode(w, info)
-			if err != nil {
-				panic(err)
-			}
-			w.Close()
-		}(w, info)
-		var scanned []byte
-		scanner := bufio.NewScanner(r)
-		scanner.Split(bufio.ScanBytes)
-		for scanner.Scan() {
-			scanned = append(scanned, scanner.Bytes()...)
-		}
-		str := base64.StdEncoding.EncodeToString(scanned)
-		repl := fmt.Sprintf("url('data:image/png;base64,%s')", str[:10])
+		repl := img.Inline()
 		p.Index-- // Preserve the final semic
 		p.Mark(cmd.Pos-1, p.Items[p.Index].Pos+1, repl)
 	}
