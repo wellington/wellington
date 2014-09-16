@@ -27,6 +27,10 @@ Install Go and add $GOPATH/bin to your $PATH. [Detailed instructions](https://go
 
 ```
 go get -u github.com/drewwells/sprite_sass/cmd/sprite
+# Pull libsass submodules
+cd $GOPATH/drewwells/sprite_sass
+git submodule update --init --recursive
+go install github.com/drewwells/sprite_sass/sprite
 sprite // Should now be available in your path
 ```
 
