@@ -29,8 +29,6 @@ var (
 )
 
 func init() {
-	flag.StringVar(&Input, "input", "", "Input file")
-	flag.StringVar(&Input, "i", "", "Input file")
 	flag.StringVar(&Output, "output", "", "Output file")
 	flag.StringVar(&Output, "o", "", "Output file")
 	flag.StringVar(&Includes, "p", "", "SASS import path")
@@ -44,12 +42,19 @@ func init() {
 
 func main() {
 	flag.Parse()
+	for _, v := range flag.Args() {
+		if strings.HasPrefix(v, "-") {
+			log.Fatalf("Please specify flags before other arguments: %s", v)
+		}
+	}
 
-	if Input == "" {
+	if len(flag.Args()) == 0 {
 		fmt.Println("Please specify input and output filepaths.")
 		fmt.Println("\nAvailable options:")
 		flag.PrintDefaults()
 		return
+	} else if len(flag.Args()) > 1 {
+		log.Fatal("Only one input file is supported at this time")
 	}
 
 	style, ok := sprite.Style[Style]
@@ -63,7 +68,8 @@ func main() {
 		ImageDir:    Dir,
 		Comments:    Comments,
 	}
-	fRead, err := os.Open(Input)
+
+	fRead, err := os.Open(flag.Arg(0))
 	if err != nil {
 		panic(err)
 	}
