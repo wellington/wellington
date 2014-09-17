@@ -288,8 +288,9 @@ func process(in string, items []Item, pos int) []byte {
 	return out
 }
 
-// parser recrusively resolves all imports and tokenizes the
-// input string
+// start recursively resolves all imports.  It lexes the input
+// adding the tokens to the Parser object.
+// TODO: Convert this to byte slice in/out
 func (p *Parser) start(pwd, input string) ([]Item, string, error) {
 
 	var (
