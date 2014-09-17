@@ -14,6 +14,7 @@ import "C"
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -71,7 +72,18 @@ func main() {
 		ctx.IncludePaths = strings.Split(Includes, ",")
 	}
 
-	err = ctx.Run(fRead, os.Stdout, filepath.Dir(Input))
+	var output io.WriteCloser
+
+	if Output == "" {
+		output = os.Stdout
+	} else {
+		output, err = os.Create(Output)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	err = ctx.Run(fRead, output, filepath.Dir(Input))
 	if err != nil {
 		log.Fatal(err)
 	}
