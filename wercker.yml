@@ -6,19 +6,19 @@ build:
         packages: libgif-dev
     - setup-go-workspace
     - script:
-        name: go get
-        code: |
-          go get
-    - script:
         name: build libsass
         code: |
           git submodule --init --recursive
           cd libsass
           make
     - script:
-        name: go build
+        name: go get
         code: |
-          go build ./...
+          go get
+    # - script:
+    #     name: go build
+    #     code: |
+    #       go build ./...
     - script:
         name: go test
         code: |
