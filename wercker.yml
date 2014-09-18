@@ -2,6 +2,7 @@
 box: wercker/golang
 packages:
   - imagemagick
+  - libgif-dev
 build:
   steps:
     - setup-go-workspace
