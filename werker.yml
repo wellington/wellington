@@ -1,3 +1,4 @@
+# Werker config
 box: wercker/golang
 build:
   steps:
