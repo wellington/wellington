@@ -46,7 +46,12 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 	buf := bytes.NewBuffer(make([]byte, 0, bytes.MinRead))
 	buf.ReadFrom(in)
 
+	// This pass resolves all the imports, but positions will
+	// be off due to @import calls
 	tokens, input, err := p.start(pkgdir, string(buf.Bytes()))
+	// This call will have valid token positions
+	tokens, input, err = p.start(pkgdir, input)
+
 	p.Input = input
 	p.Items = tokens
 	if err != nil {
@@ -55,32 +60,34 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 	var (
 		def, cmd string
 	)
-	for i := 0; i < len(tokens); i = i + 1 {
-		token := tokens[i]
-		last := i
+	for ; p.Index < len(tokens); p.Index++ {
+		token := tokens[p.Index]
+		last := p.Index
 		// Generate list of vars
 		if token.Type == VAR {
 			def = fmt.Sprintf("%s", token)
 			val := ""
 			nested := false
 			for {
-				i++
-				token = tokens[i]
+				p.Index++
+				token = tokens[p.Index]
+				// p.Index = i // Sync Index for now as we refactor away from i
 				switch token.Type {
 				case LPAREN:
 					nested = true
 				case RPAREN:
 					nested = false
 				case CMD:
+					// p.Command()
 					// Changing the behavior of CMD!
 					cmd = fmt.Sprintf("%s", token)
 					val += cmd
 				case FILE:
-					i = p.File(cmd, last, i)
+					p.Index = p.File(cmd, last, p.Index)
 					def = ""
 					cmd = ""
 				case SUB:
-					// fmt.Println("SUB:", tokens[i-1], tokens[i], tokens[i+1])
+					fmt.Println("SUB:", tokens[p.Index-1], tokens[p.Index], tokens[p.Index+1])
 					// fmt.Println(p.Input[tokens[i-20].Pos:tokens[i+20].Pos])
 					// Cowardly give up and hope these variables do not matter
 					// Cases:
@@ -93,7 +100,7 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 					val += fmt.Sprintf("%s", token)
 				}
 
-				if !nested && tokens[i].Type != CMD {
+				if !nested && tokens[p.Index].Type != CMD {
 					break
 				}
 			}
@@ -108,62 +115,60 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 				//Capture sprite
 				sprite := p.Sprites[fmt.Sprintf("%s", token)]
 				//Capture filename
-				i++
-				name := fmt.Sprintf("%s", tokens[i])
+				p.Index++
+				name := fmt.Sprintf("%s", tokens[p.Index])
 				repl = sprite.CSS(name)
 
-				p.Mark(tokens[i-3].Pos, tokens[i+2].Pos, repl)
-				tokens = append(tokens[:i-3], tokens[i:]...)
-				i = i - 3
+				p.Mark(tokens[p.Index-3].Pos, tokens[p.Index+2].Pos, repl)
+				tokens = append(tokens[:p.Index-3], tokens[p.Index:]...)
+				p.Index = p.Index - 3
 				def = ""
 				cmd = ""
 			case "sprite-height":
 				sprite := p.Sprites[fmt.Sprintf("%s", token)]
 				repl = fmt.Sprintf("height: %dpx;",
-					sprite.ImageHeight(tokens[i+1].String()))
+					sprite.ImageHeight(tokens[p.Index+1].String()))
 				// Walk forward to file name
-				i++
-				p.Mark(tokens[i-4].Pos, tokens[i+3].Pos, repl)
-				tokens = append(tokens[:i-4], tokens[i:]...)
-				i = i - 4
+				p.Index++
+				p.Mark(tokens[p.Index-4].Pos, tokens[p.Index+3].Pos, repl)
+				tokens = append(tokens[:p.Index-4], tokens[p.Index:]...)
+				p.Index = p.Index - 4
 				def = ""
 				cmd = ""
 			case "sprite-width":
 				sprite := p.Sprites[fmt.Sprintf("%s", token)]
 				repl = fmt.Sprintf("width: %dpx;",
-					sprite.ImageWidth(tokens[i+1].String()))
+					sprite.ImageWidth(tokens[p.Index+1].String()))
 				// Walk forward to file name
-				i++
-				p.Mark(tokens[i-4].Pos, tokens[i+3].Pos, repl)
-				tokens = append(tokens[:i-4], tokens[i:]...)
-				i = i - 4
+				p.Index++
+				p.Mark(tokens[p.Index-4].Pos, tokens[p.Index+3].Pos, repl)
+				tokens = append(tokens[:p.Index-4], tokens[p.Index:]...)
+				p.Index = p.Index - 4
 				def = ""
 				cmd = ""
 			case "sprite-dimensions":
 				sprite := p.Sprites[fmt.Sprintf("%s", token)]
-				repl = sprite.Dimensions(tokens[i+1].String())
+				repl = sprite.Dimensions(tokens[p.Index+1].String())
 				// Walk forward to file name
-				i++
-				p.Mark(tokens[i-4].Pos, tokens[i+3].Pos, repl)
-				tokens = append(tokens[:i-4], tokens[i:]...)
-				i = i - 4
+				p.Index++
+				p.Mark(tokens[p.Index-4].Pos, tokens[p.Index+3].Pos, repl)
+				tokens = append(tokens[:p.Index-4], tokens[p.Index:]...)
+				p.Index = p.Index - 4
 				def = ""
 				cmd = ""
 			default:
-				tokens[i].Value = p.Vars[token.Value]
+				tokens[p.Index].Value = p.Vars[token.Value]
 			}
 		} else if token.Type == CMD {
 			// Sync the index during the refactor
-			p.Index = i
 			cmd = fmt.Sprintf("%s", token)
 			switch token.Value {
-			case "inline-image":
+			case "inline-image", "sprite-file":
 				cmd = ""
 				p.Mixin()
 			default:
 				//log.Fatal("Danger will robinson")
 			}
-			i = p.Index
 		}
 	}
 	// I don't recall the point of this, but process
@@ -177,6 +182,12 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 		// fmt.Printf("%s %s\n", item.Type, item)
 	}
 	return p.Output
+}
+
+func (p *Parser) Command() {
+	i := p.Index
+
+	p.Index = i
 }
 
 // Mixin processes tokens in the format @include mixin(args...)
@@ -214,6 +225,7 @@ func (p *Parser) Mixin() {
 		p.Index-- // Preserve the final semic
 		p.Mark(cmd.Pos-1, p.Items[p.Index].Pos+1, repl)
 	}
+	fmt.Println("Mixin", cmd.Value)
 }
 
 // Replace iterates through the list of substrings to
@@ -247,17 +259,19 @@ func (p *Parser) Mark(start, end int, val string) {
 func (p *Parser) File(cmd string, start, end int) int {
 	first := p.Items[start]
 	item := p.Items[end]
-	// Find the next newline, failing that find the semicolon
 	i := end
 	if cmd == "sprite-map" {
+		// Find the next semicolon and remove it
 		for ; p.Items[i].Type != RPAREN; i++ {
 		}
-		i = i - 1
+		if p.Items[i+1].Type != SEMIC {
+			panic("Statements must end in semicolon")
+		}
+		i++
 		// Verify that the statement ends with semicolon
-		interest := p.Items[i+3]
-		// Mark this area for deletion, since doing so now would
-		// invalidate all subsequent tokens positions.
-		p.Mark(first.Pos, interest.Pos, "")
+		interest := p.Items[i]
+		// Mark the entire line plus semicolon for deletion
+		p.Mark(first.Pos, interest.Pos+1, "")
 		imgs := ImageList{}
 		glob := fmt.Sprintf("%s", item)
 		name := fmt.Sprintf("%s", p.Items[start])
@@ -268,7 +282,7 @@ func (p *Parser) File(cmd string, start, end int) int {
 		//TODO: Generate filename
 		//imgs.Export("generated.png")
 	}
-	return i
+	return i + 1
 }
 
 // func process(in string, items []Item, pos int) []byte {
@@ -333,7 +347,6 @@ func (p *Parser) start(pwd, input string) ([]Item, string, error) {
 			if importing {
 
 				pwd, contents, err := p.ImportPath(pwd, fmt.Sprintf("%s", *item))
-
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -347,8 +360,8 @@ func (p *Parser) start(pwd, input string) ([]Item, string, error) {
 				moreTokens, moreOutput, err := p.start(
 					pwd,
 					contents)
-				// Lexer needs to be adjusted for current
-				// position of end of @import
+				// If importing was successful, each token must be moved forward
+				// by the position of the @import call that made it available.
 				for i, _ := range moreTokens {
 					moreTokens[i].Pos += last.Pos
 				}
