@@ -27,6 +27,10 @@ type Parser struct {
 	Vars                 map[string]string
 }
 
+func NewParser() *Parser {
+	return &Parser{}
+}
+
 // Parser reads the tokens from the lexer and performs
 // conversions and/or substitutions for sprite*() calls.
 //
