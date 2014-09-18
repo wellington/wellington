@@ -1,4 +1,4 @@
-box: wercker/default
+box: wercker/golang
 build:
   steps:
     - setup-go-workspace
