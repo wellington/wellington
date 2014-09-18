@@ -271,26 +271,26 @@ func (p *Parser) File(cmd string, start, end int) int {
 	return i
 }
 
-func process(in string, items []Item, pos int) []byte {
+// func process(in string, items []Item, pos int) []byte {
 
-	var out []byte
-	l := len(items)
+// 	var out []byte
+// 	l := len(items)
 
-	if pos >= len(in) {
-		return []byte("")
-	}
+// 	if pos >= len(in) {
+// 		return []byte("")
+// 	}
 
-	// TODO: There's an error where items[1] has an invalid
-	// position.
-	if l > 1 && items[1].Pos > items[0].Pos {
-		out = append(out, in[items[0].Pos:items[1].Pos]...)
-		out = append(out, process(in, items[1:], pos)...)
-	} else {
-		out = append(out, in[items[0].Pos:]...)
-	}
+// 	// TODO: There's an error where items[1] has an invalid
+// 	// position.
+// 	if l > 1 && items[1].Pos > items[0].Pos {
+// 		out = append(out, in[items[0].Pos:items[1].Pos]...)
+// 		out = append(out, process(in, items[1:], pos)...)
+// 	} else {
+// 		out = append(out, in[items[0].Pos:]...)
+// 	}
 
-	return out
-}
+// 	return out
+// }
 
 // start recursively resolves all imports.  It lexes the input
 // adding the tokens to the Parser object.
