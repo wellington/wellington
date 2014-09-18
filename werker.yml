@@ -1,1 +1,18 @@
 box: wercker/default
+build:
+  steps:
+    - setup-go-workspace
+    - script:
+        name: go get
+        code: |
+          cd libsass
+          make build
+          go test
+    - script:
+        name: go build
+        code: |
+          go build ./...
+    - script:
+        name: go test
+        code: |
+          go test
