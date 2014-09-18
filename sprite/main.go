@@ -64,9 +64,10 @@ func main() {
 	}
 
 	ctx := sprite.Context{
-		OutputStyle: style,
-		ImageDir:    Dir,
-		Comments:    Comments,
+		OutputStyle:  style,
+		ImageDir:     Dir,
+		Comments:     Comments,
+		IncludePaths: []string{filepath.Dir(flag.Arg(0))},
 	}
 
 	fRead, err := os.Open(flag.Arg(0))
