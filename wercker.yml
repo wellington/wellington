@@ -1,5 +1,7 @@
 # Werker config
 box: wercker/golang
+packages:
+  - imagemagick
 build:
   steps:
     - setup-go-workspace
