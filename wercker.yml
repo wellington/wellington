@@ -7,6 +7,7 @@ build:
         name: build libsass
         code: |
           cd libsass
+          git submodule init
           git submodule update
           make
     - script:
