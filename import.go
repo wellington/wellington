@@ -15,7 +15,7 @@ func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 	//Load and retrieve all tokens from imported file
 	path, err := filepath.Abs(fmt.Sprintf("%s/%s.scss", dir, file))
 	if err != nil {
-		panic(err)
+		return "", "", err
 	}
 	pwd := filepath.Dir(path)
 	// Sass put _ in front of imported files
@@ -30,7 +30,7 @@ func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 		for _, lib := range p.Includes {
 			path, err := filepath.Abs(lib + "/" + file)
 			if err != nil {
-				panic(err)
+				return "", "", err
 			}
 			pwd := filepath.Dir(path)
 			fpath = pwd + "/_" + filepath.Base(path) + ".scss"

@@ -42,7 +42,13 @@ func TestRun(t *testing.T) {
 	}
 
 	r, w := io.Pipe()
-	go ctx.Run(fileReader(ipath), w, "test")
+	go func(ipath string, w io.WriteCloser) {
+
+		err := ctx.Run(fileReader(ipath), w, "test")
+		if err != nil {
+			t.Errorf("Error returned on run")
+		}
+	}(ipath, w)
 
 	scanner := bufio.NewScanner(r)
 	scanner.Split(bufio.ScanBytes)
@@ -58,6 +64,16 @@ func TestRun(t *testing.T) {
 
 }
 
+func TestNilRun(t *testing.T) {
+	ctx := Context{}
+	var w io.WriteCloser
+	err := ctx.Run(nil, w, "test")
+	if err == nil {
+		t.Errorf("No error returned: %s", err)
+	}
+
+}
+
 func TestCompile(t *testing.T) {
 	ctx := Context{
 		OutputStyle:  NESTED_STYLE,
@@ -65,7 +81,10 @@ func TestCompile(t *testing.T) {
 		Src:          fileString("test/file1.scss"),
 		Out:          "",
 	}
-	ctx.Compile()
+	err := ctx.Compile()
+	if err != nil {
+		t.Errorf("Compilation failed: %s", err)
+	}
 	fpath := "test/file1.css"
 	bytes, _ := ioutil.ReadFile(fpath)
 	exp := string(bytes)

@@ -56,7 +56,7 @@ func init() {
 func (ctx *Context) Run(in io.Reader, out io.WriteCloser, pkgdir string) error {
 
 	if in == nil {
-		log.Fatal("Input or output files were not specified")
+		return errors.New("Input or output files were not specified")
 	}
 
 	ctx.IncludePaths = append(ctx.IncludePaths, pkgdir)
