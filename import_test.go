@@ -50,9 +50,10 @@ func TestMissingImport(t *testing.T) {
 	if res != "" {
 		t.Errorf("Result from import on missing file: %s", file)
 	}
+
+	rel := strings.Replace(err.Error(), os.Getenv("PWD"), "", 1)
 	if e := "Could not import: notafile\nTried:\n" +
-		"/Users/drew/go/src/github.com/drewwells/" +
-		"sprite_sass/test/_notafile.scss\n"; err.Error() != e {
+		"/test/_notafile.scss\n"; rel != e {
 		t.Errorf("Error message invalid expected:%s\nwas:%s", e, err.Error())
 	}
 }
