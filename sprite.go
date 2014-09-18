@@ -91,8 +91,18 @@ func (l ImageList) CSS(s string) string {
 	if l.OutFile == "" {
 		return "transparent"
 	}
-	return fmt.Sprintf(`url("%s") %dpx %dpx`,
-		l.OutFile, -l.X(pos), -l.Y(pos))
+	return fmt.Sprintf(`url("%s") %s`,
+		l.OutFile, l.Position(s))
+}
+
+func (l ImageList) Position(s string) string {
+	pos := l.Lookup(s)
+	if pos == -1 {
+		log.Printf("File not found: %s\n Try one of: %s",
+			s, l)
+	}
+
+	return fmt.Sprintf(`%dpx %dpx`, -l.X(pos), -l.Y(pos))
 }
 
 func (l ImageList) Dimensions(s string) string {

@@ -93,6 +93,18 @@ func TestImageDimensions(t *testing.T) {
 		t.Errorf("Height invalid expected:%d\nwas:%d",
 			imgs.ImageWidth("139"), e)
 	}
+
+	if e := "-96px 0px"; imgs.Position("140") != e {
+		t.Errorf("Invalid position found expected: %s\nwas:%s",
+			e, imgs.Position("140"))
+	}
+
+	output := rerandom.ReplaceAllString(imgs.CSS("140"), "")
+	if e := `url("test") -96px 0px`; output != e {
+		t.Errorf("Invalid CSS generated on test expected: %s\nwas:%s",
+			e, output)
+	}
+
 }
 
 //Test file globbing

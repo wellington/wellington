@@ -12,7 +12,7 @@ import (
 var rerandom *regexp.Regexp
 
 func init() {
-	rerandom = regexp.MustCompile(`-\w{6}(?:\.png)`)
+	rerandom = regexp.MustCompile(`-\w{6}(?:\.(png|jpg))`)
 }
 
 func TestParserVar(t *testing.T) {
