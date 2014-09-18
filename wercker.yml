@@ -4,11 +4,14 @@ build:
   steps:
     - setup-go-workspace
     - script:
+        name: go get
+        code: |
+          go get
+    - script:
         name: build libsass
         code: |
+          git submodule --init --recursive
           cd libsass
-          git submodule init
-          git submodule update
           make
     - script:
         name: go build
