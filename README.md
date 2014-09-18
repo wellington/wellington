@@ -1,3 +1,5 @@
+[![wercker status](https://app.wercker.com/status/0e2b532c6e35225334fdeeac0cbb7831/m "wercker status")](https://app.wercker.com/project/bykey/0e2b532c6e35225334fdeeac0cbb7831)
+
 sprite-sass
 ===========
 
@@ -27,7 +29,6 @@ Install Go and add $GOPATH/bin to your $PATH. [Detailed instructions](https://go
 
 ```
 go get -u github.com/drewwells/sprite_sass/cmd/sprite
-# Pull libsass submodules
 cd $GOPATH/drewwells/sprite_sass
 git submodule update --init --recursive
 cd libsass
