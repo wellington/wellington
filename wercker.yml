@@ -8,7 +8,7 @@ build:
     - script:
         name: build libsass
         code: |
-          git submodule --init --recursive
+          git submodule update --init --recursive
           cd libsass
           make
     - script:
