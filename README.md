@@ -31,7 +31,7 @@ go get -u github.com/drewwells/sprite_sass/cmd/sprite
 cd $GOPATH/drewwells/sprite_sass
 git submodule update --init --recursive
 cd libsass
-make build
+make
 go install github.com/drewwells/sprite_sass/sprite
 sprite // Should now be available in your path
 ```
