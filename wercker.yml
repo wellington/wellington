@@ -1,10 +1,9 @@
 # Werker config
 box: wercker/golang
-packages:
-  - imagemagick
-  - libgif-dev
 build:
   steps:
+    - install-packages:
+        packages: libgif-dev
     - setup-go-workspace
     - script:
         name: go get
