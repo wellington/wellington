@@ -24,7 +24,7 @@ type Parser struct {
 	Items                []Item
 	Output               []byte
 	Sprites              map[string]ImageList
-	Vars                 map[string]string
+	NewVars, Vars        map[string]string
 }
 
 func NewParser() *Parser {
@@ -69,6 +69,26 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 		// fmt.Printf("%s %s\n", item.Type, item)
 	}
 	return p.Output
+}
+
+func (p *Parser) Parse(items []Item) []byte {
+	i := 0
+	for {
+		item := items[i]
+		if item.Type == VAR {
+			var j int
+			for items[j].Type != SEMIC {
+			}
+
+			p.NewVars[item.String()] = string(p.Parse(items[i+1 : j]))
+		} else if item.Type == CMD {
+			var j int
+			for items[j].Type != RPAREN {
+			}
+
+		}
+		i++
+	}
 }
 
 func (p *Parser) loop() {
@@ -192,6 +212,59 @@ func (p *Parser) loop() {
 }
 
 func (p *Parser) Command() string {
+	items := p.Items
+	item := items[p.Index]
+	def, cmd, repl := "", "", ""
+	switch item.Value {
+	case "sprite":
+		//Capture sprite
+		sprite := p.Sprites[fmt.Sprintf("%s", item)]
+		//Capture filename
+		p.Index++
+		name := fmt.Sprintf("%s", items[p.Index])
+		repl = sprite.CSS(name)
+
+		p.Mark(items[p.Index-3].Pos, items[p.Index+2].Pos, repl)
+		items = append(items[:p.Index-3], items[p.Index:]...)
+		p.Index = p.Index - 3
+		def = ""
+		cmd = ""
+	case "sprite-height":
+		sprite := p.Sprites[fmt.Sprintf("%s", item)]
+		repl = fmt.Sprintf("height: %dpx;",
+			sprite.ImageHeight(items[p.Index+1].String()))
+		// Walk forward to file name
+		p.Index++
+		p.Mark(items[p.Index-4].Pos, items[p.Index+3].Pos, repl)
+		items = append(items[:p.Index-4], items[p.Index:]...)
+		p.Index = p.Index - 4
+		def = ""
+		cmd = ""
+	case "sprite-width":
+		sprite := p.Sprites[fmt.Sprintf("%s", item)]
+		repl = fmt.Sprintf("width: %dpx;",
+			sprite.ImageWidth(items[p.Index+1].String()))
+		// Walk forward to file name
+		p.Index++
+		p.Mark(items[p.Index-4].Pos, items[p.Index+3].Pos, repl)
+		items = append(items[:p.Index-4], items[p.Index:]...)
+		p.Index = p.Index - 4
+		def = ""
+		cmd = ""
+	case "sprite-dimensions":
+		sprite := p.Sprites[fmt.Sprintf("%s", item)]
+		repl = sprite.Dimensions(items[p.Index+1].String())
+		// Walk forward to file name
+		p.Index++
+		p.Mark(items[p.Index-4].Pos, items[p.Index+3].Pos, repl)
+		items = append(items[:p.Index-4], items[p.Index:]...)
+		p.Index = p.Index - 4
+		def = ""
+		cmd = ""
+	default:
+		items[p.Index].Value = p.Vars[item.Value]
+	}
+	_, _ = def, cmd
 	return ""
 }
 
