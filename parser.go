@@ -57,9 +57,26 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 	if err != nil {
 		panic(err)
 	}
+	p.loop()
+	// I don't recall the point of this, but process
+	// will result in whitespace errors in the output.
+	// p.Output = process(p.Input, p.Items, 0)
+	p.Output = []byte(p.Input)
+	p.Replace()
+	// DEBUG
+	for _, item := range p.Items {
+		_ = item
+		// fmt.Printf("%s %s\n", item.Type, item)
+	}
+	return p.Output
+}
+
+func (p *Parser) loop() {
 	var (
 		def, cmd string
 	)
+	tokens := p.Items
+
 	for ; p.Index < len(tokens); p.Index++ {
 		token := tokens[p.Index]
 		last := p.Index
@@ -78,7 +95,7 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 				case RPAREN:
 					nested = false
 				case CMD:
-					// p.Command()
+					//p.Command()
 					// Changing the behavior of CMD!
 					cmd = fmt.Sprintf("%s", token)
 					val += cmd
@@ -87,7 +104,8 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 					def = ""
 					cmd = ""
 				case SUB:
-					fmt.Println("SUB:", tokens[p.Index-1], tokens[p.Index], tokens[p.Index+1])
+					fmt.Println("SUB:", tokens[p.Index-1],
+						tokens[p.Index], tokens[p.Index+1])
 					// fmt.Println(p.Input[tokens[i-20].Pos:tokens[i+20].Pos])
 					// Cowardly give up and hope these variables do not matter
 					// Cases:
@@ -171,23 +189,10 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 			}
 		}
 	}
-	// I don't recall the point of this, but process
-	// will result in whitespace errors in the output.
-	// p.Output = process(p.Input, p.Items, 0)
-	p.Output = []byte(p.Input)
-	p.Replace()
-	// DEBUG
-	for _, item := range p.Items {
-		_ = item
-		// fmt.Printf("%s %s\n", item.Type, item)
-	}
-	return p.Output
 }
 
-func (p *Parser) Command() {
-	i := p.Index
-
-	p.Index = i
+func (p *Parser) Command() string {
+	return ""
 }
 
 // Mixin processes tokens in the format @include mixin(args...)
