@@ -253,22 +253,35 @@ func (p *Parser) Parse(items []Item) []byte {
 // Passed sass-command( args...)
 func (p *Parser) Command(items []Item) ([]byte, int) {
 
+	i := 0
+	_ = i
 	cmd := items[0]
-	_ = cmd
 	item := items[0]
 	repl := ""
 	eoc, nPos := RParen(items[1:])
-
+	// Determine our offset from the source items
 	if false && nPos != 0 {
 		fmt.Println("nested")
 		rightPos, _ := RParen(items[nPos:])
 		p.Command(items[nPos:rightPos])
 	}
-	fmt.Println(items)
-	//log.Fatal("")
-	return []byte(""), eoc
-	switch item.Value {
-	case "sprite":
+
+	switch cmd.Value {
+	case "sprite-map":
+		// Missing variable and semicolon currently
+		// Delete entire line
+		p.Mark(items[0].Pos, items[eoc].Pos+len(items[eoc].Value), "")
+		imgs := ImageList{}
+		glob := fmt.Sprintf("%s", item)
+		name := fmt.Sprintf("%s", items[1])
+		imgs.Decode(p.ImageDir + "/" + glob)
+		imgs.Vertical = true
+		imgs.Combine()
+		p.Sprites[name] = imgs
+		//TODO: Generate filename
+		//imgs.Export("generated.png")
+
+	case "asprite":
 		//Capture sprite
 		sprite := p.Sprites[fmt.Sprintf("%s", item)]
 		//Capture filename
@@ -280,7 +293,7 @@ func (p *Parser) Command(items []Item) ([]byte, int) {
 		items = append(items[:p.Idx-3], items[p.Idx:]...)
 		p.Idx = p.Idx - 3
 
-	case "sprite-height":
+	case "asprite-height":
 		sprite := p.Sprites[fmt.Sprintf("%s", item)]
 		repl = fmt.Sprintf("height: %dpx;",
 			sprite.ImageHeight(items[p.Idx+1].String()))
@@ -290,7 +303,7 @@ func (p *Parser) Command(items []Item) ([]byte, int) {
 		items = append(items[:p.Idx-4], items[p.Idx:]...)
 		p.Idx = p.Idx - 4
 
-	case "sprite-width":
+	case "asprite-width":
 		sprite := p.Sprites[fmt.Sprintf("%s", item)]
 		repl = fmt.Sprintf("width: %dpx;",
 			sprite.ImageWidth(items[p.Idx+1].String()))
@@ -300,7 +313,7 @@ func (p *Parser) Command(items []Item) ([]byte, int) {
 		items = append(items[:p.Idx-4], items[p.Idx:]...)
 		p.Idx = p.Idx - 4
 
-	case "sprite-dimensions":
+	case "asprite-dimensions":
 		sprite := p.Sprites[fmt.Sprintf("%s", item)]
 		repl = sprite.Dimensions(items[p.Idx+1].String())
 		// Walk forward to file name
@@ -310,7 +323,7 @@ func (p *Parser) Command(items []Item) ([]byte, int) {
 		p.Idx = p.Idx - 4
 
 	default:
-		items[p.Idx].Value = p.Vars[item.Value]
+		//items[p.Idx].Value = p.Vars[item.Value]
 	}
 
 	return []byte(""), eoc
@@ -376,7 +389,7 @@ func (p *Parser) Replace() {
 
 // Mark segments of the input string for future deletion.
 func (p *Parser) Mark(start, end int, val string) {
-	// fmt.Println("Mark:", string(p.Input[start:end]), "~")
+	fmt.Println("Mark:", string(p.Input[start:end]), "~")
 	p.Chop = append(p.Chop, Replace{start, end, []byte(val)})
 }
 
