@@ -57,10 +57,10 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 	if err != nil {
 		panic(err)
 	}
-	p.loop()
-	// I don't recall the point of this, but process
-	// will result in whitespace errors in the output.
-	// p.Output = process(p.Input, p.Items, 0)
+	// p.loop()
+
+	fmt.Println(string(p.Parse(p.Items)))
+
 	p.Output = []byte(p.Input)
 	p.Replace()
 	// DEBUG
@@ -69,24 +69,6 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 		// fmt.Printf("%s %s\n", item.Type, item)
 	}
 	return p.Output
-}
-
-func (p *Parser) Parse(items []Item) []byte {
-	i := p.Idx
-	for {
-		item := items[i]
-		if item.Type == VAR {
-			var j int
-			for items[j].Type != SEMIC {
-			}
-
-			p.NewVars[item.String()] = string(p.Parse(items[i+1 : j]))
-		} else if item.Type == CMD {
-			return []byte(p.Command())
-		}
-		i++
-		p.Idx = i
-	}
 }
 
 func (p *Parser) loop() {
@@ -113,7 +95,7 @@ func (p *Parser) loop() {
 				case RPAREN:
 					nested = false
 				case CMD:
-					//p.Command()
+					// Found a command, collect the cmd args
 					// Changing the behavior of CMD!
 					cmd = fmt.Sprintf("%s", token)
 					val += cmd
@@ -209,17 +191,82 @@ func (p *Parser) loop() {
 	}
 }
 
-// Checks that current item is
-func (p *Parser) Command() string {
-	items := p.Items
-	item := items[p.Idx]
-	repl := ""
-
-	//Check next token is LPAREN
-	if items[p.Idx+1].Type != LPAREN {
-		log.Fatal("Command was not followed by (: was:" + items[p.Idx+1].Value)
+// Find Paren that matches the current (
+func RParen(items []Item) (int, int) {
+	if items[0].Type != LPAREN {
+		panic("Expected: ( was: " + items[0].Value)
+	}
+	pos := 1
+	match := 1
+	nest := false
+	nestPos := 0
+	for match != 0 {
+		switch items[pos].Type {
+		case LPAREN:
+			match++
+		case RPAREN:
+			match--
+		}
+		if match > 1 {
+			if !nest {
+				nestPos = pos
+			}
+			// Nested command must be resolved
+			nest = true
+		}
+		pos++
 	}
 
+	return pos, nestPos
+}
+
+func (p *Parser) Parse(items []Item) []byte {
+	var (
+		out []byte
+		eoc int
+	)
+	i := p.Idx
+	p.NewVars = make(map[string]string)
+	for i < len(items) {
+		item := items[i]
+		if item.Type == VAR {
+			j := i
+			for items[j].Type != SEMIC {
+				j++
+			}
+			p.NewVars[item.String()] = string(p.Parse(items[i+1 : j]))
+			i = j
+		} else if item.Type == CMD {
+			j := i
+			for j < len(items) && items[j].Type != SEMIC {
+				j++
+			}
+			out, eoc = p.Command(items[i:j])
+			i += eoc
+		}
+		i++
+		p.Idx = i
+	}
+	return []byte(out)
+}
+
+// Passed sass-command( args...)
+func (p *Parser) Command(items []Item) ([]byte, int) {
+
+	cmd := items[0]
+	_ = cmd
+	item := items[0]
+	repl := ""
+	eoc, nPos := RParen(items[1:])
+
+	if false && nPos != 0 {
+		fmt.Println("nested")
+		rightPos, _ := RParen(items[nPos:])
+		p.Command(items[nPos:rightPos])
+	}
+	fmt.Println(items)
+	//log.Fatal("")
+	return []byte(""), eoc
 	switch item.Value {
 	case "sprite":
 		//Capture sprite
@@ -266,7 +313,7 @@ func (p *Parser) Command() string {
 		items[p.Idx].Value = p.Vars[item.Value]
 	}
 
-	return ""
+	return []byte(""), eoc
 }
 
 // Mixin processes tokens in the format @include mixin(args...)
