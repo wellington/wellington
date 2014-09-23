@@ -12,7 +12,7 @@ func TestMixin(t *testing.T) {
 
 	ib := []byte(`$s: sprite-map("pixel.png");
 div {
-    @include sprite($s, pixel);
+    background: sprite($s, pixel);
     @include sprite-dimensions($s, pixel);
 }`)
 	e := `
