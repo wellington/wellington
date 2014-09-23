@@ -24,50 +24,51 @@ func TestSassLexer(t *testing.T) {
 		t.Errorf("Error parsing string")
 	}
 
-	if e := "$red-var"; e != items[0].String() {
+	sel := items[0].String()
+	if e := "$images"; e != sel {
 		t.Errorf("Invalid VAR parsing expected: %s, was: %s",
-			e, items[0].String())
+			e, sel)
 	}
-
-	if e := "#00FF00"; e != items[3].String() {
+	sel = items[10].String()
+	if e := "#00FF00"; e != sel {
 		t.Errorf("Invalid TEXT parsing expected: %s, was: %s",
-			e, items[3].String())
+			e, sel)
 	}
 
-	if e := "sprite-map"; e != items[11].String() {
+	if e := "sprite-map"; e != items[1].String() {
 		t.Errorf("Invalid CMD parsing expected: %s, was: %s",
-			e, items[11].String())
+			e, items[1].String())
 	}
-
-	if e := "*.png"; e != items[13].String() {
+	sel = items[3].String()
+	if e := "*.png"; e != sel {
 		t.Errorf("Invalid FILE parsing expected: %s, was: %s",
-			items[13].String(), e)
+			sel, e)
 	}
-
-	if e := FILE; e != items[13].Type {
+	T := items[3].Type
+	if e := FILE; e != T {
 		t.Errorf("Invalid FILE type parsing expected: %s, was: %s",
-			e, items[13].Type)
+			e, T)
 	}
 }
 
 func TestLexerImport(t *testing.T) {
 	fvar, _ := ioutil.ReadFile("test/import.scss")
 	items, _ := parse(string(fvar))
-
-	if e := "background"; items[0].String() != e {
-		t.Errorf("Invalid token expected: %s, was %s", e, items[0])
+	sel := items[0].String()
+	if e := "background"; sel != e {
+		t.Errorf("Invalid token expected: %s, was %s", e, sel)
 	}
-
-	if e := "purple"; items[1].String() != e {
-		t.Errorf("Invalid token expected: %s, was %s", e, items[0])
+	sel = items[1].String()
+	if e := "purple"; sel != e {
+		t.Errorf("Invalid token expected: %s, was %s", e, sel)
 	}
-
-	if e := "@import"; items[2].String() != e {
-		t.Errorf("Invalid token expected: %s, was %s", e, items[0])
+	sel = items[3].String()
+	if e := "@import"; sel != e {
+		t.Errorf("Invalid token expected: %s, was %s", e, sel)
 	}
-
-	if e := "var"; items[3].String() != e {
-		t.Errorf("Invalid token expected: %s, was %s", e, items[0])
+	sel = items[4].String()
+	if e := "var"; sel != e {
+		t.Errorf("Invalid token expected: %s, was %s", e, sel)
 	}
 }
 
@@ -98,6 +99,7 @@ func parse(input string) ([]Item, error) {
 		case EXTRA:
 			status = append(status, *item)
 		default:
+			status = append(status, *item)
 			//fmt.Printf("Default: %d %s\n", item.Pos, item)
 		}
 	}

@@ -60,7 +60,7 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 	}
 	// p.loop()
 
-	fmt.Println(string(p.Parse(p.Items)))
+	p.Parse(p.Items)
 
 	p.Output = []byte(p.Input)
 	p.Replace()
@@ -227,45 +227,55 @@ func (p *Parser) Parse(items []Item) []byte {
 		out []byte
 		eoc int
 	)
-	i := 0
-	for i < len(items) {
-		item := items[i]
-		if item.Type == VAR {
-			j := i
-			for items[j].Type != SEMIC {
-				j++
-			}
-			if items[i+1].Type != CMDVAR {
-				p.NewVars[item.String()] = string(p.Parse(items[i+1 : j]))
-			} else {
-				// Missing variable and semicolon currently
-				// Delete entire line
-				p.Mark(items[0].Pos,
-					items[j].Pos+len(items[j].Value), "")
-				imgs := ImageList{}
-
-				name := fmt.Sprintf("%s", items[0])
-				glob := fmt.Sprintf("%s", items[3])
-				imgs.Decode(p.ImageDir + "/" + glob)
-				imgs.Vertical = true
-				imgs.Combine()
-				p.Sprites[name] = imgs
-				//TODO: Generate filename
-				//imgs.Export("generated.png")
-			}
-			i = j
-		} else if item.Type == CMD {
-			j := i
-			for j < len(items) && items[j].Type != SEMIC {
-				j++
-			}
-			out, eoc = p.Command(items[i:j])
-			i += eoc
-		}
-		i++
-		p.Idx = i
+	_ = eoc
+	if len(items) == 0 {
+		return []byte("")
 	}
-	return []byte(out)
+	j := 1
+	item := items[0]
+	if item.Type == VAR {
+		for items[j].Type != SEMIC {
+			j++
+		}
+		if items[1].Type != CMDVAR {
+			p.NewVars[item.String()] = string(p.Parse(items[1:j]))
+		} else {
+			// Special parsing of sprite-maps
+			p.Mark(items[0].Pos,
+				items[j].Pos+len(items[j].Value), "")
+			imgs := ImageList{}
+
+			name := fmt.Sprintf("%s", items[0])
+			glob := fmt.Sprintf("%s", items[3])
+			imgs.Decode(p.ImageDir + "/" + glob)
+			imgs.Vertical = true
+			imgs.Combine()
+			p.Sprites[name] = imgs
+			//TODO: Generate filename
+			//imgs.Export("generated.png")
+		}
+	} else if item.Type == SUB {
+		for items[j].Type != SEMIC {
+			j++
+		}
+		// fmt.Println("subvar:", item.Value, p.NewVars[item.Value])
+		p.Mark(item.Pos, item.Pos+len(item.Value), p.NewVars[item.Value])
+	} else if item.Type == CMD {
+		for j < len(items) && items[j].Type != SEMIC {
+			j++
+		}
+		out, eoc = p.Command(items[0:j])
+	} else if item.Type == TEXT {
+		out = append(out, item.Value...)
+	} else {
+		// fmt.Println("extra:", item, items[i:])
+		out = append(out, item.Value...)
+		// return []byte(items[i].Value)
+	}
+	// i++
+	// p.Idx = i
+	// }
+	return append(out, p.Parse(items[j:])...)
 }
 
 // Passed sass-command( args...)
@@ -279,23 +289,18 @@ func (p *Parser) Command(items []Item) ([]byte, int) {
 	eoc, nPos := RParen(items[1:])
 	// Determine our offset from the source items
 	if false && nPos != 0 {
-		fmt.Println("nested")
 		rightPos, _ := RParen(items[nPos:])
 		p.Command(items[nPos:rightPos])
 	}
 
 	switch cmd.Value {
-	case "asprite":
+	case "sprite":
 		//Capture sprite
-		sprite := p.Sprites[fmt.Sprintf("%s", item)]
+		sprite := p.Sprites[fmt.Sprintf("%s", items[2])]
 		//Capture filename
-		p.Idx++
-		name := fmt.Sprintf("%s", items[p.Idx])
+		name := fmt.Sprintf("%s", items[3])
 		repl = sprite.CSS(name)
-
-		p.Mark(items[p.Idx-3].Pos, items[p.Idx+2].Pos, repl)
-		items = append(items[:p.Idx-3], items[p.Idx:]...)
-		p.Idx = p.Idx - 3
+		p.Mark(items[0].Pos, items[4].Pos+len(items[4].Value), repl)
 	case "sprite-height":
 		sprite := p.Sprites[fmt.Sprintf("%s", items[2])]
 		repl = fmt.Sprintf("%dpx",
@@ -385,7 +390,7 @@ func (p *Parser) Replace() {
 
 // Mark segments of the input string for future deletion.
 func (p *Parser) Mark(start, end int, val string) {
-	// fmt.Println("Mark:", string(p.Input[start:end]), val)
+	// fmt.Println("Mark:", string(p.Input[start:end]), "~>~", val, "~")
 	p.Chop = append(p.Chop, Replace{start, end, []byte(val)})
 }
 

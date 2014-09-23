@@ -19,11 +19,13 @@ func TestParserVar(t *testing.T) {
 	p := Parser{}
 	fread := fileReader("test/_var.scss")
 	output := string(p.Start(fread, "test/"))
-	output = rerandom.ReplaceAllString(output, "")
+	output = strings.TrimSpace(rerandom.ReplaceAllString(output, ""))
 
 	file, _ := ioutil.ReadFile("test/var.parser")
-	if strings.TrimSpace(string(file)) != strings.TrimSpace(output) {
-		t.Errorf("File output did not match, was:\n%s\nexpected:\n%s", output, string(file))
+	e := strings.TrimSpace(string(file))
+	if e != output {
+		t.Errorf("File output did not match, was:\n~%s~\nexpected:\n~%s~",
+			output, e)
 	}
 
 }
@@ -31,11 +33,13 @@ func TestParserVar(t *testing.T) {
 func TestParserImporter(t *testing.T) {
 	p := Parser{}
 	output := string(p.Start(fileReader("test/import.scss"), "test/"))
-	output = rerandom.ReplaceAllString(output, "")
+	output = strings.TrimSpace(rerandom.ReplaceAllString(output, ""))
 
 	file, _ := ioutil.ReadFile("test/import.parser")
-	if strings.TrimSpace(string(file)) != strings.TrimSpace(output) {
-		t.Errorf("File output did not match, was:\n%s\nexpected:\n%s", output, string(file))
+	e := strings.TrimSpace(string(file))
+	if e != output {
+		t.Errorf("File output did not match, was:\n%s\nexpected:\n%s",
+			output, e)
 	}
 }
 
