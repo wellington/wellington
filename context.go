@@ -12,6 +12,7 @@ import "C"
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"strconv"
@@ -105,7 +106,6 @@ func (ctx *Context) Compile() error {
 	cCtx.options.include_paths = C.CString(strings.Join(ctx.IncludePaths, ":"))
 	cCtx.options.image_path = C.CString(ctx.ImageDir)
 	cCtx.options.precision = C.int(ctx.Precision)
-
 	defer func() {
 		C.free(unsafe.Pointer(cCtx.source_string))
 		C.free(unsafe.Pointer(cCtx.options.include_paths))
@@ -137,9 +137,9 @@ func (ctx *Context) Compile() error {
 		// Line number is off by one from libsass
 		// Find previous lines to maximum available
 		errLines := ""
-		for i := 10; i > -1; i-- {
-			if pos-i > 0 {
-				errLines += "\n" + lines[pos-i]
+		for i := 10; i > -5; i-- {
+			if pos-i > 0 && pos-i < len(lines) {
+				errLines += fmt.Sprintf("\n%d:", pos-i) + lines[pos-i]
 			}
 		}
 
