@@ -242,10 +242,11 @@ func (p *Parser) Command(items []Item) ([]byte, int) {
 	case "sprite":
 		//Capture sprite
 		sprite := p.Sprites[fmt.Sprintf("%s", items[2])]
+		pos, _ := RParen(items[1:])
 		//Capture filename
 		name := fmt.Sprintf("%s", items[3])
 		repl = sprite.CSS(name)
-		p.Mark(items[0].Pos, items[4].Pos+len(items[4].Value), repl)
+		p.Mark(items[0].Pos, items[pos].Pos+len(items[pos].Value), repl)
 	case "sprite-height":
 		sprite := p.Sprites[fmt.Sprintf("%s", items[2])]
 		repl = fmt.Sprintf("%dpx", sprite.ImageHeight(items[3].String()))

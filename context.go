@@ -93,7 +93,6 @@ func (ctx *Context) Compile() error {
 	if ctx.Src == "" {
 		log.Fatal("No input string specified")
 	}
-
 	// set up the underlying C context struct
 	cCtx := C.sass_new_context()
 	cCtx.source_string = C.CString(ctx.Src)
