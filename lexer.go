@@ -20,8 +20,11 @@ type ItemType int
 const (
 	ItemEOF ItemType = iota
 	ItemError
+	IF
+	ELSE
 	IMPORT
 	INCLUDE
+	FUNC
 	MIXIN
 	EXTRA
 	CMD
@@ -51,8 +54,11 @@ const (
 var Tokens = [...]string{
 	ItemEOF:   "eof",
 	ItemError: "error",
+	IF:        "@if",
+	ELSE:      "@else",
 	IMPORT:    "@import",
 	INCLUDE:   "@include",
+	FUNC:      "@function",
 	MIXIN:     "@mixin",
 	EXTRA:     "extra",
 	CMD:       "command",
@@ -421,8 +427,14 @@ func (l *Lexer) Directive() StateFn {
 			l.Ignore()
 		}
 		return l.Mixin()
+	case "@function":
+		l.Emit(FUNC)
 	case "@mixin":
 		l.Emit(MIXIN)
+	case "@if":
+		l.Emit(IF)
+	case "@else":
+		l.Emit(ELSE)
 	}
 	return l.Action()
 }

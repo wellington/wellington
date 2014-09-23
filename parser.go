@@ -262,7 +262,8 @@ func (p *Parser) Parse(items []Item) []byte {
 	}
 	j := 1
 	item := items[0]
-	if item.Type == VAR {
+	switch item.Type {
+	case VAR:
 		for items[j].Type != SEMIC {
 			j++
 		}
@@ -283,11 +284,12 @@ func (p *Parser) Parse(items []Item) []byte {
 			//TODO: Generate filename
 			//imgs.Export("generated.png")
 		}
-	} else if item.Type == SUB {
+	case SUB:
 		for items[j].Type != SEMIC {
 			j++
 			if j >= len(items) {
-				panic("Did not find ;")
+				fmt.Println(items)
+				panic(fmt.Sprintf("Did not find ; for %s\n", item))
 			}
 		}
 		// fmt.Println("subvar:", item.Value, p.NewVars[item.Value])
@@ -296,14 +298,14 @@ func (p *Parser) Parse(items []Item) []byte {
 			item.Value = val
 		}
 		p.Mark(item.Pos, item.Pos+len(item.Value), item.Value)
-	} else if item.Type == CMD {
+	case CMD:
 		for j < len(items) && items[j].Type != SEMIC {
 			j++
 		}
 		out, eoc = p.Command(items[0:j])
-	} else if item.Type == TEXT {
+	case TEXT:
 		out = append(out, item.Value...)
-	} else if item.Type == MIXIN {
+	case MIXIN, FUNC:
 		// Ignore the entire mixin and move to the next line
 		lpos := 0
 		for {
@@ -317,7 +319,7 @@ func (p *Parser) Parse(items []Item) []byte {
 			out = append(out, items[i].Value...)
 		}
 		j = pos
-	} else {
+	default:
 		out = append(out, item.Value...)
 	}
 
