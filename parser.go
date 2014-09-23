@@ -58,17 +58,14 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 	if err != nil {
 		panic(err)
 	}
-	// p.loop()
-
+	// DEBUG
+	// for _, item := range p.Items {
+	// 	fmt.Printf("%s %s\n", item.Type, item)
+	// }
 	p.Parse(p.Items)
 
 	p.Output = []byte(p.Input)
 	p.Replace()
-	// DEBUG
-	for _, item := range p.Items {
-		_ = item
-		// fmt.Printf("%s %s\n", item.Type, item)
-	}
 	// fmt.Printf("out: % #v\n", p.Sprites)
 	return p.Output
 }
@@ -114,7 +111,7 @@ func RBracket(items []Item, pos int) (int, int) {
 	nestPos := 0
 	for match != 0 && pos < len(items) {
 		switch items[pos].Type {
-		case LBRACKET:
+		case LBRACKET, INT:
 			match++
 		case RBRACKET:
 			match--
@@ -198,7 +195,7 @@ func (p *Parser) Parse(items []Item) []byte {
 		for i := 0; i < pos; i++ {
 			out = append(out, items[i].Value...)
 		}
-		fmt.Println(">>", item.Type, items[lpos:pos])
+		// fmt.Println(">>", item.Type, items[lpos:pos], "<<")
 		j = pos
 	default:
 		out = append(out, item.Value...)

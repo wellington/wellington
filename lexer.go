@@ -24,6 +24,7 @@ const (
 	ELSE
 	IMPORT
 	INCLUDE
+	INT
 	FUNC
 	MIXIN
 	EXTRA
@@ -58,6 +59,7 @@ var Tokens = [...]string{
 	ELSE:      "@else",
 	IMPORT:    "@import",
 	INCLUDE:   "@include",
+	INT:       "#{",
 	FUNC:      "@function",
 	MIXIN:     "@mixin",
 	EXTRA:     "extra",
@@ -400,7 +402,7 @@ func (l *Lexer) Action() StateFn {
 }
 
 func IsSymbol(r rune) bool {
-	return strings.ContainsRune("(),;{}", r)
+	return strings.ContainsRune("(),;{}#", r)
 }
 
 func IsSpace(r rune) bool {
@@ -441,6 +443,8 @@ func (l *Lexer) Directive() StateFn {
 
 func (l *Lexer) Paren() StateFn {
 	switch l.Current() {
+	case "#{":
+		l.Emit(INT)
 	case "(":
 		l.Emit(LPAREN)
 	case ")":
