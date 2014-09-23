@@ -145,7 +145,11 @@ func (p *Parser) Parse(items []Item) []byte {
 			j++
 		}
 		if items[1].Type != CMDVAR {
-			p.NewVars[item.String()] = string(p.Parse(items[1:j]))
+			// Hackery for empty sass maps
+			val := string(p.Parse(items[1:j]))
+			if val != "()" {
+				p.NewVars[item.String()] = val
+			}
 		} else {
 			// Special parsing of sprite-maps
 			p.Mark(items[0].Pos,
@@ -162,19 +166,19 @@ func (p *Parser) Parse(items []Item) []byte {
 			//imgs.Export("generated.png")
 		}
 	case SUB:
-		for items[j].Type != SEMIC {
+		/*for items[j].Type != SEMIC {
 			j++
 			if j >= len(items) {
 				fmt.Println(items)
 				panic(fmt.Sprintf("Did not find ; for %s\n", item))
 			}
-		}
-		// fmt.Println("subvar:", item.Value, p.NewVars[item.Value])
+		}*/
 		val, ok := p.NewVars[item.Value]
-		if ok {
-			item.Value = val
+		// Do not replace if nothing was found
+		if !ok {
+			val = item.Value
 		}
-		p.Mark(item.Pos, item.Pos+len(item.Value), item.Value)
+		p.Mark(item.Pos, item.Pos+len(item.Value), val)
 	case CMD:
 		for j < len(items) && items[j].Type != SEMIC {
 			j++
@@ -182,7 +186,7 @@ func (p *Parser) Parse(items []Item) []byte {
 		out, eoc = p.Command(items[0:j])
 	case TEXT:
 		out = append(out, item.Value...)
-	case MIXIN, FUNC, IF, ELSE:
+	case MIXIN, FUNC, IF, ELSE, EACH:
 		// Ignore the entire mixin and move to the next line
 		lpos := 0
 		for {
@@ -292,32 +296,6 @@ func (p *Parser) Mixin() {
 		p.Mark(cmd.Pos-1, p.Items[p.Idx].Pos+1, repl)
 	}
 	fmt.Println("Mixin", cmd.Value)
-}
-
-// Replace iterates through the list of substrings to
-// cut or replace, adjusting for shift of the output
-// buffer as a result of these ops.
-func (p *Parser) Replace() {
-
-	for _, c := range p.Chop {
-
-		begin := c.Start - p.shift
-		end := c.End - p.shift
-		// fmt.Println(string(p.Input[begin:end]), "~>`"+string(c.Value)+"`")
-		// fmt.Println("*******")
-		// Adjust shift for number of bytes deleted and inserted
-		p.shift += end - begin
-		p.shift -= len(c.Value)
-		suf := append(c.Value, p.Output[end:]...)
-
-		p.Output = append(p.Output[:begin], suf...)
-	}
-}
-
-// Mark segments of the input string for future deletion.
-func (p *Parser) Mark(start, end int, val string) {
-	// fmt.Println("Mark:", string(p.Input[start:end]), "~>~", val, "~")
-	p.Chop = append(p.Chop, Replace{start, end, []byte(val)})
 }
 
 // Processes file which usually mean cutting some of the input

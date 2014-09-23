@@ -22,6 +22,7 @@ const (
 	ItemError
 	IF
 	ELSE
+	EACH
 	IMPORT
 	INCLUDE
 	INT
@@ -57,6 +58,7 @@ var Tokens = [...]string{
 	ItemError: "error",
 	IF:        "@if",
 	ELSE:      "@else",
+	EACH:      "@each",
 	IMPORT:    "@import",
 	INCLUDE:   "@include",
 	INT:       "#{",
@@ -429,6 +431,8 @@ func (l *Lexer) Directive() StateFn {
 			l.Ignore()
 		}
 		return l.Mixin()
+	case "@each":
+		l.Emit(EACH)
 	case "@function":
 		l.Emit(FUNC)
 	case "@mixin":

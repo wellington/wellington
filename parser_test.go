@@ -24,7 +24,7 @@ func TestParserVar(t *testing.T) {
 	file, _ := ioutil.ReadFile("test/var.parser")
 	e := strings.TrimSpace(string(file))
 	if e != output {
-		t.Errorf("File output did not match, was:\n~%s~\nexpected:\n~%s~",
+		t.Errorf("File output did not match, \nwas:\n%s\nexpected:\n%s",
 			output, e)
 	}
 
