@@ -1,3 +1,6 @@
+
 $width: 96px;
 div {
-    height: 139px;width: 96px;}
+    height: 139px;
+    width: 96px;
+}

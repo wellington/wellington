@@ -227,7 +227,7 @@ func (p *Parser) Parse(items []Item) []byte {
 		out []byte
 		eoc int
 	)
-	i := p.Idx
+	i := 0
 	for i < len(items) {
 		item := items[i]
 		if item.Type == VAR {
@@ -237,7 +237,6 @@ func (p *Parser) Parse(items []Item) []byte {
 			}
 			if items[i+1].Type != CMDVAR {
 				p.NewVars[item.String()] = string(p.Parse(items[i+1 : j]))
-				i = j
 			} else {
 				// Missing variable and semicolon currently
 				// Delete entire line
@@ -254,6 +253,7 @@ func (p *Parser) Parse(items []Item) []byte {
 				//TODO: Generate filename
 				//imgs.Export("generated.png")
 			}
+			i = j
 		} else if item.Type == CMD {
 			j := i
 			for j < len(items) && items[j].Type != SEMIC {
@@ -385,7 +385,7 @@ func (p *Parser) Replace() {
 
 // Mark segments of the input string for future deletion.
 func (p *Parser) Mark(start, end int, val string) {
-	fmt.Println("Mark:", string(p.Input[start:end]), val)
+	// fmt.Println("Mark:", string(p.Input[start:end]), val)
 	p.Chop = append(p.Chop, Replace{start, end, []byte(val)})
 }
 
