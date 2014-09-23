@@ -222,6 +222,35 @@ func RParen(items []Item) (int, int) {
 	return pos, nestPos
 }
 
+func RBracket(items []Item, pos int) (int, int) {
+	if items[pos].Type != LBRACKET {
+		panic("Expected: { was: " + items[0].Value)
+	}
+
+	// Move to next item and set match to 1
+	pos++
+	match := 1
+	nest := false
+	nestPos := 0
+	for match != 0 && pos < len(items) {
+		switch items[pos].Type {
+		case LBRACKET:
+			match++
+		case RBRACKET:
+			match--
+		}
+		if match > 1 {
+			if !nest {
+				nestPos = pos
+			}
+			// Nested command must be resolved
+			nest = true
+		}
+		pos++
+	}
+	return pos, nestPos
+}
+
 func (p *Parser) Parse(items []Item) []byte {
 	var (
 		out []byte
@@ -257,9 +286,16 @@ func (p *Parser) Parse(items []Item) []byte {
 	} else if item.Type == SUB {
 		for items[j].Type != SEMIC {
 			j++
+			if j >= len(items) {
+				panic("Did not find ;")
+			}
 		}
 		// fmt.Println("subvar:", item.Value, p.NewVars[item.Value])
-		p.Mark(item.Pos, item.Pos+len(item.Value), p.NewVars[item.Value])
+		val, ok := p.NewVars[item.Value]
+		if ok {
+			item.Value = val
+		}
+		p.Mark(item.Pos, item.Pos+len(item.Value), item.Value)
 	} else if item.Type == CMD {
 		for j < len(items) && items[j].Type != SEMIC {
 			j++
@@ -267,14 +303,24 @@ func (p *Parser) Parse(items []Item) []byte {
 		out, eoc = p.Command(items[0:j])
 	} else if item.Type == TEXT {
 		out = append(out, item.Value...)
+	} else if item.Type == MIXIN {
+		// Ignore the entire mixin and move to the next line
+		lpos := 0
+		for {
+			if items[lpos].Type == LBRACKET {
+				break
+			}
+			lpos++
+		}
+		pos, _ := RBracket(items, lpos)
+		for i := 0; i < pos; i++ {
+			out = append(out, items[i].Value...)
+		}
+		j = pos
 	} else {
-		// fmt.Println("extra:", item, items[i:])
 		out = append(out, item.Value...)
-		// return []byte(items[i].Value)
 	}
-	// i++
-	// p.Idx = i
-	// }
+
 	return append(out, p.Parse(items[j:])...)
 }
 
