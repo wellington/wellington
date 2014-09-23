@@ -26,6 +26,7 @@ const (
 	EXTRA
 	CMD
 	VAR
+	CMDVAR
 	SUB
 	VALUE
 	FILE
@@ -56,6 +57,7 @@ var Tokens = [...]string{
 	EXTRA:     "extra",
 	CMD:       "command",
 	VAR:       "variable",
+	CMDVAR:    "command-variable",
 	SUB:       "sub",
 	VALUE:     "value",
 	FILE:      "file",
@@ -493,9 +495,12 @@ func (l *Lexer) Text() StateFn {
 
 	switch l.Current() {
 	//Primary support
+	case "sprite-map":
+		l.Emit(CMDVAR)
+		return l.Action()
 	case "sprite", "sprite-file", "sprite-height",
-		"sprite-map", "sprite-path", "sprite-position",
-		"sprite-width", "sprite-url", "sprite-dimensions":
+		"sprite-path", "sprite-position", "sprite-width",
+		"sprite-url", "sprite-dimensions":
 		l.Emit(CMD)
 		return l.Action()
 	//Tertiary support
