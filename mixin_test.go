@@ -12,14 +12,24 @@ func TestMixin(t *testing.T) {
 
 	ib := []byte(`$s: sprite-map("pixel.png");
 div {
-    @include sprite-dimensions($s, "pixel");
-    background-image: inline-image("pixel.png");
+    @include sprite($s, pixel);
+    @include sprite-dimensions($s, pixel);
 }`)
+	e := `
+div {
+    background: url("test") 0px 0px;
+    width: 1px;
+height: 1px;
+}`
 
 	in := bytes.NewBuffer(ib)
-	par := Parser{}
-	bytes := par.Start(in, "test")
-	_ = bytes
+	p := Parser{}
+	output := rerandom.ReplaceAllString(string(p.Start(in, "test")), "")
+
+	if e != output {
+		t.Errorf("Mixin parsing failed was:\n%s\nexpected:\n%s", output, e)
+	}
+
 	// Base64 encoding changes on every load, so... can't verify it
 	// re := regexp.MustCompile("background-image:url\\('data:image\\/png;base64,\\S+='\\)")
 

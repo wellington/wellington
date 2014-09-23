@@ -36,6 +36,9 @@ const (
 	VALUE
 	FILE
 	SPRITE
+	SPRITED
+	SPRITEH
+	SPRITEW
 	NUMBER
 	TEXT
 	DOLLAR
@@ -72,6 +75,9 @@ var Tokens = [...]string{
 	VALUE:     "value",
 	FILE:      "file",
 	SPRITE:    "sprite",
+	SPRITED:   "sprite-dimensions",
+	SPRITEH:   "sprite-height",
+	SPRITEW:   "sprite-width",
 	NUMBER:    "number",
 	TEXT:      "text",
 	DOLLAR:    "$",

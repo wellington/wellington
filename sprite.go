@@ -91,7 +91,7 @@ func (l ImageList) CSS(s string) string {
 	if l.OutFile == "" {
 		return "transparent"
 	}
-	return fmt.Sprintf(`url("%s") %s`,
+	return fmt.Sprintf(`background: url("%s") %s`,
 		l.OutFile, l.Position(s))
 }
 
@@ -108,7 +108,7 @@ func (l ImageList) Position(s string) string {
 func (l ImageList) Dimensions(s string) string {
 	if pos := l.Lookup(s); pos > -1 {
 
-		return fmt.Sprintf("width: %dpx;\nheight: %dpx;\n",
+		return fmt.Sprintf("width: %dpx;\nheight: %dpx",
 			l.Images[pos].Width(), l.Images[pos].Height())
 	}
 	return ""

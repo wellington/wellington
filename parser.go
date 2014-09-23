@@ -72,6 +72,9 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 
 // Find Paren that matches the current (
 func RParen(items []Item) (int, int) {
+	if len(items) == 0 {
+		return 0, 0
+	}
 	if items[0].Type != LPAREN {
 		panic("Expected: ( was: " + items[0].Value)
 	}
@@ -79,7 +82,8 @@ func RParen(items []Item) (int, int) {
 	match := 1
 	nest := false
 	nestPos := 0
-	for match != 0 {
+
+	for match != 0 && pos < len(items) {
 		switch items[pos].Type {
 		case LPAREN:
 			match++
@@ -141,7 +145,10 @@ func (p *Parser) Parse(items []Item) []byte {
 	item := items[0]
 	switch item.Type {
 	case VAR:
-		for items[j].Type != SEMIC {
+		if j >= len(items) {
+			panic(items)
+		}
+		for j < len(items) && items[j].Type != SEMIC {
 			j++
 		}
 		if items[1].Type != CMDVAR {
@@ -202,6 +209,12 @@ func (p *Parser) Parse(items []Item) []byte {
 		// fmt.Println(">>", item.Type, items[lpos:pos], "<<")
 		j = pos
 	default:
+		if item.Type == INCLUDE {
+			// Eat @include if command after is understood
+			if Lookup(items[1].Value) > -1 {
+				p.Mark(item.Pos, items[1].Pos, "")
+			}
+		}
 		out = append(out, item.Value...)
 	}
 
@@ -214,8 +227,10 @@ func (p *Parser) Command(items []Item) ([]byte, int) {
 	i := 0
 	_ = i
 	cmd := items[0]
-	item := items[0]
 	repl := ""
+	if len(items) == 0 {
+		panic(items)
+	}
 	eoc, nPos := RParen(items[1:])
 	// Determine our offset from the source items
 	if false && nPos != 0 {
@@ -233,28 +248,19 @@ func (p *Parser) Command(items []Item) ([]byte, int) {
 		p.Mark(items[0].Pos, items[4].Pos+len(items[4].Value), repl)
 	case "sprite-height":
 		sprite := p.Sprites[fmt.Sprintf("%s", items[2])]
-		repl = fmt.Sprintf("%dpx",
-			sprite.ImageHeight(items[3].String()))
-		// Walk forward to file name
+		repl = fmt.Sprintf("%dpx", sprite.ImageHeight(items[3].String()))
 		p.Mark(cmd.Pos, items[eoc].Pos+len(items[eoc].Value), repl)
 	case "sprite-width":
 		sprite := p.Sprites[fmt.Sprintf("%s", items[2])]
 		repl = fmt.Sprintf("%dpx",
 			sprite.ImageWidth(items[3].String()))
-		// Walk forward to file name
-		p.Idx++
 		p.Mark(cmd.Pos, items[eoc].Pos+len(items[eoc].Value), repl)
-	case "asprite-dimensions":
-		sprite := p.Sprites[fmt.Sprintf("%s", item)]
-		repl = sprite.Dimensions(items[p.Idx+1].String())
-		// Walk forward to file name
-		p.Idx++
-		p.Mark(items[p.Idx-4].Pos, items[p.Idx+3].Pos, repl)
-		items = append(items[:p.Idx-4], items[p.Idx:]...)
-		p.Idx = p.Idx - 4
-
+	case "sprite-dimensions":
+		sprite := p.Sprites[fmt.Sprintf("%s", items[2])]
+		repl = sprite.Dimensions(items[3].Value)
+		p.Mark(items[0].Pos, items[4].Pos+len(items[4].Value), repl)
 	default:
-		//items[p.Idx].Value = p.Vars[item.Value]
+		fmt.Println("No comprende:", items[0])
 	}
 
 	return []byte(""), eoc
