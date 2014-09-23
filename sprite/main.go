@@ -76,7 +76,8 @@ func main() {
 	}
 
 	if Includes != "" {
-		ctx.IncludePaths = strings.Split(Includes, ",")
+		ctx.IncludePaths = append(ctx.IncludePaths,
+			strings.Split(Includes, ",")...)
 	}
 
 	var output io.WriteCloser
