@@ -73,126 +73,6 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 	return p.Output
 }
 
-func (p *Parser) loop() {
-	var (
-		def, cmd string
-	)
-	tokens := p.Items
-
-	for ; p.Idx < len(tokens); p.Idx++ {
-		token := tokens[p.Idx]
-		last := p.Idx
-		// Generate list of vars
-		if token.Type == VAR {
-			def = fmt.Sprintf("%s", token)
-			val := ""
-			nested := false
-			for {
-				p.Idx++
-				token = tokens[p.Idx]
-				// p.Idx = i // Sync Index for now as we refactor away from i
-				switch token.Type {
-				case LPAREN:
-					nested = true
-				case RPAREN:
-					nested = false
-				case CMD:
-					// Found a command, collect the cmd args
-					// Changing the behavior of CMD!
-					cmd = fmt.Sprintf("%s", token)
-					val += cmd
-				case FILE:
-					p.Idx = p.File(cmd, last, p.Idx)
-					def = ""
-					cmd = ""
-				case SUB:
-					fmt.Println("SUB:", tokens[p.Idx-1],
-						tokens[p.Idx], tokens[p.Idx+1])
-					// fmt.Println(p.Input[tokens[i-20].Pos:tokens[i+20].Pos])
-					// Cowardly give up and hope these variables do not matter
-					// Cases:
-					// - @for $i from 1 through $variable
-					// - $variable: ($i - 1)
-					// -
-					fallthrough
-				default:
-					// fmt.Printf("Default: %s\n", token)
-					val += fmt.Sprintf("%s", token)
-				}
-
-				if !nested && tokens[p.Idx].Type != CMD {
-					break
-				}
-			}
-			if def != "" {
-				p.Vars[def] = val
-			}
-			//Replace subsitution tokens
-		} else if token.Type == SUB {
-			repl := ""
-			switch cmd {
-			case "sprite":
-				//Capture sprite
-				sprite := p.Sprites[fmt.Sprintf("%s", token)]
-				//Capture filename
-				p.Idx++
-				name := fmt.Sprintf("%s", tokens[p.Idx])
-				repl = sprite.CSS(name)
-
-				p.Mark(tokens[p.Idx-3].Pos, tokens[p.Idx+2].Pos, repl)
-				tokens = append(tokens[:p.Idx-3], tokens[p.Idx:]...)
-				p.Idx = p.Idx - 3
-				def = ""
-				cmd = ""
-			case "sprite-height":
-				sprite := p.Sprites[fmt.Sprintf("%s", token)]
-				repl = fmt.Sprintf("height: %dpx;",
-					sprite.ImageHeight(tokens[p.Idx+1].String()))
-				// Walk forward to file name
-				p.Idx++
-				p.Mark(tokens[p.Idx-4].Pos, tokens[p.Idx+3].Pos, repl)
-				tokens = append(tokens[:p.Idx-4], tokens[p.Idx:]...)
-				p.Idx = p.Idx - 4
-				def = ""
-				cmd = ""
-			case "sprite-width":
-				sprite := p.Sprites[fmt.Sprintf("%s", token)]
-				repl = fmt.Sprintf("width: %dpx;",
-					sprite.ImageWidth(tokens[p.Idx+1].String()))
-				// Walk forward to file name
-				p.Idx++
-				p.Mark(tokens[p.Idx-4].Pos, tokens[p.Idx+3].Pos, repl)
-				tokens = append(tokens[:p.Idx-4], tokens[p.Idx:]...)
-				p.Idx = p.Idx - 4
-				def = ""
-				cmd = ""
-			case "sprite-dimensions":
-				sprite := p.Sprites[fmt.Sprintf("%s", token)]
-				repl = sprite.Dimensions(tokens[p.Idx+1].String())
-				// Walk forward to file name
-				p.Idx++
-				p.Mark(tokens[p.Idx-4].Pos, tokens[p.Idx+3].Pos, repl)
-				tokens = append(tokens[:p.Idx-4], tokens[p.Idx:]...)
-				p.Idx = p.Idx - 4
-				def = ""
-				cmd = ""
-			default:
-				tokens[p.Idx].Value = p.Vars[token.Value]
-			}
-		} else if token.Type == CMD {
-			// Sync the index during the refactor
-			cmd = fmt.Sprintf("%s", token)
-			switch token.Value {
-			case "inline-image", "sprite-file":
-				cmd = ""
-				p.Mixin()
-			default:
-				//log.Fatal("Danger will robinson")
-			}
-		}
-	}
-}
-
 // Find Paren that matches the current (
 func RParen(items []Item) (int, int) {
 	if items[0].Type != LPAREN {
@@ -305,7 +185,7 @@ func (p *Parser) Parse(items []Item) []byte {
 		out, eoc = p.Command(items[0:j])
 	case TEXT:
 		out = append(out, item.Value...)
-	case MIXIN, FUNC:
+	case MIXIN, FUNC, IF, ELSE:
 		// Ignore the entire mixin and move to the next line
 		lpos := 0
 		for {
@@ -318,6 +198,7 @@ func (p *Parser) Parse(items []Item) []byte {
 		for i := 0; i < pos; i++ {
 			out = append(out, items[i].Value...)
 		}
+		fmt.Println(">>", item.Type, items[lpos:pos])
 		j = pos
 	default:
 		out = append(out, item.Value...)
