@@ -259,6 +259,9 @@ func (p *Parser) Command(items []Item) ([]byte, int) {
 		sprite := p.Sprites[fmt.Sprintf("%s", items[2])]
 		repl = sprite.Dimensions(items[3].Value)
 		p.Mark(items[0].Pos, items[4].Pos+len(items[4].Value), repl)
+	case "image-url":
+		repl := p.ImageUrl(items)
+		p.Mark(items[0].Pos, items[3].Pos+len(items[3].Value), repl)
 	default:
 		fmt.Println("No comprende:", items[0])
 	}

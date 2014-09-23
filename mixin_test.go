@@ -38,3 +38,15 @@ height: 1px;
 	// 		string(bytes))
 	// }
 }
+
+func TestImageUrl(t *testing.T) {
+	ib := []byte(`background: image-url("pixel.png");`)
+	e := `background: url("test/pixel.png");`
+	in := bytes.NewBuffer(ib)
+	p := Parser{}
+	output := string(p.Start(in, "test"))
+
+	if e != output {
+		t.Errorf("image url failed was:\n%s\nexpected:\n%s\n", output, e)
+	}
+}

@@ -533,7 +533,7 @@ func (l *Lexer) Text() StateFn {
 	case "sprite-map-name", "sprite-names":
 		l.Emit(CMD)
 		return l.Action()
-	case "inline-image":
+	case "image-url", "inline-image":
 		l.Emit(CMD)
 		return l.Action()
 	default:
