@@ -244,8 +244,9 @@ func (p *Parser) Parse(items []Item) []byte {
 				p.Mark(items[0].Pos,
 					items[j].Pos+len(items[j].Value), "")
 				imgs := ImageList{}
-				glob := fmt.Sprintf("%s", item)
-				name := fmt.Sprintf("%s", items[1])
+
+				name := fmt.Sprintf("%s", items[0])
+				glob := fmt.Sprintf("%s", items[3])
 				imgs.Decode(p.ImageDir + "/" + glob)
 				imgs.Vertical = true
 				imgs.Combine()
@@ -295,27 +296,19 @@ func (p *Parser) Command(items []Item) ([]byte, int) {
 		p.Mark(items[p.Idx-3].Pos, items[p.Idx+2].Pos, repl)
 		items = append(items[:p.Idx-3], items[p.Idx:]...)
 		p.Idx = p.Idx - 3
-
-	case "asprite-height":
-		sprite := p.Sprites[fmt.Sprintf("%s", item)]
-		repl = fmt.Sprintf("height: %dpx;",
-			sprite.ImageHeight(items[p.Idx+1].String()))
+	case "sprite-height":
+		sprite := p.Sprites[fmt.Sprintf("%s", items[2])]
+		repl = fmt.Sprintf("%dpx",
+			sprite.ImageHeight(items[3].String()))
+		// Walk forward to file name
+		p.Mark(cmd.Pos, items[eoc].Pos+len(items[eoc].Value), repl)
+	case "sprite-width":
+		sprite := p.Sprites[fmt.Sprintf("%s", items[2])]
+		repl = fmt.Sprintf("%dpx",
+			sprite.ImageWidth(items[3].String()))
 		// Walk forward to file name
 		p.Idx++
-		p.Mark(items[p.Idx-4].Pos, items[p.Idx+3].Pos, repl)
-		items = append(items[:p.Idx-4], items[p.Idx:]...)
-		p.Idx = p.Idx - 4
-
-	case "asprite-width":
-		sprite := p.Sprites[fmt.Sprintf("%s", item)]
-		repl = fmt.Sprintf("width: %dpx;",
-			sprite.ImageWidth(items[p.Idx+1].String()))
-		// Walk forward to file name
-		p.Idx++
-		p.Mark(items[p.Idx-4].Pos, items[p.Idx+3].Pos, repl)
-		items = append(items[:p.Idx-4], items[p.Idx:]...)
-		p.Idx = p.Idx - 4
-
+		p.Mark(cmd.Pos, items[eoc].Pos+len(items[eoc].Value), repl)
 	case "asprite-dimensions":
 		sprite := p.Sprites[fmt.Sprintf("%s", item)]
 		repl = sprite.Dimensions(items[p.Idx+1].String())
@@ -392,7 +385,7 @@ func (p *Parser) Replace() {
 
 // Mark segments of the input string for future deletion.
 func (p *Parser) Mark(start, end int, val string) {
-	fmt.Println("Mark:", string(p.Input[start:end]), "~")
+	fmt.Println("Mark:", string(p.Input[start:end]), val)
 	p.Chop = append(p.Chop, Replace{start, end, []byte(val)})
 }
 
