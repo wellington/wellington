@@ -38,6 +38,7 @@ func NewParser() *Parser {
 // (created via sprite-map calls).
 func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 	p.Vars = make(map[string]string)
+	p.NewVars = make(map[string]string)
 	p.Sprites = make(map[string]ImageList)
 
 	if p.ImageDir == "" {
@@ -68,6 +69,7 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 		_ = item
 		// fmt.Printf("%s %s\n", item.Type, item)
 	}
+	// fmt.Printf("out: % #v\n", p.Sprites)
 	return p.Output
 }
 
@@ -226,7 +228,6 @@ func (p *Parser) Parse(items []Item) []byte {
 		eoc int
 	)
 	i := p.Idx
-	p.NewVars = make(map[string]string)
 	for i < len(items) {
 		item := items[i]
 		if item.Type == VAR {
@@ -234,8 +235,24 @@ func (p *Parser) Parse(items []Item) []byte {
 			for items[j].Type != SEMIC {
 				j++
 			}
-			p.NewVars[item.String()] = string(p.Parse(items[i+1 : j]))
-			i = j
+			if items[i+1].Type != CMDVAR {
+				p.NewVars[item.String()] = string(p.Parse(items[i+1 : j]))
+				i = j
+			} else {
+				// Missing variable and semicolon currently
+				// Delete entire line
+				p.Mark(items[0].Pos,
+					items[j].Pos+len(items[j].Value), "")
+				imgs := ImageList{}
+				glob := fmt.Sprintf("%s", item)
+				name := fmt.Sprintf("%s", items[1])
+				imgs.Decode(p.ImageDir + "/" + glob)
+				imgs.Vertical = true
+				imgs.Combine()
+				p.Sprites[name] = imgs
+				//TODO: Generate filename
+				//imgs.Export("generated.png")
+			}
 		} else if item.Type == CMD {
 			j := i
 			for j < len(items) && items[j].Type != SEMIC {
@@ -267,20 +284,6 @@ func (p *Parser) Command(items []Item) ([]byte, int) {
 	}
 
 	switch cmd.Value {
-	case "sprite-map":
-		// Missing variable and semicolon currently
-		// Delete entire line
-		p.Mark(items[0].Pos, items[eoc].Pos+len(items[eoc].Value), "")
-		imgs := ImageList{}
-		glob := fmt.Sprintf("%s", item)
-		name := fmt.Sprintf("%s", items[1])
-		imgs.Decode(p.ImageDir + "/" + glob)
-		imgs.Vertical = true
-		imgs.Combine()
-		p.Sprites[name] = imgs
-		//TODO: Generate filename
-		//imgs.Export("generated.png")
-
 	case "asprite":
 		//Capture sprite
 		sprite := p.Sprites[fmt.Sprintf("%s", item)]
