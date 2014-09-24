@@ -47,4 +47,14 @@ func TestImageUrl(t *testing.T) {
 	if e != output {
 		t.Errorf("image url failed was:\n%s\nexpected:\n%s\n", output, e)
 	}
+
+	ib = []byte(`background: image-url("nopixel.png");`)
+	e = `background: transparent;`
+	in = bytes.NewBuffer(ib)
+	p = Parser{}
+	output = string(p.Start(in, "test"))
+
+	if e != output {
+		t.Errorf("image url failed was:\n%s\nexpected:\n%s\n", output, e)
+	}
 }

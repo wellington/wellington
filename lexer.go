@@ -293,7 +293,10 @@ func (l *Lexer) AcceptRunRange(tab *unicode.RangeTable) (n int) {
 // AcceptString advances the lexer len(s) bytes if the next
 // len(s) bytes equal s. AcceptString returns true if l advanced.
 func (l *Lexer) AcceptString(s string) (ok bool) {
-	if strings.HasPrefix(l.input[l.pos:], s) {
+	if len(l.input)-l.pos < len(s) {
+		return false
+	}
+	if strings.HasPrefix(l.input[l.pos:l.pos+len(s)], s) {
 		l.pos += len(s)
 		return true
 	}
@@ -391,16 +394,19 @@ func (l *Lexer) Action() StateFn {
 		case IsSpace(r):
 			l.Ignore()
 		case IsSymbol(r):
+			l.Backup()
 			return l.Paren()
 		case r == '/':
 			return l.Comment()
 		case r == '@':
+			l.Backup()
 			return l.Directive()
 		case r == '"' || r == '\'':
 			return l.File()
 		case r == '$':
 			return l.Var()
 		case IsAllowedRune(r):
+			l.Backup()
 			return l.Text()
 		default:
 			//l.Advance()
@@ -422,53 +428,47 @@ func IsPrintable(r rune) bool {
 }
 
 func (l *Lexer) Directive() StateFn {
-
-	l.AcceptRunFunc(IsAllowedRune)
-	switch l.Current() {
-	case "@import":
+	switch {
+	case l.AcceptString("@import"):
 		l.Emit(IMPORT)
-	case "@include":
+	case l.AcceptString("@include"):
 		l.Emit(INCLUDE)
-		for {
-			r, _ := l.Advance()
-			if !IsSpace(r) {
-				break
-			}
-			l.Ignore()
-		}
-		// Text does command parsing, use that
-		// return l.Mixin()
-		return l.Text()
-	case "@each":
+	case l.AcceptString("@each"):
 		l.Emit(EACH)
-	case "@function":
+	case l.AcceptString("@function"):
 		l.Emit(FUNC)
-	case "@mixin":
+	case l.AcceptString("@mixin"):
 		l.Emit(MIXIN)
-	case "@if":
+	case l.AcceptString("@if"):
 		l.Emit(IF)
-	case "@else":
+	case l.AcceptString("@else"):
 		l.Emit(ELSE)
 	default:
-		l.Emit(TEXT)
+		// Unknown commands, write out as text
+		// Be sure to write off unknown commands as text
+		l.Accept("@")
+		return l.Text()
 	}
+
 	return l.Action()
 }
 
 func (l *Lexer) Paren() StateFn {
-	switch l.Current() {
-	case "#{":
+	switch {
+	case l.AcceptString("#{"):
 		l.Emit(INT)
-	case "(":
+	case l.Accept("("):
 		l.Emit(LPAREN)
-	case ")":
+	case l.Accept(")"):
 		l.Emit(RPAREN)
-	case "{":
+	case l.Accept("{"):
 		l.Emit(LBRACKET)
-	case "}":
+	case l.Accept("}"):
 		l.Emit(RBRACKET)
-	case ";":
+	case l.Accept(";"):
 		l.Emit(SEMIC)
+	default:
+		l.Advance()
 	}
 	return l.Action()
 }
@@ -520,28 +520,39 @@ func (l *Lexer) Mixin() StateFn {
 }
 
 func (l *Lexer) Text() StateFn {
-	l.AcceptRunFunc(IsAllowedRune)
-
-	switch l.Current() {
-	//Primary support
-	case "sprite-map":
+	if ok := l.AcceptString("sprite-map"); ok {
 		l.Emit(CMDVAR)
 		return l.Action()
-	case "sprite", "sprite-file", "sprite-height",
-		"sprite-path", "sprite-position", "sprite-width",
-		"sprite-url", "sprite-dimensions":
-		l.Emit(CMD)
-		return l.Action()
-	//Tertiary support
-	case "sprite-map-name", "sprite-names":
-		l.Emit(CMD)
-		return l.Action()
-	case "image-url", "inline-image":
-		l.Emit(CMD)
-		return l.Action()
-	default:
-		l.Emit(TEXT)
 	}
+	cmds := []string{
+		// Supported commands
+		"sprite-width", "sprite-height", "sprite-file",
+		"sprite-height", "sprite-path", "sprite-position",
+		"sprite-width", "sprite-url", "sprite-dimensions",
+		// Future Support
+		"sprite-map-name", "sprite-names",
+		// Other commands
+		"image-url", "inline-image",
+	}
+	for _, cmd := range cmds {
+		if ok := l.AcceptString(cmd); ok {
+			l.Emit(CMD)
+			return l.Action()
+		}
+	}
+	// Since this is a greedy algo, commands must be unique.
+	// Many commands start with sprite, so do this after checking
+	// all sprite... commands
+	if ok := l.AcceptString("sprite"); ok {
+		l.Emit(CMD)
+		return l.Action()
+	}
+
+	// For unknown directives
+	// Give up on searching for commands guess it is text
+	l.AcceptRunFunc(IsAllowedRune)
+	l.Emit(TEXT)
+
 	return l.Action()
 }
 
