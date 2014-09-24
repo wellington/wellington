@@ -174,7 +174,7 @@ func (p *Parser) Parse(items []Item) []byte {
 			imgs.Combine()
 			p.Sprites[name] = imgs
 			//TODO: Generate filename
-			imgs.Export(glob + ".png")
+			imgs.Export("")
 		}
 	case SUB:
 		/*for items[j].Type != SEMIC {

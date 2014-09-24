@@ -263,12 +263,14 @@ func (l *ImageList) Export(path string) error {
 	// Use the auto generated path if none is specified
 	if path != "" {
 		l.OutFile = path
+	} else {
+		path = l.OutFile
 	}
 	// Remove invalid characters from path
 	path = strings.Replace(path, "/", "", -1)
 	path = strings.Replace(path, "*", "", -1)
 
-	fo, err := os.Create(path)
+	fo, err := os.Create(l.OutFile)
 	if err != nil {
 		return err
 	}
