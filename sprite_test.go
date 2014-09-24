@@ -36,8 +36,7 @@ func TestSpriteCombine(t *testing.T) {
 		t.Errorf("Cache invalid")
 	}
 
-	testFile := "test/output.jpg"
-	err := imgs.Export(testFile)
+	testFile, err := imgs.Export()
 
 	defer func() {
 		//Cleanup test files

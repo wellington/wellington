@@ -178,7 +178,11 @@ func (p *Parser) Parse(items []Item) []byte {
 			imgs.Combine()
 			p.Sprites[name] = imgs
 			//TODO: Generate filename
-			imgs.Export("")
+			_, err := imgs.Export()
+			if err != nil {
+				log.Printf("Failed to save sprite: %s", name)
+				log.Println(err)
+			}
 		}
 	case SUB:
 		/*for items[j].Type != SEMIC {

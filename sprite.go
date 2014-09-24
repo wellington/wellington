@@ -201,7 +201,6 @@ func (l *ImageList) OutputPath(globpath string) {
 
 	// Remove invalid characters from path
 	path = strings.Replace(path, "*", "", -1)
-
 	l.OutFile += gdir + "/" + path + "-" +
 		randString(6) + ext
 }
@@ -279,13 +278,9 @@ func randString(n int) string {
 }
 
 // Export saves out the ImageList to a the specified file
-func (l *ImageList) Export(path string) error {
+func (l *ImageList) Export() (string, error) {
 	// Use the auto generated path if none is specified
-	if path != "" {
-		l.OutFile = path
-	} else {
-		path = l.OutFile
-	}
+	path := l.OutFile
 	// TODO: Differentiate relative file path (in css) to this abs one
 	abs := filepath.Join(l.GenImgDir, filepath.Base(l.OutFile))
 	// Create directory if it doesn't exist
@@ -293,12 +288,12 @@ func (l *ImageList) Export(path string) error {
 	if err != nil {
 		log.Printf("Failed to create image build dir: %s",
 			filepath.Dir(abs))
-		return err
+		return "", err
 	}
 	fo, err := os.Create(abs)
 	if err != nil {
 		log.Printf("Failed to create file: %s", abs)
-		return err
+		return "", err
 	}
 	fmt.Println("Created file: ", abs)
 	//This call is cached if already run
@@ -308,7 +303,7 @@ func (l *ImageList) Export(path string) error {
 	defer fo.Close()
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	frmt := magick.NewInfo()
@@ -316,7 +311,7 @@ func (l *ImageList) Export(path string) error {
 
 	err = l.Out.Encode(fo, frmt)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return abs, nil
 }
