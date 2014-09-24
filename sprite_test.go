@@ -8,7 +8,7 @@ import (
 	. "github.com/drewwells/sprite_sass"
 )
 
-func TestCombine(t *testing.T) {
+func TestSpriteCombine(t *testing.T) {
 	imgs := ImageList{}
 	imgs.Decode("test/139.jpg", "test/140.jpg")
 	imgs.Vertical = true
@@ -54,7 +54,7 @@ func TestCombine(t *testing.T) {
 	}
 }
 
-func TestLookup(t *testing.T) {
+func TestSpriteLookup(t *testing.T) {
 
 	imgs := ImageList{}
 	imgs.Decode("test/139.jpg", "test/140.jpg")
@@ -76,7 +76,7 @@ func TestLookup(t *testing.T) {
 }
 
 // Test image dimension calls
-func TestImageDimensions(t *testing.T) {
+func TestSpriteImageDimensions(t *testing.T) {
 	imgs := ImageList{}
 	imgs.Decode("test/*.png")
 
@@ -86,30 +86,30 @@ func TestImageDimensions(t *testing.T) {
 	}
 
 	if e := 139; e != imgs.ImageHeight("139") {
-		t.Errorf("Height invalid expected:%d\nwas:%d",
+		t.Errorf("Height invalid    was:%d\nexpected:%d",
 			imgs.ImageHeight("139"), e)
 	}
 
 	if e := 96; e != imgs.ImageWidth("139") {
-		t.Errorf("Height invalid expected:%d\nwas:%d",
+		t.Errorf("Height invalid was:%d\nexpected:%d",
 			imgs.ImageWidth("139"), e)
 	}
 
 	if e := "-96px 0px"; imgs.Position("140") != e {
-		t.Errorf("Invalid position found expected: %s\nwas:%s",
-			e, imgs.Position("140"))
+		t.Errorf("Invalid position found was: %s\nexpected:%s",
+			imgs.Position("140"), e)
 	}
 
 	output := rerandom.ReplaceAllString(imgs.CSS("140"), "")
-	if e := `url("test") -96px 0px`; output != e {
-		t.Errorf("Invalid CSS generated on test expected: %s\nwas:%s",
-			e, output)
+	if e := `url("./test") -96px 0px`; output != e {
+		t.Errorf("Invalid CSS generated on test     was: %s\nexpected: %s",
+			output, e)
 	}
 
 }
 
 //Test file globbing
-func TestGlob(t *testing.T) {
+func TestSpriteGlob(t *testing.T) {
 	imgs := ImageList{
 		ImageDir: "test",
 	}
@@ -157,7 +157,7 @@ func TestGlob(t *testing.T) {
 	}
 }
 
-func TestDecode(t *testing.T) {
+func TestSpriteDecode(t *testing.T) {
 	//Should fail with unable to find file
 	i := ImageList{}
 	err := i.Decode("notafile")
@@ -171,7 +171,7 @@ func TestDecode(t *testing.T) {
 	}
 }
 
-func TestHorizontal(t *testing.T) {
+func TestSpriteHorizontal(t *testing.T) {
 
 	imgs := ImageList{}
 	imgs.Decode("test/139.jpg", "test/140.jpg")

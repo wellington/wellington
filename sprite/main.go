@@ -86,13 +86,15 @@ func main() {
 	}
 
 	ctx := sprite.Context{
-		OutputStyle:  style,
-		ImageDir:     Dir,
+		OutputStyle: style,
+		ImageDir:    Dir,
+		// Assumption that output is a file
+		BuildDir:     filepath.Dir(Output),
 		GenImgDir:    Gen,
 		Comments:     Comments,
 		IncludePaths: []string{filepath.Dir(flag.Arg(0))},
 	}
-
+	fmt.Println(Output, ctx.BuildDir)
 	if Includes != "" {
 		ctx.IncludePaths = append(ctx.IncludePaths,
 			strings.Split(Includes, ",")...)

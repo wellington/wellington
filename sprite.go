@@ -19,12 +19,12 @@ type Images []*magick.Image
 
 type ImageList struct {
 	Images
-	ImageDir, GenImgDir string
-	Out                 *magick.Image
-	OutFile             string
-	Combined            bool
-	Files               []string
-	Vertical            bool
+	BuildDir, ImageDir, GenImgDir string
+	Out                           *magick.Image
+	OutFile                       string
+	Combined                      bool
+	Files                         []string
+	Vertical                      bool
 }
 
 func (l ImageList) String() string {
@@ -76,6 +76,9 @@ func (l ImageList) Y(pos int) int {
 	y := 0
 	if !l.Vertical {
 		return 0
+	}
+	if pos > len(l.Images) {
+		return -1
 	}
 	for i := 0; i < pos; i++ {
 		y += l.Images[i].Height()
@@ -183,18 +186,16 @@ func (l *ImageList) Width() int {
 // Build an output file location based on
 // [genimagedir|location of file matched by glob] + glob pattern
 func (l *ImageList) OutputPath(globpath string) {
-	gdir := l.GenImgDir
-
+	gdir, err := filepath.Rel(l.BuildDir, l.GenImgDir)
+	if err != nil {
+		log.Fatal(err)
+	}
 	path := filepath.Dir(globpath)
 	if path == "." {
 		path = "image"
 	}
 	path = strings.Replace(path, "/", "", -1)
 	ext := filepath.Ext(globpath)
-
-	if gdir == "" {
-		gdir, _ = filepath.Abs(filepath.Dir(globpath))
-	}
 
 	// Remove invalid characters from path
 	path = strings.Replace(path, "*", "", -1)
@@ -213,7 +214,7 @@ func (l *ImageList) Decode(rest ...string) error {
 		paths []string
 	)
 	for _, r := range rest {
-		matches, err := filepath.Glob(l.ImageDir + "/" + r)
+		matches, err := filepath.Glob(filepath.Join(l.ImageDir, r))
 		if err != nil {
 			panic(err)
 		}
