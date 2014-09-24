@@ -112,3 +112,16 @@ func TestExport(t *testing.T) {
 	}
 	ctx.Compile()
 }
+
+func BenchmarkCompile(b *testing.B) {
+	ctx := Context{
+		OutputStyle:  NESTED_STYLE,
+		IncludePaths: make([]string, 0),
+		Src:          fileString("test/file1.scss"),
+		Out:          "",
+		ImageDir:     "/tmp",
+	}
+	for n := 0; n < b.N; n++ {
+		ctx.Compile()
+	}
+}
