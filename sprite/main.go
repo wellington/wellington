@@ -18,6 +18,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime/pprof"
 	"strings"
 
 	sprite "github.com/drewwells/sprite_sass"
@@ -26,6 +27,7 @@ import (
 var (
 	Dir, Input, Output, Includes, Style string
 	Comments                            bool
+	cpuprofile                          string
 )
 
 func init() {
@@ -38,10 +40,23 @@ func init() {
 	flag.StringVar(&Style, "s", "nested", "CSS nested style")
 	flag.BoolVar(&Comments, "comment", true, "Turn on source comments")
 	flag.BoolVar(&Comments, "c", true, "Turn on source comments")
+	flag.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
+
 }
 
 func main() {
 	flag.Parse()
+
+	// Profiling code
+	if cpuprofile != "" {
+		f, err := os.Create(cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+
 	for _, v := range flag.Args() {
 		if strings.HasPrefix(v, "-") {
 			log.Fatalf("Please specify flags before other arguments: %s", v)
