@@ -17,14 +17,15 @@ type Replace struct {
 }
 
 type Parser struct {
-	Idx, shift           int
-	Chop                 []Replace
-	Pwd, Input, ImageDir string
-	Includes             []string
-	Items                []Item
-	Output               []byte
-	Sprites              map[string]ImageList
-	NewVars, Vars        map[string]string
+	Idx, shift          int
+	Chop                []Replace
+	Pwd, Input          string
+	ImageDir, GenImgDir string
+	Includes            []string
+	Items               []Item
+	Output              []byte
+	Sprites             map[string]ImageList
+	NewVars, Vars       map[string]string
 }
 
 func NewParser() *Parser {
@@ -165,11 +166,13 @@ func (p *Parser) Parse(items []Item) []byte {
 			// Special parsing of sprite-maps
 			p.Mark(items[0].Pos,
 				items[j].Pos+len(items[j].Value), "")
-			imgs := ImageList{}
-
+			imgs := ImageList{
+				ImageDir:  p.ImageDir,
+				GenImgDir: p.GenImgDir,
+			}
 			name := fmt.Sprintf("%s", items[0])
 			glob := fmt.Sprintf("%s", items[3])
-			imgs.Decode(p.ImageDir + "/" + glob)
+			imgs.Decode(glob)
 			imgs.Vertical = true
 			imgs.Combine()
 			p.Sprites[name] = imgs

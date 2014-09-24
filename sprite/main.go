@@ -25,9 +25,9 @@ import (
 )
 
 var (
-	Dir, Input, Output, Includes, Style string
-	Comments                            bool
-	cpuprofile                          string
+	Dir, Gen, Input, Output, Includes, Style string
+	Comments                                 bool
+	cpuprofile                               string
 )
 
 func init() {
@@ -36,6 +36,7 @@ func init() {
 	flag.StringVar(&Includes, "p", "", "SASS import path")
 	flag.StringVar(&Dir, "dir", ".", "Image directory")
 	flag.StringVar(&Dir, "d", ".", "Image directory")
+	flag.StringVar(&Gen, "gen", ".", "Directory for generated images")
 	flag.StringVar(&Style, "style", "nested", "CSS nested style")
 	flag.StringVar(&Style, "s", "nested", "CSS nested style")
 	flag.BoolVar(&Comments, "comment", true, "Turn on source comments")
@@ -54,7 +55,13 @@ func main() {
 			log.Fatal(err)
 		}
 		pprof.StartCPUProfile(f)
-		defer pprof.StopCPUProfile()
+		defer func() {
+			err := f.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
+			pprof.StopCPUProfile()
+		}()
 	}
 
 	for _, v := range flag.Args() {
@@ -81,18 +88,19 @@ func main() {
 	ctx := sprite.Context{
 		OutputStyle:  style,
 		ImageDir:     Dir,
+		GenImgDir:    Gen,
 		Comments:     Comments,
 		IncludePaths: []string{filepath.Dir(flag.Arg(0))},
-	}
-
-	fRead, err := os.Open(flag.Arg(0))
-	if err != nil {
-		panic(err)
 	}
 
 	if Includes != "" {
 		ctx.IncludePaths = append(ctx.IncludePaths,
 			strings.Split(Includes, ",")...)
+	}
+
+	fRead, err := os.Open(flag.Arg(0))
+	if err != nil {
+		panic(err)
 	}
 
 	var output io.WriteCloser

@@ -19,11 +19,12 @@ type Images []*magick.Image
 
 type ImageList struct {
 	Images
-	Out      *magick.Image
-	OutFile  string
-	Combined bool
-	Files    []string
-	Vertical bool
+	ImageDir, GenImgDir string
+	Out                 *magick.Image
+	OutFile             string
+	Combined            bool
+	Files               []string
+	Vertical            bool
 }
 
 func (l ImageList) String() string {
@@ -179,6 +180,29 @@ func (l *ImageList) Width() int {
 	return w
 }
 
+// Build an output file location based on
+// [genimagedir|location of file matched by glob] + glob pattern
+func (l *ImageList) OutputPath(globpath string) {
+	gdir := l.GenImgDir
+
+	path := filepath.Dir(globpath)
+	if path == "." {
+		path = "image"
+	}
+	path = strings.Replace(path, "/", "", -1)
+	ext := filepath.Ext(globpath)
+
+	if gdir == "" {
+		gdir, _ = filepath.Abs(filepath.Dir(globpath))
+	}
+
+	// Remove invalid characters from path
+	path = strings.Replace(path, "*", "", -1)
+
+	l.OutFile += gdir + "/" + path + "-" +
+		randString(6) + ext
+}
+
 // Accept a variable number of image globs appending
 // them to the ImageList.
 func (l *ImageList) Decode(rest ...string) error {
@@ -187,23 +211,16 @@ func (l *ImageList) Decode(rest ...string) error {
 	l.Out = nil
 	var (
 		paths []string
-		ext   string
 	)
-
 	for _, r := range rest {
-		matches, err := filepath.Glob(r)
+		matches, err := filepath.Glob(l.ImageDir + "/" + r)
 		if err != nil {
 			panic(err)
 		}
 		paths = append(paths, matches...)
 	}
-
-	if len(paths) > 0 {
-		ext = filepath.Ext(paths[0])
-		l.OutFile = filepath.Dir(paths[0]) + "-" +
-			randString(6) + ext
-	}
-
+	// Send first glob as definition for output path
+	l.OutputPath(rest[0])
 	for _, path := range paths {
 		img, err := magick.DecodeFile(path)
 		if err != nil {
@@ -266,9 +283,6 @@ func (l *ImageList) Export(path string) error {
 	} else {
 		path = l.OutFile
 	}
-	// Remove invalid characters from path
-	path = strings.Replace(path, "/", "", -1)
-	path = strings.Replace(path, "*", "", -1)
 
 	fo, err := os.Create(l.OutFile)
 	if err != nil {

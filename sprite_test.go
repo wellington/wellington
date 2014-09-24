@@ -2,6 +2,7 @@ package sprite_sass_test
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	. "github.com/drewwells/sprite_sass"
@@ -109,8 +110,11 @@ func TestImageDimensions(t *testing.T) {
 
 //Test file globbing
 func TestGlob(t *testing.T) {
-	imgs := ImageList{}
-	imgs.Decode("test/*.png")
+	imgs := ImageList{
+		ImageDir: "test",
+	}
+	imgs.Decode("*.png")
+
 	if f := imgs.Lookup("test/139.png"); f != 0 {
 		t.Errorf("Invalid file location given found %d, expected %d", f, 0)
 	}
@@ -121,6 +125,35 @@ func TestGlob(t *testing.T) {
 
 	if f := imgs.Lookup("notafile.png"); f != -1 {
 		t.Errorf("Found a file that doesn't exist")
+	}
+	outpath := rerandom.ReplaceAllString(imgs.OutFile, "")
+	outfile := filepath.Base(outpath)
+	if e := "image"; e != outfile {
+		t.Errorf("Outfile misnamed \n     was: %s\nexpected: %s", outpath, e)
+	}
+	ext := filepath.Ext(imgs.OutFile)
+	if e := ".png"; e != ext {
+		t.Errorf("Outfile invalid extension\n    was: %s\nexpected: %s",
+			ext, e)
+	}
+	imgs = ImageList{
+		ImageDir:  ".",
+		GenImgDir: "build/test",
+	}
+	imgs.Decode("test/*.png")
+	outpath = rerandom.ReplaceAllString(imgs.OutFile, "")
+	outfile = filepath.Base(outpath)
+
+	if e := "test"; e != outfile {
+		t.Errorf("Outfile misnamed \n     was: %s\nexpected: %s", outpath, e)
+	}
+	ext = filepath.Ext(imgs.OutFile)
+	if e := ".png"; e != ext {
+		t.Errorf("Outfile invalid extension\n    was: %s\nexpected: %s",
+			ext, e)
+	}
+	if e := "build/test/test"; e != outpath {
+		t.Errorf("Invalid path\n     was: %s\nexpected: %s", outpath, e)
 	}
 }
 
