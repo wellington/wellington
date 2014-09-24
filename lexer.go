@@ -436,7 +436,9 @@ func (l *Lexer) Directive() StateFn {
 			}
 			l.Ignore()
 		}
-		return l.Mixin()
+		// Text does command parsing, use that
+		// return l.Mixin()
+		return l.Text()
 	case "@each":
 		l.Emit(EACH)
 	case "@function":
@@ -447,6 +449,8 @@ func (l *Lexer) Directive() StateFn {
 		l.Emit(IF)
 	case "@else":
 		l.Emit(ELSE)
+	default:
+		l.Emit(TEXT)
 	}
 	return l.Action()
 }
@@ -512,7 +516,6 @@ func (l *Lexer) Var() StateFn {
 func (l *Lexer) Mixin() StateFn {
 	l.AcceptRunFunc(IsAllowedRune)
 	l.Emit(CMD)
-
 	return l.Action()
 }
 

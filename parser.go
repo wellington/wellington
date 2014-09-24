@@ -154,7 +154,11 @@ func (p *Parser) Parse(items []Item) []byte {
 		if items[1].Type != CMDVAR {
 			// Hackery for empty sass maps
 			val := string(p.Parse(items[1:j]))
-			if val != "()" {
+			// TODO: $var: $anothervar doesnt work
+			// Only #hex are being set right now due to bugs
+			// setting other things like $var: darken(#123, 10%)
+			if val != "" && val[:1] == "#" { //val != "()" && val != "" {
+				// fmt.Println("SETTING", item, val)
 				p.NewVars[item.String()] = val
 			}
 		} else {
