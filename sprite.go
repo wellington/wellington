@@ -186,10 +186,12 @@ func (l *ImageList) Width() int {
 // Build an output file location based on
 // [genimagedir|location of file matched by glob] + glob pattern
 func (l *ImageList) OutputPath(globpath string) {
+
 	gdir, err := filepath.Rel(l.BuildDir, l.GenImgDir)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	path := filepath.Dir(globpath)
 	if path == "." {
 		path = "image"
@@ -284,20 +286,21 @@ func (l *ImageList) Export(path string) error {
 	} else {
 		path = l.OutFile
 	}
-
+	// TODO: Differentiate relative file path (in css) to this abs one
+	abs := filepath.Join(l.GenImgDir, filepath.Base(l.OutFile))
 	// Create directory if it doesn't exist
-	err := os.MkdirAll(filepath.Dir(l.OutFile), 0777)
+	err := os.MkdirAll(filepath.Dir(abs), 0777)
 	if err != nil {
 		log.Printf("Failed to create image build dir: %s",
-			filepath.Dir(l.OutFile))
+			filepath.Dir(abs))
 		return err
 	}
-	fo, err := os.Create(l.OutFile)
+	fo, err := os.Create(abs)
 	if err != nil {
-		log.Printf("Failed to create file: %s", l.OutFile)
+		log.Printf("Failed to create file: %s", abs)
 		return err
 	}
-
+	fmt.Println("Created file: ", abs)
 	//This call is cached if already run
 	l.Combine()
 
