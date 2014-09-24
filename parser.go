@@ -174,7 +174,7 @@ func (p *Parser) Parse(items []Item) []byte {
 			imgs.Combine()
 			p.Sprites[name] = imgs
 			//TODO: Generate filename
-			//imgs.Export("generated.png")
+			imgs.Export(glob + ".png")
 		}
 	case SUB:
 		/*for items[j].Type != SEMIC {
@@ -311,58 +311,6 @@ func (p *Parser) Mixin() {
 	}
 	fmt.Println("Mixin", cmd.Value)
 }
-
-// Processes file which usually mean cutting some of the input
-// text.
-func (p *Parser) File(cmd string, start, end int) int {
-	first := p.Items[start]
-	item := p.Items[end]
-	i := end
-	if cmd == "sprite-map" {
-		// Find the next semicolon and remove it
-		for ; p.Items[i].Type != RPAREN; i++ {
-		}
-		if p.Items[i+1].Type != SEMIC {
-			panic("Statements must end in semicolon")
-		}
-		i++
-		// Verify that the statement ends with semicolon
-		interest := p.Items[i]
-		// Mark the entire line plus semicolon for deletion
-		p.Mark(first.Pos, interest.Pos+1, "")
-		imgs := ImageList{}
-		glob := fmt.Sprintf("%s", item)
-		name := fmt.Sprintf("%s", p.Items[start])
-		imgs.Decode(p.ImageDir + "/" + glob)
-		imgs.Vertical = true
-		imgs.Combine()
-		p.Sprites[name] = imgs
-		//TODO: Generate filename
-		//imgs.Export("generated.png")
-	}
-	return i + 1
-}
-
-// func process(in string, items []Item, pos int) []byte {
-
-// 	var out []byte
-// 	l := len(items)
-
-// 	if pos >= len(in) {
-// 		return []byte("")
-// 	}
-
-// 	// TODO: There's an error where items[1] has an invalid
-// 	// position.
-// 	if l > 1 && items[1].Pos > items[0].Pos {
-// 		out = append(out, in[items[0].Pos:items[1].Pos]...)
-// 		out = append(out, process(in, items[1:], pos)...)
-// 	} else {
-// 		out = append(out, in[items[0].Pos:]...)
-// 	}
-
-// 	return out
-// }
 
 // start recursively resolves all imports.  It lexes the input
 // adding the tokens to the Parser object.

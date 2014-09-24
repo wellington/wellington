@@ -264,6 +264,9 @@ func (l *ImageList) Export(path string) error {
 	if path != "" {
 		l.OutFile = path
 	}
+	// Remove invalid characters from path
+	path = strings.Replace(path, "/", "", -1)
+	path = strings.Replace(path, "*", "", -1)
 
 	fo, err := os.Create(path)
 	if err != nil {
