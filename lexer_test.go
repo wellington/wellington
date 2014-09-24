@@ -1,11 +1,9 @@
-package sprite_sass_test
+package sprite_sass
 
 import (
 	"fmt"
 	"io/ioutil"
 	"testing"
-
-	. "github.com/drewwells/sprite_sass"
 )
 
 func TestBools(t *testing.T) {

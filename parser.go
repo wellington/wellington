@@ -50,12 +50,12 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 
 	// This pass resolves all the imports, but positions will
 	// be off due to @import calls
-	tokens, input, err := p.start(pkgdir, string(buf.Bytes()))
+	items, input, err := p.GetItems(pkgdir, string(buf.Bytes()))
 	// This call will have valid token positions
-	tokens, input, err = p.start(pkgdir, input)
+	items, input, err = p.GetItems(pkgdir, input)
 
 	p.Input = input
-	p.Items = tokens
+	p.Items = items
 	if err != nil {
 		panic(err)
 	}
@@ -185,13 +185,6 @@ func (p *Parser) Parse(items []Item) []byte {
 			}
 		}
 	case SUB:
-		/*for items[j].Type != SEMIC {
-			j++
-			if j >= len(items) {
-				fmt.Println(items)
-				panic(fmt.Sprintf("Did not find ; for %s\n", item))
-			}
-		}*/
 		val, ok := p.NewVars[item.Value]
 		// Do not replace if nothing was found
 		if !ok {
@@ -282,48 +275,10 @@ func (p *Parser) Command(items []Item) ([]byte, int) {
 	return []byte(""), eoc
 }
 
-// Mixin processes tokens in the format @include mixin(args...)
-// and perform requested actions.
-func (p *Parser) Mixin() {
-
-	// Commands always end in ); else panic
-	start := p.Idx
-	cmd := p.Items[start]
-
-	var file Item
-	for {
-		cur := p.Items[p.Idx]
-		if cur.Type == RPAREN {
-			p.Idx++
-			if p.Items[p.Idx].Type != SEMIC {
-				f, l := p.Items[start].Pos, p.Items[p.Idx].Pos
-				log.Fatal("Commands must end with semicolon",
-					fmt.Sprintf(p.Input[f:l]))
-			} else {
-				break
-			}
-		} else if cur.Type == FILE {
-			file = cur
-		}
-		p.Idx++
-	}
-	if file.Type != FILE {
-		log.Fatal("File for command was not found")
-	}
-	if cmd.Value == "inline-image" {
-		img := ImageList{}
-		img.Decode(p.ImageDir + "/" + file.Value)
-		repl := img.Inline()
-		p.Idx-- // Preserve the final semic
-		p.Mark(cmd.Pos-1, p.Items[p.Idx].Pos+1, repl)
-	}
-	fmt.Println("Mixin", cmd.Value)
-}
-
-// start recursively resolves all imports.  It lexes the input
+// Import recursively resolves all imports.  It lexes the input
 // adding the tokens to the Parser object.
 // TODO: Convert this to byte slice in/out
-func (p *Parser) start(pwd, input string) ([]Item, string, error) {
+func (p *Parser) GetItems(pwd, input string) ([]Item, string, error) {
 
 	var (
 		status    []Item
@@ -371,7 +326,7 @@ func (p *Parser) start(pwd, input string) ([]Item, string, error) {
 					panic("@import statement must be followed by ;")
 				}
 
-				moreTokens, moreOutput, err := p.start(
+				moreTokens, moreOutput, err := p.GetItems(
 					pwd,
 					contents)
 				// If importing was successful, each token must be moved forward

@@ -1,12 +1,10 @@
-package sprite_sass_test
+package sprite_sass
 
 import (
 	"io/ioutil"
 	"regexp"
 	"strings"
 	"testing"
-
-	. "github.com/drewwells/sprite_sass"
 )
 
 var rerandom *regexp.Regexp
@@ -63,5 +61,16 @@ func TestParseComment(t *testing.T) {
 	if res != e {
 		t.Errorf("Comment parsing failed was:"+
 			"%s\n exp:%s\n", res, e)
+	}
+}
+
+func TestParseMixin(t *testing.T) {
+	p := Parser{}
+	res := string(p.Start(fileReader("test/mixin.scss"), ""))
+	e := fileString("test/mixin.parser")
+
+	if res != e {
+		t.Errorf("Mixin parsing failed\n  was:%s\n expected:%s\n",
+			res, e)
 	}
 }

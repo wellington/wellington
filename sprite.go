@@ -92,9 +92,7 @@ func (l ImageList) CSS(s string) string {
 		log.Printf("File not found: %s\n Try one of: %s",
 			s, l)
 	}
-	if l.OutFile == "" {
-		return "transparent"
-	}
+
 	return fmt.Sprintf(`url("%s") %s`,
 		l.OutFile, l.Position(s))
 }
@@ -118,7 +116,7 @@ func (l ImageList) Dimensions(s string) string {
 	return ""
 }
 
-func (l ImageList) Inline() string {
+func (l ImageList) inline() []byte {
 	info := magick.NewInfo()
 	info.SetFormat("png")
 	r, w := io.Pipe()
@@ -135,7 +133,13 @@ func (l ImageList) Inline() string {
 	for scanner.Scan() {
 		scanned = append(scanned, scanner.Bytes()...)
 	}
-	encstr := base64.StdEncoding.EncodeToString(scanned)
+	return scanned
+}
+
+// Inline creates base64 encoded string of the underlying
+// image data blog
+func (l ImageList) Inline() string {
+	encstr := base64.StdEncoding.EncodeToString(l.inline())
 	return fmt.Sprintf("url('data:image/png;base64,%s')", encstr)
 }
 

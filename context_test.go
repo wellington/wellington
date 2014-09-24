@@ -1,4 +1,4 @@
-package sprite_sass_test
+package sprite_sass
 
 import (
 	"bufio"
@@ -6,8 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-
-	. "github.com/drewwells/sprite_sass"
 )
 
 func fileString(path string) string {

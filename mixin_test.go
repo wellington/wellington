@@ -1,11 +1,9 @@
-package sprite_sass_test
+package sprite_sass
 
 import (
 	"bytes"
 
 	"testing"
-
-	. "github.com/drewwells/sprite_sass"
 )
 
 func TestMixin(t *testing.T) {

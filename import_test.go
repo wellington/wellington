@@ -1,12 +1,10 @@
-package sprite_sass_test
+package sprite_sass
 
 import (
 	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
-
-	. "github.com/drewwells/sprite_sass"
 )
 
 func TestImportPath(t *testing.T) {

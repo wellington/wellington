@@ -1,12 +1,31 @@
-package sprite_sass_test
+package sprite_sass
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	. "github.com/drewwells/sprite_sass"
 )
+
+func TestSpriteLookup(t *testing.T) {
+
+	imgs := ImageList{}
+	imgs.Decode("test/139.jpg", "test/140.jpg")
+	if f := imgs.Lookup("test/139.jpg"); f != 0 {
+		t.Errorf("Invalid file location given found %d, expected %d", f, 0)
+	}
+
+	if f := imgs.Lookup("test/140.jpg"); f != 1 {
+		t.Errorf("Invalid file location given found %d, expected %d", f, 1)
+	}
+
+	if f := imgs.Lookup("140"); f != 1 {
+		t.Errorf("Invalid file location given found %d, expected %d", f, 1)
+	}
+
+	if f := imgs.Lookup("notafile.jpg"); f != -1 {
+		t.Errorf("Found a file that doesn't exist")
+	}
+}
 
 func TestSpriteCombine(t *testing.T) {
 	imgs := ImageList{}
@@ -30,6 +49,24 @@ func TestSpriteCombine(t *testing.T) {
 		t.Errorf("Invalid Y found %d, wanted %d", y, 139)
 	}
 
+	if e := -1; e != imgs.ImageWidth("150") {
+		t.Errorf("Non-existant image width invalid"+
+			"\n    was:%d\nexpected:%d",
+			imgs.ImageWidth("150"), e)
+	}
+
+	if e := -1; e != imgs.ImageHeight("150") {
+		t.Errorf("Non-existant image width invalid"+
+			"\n    was:%d\nexpected:%d",
+			imgs.ImageHeight("150"), e)
+	}
+
+	if e := ""; e != imgs.Dimensions("150") {
+		t.Errorf("Non-existant image width invalid"+
+			"\n    was:%s\nexpected:%s",
+			imgs.Dimensions("150"), e)
+	}
+
 	//Quick cache check
 	imgs.Combine()
 	if imgs.Height() != 279 || imgs.Width() != 96 {
@@ -50,27 +87,6 @@ func TestSpriteCombine(t *testing.T) {
 
 	if err != nil {
 		panic(err)
-	}
-}
-
-func TestSpriteLookup(t *testing.T) {
-
-	imgs := ImageList{}
-	imgs.Decode("test/139.jpg", "test/140.jpg")
-	if f := imgs.Lookup("test/139.jpg"); f != 0 {
-		t.Errorf("Invalid file location given found %d, expected %d", f, 0)
-	}
-
-	if f := imgs.Lookup("test/140.jpg"); f != 1 {
-		t.Errorf("Invalid file location given found %d, expected %d", f, 1)
-	}
-
-	if f := imgs.Lookup("140"); f != 1 {
-		t.Errorf("Invalid file location given found %d, expected %d", f, 1)
-	}
-
-	if f := imgs.Lookup("notafile.jpg"); f != -1 {
-		t.Errorf("Found a file that doesn't exist")
 	}
 }
 
@@ -191,5 +207,18 @@ func TestSpriteHorizontal(t *testing.T) {
 
 	if e := 0; imgs.Y(1) != e {
 		t.Errorf("Invalid Y found %d, wanted %d", imgs.Y(1), e)
+	}
+}
+
+func TestSpriteInline(t *testing.T) {
+	imgs := ImageList{}
+	imgs.Decode("test/pixel.png")
+	imgs.Combine()
+	bytes := imgs.inline()
+
+	// Bytes are non-deterministic, so check length and move on
+	if e := 311; len(bytes) != e {
+		t.Errorf("pixel blog data had an invalid length"+
+			"\n     was: %d\nexpected: %d", len(bytes), e)
 	}
 }
