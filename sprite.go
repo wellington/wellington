@@ -285,8 +285,16 @@ func (l *ImageList) Export(path string) error {
 		path = l.OutFile
 	}
 
+	// Create directory if it doesn't exist
+	err := os.MkdirAll(filepath.Dir(l.OutFile), 0777)
+	if err != nil {
+		log.Printf("Failed to create image build dir: %s",
+			filepath.Dir(l.OutFile))
+		return err
+	}
 	fo, err := os.Create(l.OutFile)
 	if err != nil {
+		log.Printf("Failed to create file: %s", l.OutFile)
 		return err
 	}
 

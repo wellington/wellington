@@ -94,7 +94,7 @@ func main() {
 		Comments:     Comments,
 		IncludePaths: []string{filepath.Dir(flag.Arg(0))},
 	}
-	fmt.Println(Output, ctx.BuildDir)
+
 	if Includes != "" {
 		ctx.IncludePaths = append(ctx.IncludePaths,
 			strings.Split(Includes, ",")...)
@@ -110,9 +110,15 @@ func main() {
 	if Output == "" {
 		output = os.Stdout
 	} else {
+		dir := filepath.Dir(Output)
+		err := os.MkdirAll(dir, 0777)
+		if err != nil {
+			log.Fatalf("Failed to create directory: %s", dir)
+		}
+
 		output, err = os.Create(Output)
 		if err != nil {
-			panic(err)
+			log.Fatalf("Failed to create file: %s", Output)
 		}
 	}
 
