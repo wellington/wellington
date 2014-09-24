@@ -17,7 +17,7 @@ div {
 }`)
 	e := `
 div {
-    background: url("test") 0px 0px;
+    background: url("./image") 0px 0px;
     width: 1px;
 height: 1px;
 }`
