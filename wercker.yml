@@ -5,18 +5,23 @@ build:
     - install-packages:
         packages: libgif-dev
     - setup-go-workspace
+
     - script:
         name: build libsass
         code: |
           git submodule update --init --recursive
           cd libsass
           make
+
+    # Get dependencies
     - script:
         name: go get
         code: |
           cd $WERCKER_SOURCE_DIR
           go version
           go get -t ./...
+
+    # Build the project
     - script:
         name: go build
         code: |
@@ -24,13 +29,13 @@ build:
     - script:
         name: go test
         code: |
-          go test -cover ./...
+          go test -cover
     - script:
         name: Coveralls.io
         code: |
           # The COVERALLS_TOKEN is set in the project at
           # wercker as project environment variable.
           go get github.com/axw/gocov/gocov
-          go get github.com/mattn/goveralls
+          go get github.com/drewwells/goveralls
           go test -v -covermode=count -coverprofile=coverage.out
           GIT_BRANCH=$WERCKER_GIT_BRANCH goveralls -coverprofile=coverage.out -service=wercker.com -repotoken $COVERALLS_TOKEN
