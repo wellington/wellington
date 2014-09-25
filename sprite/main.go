@@ -24,10 +24,13 @@ import (
 	sprite "github.com/drewwells/sprite_sass"
 )
 
+const version = `v0.1.0`
+
 var (
 	Dir, Gen, Input, Output, Includes, Style string
 	Comments                                 bool
 	cpuprofile                               string
+	ShowVersion                              bool
 )
 
 func init() {
@@ -42,11 +45,16 @@ func init() {
 	flag.BoolVar(&Comments, "comment", true, "Turn on source comments")
 	flag.BoolVar(&Comments, "c", true, "Turn on source comments")
 	flag.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
-
+	flag.BoolVar(&ShowVersion, "version", false, "Show the app version")
 }
 
 func main() {
 	flag.Parse()
+
+	if ShowVersion {
+		fmt.Println(version)
+		os.Exit(0)
+	}
 
 	// Profiling code
 	if cpuprofile != "" {
