@@ -36,6 +36,6 @@ build:
           # The COVERALLS_TOKEN is set in the project at
           # wercker as project environment variable.
           go get github.com/axw/gocov/gocov
-          go get github.com/drewwells/goveralls
+          go get github.com/mattn/goveralls
           go test -v -covermode=count -coverprofile=coverage.out
           GIT_BRANCH=$WERCKER_GIT_BRANCH goveralls -coverprofile=coverage.out -service=wercker.com -repotoken $COVERALLS_TOKEN
