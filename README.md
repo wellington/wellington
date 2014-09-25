@@ -1,4 +1,5 @@
 [![wercker status](https://app.wercker.com/status/0e2b532c6e35225334fdeeac0cbb7831/m "wercker status")](https://app.wercker.com/project/bykey/0e2b532c6e35225334fdeeac0cbb7831)
+[![Coverage Status](https://img.shields.io/coveralls/drewwells/sprite_sass.svg)](https://coveralls.io/r/drewwells/sprite_sass?branch=master)
 
 sprite-sass
 ===========
