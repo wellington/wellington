@@ -38,17 +38,17 @@ build:
           go get github.com/mattn/goveralls
           go test -v -covermode=count -coverprofile=coverage.out
           GIT_BRANCH=$WERCKER_GIT_BRANCH goveralls -coverprofile=coverage.out -service=wercker.com -repotoken $COVERALLS_TOKEN
-deploy:
-  steps:
-    - script:
-        name: get version
-        code: |
-          export APP_VERSION=$(go run sprite/main.go --version)
-    - wercker/github-create-release@1.0.1:
-        token: $GITHUB_TOKEN
-        tag: $APP_VERSION
-        title: Sprite sass tool $APP_VERSION
-        draft: true
-    - github-upload-asset:
-        token: $GITHUB_TOKEN
-        file: build.tgz
+# deploy:
+#   steps:
+#     - script:
+#         name: get version
+#         code: |
+#           export APP_VERSION=$(go run sprite/main.go --version)
+#     - wercker/github-create-release@1.0.1:
+#         token: $GITHUB_TOKEN
+#         tag: $APP_VERSION
+#         title: Sprite sass tool $APP_VERSION
+#         draft: true
+#     - github-upload-asset:
+#         token: $GITHUB_TOKEN
+#         file: build.tgz
