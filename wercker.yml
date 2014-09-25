@@ -23,3 +23,20 @@ build:
         name: go test
         code: |
           go test
+    # - script:
+    #     name: Coverage
+    #     code: |-
+    #       go get github.com/axw/gocov/gocov
+    #       gocov report coverage.json
+    #       gocov test > coverage.json
+    #       go get github.com/matm/gocov-html
+    #       gocov report coverage.json
+    #       gocov-html coverage.json > $WERCKER_REPORT_ARTIFACTS_DIR/coverage.html
+    - script:
+        name: Coveralls.io
+        code: |-
+          # The COVERALLS_TOKEN is set in the project at
+          # wercker as project environment variable.
+          go get github.com/mattn/goveralls
+          goveralls -service wercker.com -repotoken $COVERALLS_TOKEN
+          #goveralls -package="./..." -service='wercker.com'
