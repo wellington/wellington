@@ -217,14 +217,14 @@ func TestSpriteInline(t *testing.T) {
 	bytes := imgs.inline()
 
 	// Bytes are non-deterministic, so check length and move on
-	if e := 311; len(bytes) != e {
+	if len(bytes) < 300 || len(bytes) > 350 {
 		t.Errorf("Pixel blog data had an invalid length"+
-			"\n     was: %d\nexpected: %d", len(bytes), e)
+			"\n     was: %d\nexpected: 300-350", len(bytes))
 	}
 
 	str := imgs.Inline()
-	if e := 445; len(str) != e {
-		t.Errorf("CSS length was not equal was:%d expected:%d",
-			len(str), e)
+	if len(str) < 400 || len(str) > 500 {
+		t.Errorf("CSS length has an invalid length:%d expected: 400-500",
+			len(str))
 	}
 }
