@@ -18,6 +18,8 @@ import (
 	"strconv"
 	"strings"
 	"unsafe"
+
+	"github.com/seateam/color"
 )
 
 // Context handles the interactions with libsass.  Context
@@ -139,9 +141,14 @@ func (ctx *Context) Compile() error {
 		// Line number is off by one from libsass
 		// Find previous lines to maximum available
 		errLines := ""
+		red := color.NewStyle(color.BlackPaint, color.RedPaint).Brush()
 		for i := 10; i > -5; i-- {
 			if pos-i > 0 && pos-i < len(lines) {
-				errLines += fmt.Sprintf("\n%d:", pos-i) + lines[pos-i]
+				str := fmt.Sprintf("\n%d:", pos-i) + lines[pos-i]
+				if i == 0 {
+					str = red(str)
+				}
+				errLines += str
 			}
 		}
 

@@ -2,7 +2,6 @@ package sprite_sass
 
 import (
 	"bytes"
-	"fmt"
 
 	"testing"
 )
@@ -28,7 +27,7 @@ height: 1px;
 	if e != output {
 		t.Errorf("Mixin parsing failed was:\n%s\nexpected:\n%s", output, e)
 	}
-	fmt.Println(p.Sprites)
+
 	defer cleanUpSprites(p.Sprites)
 	// Base64 encoding changes on every load, so... can't verify it
 	// re := regexp.MustCompile("background-image:url\\('data:image\\/png;base64,\\S+='\\)")
