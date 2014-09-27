@@ -2,6 +2,7 @@ package sprite_sass
 
 import (
 	"io/ioutil"
+
 	"regexp"
 	"strings"
 	"testing"
@@ -18,7 +19,7 @@ func TestParserVar(t *testing.T) {
 	fread := fileReader("test/_var.scss")
 	output := string(p.Start(fread, "test/"))
 	output = strings.TrimSpace(rerandom.ReplaceAllString(output, ""))
-
+	defer cleanUpSprites(p.Sprites)
 	file, _ := ioutil.ReadFile("test/var.parser")
 	e := strings.TrimSpace(string(file))
 	if e != output {
@@ -33,6 +34,7 @@ func TestParserImporter(t *testing.T) {
 	output := string(p.Start(fileReader("test/import.scss"), "test/"))
 	output = strings.TrimSpace(rerandom.ReplaceAllString(output, ""))
 
+	defer cleanUpSprites(p.Sprites)
 	file, _ := ioutil.ReadFile("test/import.parser")
 	e := strings.TrimSpace(string(file))
 	if e != output {
@@ -46,6 +48,7 @@ func TestParseSprite(t *testing.T) {
 	output := string(p.Start(fileReader("test/sprite.scss"), "test/"))
 	output = rerandom.ReplaceAllString(output, "")
 
+	defer cleanUpSprites(p.Sprites)
 	file, _ := ioutil.ReadFile("test/sprite.parser")
 	if strings.TrimSpace(string(file)) != strings.TrimSpace(output) {
 		t.Errorf("File output did not match, was:\n%s\nexpected:\n%s", output, string(file))

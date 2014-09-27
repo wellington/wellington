@@ -25,7 +25,7 @@ type Parser struct {
 	Items                         []Item
 	Output                        []byte
 	Sprites                       map[string]ImageList
-	NewVars, Vars                 map[string]string
+	Vars                          map[string]string
 }
 
 func NewParser() *Parser {
@@ -39,7 +39,6 @@ func NewParser() *Parser {
 // (created via sprite-map calls).
 func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 	p.Vars = make(map[string]string)
-	p.NewVars = make(map[string]string)
 	p.Sprites = make(map[string]ImageList)
 
 	if p.ImageDir == "" {
@@ -160,7 +159,7 @@ func (p *Parser) Parse(items []Item) []byte {
 			// setting other things like $var: darken(#123, 10%)
 			if val != "" && val[:1] == "#" { //val != "()" && val != "" {
 				// fmt.Println("SETTING", item, val)
-				p.NewVars[item.String()] = val
+				p.Vars[item.String()] = val
 			}
 		} else {
 			// Special parsing of sprite-maps
@@ -185,7 +184,7 @@ func (p *Parser) Parse(items []Item) []byte {
 			}
 		}
 	case SUB:
-		val, ok := p.NewVars[item.Value]
+		val, ok := p.Vars[item.Value]
 		// Do not replace if nothing was found
 		if !ok {
 			val = item.Value

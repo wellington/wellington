@@ -1,10 +1,23 @@
 package sprite_sass
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 	"testing"
 )
+
+func cleanUpSprites(sprites map[string]ImageList) {
+	if sprites == nil {
+		return
+	}
+	for _, iml := range sprites {
+		err := os.Remove(iml.OutFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+}
 
 func TestSpriteLookup(t *testing.T) {
 

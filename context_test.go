@@ -24,7 +24,7 @@ func fileReader(path string) io.Reader {
 	return reader
 }
 
-func TestRun(t *testing.T) {
+func TestContextRun(t *testing.T) {
 
 	ctx := Context{
 		OutputStyle:  NESTED_STYLE,
@@ -54,6 +54,8 @@ func TestRun(t *testing.T) {
 		scanned = append(scanned, scanner.Bytes()...)
 	}
 
+	defer cleanUpSprites(ctx.Parser.Sprites)
+
 	scanned = rerandom.ReplaceAll(scanned, []byte(""))
 	if string(scanned) != string(exp) {
 		t.Errorf("Processor file did not match was: "+
@@ -62,7 +64,7 @@ func TestRun(t *testing.T) {
 
 }
 
-func TestNilRun(t *testing.T) {
+func TestContextNilRun(t *testing.T) {
 	ctx := Context{}
 	var w io.WriteCloser
 	err := ctx.Run(nil, w, "test")
@@ -72,13 +74,14 @@ func TestNilRun(t *testing.T) {
 
 }
 
-func TestCompile(t *testing.T) {
+func TestContextCompile(t *testing.T) {
 	ctx := Context{
 		OutputStyle:  NESTED_STYLE,
 		IncludePaths: make([]string, 0),
 		Src:          fileString("test/file1.scss"),
 		Out:          "",
 	}
+
 	err := ctx.Compile()
 	if err != nil {
 		t.Errorf("Compilation failed: %s", err)
@@ -101,7 +104,7 @@ func TestCompile(t *testing.T) {
 	}
 }
 
-func TestExport(t *testing.T) {
+func TestContextExport(t *testing.T) {
 	ctx := Context{
 		OutputStyle:  NESTED_STYLE,
 		IncludePaths: make([]string, 0),
@@ -109,9 +112,10 @@ func TestExport(t *testing.T) {
 		Out:          "",
 	}
 	ctx.Compile()
+	defer cleanUpSprites(ctx.Parser.Sprites)
 }
 
-func BenchmarkCompile(b *testing.B) {
+func BenchmarkContextCompile(b *testing.B) {
 	ctx := Context{
 		OutputStyle:  NESTED_STYLE,
 		IncludePaths: make([]string, 0),

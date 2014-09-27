@@ -23,6 +23,7 @@ import (
 // Context handles the interactions with libsass.  Context
 // exposes libsass options that are available.
 type Context struct {
+	Parser                        Parser
 	OutputStyle                   int
 	Precision                     int
 	Comments                      bool
@@ -62,14 +63,14 @@ func (ctx *Context) Run(in io.Reader, out io.WriteCloser, pkgdir string) error {
 
 	ctx.IncludePaths = append(ctx.IncludePaths, pkgdir)
 	// Run the sprite_sass parser prior to passing to libsass
-	parser := Parser{
+	ctx.Parser = Parser{
 		ImageDir:  ctx.ImageDir,
 		Includes:  ctx.IncludePaths,
 		BuildDir:  ctx.BuildDir,
 		GenImgDir: ctx.GenImgDir,
 	}
 
-	ctx.Src = string(parser.Start(in, pkgdir))
+	ctx.Src = string(ctx.Parser.Start(in, pkgdir))
 	err := ctx.Compile()
 	if err != nil {
 		return err
