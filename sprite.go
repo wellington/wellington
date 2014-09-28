@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/rainycape/magick"
+	"github.com/drewwells/magick"
 )
 
 type Images []*magick.Image
