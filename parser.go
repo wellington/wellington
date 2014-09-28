@@ -253,12 +253,12 @@ func (p *Parser) Command(items []Item) ([]byte, int) {
 		p.Mark(items[0].Pos, items[pos].Pos+len(items[pos].Value), repl)
 	case "sprite-height":
 		sprite := p.Sprites[fmt.Sprintf("%s", items[2])]
-		repl = fmt.Sprintf("%dpx", sprite.ImageHeight(items[3].String()))
+		repl = fmt.Sprintf("%dpx", sprite.SImageHeight(items[3].String()))
 		p.Mark(cmd.Pos, items[eoc].Pos+len(items[eoc].Value), repl)
 	case "sprite-width":
 		sprite := p.Sprites[fmt.Sprintf("%s", items[2])]
 		repl = fmt.Sprintf("%dpx",
-			sprite.ImageWidth(items[3].String()))
+			sprite.SImageWidth(items[3].String()))
 		p.Mark(cmd.Pos, items[eoc].Pos+len(items[eoc].Value), repl)
 	case "sprite-dimensions":
 		sprite := p.Sprites[fmt.Sprintf("%s", items[2])]

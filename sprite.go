@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"image"
 	"io"
 	"log"
 	"math"
@@ -12,15 +13,16 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/drewwells/magick"
+	"image/draw"
+	_ "image/jpeg"
+	"image/png"
 )
 
-type Images []*magick.Image
-
+type GoImages []image.Image
 type ImageList struct {
-	Images
+	GoImages
 	BuildDir, ImageDir, GenImgDir string
-	Out                           *magick.Image
+	Out                           draw.Image
 	OutFile                       string
 	Combined                      bool
 	Files                         []string
@@ -38,6 +40,7 @@ func (l ImageList) String() string {
 
 func (l ImageList) Lookup(f string) int {
 	var base string
+
 	for i, v := range l.Files {
 		base = filepath.Base(v)
 		base = strings.TrimSuffix(base, filepath.Ext(v))
@@ -64,7 +67,7 @@ func (l ImageList) X(pos int) int {
 		return 0
 	}
 	for i := 0; i < pos; i++ {
-		x += l.Images[i].Width()
+		x += l.ImageWidth(i)
 	}
 	return x
 }
@@ -77,11 +80,11 @@ func (l ImageList) Y(pos int) int {
 	if !l.Vertical {
 		return 0
 	}
-	if pos > len(l.Images) {
+	if pos > len(l.GoImages) {
 		return -1
 	}
 	for i := 0; i < pos; i++ {
-		y += l.Images[i].Height()
+		y += l.ImageHeight(i)
 	}
 	return y
 }
@@ -111,22 +114,21 @@ func (l ImageList) Dimensions(s string) string {
 	if pos := l.Lookup(s); pos > -1 {
 
 		return fmt.Sprintf("width: %dpx;\nheight: %dpx",
-			l.Images[pos].Width(), l.Images[pos].Height())
+			l.ImageWidth(pos), l.ImageHeight(pos))
 	}
 	return ""
 }
 
 func (l ImageList) inline() []byte {
-	info := magick.NewInfo()
-	info.SetFormat("png")
+
 	r, w := io.Pipe()
-	go func(w io.WriteCloser, info *magick.Info) {
-		err := l.Images[0].Encode(w, info)
+	go func(w io.WriteCloser) {
+		err := png.Encode(w, l.GoImages[0])
 		if err != nil {
 			panic(err)
 		}
 		w.Close()
-	}(w, info)
+	}(w)
 	var scanned []byte
 	scanner := bufio.NewScanner(r)
 	scanner.Split(bufio.ScanBytes)
@@ -143,17 +145,32 @@ func (l ImageList) Inline() string {
 	return fmt.Sprintf("url('data:image/png;base64,%s')", encstr)
 }
 
-func (l ImageList) ImageWidth(s string) int {
+func (l ImageList) SImageWidth(s string) int {
 	if pos := l.Lookup(s); pos > -1 {
-		return l.Images[pos].Width()
+		return l.ImageWidth(pos)
 	}
 	return -1
 }
-func (l ImageList) ImageHeight(s string) int {
+
+func (l ImageList) ImageWidth(pos int) int {
+	if pos > len(l.GoImages) {
+		return -1
+	}
+	return l.GoImages[pos].Bounds().Dx()
+}
+
+func (l ImageList) SImageHeight(s string) int {
 	if pos := l.Lookup(s); pos > -1 {
-		return l.Images[pos].Height()
+		return l.ImageHeight(pos)
 	}
 	return -1
+}
+
+func (l ImageList) ImageHeight(pos int) int {
+	if pos > len(l.GoImages) {
+		return -1
+	}
+	return l.GoImages[pos].Bounds().Dy()
 }
 
 // Return the cumulative Height of the
@@ -162,11 +179,11 @@ func (l *ImageList) Height() int {
 	h := 0
 	ll := *l
 
-	for _, img := range ll.Images {
+	for pos, _ := range ll.GoImages {
 		if l.Vertical {
-			h += img.Height()
+			h += ll.ImageHeight(pos)
 		} else {
-			h = int(math.Max(float64(h), float64(img.Height())))
+			h = int(math.Max(float64(h), float64(ll.ImageHeight(pos))))
 		}
 	}
 	return h
@@ -177,11 +194,11 @@ func (l *ImageList) Height() int {
 func (l *ImageList) Width() int {
 	w := 0
 
-	for _, img := range l.Images {
+	for pos, _ := range l.GoImages {
 		if !l.Vertical {
-			w += img.Width()
+			w += l.ImageWidth(pos)
 		} else {
-			w = int(math.Max(float64(w), float64(img.Width())))
+			w = int(math.Max(float64(w), float64(l.ImageWidth(pos))))
 		}
 	}
 	return w
@@ -227,12 +244,18 @@ func (l *ImageList) Decode(rest ...string) error {
 	}
 	// Send first glob as definition for output path
 	l.OutputPath(rest[0])
+
 	for _, path := range paths {
-		img, err := magick.DecodeFile(path)
+		f, err := os.Open(path)
 		if err != nil {
-			return err
+			panic(err)
 		}
-		l.Images = append(l.Images, img)
+		goimg, str, err := image.Decode(f)
+		_ = str // Image format ie. png
+		if err != nil {
+			panic(err)
+		}
+		l.GoImages = append(l.GoImages, goimg)
 		l.Files = append(l.Files, path)
 	}
 
@@ -254,17 +277,21 @@ func (l *ImageList) Combine() {
 	maxW, maxH = l.Width(), l.Height()
 
 	curH, curW := 0, 0
-	l.Out, _ = magick.New(maxW, maxH)
 
-	for _, img := range l.Images {
-		err := l.Out.Composite(magick.CompositeCopy, img, curW, curH)
-		if err != nil {
-			panic(err)
-		}
+	goimg := image.NewRGBA(image.Rect(0, 0, maxW, maxH))
+	l.Out = goimg
+	for _, img := range l.GoImages {
+
+		draw.Draw(goimg, goimg.Bounds(), img,
+			image.Point{
+				X: curW,
+				Y: curH,
+			}, draw.Src)
+
 		if l.Vertical {
-			curH += img.Height()
+			curH -= img.Bounds().Dy()
 		} else {
-			curW += img.Width()
+			curW -= img.Bounds().Dx()
 		}
 	}
 
@@ -281,10 +308,10 @@ func randString(n int) string {
 	return string(bytes)
 }
 
-// Export saves out the ImageList to a the specified file
+// Export saves out the ImageList to the specified file
 func (l *ImageList) Export() (string, error) {
 	// Use the auto generated path if none is specified
-	path := l.OutFile
+
 	// TODO: Differentiate relative file path (in css) to this abs one
 	abs := filepath.Join(l.GenImgDir, filepath.Base(l.OutFile))
 	// Create directory if it doesn't exist
@@ -310,11 +337,10 @@ func (l *ImageList) Export() (string, error) {
 		return "", err
 	}
 
-	frmt := magick.NewInfo()
-	frmt.SetFormat(strings.ToUpper(filepath.Ext(path)[1:]))
+	err = png.Encode(fo, l.Out)
 
-	err = l.Out.Encode(fo, frmt)
 	if err != nil {
+		panic(err)
 		return "", err
 	}
 	return abs, nil

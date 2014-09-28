@@ -62,16 +62,16 @@ func TestSpriteCombine(t *testing.T) {
 		t.Errorf("Invalid Y found %d, wanted %d", y, 139)
 	}
 
-	if e := -1; e != imgs.ImageWidth("150") {
+	if e := -1; e != imgs.SImageWidth("150") {
 		t.Errorf("Non-existant image width invalid"+
 			"\n    was:%d\nexpected:%d",
-			imgs.ImageWidth("150"), e)
+			imgs.SImageWidth("150"), e)
 	}
 
-	if e := -1; e != imgs.ImageHeight("150") {
+	if e := -1; e != imgs.SImageHeight("150") {
 		t.Errorf("Non-existant image width invalid"+
 			"\n    was:%d\nexpected:%d",
-			imgs.ImageHeight("150"), e)
+			imgs.SImageHeight("150"), e)
 	}
 
 	if e := ""; e != imgs.Dimensions("150") {
@@ -113,14 +113,14 @@ func TestSpriteImageDimensions(t *testing.T) {
 			imgs.Dimensions("139"), e)
 	}
 
-	if e := 139; e != imgs.ImageHeight("139") {
+	if e := 139; e != imgs.SImageHeight("139") {
 		t.Errorf("Height invalid    was:%d\nexpected:%d",
-			imgs.ImageHeight("139"), e)
+			imgs.SImageHeight("139"), e)
 	}
 
-	if e := 96; e != imgs.ImageWidth("139") {
+	if e := 96; e != imgs.SImageWidth("139") {
 		t.Errorf("Height invalid was:%d\nexpected:%d",
-			imgs.ImageWidth("139"), e)
+			imgs.SImageWidth("139"), e)
 	}
 
 	if e := "-96px 0px"; imgs.Position("140") != e {
@@ -194,7 +194,7 @@ func TestSpriteDecode(t *testing.T) {
 		t.Errorf("Error thrown for non-existant file")
 	}
 
-	if len(i.Images) > 0 {
+	if len(i.GoImages) > 0 {
 		t.Errorf("Found a non-existant file")
 	}
 }
@@ -230,13 +230,13 @@ func TestSpriteInline(t *testing.T) {
 	bytes := imgs.inline()
 
 	// Bytes are non-deterministic, so check length and move on
-	if len(bytes) < 300 || len(bytes) > 350 {
+	if len(bytes) != 73 {
 		t.Errorf("Pixel blog data had an invalid length"+
 			"\n     was: %d\nexpected: 300-350", len(bytes))
 	}
 
 	str := imgs.Inline()
-	if len(str) < 400 || len(str) > 500 {
+	if len(str) != 129 {
 		t.Errorf("CSS length has an invalid length:%d expected: 400-500",
 			len(str))
 	}
