@@ -48,7 +48,3 @@ sprite // Should now be available in your path
 |@include *sprite-dimensions*($images,"file");|Creates height/width css for the container size|
 |background-image: inline-image($images,"justone");|Base64 encoded data uri of the requested image|
 |background: *image-url*("nopixel.png");|Creates a relative path to your image directory|
-
-TODO
-====
-* Clearer messages when invalid CSS is passed
