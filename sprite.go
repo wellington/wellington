@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"image/draw"
+	_ "image/gif"
 	_ "image/jpeg"
 	"image/png"
 )
@@ -330,7 +331,6 @@ func (l *ImageList) Export() (string, error) {
 	//This call is cached if already run
 	l.Combine()
 
-	// Supported compressions http://www.imagemagick.org/RMagick/doc/info.html#compression
 	defer fo.Close()
 
 	if err != nil {
