@@ -514,6 +514,11 @@ func (l *Lexer) Var() StateFn {
 }
 
 func (l *Lexer) Text() StateFn {
+	// Edge case when background:sprite();
+	if l.Current() == ":" {
+		l.Ignore()
+	}
+
 	if ok := l.AcceptString("sprite-map"); ok {
 		l.Emit(CMDVAR)
 		return l.Action()
@@ -528,6 +533,7 @@ func (l *Lexer) Text() StateFn {
 		// Other commands
 		"image-url", "inline-image",
 	}
+
 	for _, cmd := range cmds {
 		if ok := l.AcceptString(cmd); ok {
 			l.Emit(CMD)

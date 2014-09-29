@@ -142,10 +142,11 @@ func (ctx *Context) Compile() error {
 		// Find previous lines to maximum available
 		errLines := ""
 		red := color.NewStyle(color.BlackPaint, color.RedPaint).Brush()
-		for i := 10; i > -5; i-- {
+		for i := 7; i > -7; i-- {
 			if pos-i > 0 && pos-i < len(lines) {
 				str := fmt.Sprintf("\n%d:", pos-i) + lines[pos-i]
-				if i == 0 {
+				// There is an uncertain shift between libsass and sass
+				if i == -1 {
 					str = red(str)
 				}
 				errLines += str

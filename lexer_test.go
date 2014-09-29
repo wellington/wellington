@@ -6,6 +6,12 @@ import (
 	"testing"
 )
 
+func printItems(items []Item) {
+	for i, item := range items {
+		fmt.Printf("%4d: %s %s\n", i, item.Type, item.Value)
+	}
+}
+
 func TestBools(t *testing.T) {
 	if IsEOF('%', 0) != true {
 		t.Errorf("Did not detect EOF")
@@ -85,6 +91,45 @@ func TestLexerImport(t *testing.T) {
 	sel = items[4].String()
 	if e := "var"; sel != e {
 		t.Errorf("Invalid token expected: %s, was %s", e, sel)
+	}
+}
+
+// Test disabled due to not working
+func TestLexerSubModifiers(t *testing.T) {
+	in := `$s: sprite-map("*.png");
+div {
+  width: -sprite-width($s,"140");
+}`
+
+	items, err := parse(in)
+	if err != nil {
+		panic(err)
+	}
+	printItems(items)
+	_ = items
+
+}
+
+func TestLexerWhitespace(t *testing.T) {
+	in := `$s: sprite-map("*.png");
+div {
+  background:sprite($s,"140");
+}`
+	items, err := parse(in)
+	if err != nil {
+		panic(err)
+	}
+
+	if e := TEXT; items[8].Type != e {
+		t.Errorf("Type parsed improperly expected: %s, was: %s", e, items[8].Type)
+	}
+
+	if e := CMD; items[9].Type != e {
+		t.Errorf("Type parsed improperly expected: %s, was: %s", e, items[9].Type)
+	}
+
+	if e := "sprite"; items[9].Value != e {
+		t.Errorf("Command parsed improperly expected: %s, was: %s", e, items[9].Value)
 	}
 }
 
