@@ -41,15 +41,21 @@ func (l ImageList) String() string {
 
 func (l ImageList) Lookup(f string) int {
 	var base string
-
+	var pos int
 	for i, v := range l.Files {
 		base = filepath.Base(v)
 		base = strings.TrimSuffix(base, filepath.Ext(v))
 		if f == v {
-			return i
+			pos = i
 			//Do partial matches, for now
 		} else if f == base {
-			return i
+			pos = i
+		}
+	}
+
+	if pos > -1 {
+		if l.GoImages[pos] != nil {
+			return pos
 		}
 	}
 	// TODO: Find a better way to send these to cli so tests
@@ -154,9 +160,10 @@ func (l ImageList) SImageWidth(s string) int {
 }
 
 func (l ImageList) ImageWidth(pos int) int {
-	if pos > len(l.GoImages) {
+	if pos > len(l.GoImages) || pos < 0 {
 		return -1
 	}
+
 	return l.GoImages[pos].Bounds().Dx()
 }
 
@@ -168,7 +175,7 @@ func (l ImageList) SImageHeight(s string) int {
 }
 
 func (l ImageList) ImageHeight(pos int) int {
-	if pos > len(l.GoImages) {
+	if pos > len(l.GoImages) || pos < 0 {
 		return -1
 	}
 	return l.GoImages[pos].Bounds().Dy()
@@ -254,7 +261,10 @@ func (l *ImageList) Decode(rest ...string) error {
 		goimg, str, err := image.Decode(f)
 		_ = str // Image format ie. png
 		if err != nil {
-			panic(err)
+			// Print errors for images that are not currently supported
+			// by Go's image library
+			log.Printf("Error processing: %s\n%s", path, err)
+			continue
 		}
 		l.GoImages = append(l.GoImages, goimg)
 		l.Files = append(l.Files, path)
@@ -324,13 +334,11 @@ func (l *ImageList) Export() (string, error) {
 	}
 	fo, err := os.Create(abs)
 	if err != nil {
-		log.Printf("Failed to create file: %s", abs)
+		log.Printf("Failed to create file: %s\n", abs)
 		return "", err
 	}
-	fmt.Println("Created file: ", abs)
 	//This call is cached if already run
 	l.Combine()
-
 	defer fo.Close()
 
 	if err != nil {
@@ -338,10 +346,10 @@ func (l *ImageList) Export() (string, error) {
 	}
 
 	err = png.Encode(fo, l.Out)
-
 	if err != nil {
-		panic(err)
+		log.Printf("Failed to create: %s\n%s", abs, err)
 		return "", err
 	}
+	log.Print("Created file: ", abs)
 	return abs, nil
 }
