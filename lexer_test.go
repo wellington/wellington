@@ -105,9 +105,7 @@ div {
 	if err != nil {
 		panic(err)
 	}
-	printItems(items)
 	_ = items
-
 }
 
 func TestLexerWhitespace(t *testing.T) {

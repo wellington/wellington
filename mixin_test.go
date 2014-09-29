@@ -50,7 +50,7 @@ func TestMixinImageUrl(t *testing.T) {
 	}
 
 	ib = []byte(`background: image-url("nopixel.png");`)
-	e = `background: transparent;`
+	e = `background: url("test/nopixel.png");`
 	in = bytes.NewBuffer(ib)
 	p = Parser{}
 	output = string(p.Start(in, "test"))

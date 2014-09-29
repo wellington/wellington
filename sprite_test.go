@@ -36,7 +36,8 @@ func TestSpriteLookup(t *testing.T) {
 	}
 
 	if f := imgs.Lookup("notafile.jpg"); f != -1 {
-		t.Errorf("Found a file that doesn't exist")
+		t.Errorf("Found a file that doesn't exist was: %d, expected: %d",
+			imgs.Lookup("noatfile.jpg"), -1)
 	}
 }
 

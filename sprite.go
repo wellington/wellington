@@ -41,7 +41,7 @@ func (l ImageList) String() string {
 
 func (l ImageList) Lookup(f string) int {
 	var base string
-	var pos int
+	pos := -1
 	for i, v := range l.Files {
 		base = filepath.Base(v)
 		base = strings.TrimSuffix(base, filepath.Ext(v))
