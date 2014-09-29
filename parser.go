@@ -24,7 +24,7 @@ type Parser struct {
 	Includes                      []string
 	Items                         []Item
 	Output                        []byte
-	Sprites                       map[string]ImageList
+	InlineImgs, Sprites           map[string]ImageList
 	Vars                          map[string]string
 }
 
@@ -40,7 +40,7 @@ func NewParser() *Parser {
 func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 	p.Vars = make(map[string]string)
 	p.Sprites = make(map[string]ImageList)
-
+	p.InlineImgs = make(map[string]ImageList)
 	if p.ImageDir == "" {
 		p.ImageDir = pkgdir
 	}
@@ -264,6 +264,30 @@ func (p *Parser) Command(items []Item) ([]byte, int) {
 		sprite := p.Sprites[fmt.Sprintf("%s", items[2])]
 		repl = sprite.Dimensions(items[3].Value)
 		p.Mark(items[0].Pos, items[4].Pos+len(items[4].Value), repl)
+	case "inline-image":
+		var (
+			img ImageList
+			ok  bool
+		)
+		name := fmt.Sprintf("%s", items[2])
+		if img, ok = p.InlineImgs[name]; !ok {
+			img = ImageList{
+				ImageDir:  p.ImageDir,
+				BuildDir:  p.BuildDir,
+				GenImgDir: p.GenImgDir,
+			}
+			img.Decode(name)
+			img.Combine()
+			_, err := img.Export()
+			if err != nil {
+				log.Printf("Failed to save sprite: %s", name)
+				log.Println(err)
+			}
+			p.InlineImgs[name] = img
+		}
+
+		repl := img.Inline()
+		p.Mark(items[0].Pos, items[3].Pos+len(items[3].Value), repl)
 	case "image-url":
 		repl := p.ImageUrl(items)
 		p.Mark(items[0].Pos, items[3].Pos+len(items[3].Value), repl)

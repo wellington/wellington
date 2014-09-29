@@ -2,14 +2,15 @@ package sprite_sass
 
 import (
 	"fmt"
-	"os"
+	"log"
+	"path/filepath"
 )
 
 func (p Parser) ImageUrl(items []Item) string {
-	path := p.ImageDir + "/" + items[2].Value
-	if _, err := os.Stat(path); err == nil {
-		return fmt.Sprintf("url(\"%s\")", path)
+	gdir, err := filepath.Rel(p.BuildDir, p.ImageDir)
+	if err != nil {
+		log.Fatal(err)
 	}
-	// TODO: Error scenario, find a way to surface these
-	return "transparent"
+	path := filepath.Join(gdir, items[2].Value)
+	return fmt.Sprintf("url(\"%s\")", path)
 }
