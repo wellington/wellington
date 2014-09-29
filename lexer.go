@@ -29,7 +29,7 @@ const (
 	EACH
 	IMPORT
 	INCLUDE
-	INT
+	INTP
 	FUNC
 	MIXIN
 	EXTRA
@@ -71,7 +71,7 @@ var Tokens = [...]string{
 	EACH:      "@each",
 	IMPORT:    "@import",
 	INCLUDE:   "@include",
-	INT:       "#{",
+	INTP:      "#{",
 	FUNC:      "@function",
 	MIXIN:     "@mixin",
 	EXTRA:     "extra",
@@ -403,6 +403,9 @@ func (l *Lexer) Action() StateFn {
 			l.Ignore()
 		case IsSymbol(r):
 			l.Backup()
+			if len(l.Current()) > 0 {
+				l.Emit(TEXT)
+			}
 			return l.Paren()
 		case r == '/':
 			return l.Comment()
@@ -464,7 +467,7 @@ func (l *Lexer) Directive() StateFn {
 func (l *Lexer) Paren() StateFn {
 	switch {
 	case l.AcceptString("#{"):
-		l.Emit(INT)
+		l.Emit(INTP)
 	case l.Accept("("):
 		l.Emit(LPAREN)
 		ok := l.Accept("$")

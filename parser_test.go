@@ -1,6 +1,7 @@
 package sprite_sass
 
 import (
+	"bytes"
 	"io/ioutil"
 
 	"regexp"
@@ -52,6 +53,45 @@ func TestParseSprite(t *testing.T) {
 	file, _ := ioutil.ReadFile("test/sprite.parser")
 	if strings.TrimSpace(string(file)) != strings.TrimSpace(output) {
 		t.Errorf("File output did not match, was:\n%s\nexpected:\n%s", output, string(file))
+	}
+}
+
+func TestParseInt(t *testing.T) {
+	p := Parser{}
+	var (
+		e, res string
+	)
+	r := bytes.NewBufferString(`p {
+	  $font-size: 12px;
+	  $line-height: 30px;
+	  font: #{$font-size}/#{$line-height};
+	}`)
+
+	res = string(p.Start(r, ""))
+
+	e = `p {
+	  $font-size: 12px;
+	  $line-height: 30px;
+	  font: 12px/30px;
+	}`
+	if e != res {
+		t.Errorf("Mismatch expected:\n%s\nwas:\n%s", e, res)
+	}
+	p = Parser{}
+	r = bytes.NewBufferString(`$name: foo;
+$attr: border;
+p.#{$name} {
+  #{$attr}-color: blue;
+}`)
+	res = string(p.Start(r, ""))
+
+	e = `$name: foo;
+$attr: border;
+p.foo {
+  border-color: blue;
+}`
+	if e != res {
+		t.Errorf("Mismatch expected:\n%s\nwas:\n%s", e, res)
 	}
 }
 

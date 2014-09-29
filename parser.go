@@ -104,7 +104,7 @@ func RParen(items []Item) (int, int) {
 }
 
 func RBracket(items []Item, pos int) (int, int) {
-	if items[pos].Type != LBRACKET {
+	if items[pos].Type != LBRACKET && items[pos].Type != INTP {
 		panic("Expected: { was: " + items[0].Value)
 	}
 
@@ -115,7 +115,7 @@ func RBracket(items []Item, pos int) (int, int) {
 	nestPos := 0
 	for match != 0 && pos < len(items) {
 		switch items[pos].Type {
-		case LBRACKET, INT:
+		case LBRACKET, INTP:
 			match++
 		case RBRACKET:
 			match--
@@ -157,7 +157,7 @@ func (p *Parser) Parse(items []Item) []byte {
 			// TODO: $var: $anothervar doesnt work
 			// Only #hex are being set right now due to bugs
 			// setting other things like $var: darken(#123, 10%)
-			if val != "" && val[:1] == "#" { //val != "()" && val != "" {
+			if val != "()" && val != "" {
 				// fmt.Println("SETTING", item, val)
 				p.Vars[item.String()] = val
 			}
@@ -182,6 +182,13 @@ func (p *Parser) Parse(items []Item) []byte {
 				log.Printf("Failed to save sprite: %s", name)
 				log.Println(err)
 			}
+		}
+	case INTP:
+		pos, _ := RBracket(items, 0)
+		j = pos
+		val := items[1].Value
+		if val, ok := p.Vars[val]; ok {
+			p.Mark(item.Pos, items[2].Pos+len(items[2].Value), val)
 		}
 	case SUB:
 		val, ok := p.Vars[item.Value]
