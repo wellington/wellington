@@ -513,12 +513,6 @@ func (l *Lexer) Var() StateFn {
 	return l.Action()
 }
 
-func (l *Lexer) Mixin() StateFn {
-	l.AcceptRunFunc(IsAllowedRune)
-	l.Emit(CMD)
-	return l.Action()
-}
-
 func (l *Lexer) Text() StateFn {
 	if ok := l.AcceptString("sprite-map"); ok {
 		l.Emit(CMDVAR)

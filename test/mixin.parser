@@ -9,3 +9,12 @@
   }
   @return $list;
 }
+
+@mixin large-text {
+  font: {
+    family: Arial;
+    size: 20px;
+    weight: bold;
+  }
+  color: #ff0000;
+}

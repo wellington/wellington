@@ -49,6 +49,24 @@ func TestSassLexer(t *testing.T) {
 	}
 }
 
+func TestLexerSub(t *testing.T) {
+	in := `$name: foo;
+$attr: border;
+p.#{$name} {
+  #{$attr}-color: blue;
+}`
+	items, err := parse(in)
+	if err != nil {
+		panic(err)
+	}
+	if e := Lookup("#{"); items[7].Type != e {
+		t.Errorf("Invalid token expected: %s, was: %s", e, items[7])
+	}
+	if e := Lookup("sub"); items[8].Type != e {
+		t.Errorf("Invalid token expected: %s, was: %s", e, items[8])
+	}
+}
+
 func TestLexerImport(t *testing.T) {
 	fvar, _ := ioutil.ReadFile("test/import.scss")
 	items, _ := parse(string(fvar))
