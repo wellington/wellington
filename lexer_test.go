@@ -12,17 +12,17 @@ func printItems(items []Item) {
 	}
 }
 
-func TestBools(t *testing.T) {
+func TestLexerBools(t *testing.T) {
 	if IsEOF('%', 0) != true {
 		t.Errorf("Did not detect EOF")
 	}
 }
 
-func TestSassLexer(t *testing.T) {
+func TestLexer(t *testing.T) {
 
 	fvar, _ := ioutil.ReadFile("test/_var.scss")
 
-	items, err := parse(string(fvar))
+	items, err := testParse(string(fvar))
 
 	if err != nil {
 		t.Errorf("Error parsing string")
@@ -33,25 +33,28 @@ func TestSassLexer(t *testing.T) {
 		t.Errorf("Invalid VAR parsing expected: %s, was: %s",
 			e, sel)
 	}
-	sel = items[10].String()
-	if e := "#00FF00"; e != sel {
-		t.Errorf("Invalid TEXT parsing expected: %s, was: %s",
-			e, sel)
-	}
 
-	if e := "sprite-map"; e != items[1].String() {
+	if e := "sprite-map"; e != items[2].String() {
 		t.Errorf("Invalid CMD parsing expected: %s, was: %s",
 			e, items[1].String())
 	}
-	sel = items[3].String()
+
+	sel = items[4].String()
 	if e := "*.png"; e != sel {
 		t.Errorf("Invalid FILE parsing expected: %s, was: %s",
-			sel, e)
+			e, sel)
 	}
-	T := items[3].Type
+
+	T := items[4].Type
 	if e := FILE; e != T {
-		t.Errorf("Invalid FILE type parsing expected: %s, was: %s",
+		t.Errorf("Invalid FILE parsing expected: %s, was: %s",
 			e, T)
+	}
+
+	sel = items[13].String()
+	if e := "#00FF00"; e != sel {
+		t.Errorf("Invalid TEXT parsing expected: %s, was: %s",
+			e, sel)
 	}
 }
 
@@ -61,14 +64,15 @@ $attr: border;
 p.#{$name} {
   #{$attr}-color: blue;
 }`
-	items, err := parse(in)
+	items, err := testParse(in)
+
 	if err != nil {
 		panic(err)
 	}
-	if e := INT; items[7].Type != e {
+	if e := INT; items[9].Type != e {
 		t.Errorf("Invalid token expected: %s, was: %s", e, items[7])
 	}
-	if e := SUB; items[8].Type != e {
+	if e := SUB; items[10].Type != e {
 		t.Errorf("Invalid token expected: %s, was: %s", e, items[8])
 	}
 }
@@ -111,20 +115,20 @@ div {
 
 func TestLexerImport(t *testing.T) {
 	fvar, _ := ioutil.ReadFile("test/import.scss")
-	items, _ := parse(string(fvar))
+	items, _ := testParse(string(fvar))
 	sel := items[0].String()
 	if e := "background"; sel != e {
 		t.Errorf("Invalid token expected: %s, was %s", e, sel)
 	}
-	sel = items[1].String()
+	sel = items[2].String()
 	if e := "purple"; sel != e {
 		t.Errorf("Invalid token expected: %s, was %s", e, sel)
 	}
-	sel = items[3].String()
+	sel = items[4].String()
 	if e := "@import"; sel != e {
 		t.Errorf("Invalid token expected: %s, was %s", e, sel)
 	}
-	sel = items[4].String()
+	sel = items[5].String()
 	if e := "var"; sel != e {
 		t.Errorf("Invalid token expected: %s, was %s", e, sel)
 	}
@@ -134,10 +138,52 @@ func TestLexerImport(t *testing.T) {
 func TestLexerSubModifiers(t *testing.T) {
 	in := `$s: sprite-map("*.png");
 div {
+  height: -1 * sprite-height($s,"140");
   width: -sprite-width($s,"140");
+  margin: - sprite-height($s, "140")px;
 }`
 
-	items, err := parse(in)
+	items, err := testParse(in)
+	if err != nil {
+		panic(err)
+	}
+	if e := ":"; items[1].Value != e {
+		t.Errorf("Failed to parse symbol expected: %s, was: %s",
+			e, items[1].Value)
+	}
+	if e := "*.png"; items[4].Value != e {
+		t.Errorf("Failed to parse file expected: %s, was: %s",
+			e, items[4].Value)
+	}
+
+	if e := "*"; items[13].Value != e {
+		t.Errorf("Failed to parse text expected: %s, was: %s",
+			e, items[13].Value)
+	}
+
+	if e := MINUS; items[22].Type != e {
+		t.Errorf("Failed to parse CMD expected: %s, was: %s",
+			e, items[22].Type)
+	}
+
+	if e := CMD; items[23].Type != e {
+		t.Errorf("Failed to parse CMD expected: %s, was: %s",
+			e, items[23].Type)
+	}
+
+	if e := TEXT; items[37].Type != e {
+		t.Errorf("Failed to parse TEXT expected: %s, was: %s",
+			e, items[37].Type)
+	}
+}
+
+func TestLexerVars(t *testing.T) {
+	in := `$a: 1;
+$b: $1;
+$c: ();
+$d: $c`
+
+	items, err := testParse(in)
 	if err != nil {
 		panic(err)
 	}
@@ -149,26 +195,29 @@ func TestLexerWhitespace(t *testing.T) {
 div {
   background:sprite($s,"140");
 }`
-	items, err := parse(in)
+	items, err := testParse(in)
 	if err != nil {
 		panic(err)
 	}
 
-	if e := TEXT; items[8].Type != e {
-		t.Errorf("Type parsed improperly expected: %s, was: %s", e, items[8].Type)
+	if e := TEXT; items[9].Type != e {
+		t.Errorf("Type parsed improperly expected: %s, was: %s",
+			e, items[9].Type)
 	}
 
-	if e := CMD; items[9].Type != e {
-		t.Errorf("Type parsed improperly expected: %s, was: %s", e, items[9].Type)
+	if e := CMD; items[11].Type != e {
+		t.Errorf("Type parsed improperly expected: %s, was: %s",
+			e, items[11].Type)
 	}
 
-	if e := "sprite"; items[9].Value != e {
-		t.Errorf("Command parsed improperly expected: %s, was: %s", e, items[9].Value)
+	if e := "sprite"; items[11].Value != e {
+		t.Errorf("Command parsed improperly expected: %s, was: %s",
+			e, items[11].Value)
 	}
 }
 
 // create a parser for the language.
-func parse(input string) ([]Item, error) {
+func testParse(input string) ([]Item, error) {
 	lex := New(func(lex *Lexer) StateFn {
 		return lex.Action()
 	}, input)

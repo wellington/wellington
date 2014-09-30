@@ -56,6 +56,26 @@ func TestParseSprite(t *testing.T) {
 	}
 }
 
+func TestParseSpriteArgs(t *testing.T) {
+	p := Parser{}
+	in := bytes.NewBufferString(`$view_sprite: sprite-map("test/*.png",
+  $normal-spacing: 2px,
+  $normal-hover-spacing: 2px,
+  $selected-spacing: 2px,
+  $selected-hover-spacing: 2px);
+  @include sprite-dimensions($view_sprite,"140");
+`)
+	e := `
+  width: 96px;
+height: 140px;
+`
+	out := string(p.Start(in, ""))
+	defer cleanUpSprites(p.Sprites)
+	if out != e {
+		t.Errorf("Mismatch expected:\n%s\nwas:\n%s", e, out)
+	}
+}
+
 func TestParseInt(t *testing.T) {
 	p := Parser{}
 	var (

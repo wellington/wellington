@@ -148,12 +148,15 @@ func (p *Parser) Parse(items []Item) []byte {
 		if j >= len(items) {
 			panic(items)
 		}
+		if items[1].Value != ":" {
+			log.Fatal(": expected after variable declaration")
+		}
 		for j < len(items) && items[j].Type != SEMIC {
 			j++
 		}
-		if items[1].Type != CMDVAR {
+		if items[2].Type != CMDVAR {
 			// Hackery for empty sass maps
-			val := string(p.Parse(items[1:j]))
+			val := string(p.Parse(items[2:j]))
 			// TODO: $var: $anothervar doesnt work
 			// Only #hex are being set right now due to bugs
 			// setting other things like $var: darken(#123, 10%)
@@ -161,7 +164,7 @@ func (p *Parser) Parse(items []Item) []byte {
 				// fmt.Println("SETTING", item, val)
 				p.Vars[item.String()] = val
 			}
-		} else {
+		} else if items[2].Value == "sprite-map" {
 			// Special parsing of sprite-maps
 			p.Mark(items[0].Pos,
 				items[j].Pos+len(items[j].Value), "")
@@ -171,7 +174,7 @@ func (p *Parser) Parse(items []Item) []byte {
 				GenImgDir: p.GenImgDir,
 			}
 			name := fmt.Sprintf("%s", items[0])
-			glob := fmt.Sprintf("%s", items[3])
+			glob := fmt.Sprintf("%s", items[4])
 			imgs.Decode(glob)
 			imgs.Vertical = true
 			imgs.Combine()

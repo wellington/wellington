@@ -49,12 +49,19 @@ const (
 	NUMBER
 	TEXT
 	DOLLAR
+	math_beg
+	PLUS
+	MINUS
+	MULT
+	DIVIDE
+	math_end
 	special_beg
 	LPAREN
 	RPAREN
 	LBRACKET
 	RBRACKET
 	SEMIC
+	COLON
 	CMT
 	special_end
 	include_mixin_beg
@@ -89,11 +96,16 @@ var Tokens = [...]string{
 	NUMBER:    "number",
 	TEXT:      "text",
 	DOLLAR:    "$",
+	PLUS:      "+",
+	MINUS:     "-",
+	MULT:      "*",
+	DIVIDE:    "/",
 	LPAREN:    "(",
 	RPAREN:    ")",
 	LBRACKET:  "{",
 	RBRACKET:  "}",
 	SEMIC:     ";",
+	COLON:     ":",
 	CMT:       "comment",
 	BKND:      "background",
 	FIN:       "FINISHED",
@@ -408,7 +420,13 @@ func (l *Lexer) Action() StateFn {
 			}
 			return l.Paren()
 		case r == '/':
-			return l.Comment()
+			if ok := l.Accept("/"); ok {
+				return l.Comment()
+			}
+			fallthrough
+		case strings.IndexRune("*-+/", r) > -1: //l.Accept("*-+"):
+			l.Backup()
+			return l.Math()
 		case r == '@':
 			l.Backup()
 			return l.Directive()
@@ -427,7 +445,7 @@ func (l *Lexer) Action() StateFn {
 }
 
 func IsSymbol(r rune) bool {
-	return strings.ContainsRune("(),;{}#", r)
+	return strings.ContainsRune("(),;{}#:", r)
 }
 
 func IsSpace(r rune) bool {
@@ -436,6 +454,20 @@ func IsSpace(r rune) bool {
 
 func IsPrintable(r rune) bool {
 	return true
+}
+
+func (l *Lexer) Math() StateFn {
+	switch {
+	case l.Accept("*"):
+		l.Emit(MULT)
+	case l.Accept("+"):
+		l.Emit(PLUS)
+	case l.Accept("-"):
+		l.Emit(MINUS)
+	case l.Accept("/"):
+		l.Emit(MULT)
+	}
+	return l.Action()
 }
 
 func (l *Lexer) Directive() StateFn {
@@ -483,6 +515,8 @@ func (l *Lexer) Paren() StateFn {
 		l.Emit(LBRACKET)
 	case l.Accept("}"):
 		l.Emit(RBRACKET)
+	case l.Accept(":"):
+		l.Emit(COLON)
 	case l.Accept(";"):
 		l.Emit(SEMIC)
 	default:
@@ -533,10 +567,11 @@ func (l *Lexer) Var() StateFn {
 
 func (l *Lexer) Text() StateFn {
 	// Edge case when background:sprite();
-	if l.Current() == ":" {
+	switch l.Current() {
+	case ":":
+		fmt.Println(l.Current())
 		l.Ignore()
 	}
-
 	if ok := l.AcceptString("sprite-map"); ok {
 		l.Emit(CMDVAR)
 		return l.Action()
@@ -567,6 +602,10 @@ func (l *Lexer) Text() StateFn {
 		return l.Action()
 	}
 
+	if ok := l.Accept("-"); ok {
+		l.Ignore()
+		return l.Text()
+	}
 	// For unknown directives
 	// Give up on searching for commands guess it is text
 	l.AcceptRunFunc(IsAllowedRune)
