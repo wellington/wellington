@@ -194,12 +194,14 @@ func (p *Parser) Parse(items []Item) []byte {
 			p.Mark(item.Pos, items[2].Pos+len(items[2].Value), val)
 		}
 	case SUB:
+		break
 		val, ok := p.Vars[item.Value]
 		// Do not replace if nothing was found
 		if !ok {
 			val = item.Value
 		}
-		p.Mark(item.Pos, item.Pos+len(item.Value), val)
+		_ = val
+		//p.Mark(item.Pos, item.Pos+len(item.Value), val)
 	case CMD:
 		for j < len(items) && items[j].Type != SEMIC {
 			j++
