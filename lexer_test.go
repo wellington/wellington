@@ -58,6 +58,44 @@ func TestLexer(t *testing.T) {
 	}
 }
 
+func TestLexerComment(t *testing.T) {
+	in := `/* some;
+multiline comments +*-0
+with symbols in them*/
+//*Just a specially crafted single line comment
+div {}
+/* Invalid multiline comment`
+	items, err := testParse(in)
+	if err != nil {
+		panic(err)
+	}
+
+	if e := `/* some;
+multiline comments +*-0
+with symbols in them*/`; items[0].Value != e {
+		t.Errorf("Multiline comment mismatch expected:%s\nwas:%s",
+			e, items[0].Value)
+
+	}
+	if e := CMT; e != items[0].Type {
+		t.Errorf("Multiline CMT mismatch expected:%s, was:%s",
+			e, items[0].Type)
+	}
+	if e := CMT; e != items[1].Type {
+		t.Errorf("CMT with special chars mismatch expected:%s, was:%s",
+			e, items[1].Type)
+	}
+
+	if e := CMT; e != items[5].Type {
+		t.Errorf("CMT with invalid ending expected: %s, was: %s",
+			e, items[5].Type)
+	}
+	if e := 6; len(items) != e {
+		t.Errorf("Invalid number of comments expected: %d, was: %d",
+			len(items), e)
+	}
+}
+
 func TestLexerSub(t *testing.T) {
 	in := `$name: foo;
 $attr: border;

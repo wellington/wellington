@@ -8,6 +8,7 @@ import (
 	"container/list"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -420,7 +421,7 @@ func (l *Lexer) Action() StateFn {
 			}
 			return l.Paren()
 		case r == '/':
-			if ok := l.Accept("/"); ok {
+			if ok := l.Accept("/*"); ok {
 				return l.Comment()
 			}
 			fallthrough
@@ -526,19 +527,23 @@ func (l *Lexer) Paren() StateFn {
 }
 
 func (l *Lexer) Comment() StateFn {
-	r, _ := l.Peek()
-	if r == '*' {
+	switch l.Current() {
+	case "/*":
 		// Look for the next '/' preceded with '*'
 		var last rune
 		for {
 			r, _ := l.Advance()
 			if last == '*' && r == '/' {
 				break
+			} else if r == EOF {
+				// TODO: Surface language parsing errors
+				log.Println("Invalid comment found", l.Current())
+				break
 			}
 			last = r
 		}
 		l.Emit(CMT)
-	} else if r == '/' {
+	case "//":
 		// Single line comments
 		for {
 			r, _ := l.Advance()
