@@ -107,7 +107,7 @@ p.#{$name} {
 	if err != nil {
 		panic(err)
 	}
-	if e := INT; items[9].Type != e {
+	if e := INTP; items[9].Type != e {
 		t.Errorf("Invalid token expected: %s, was: %s", e, items[7])
 	}
 	if e := SUB; items[10].Type != e {
@@ -122,7 +122,7 @@ div {
   width: image-width($file, 140);
   height: image-height(sprite-file($s, 140));
 }`
-	items, err := parse(in)
+	items, err := testParse(in)
 	if err != nil {
 		panic(err)
 	}

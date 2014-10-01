@@ -4,7 +4,7 @@ background: purple;
 $red-var: red;
 $hex: #00FF00;
 div {
-    background: #00FF00;
+    background: $hex;
     $hex: #00DD00;
     background: url("./image") 0px 0px;
     background: url("./image") 0px -139px;
