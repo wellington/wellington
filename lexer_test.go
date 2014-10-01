@@ -65,10 +65,10 @@ p.#{$name} {
 	if err != nil {
 		panic(err)
 	}
-	if e := Lookup("#{"); items[7].Type != e {
+	if e := INT; items[7].Type != e {
 		t.Errorf("Invalid token expected: %s, was: %s", e, items[7])
 	}
-	if e := Lookup("sub"); items[8].Type != e {
+	if e := SUB; items[8].Type != e {
 		t.Errorf("Invalid token expected: %s, was: %s", e, items[8])
 	}
 }

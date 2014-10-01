@@ -16,6 +16,10 @@ import (
 // A type for all the types of items in the language being lexed.
 type ItemType int
 
+const (
+	NotFound = -1
+)
+
 // Special item types.
 const (
 	ItemEOF ItemType = iota
@@ -35,10 +39,12 @@ const (
 	SUB
 	VALUE
 	FILE
+	cmd_beg
 	SPRITE
 	SPRITED
 	SPRITEH
 	SPRITEW
+	cmd_end
 	NUMBER
 	TEXT
 	DOLLAR
@@ -99,7 +105,7 @@ var directives map[string]ItemType
 
 func init() {
 	directives = make(map[string]ItemType)
-	for i := ItemEOF; i < FIN; i++ {
+	for i := cmd_beg; i < cmd_end; i++ {
 		directives[Tokens[i]] = i
 	}
 }
@@ -109,7 +115,7 @@ func Lookup(ident string) ItemType {
 	if tok, is_keyword := directives[ident]; is_keyword {
 		return tok
 	}
-	return -1
+	return NotFound
 }
 
 const EOF rune = 0x04
