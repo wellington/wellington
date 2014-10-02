@@ -6,9 +6,11 @@ package sprite_sass
 func (p *Parser) Replace() {
 
 	for _, c := range p.Chop {
-
 		begin := c.Start - p.shift
 		end := c.End - p.shift
+		if begin < 0 {
+			continue
+		}
 		p.shift += end - begin
 		p.shift -= len(c.Value)
 		suf := append(c.Value, p.Output[end:]...)

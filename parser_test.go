@@ -137,3 +137,27 @@ func TestParseMixin(t *testing.T) {
 			res, e)
 	}
 }
+
+func TestParseImage(t *testing.T) {
+	p := Parser{}
+	in := bytes.NewBufferString(`$sprites: sprite-map("test/*.png");
+$sfile: sprite-file($sprites, 139);
+div {
+    height: image-height(sprite-file($sprites, 139));
+    width: image-width(sprite-file($sprites, 139));
+    url: sprite-file($sprites, 139);
+}`)
+
+	out := string(p.Start(in, ""))
+	defer cleanUpSprites(p.Sprites)
+
+	if e := `
+
+div {
+    height: 139px;
+    width: 96px;
+    url: test/139.png;
+}`; e != out {
+		t.Errorf("Mismatch expected:\n%s\nwas:\n%s\n", e, out)
+	}
+}

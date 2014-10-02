@@ -39,6 +39,16 @@ func (l ImageList) String() string {
 	return files
 }
 
+// Return relative path to File
+// TODO: Return abs path to file
+func (l ImageList) File(f string) string {
+	pos := l.Lookup(f)
+	if pos > -1 {
+		return l.Files[pos]
+	}
+	return ""
+}
+
 func (l ImageList) Lookup(f string) int {
 	var base string
 	pos := -1

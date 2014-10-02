@@ -121,6 +121,7 @@ $file: sprite-file($s, 140);
 div {
   width: image-width($file, 140);
   height: image-height(sprite-file($s, 140));
+  url: sprite-file($s, 140);
 }`
 	items, err := testParse(in)
 	if err != nil {
@@ -129,25 +130,31 @@ div {
 
 	types := map[int]ItemType{
 		0:  VAR,
-		1:  CMDVAR,
-		3:  FILE,
-		6:  VAR,
-		7:  CMD,
-		9:  SUB,
-		10: FILE,
-		15: TEXT,
-		16: CMD,
-		18: SUB,
-		19: FILE,
-		23: CMD,
-		25: CMD,
-		28: FILE,
+		2:  CMDVAR,
+		4:  FILE,
+		7:  VAR,
+		9:  CMD,
+		11: SUB,
+		12: FILE,
+		17: TEXT,
+		19: CMD,
+		21: SUB,
+		22: FILE,
+		27: CMD,
+		29: CMD,
+		32: FILE,
+		40: SUB,
+		41: FILE,
 	}
-
+	errors := false
 	for i, tp := range types {
 		if tp != items[i].Type {
-			t.Errorf("expected: %s, was: %s", tp, items[i].Type)
+			errors = true
+			t.Errorf("at %d expected: %s, was: %s", i, tp, items[i].Type)
 		}
+	}
+	if errors {
+		printItems(items)
 	}
 }
 

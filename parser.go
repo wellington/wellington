@@ -145,20 +145,21 @@ func (p *Parser) Parse(items []Item) []byte {
 	item := items[0]
 	switch item.Type {
 	case VAR:
-		if j >= len(items) {
-			panic(items)
-		}
 		if items[1].Value != ":" {
 			log.Fatal(": expected after variable declaration")
 		}
 		for j < len(items) && items[j].Type != SEMIC {
 			j++
 		}
+		// Eliminate variables for known commands
+		switch items[2].Value {
+		case "sprite-file":
+			p.Mark(item.Pos, items[j].Pos+len(items[j].Value), "")
+		}
 		if items[2].Type != CMDVAR {
 			// Hackery for empty sass maps
 			val := string(p.Parse(items[2:j]))
 			// TODO: $var: $anothervar doesnt work
-			// Only #hex are being set right now due to bugs
 			// setting other things like $var: darken(#123, 10%)
 			if val != "()" && val != "" {
 				// fmt.Println("SETTING", item, val)
@@ -276,6 +277,39 @@ func (p *Parser) Command(items []Item) ([]byte, int) {
 		sprite := p.Sprites[fmt.Sprintf("%s", items[2])]
 		repl = sprite.Dimensions(items[3].Value)
 		p.Mark(items[0].Pos, items[4].Pos+len(items[4].Value), repl)
+	case "sprite-file":
+		if items[2].Type != SUB {
+			log.Fatalf("%s must be followed by variable, was: %s",
+				cmd.Value, items[2].Value)
+		}
+		if items[3].Type != FILE {
+			log.Fatalf("sprite-file must be followed by "+
+				"sprite-variable, was: %s",
+				items[3].Type)
+		}
+		repl := p.Sprites[fmt.Sprintf("%s", items[2])].
+			File(items[3].String())
+		p.Mark(items[0].Pos, items[4].Pos+len(items[4].Value), repl)
+		return []byte(repl), eoc
+	case "image-height", "image-width":
+		if items[2].Type != CMD {
+			log.Fatalf("%s first arg must be sprite-file, was: %s",
+				cmd.Value, items[2].Value)
+		}
+		if items[4].Type != SUB {
+			log.Fatalf("%s must be followed by variable, was: %s",
+				cmd.Value, items[4].Type)
+		}
+		// Resolve variable
+		sprite := p.Sprites[items[4].Value]
+		var pix int
+		if cmd.Value == "image-width" {
+			pix = sprite.SImageWidth(items[5].Value)
+		} else if cmd.Value == "image-height" {
+			pix = sprite.SImageHeight(items[5].Value)
+		}
+		repl := fmt.Sprintf("%dpx", pix)
+		p.Mark(items[0].Pos, items[7].Pos+len(items[6].Value), repl)
 	case "inline-image":
 		var (
 			img ImageList
