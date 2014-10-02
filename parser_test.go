@@ -144,7 +144,7 @@ func TestParseImage(t *testing.T) {
 $sfile: sprite-file($sprites, 139);
 div {
     height: image-height(sprite-file($sprites, 139));
-    width: image-width(sprite-file($sprites, 139));
+    width: image-width(test/139.png);
     url: sprite-file($sprites, 139);
 }`)
 

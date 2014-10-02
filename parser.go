@@ -292,6 +292,24 @@ func (p *Parser) Command(items []Item) ([]byte, int) {
 		p.Mark(items[0].Pos, items[4].Pos+len(items[4].Value), repl)
 		return []byte(repl), eoc
 	case "image-height", "image-width":
+		if items[2].Type == FILE {
+			name := items[2].Value
+			img := ImageList{
+				ImageDir:  p.ImageDir,
+				BuildDir:  p.BuildDir,
+				GenImgDir: p.GenImgDir,
+			}
+			img.Decode(name)
+			var d int
+			if cmd.Value == "image-width" {
+				d = img.ImageWidth(0)
+			} else if cmd.Value == "image-height" {
+				d = img.ImageHeight(0)
+			}
+			repl = fmt.Sprintf("%dpx", d)
+			p.Mark(items[0].Pos, items[3].Pos+len(items[3].Value), repl)
+			return []byte(repl), eoc
+		}
 		if items[2].Type != CMD {
 			log.Fatalf("%s first arg must be sprite-file, was: %s",
 				cmd.Value, items[2].Value)
