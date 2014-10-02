@@ -79,12 +79,10 @@ func main() {
 	}
 
 	if len(flag.Args()) == 0 {
-		fmt.Println("Please specify input and output filepaths.")
+		fmt.Println("Please specify input filepath.")
 		fmt.Println("\nAvailable options:")
 		flag.PrintDefaults()
 		return
-	} else if len(flag.Args()) > 1 {
-		log.Fatal("Only one input file is supported at this time")
 	}
 
 	style, ok := sprite.Style[Style]
@@ -93,45 +91,47 @@ func main() {
 		style = sprite.NESTED_STYLE
 	}
 
-	ctx := sprite.Context{
-		OutputStyle: style,
-		ImageDir:    Dir,
-		// Assumption that output is a file
-		BuildDir:     filepath.Dir(Output),
-		GenImgDir:    Gen,
-		Comments:     Comments,
-		IncludePaths: []string{filepath.Dir(flag.Arg(0))},
-	}
-
-	if Includes != "" {
-		ctx.IncludePaths = append(ctx.IncludePaths,
-			strings.Split(Includes, ",")...)
-	}
-
-	fRead, err := os.Open(flag.Arg(0))
-	if err != nil {
-		panic(err)
-	}
-
-	var output io.WriteCloser
-
-	if Output == "" {
-		output = os.Stdout
-	} else {
-		dir := filepath.Dir(Output)
-		err := os.MkdirAll(dir, 0777)
-		if err != nil {
-			log.Fatalf("Failed to create directory: %s", dir)
+	for _, f := range flag.Args() {
+		ctx := sprite.Context{
+			OutputStyle: style,
+			ImageDir:    Dir,
+			// Assumption that output is a file
+			BuildDir:     filepath.Dir(Output),
+			GenImgDir:    Gen,
+			Comments:     Comments,
+			IncludePaths: []string{filepath.Dir(f)},
 		}
 
-		output, err = os.Create(Output)
-		if err != nil {
-			log.Fatalf("Failed to create file: %s", Output)
+		if Includes != "" {
+			ctx.IncludePaths = append(ctx.IncludePaths,
+				strings.Split(Includes, ",")...)
 		}
-	}
 
-	err = ctx.Run(fRead, output, filepath.Dir(Input))
-	if err != nil {
-		log.Fatal(err)
+		fRead, err := os.Open(f)
+		if err != nil {
+			panic(err)
+		}
+
+		var output io.WriteCloser
+
+		if Output == "" {
+			output = os.Stdout
+		} else {
+			dir := filepath.Dir(Output)
+			err := os.MkdirAll(dir, 0777)
+			if err != nil {
+				log.Fatalf("Failed to create directory: %s", dir)
+			}
+
+			output, err = os.Create(Output)
+			if err != nil {
+				log.Fatalf("Failed to create file: %s", Output)
+			}
+		}
+
+		err = ctx.Run(fRead, output, filepath.Dir(Input))
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
