@@ -75,10 +75,10 @@ p.#{$name} {
 
 func TestLexerCmds(t *testing.T) {
 	in := `$s: sprite-map("test/*.png");
-$file: sprite-file($s,"140");
+$file: sprite-file($s, 140);
 div {
-  width: image-width($file,"140");
-  height: image-height(sprite-file($s"140"));
+  width: image-width($file, 140);
+  height: image-height(sprite-file($s, 140));
 }`
 	items, err := parse(in)
 	if err != nil {
@@ -96,6 +96,7 @@ div {
 		15: TEXT,
 		16: CMD,
 		18: SUB,
+		19: FILE,
 		23: CMD,
 		25: CMD,
 		28: FILE,

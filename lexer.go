@@ -467,6 +467,13 @@ func (l *Lexer) Paren() StateFn {
 		l.Emit(INT)
 	case l.Accept("("):
 		l.Emit(LPAREN)
+		ok := l.Accept("$")
+		if ok {
+			l.AcceptRunFunc(IsAllowedRune)
+			l.Emit(SUB)
+			l.Accept(", ")
+			return l.File()
+		}
 	case l.Accept(")"):
 		l.Emit(RPAREN)
 	case l.Accept("{"):
@@ -566,11 +573,11 @@ func (l *Lexer) Text() StateFn {
 }
 
 func (l *Lexer) File() StateFn {
+	l.AcceptFunc(IsSpace)
 	l.Ignore()
-	if !l.AcceptFunc(IsAllowedRune) {
-		return l.Action()
-	}
 	l.AcceptRunFunc(IsAllowedRune)
-	l.Emit(FILE)
+	if len(l.Current()) > 0 {
+		l.Emit(FILE)
+	}
 	return l.Action()
 }
