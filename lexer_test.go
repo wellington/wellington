@@ -20,6 +20,11 @@ func TestLexerBools(t *testing.T) {
 
 func TestLexer(t *testing.T) {
 
+	lex := New(nil, "")
+	if lex != nil {
+		t.Errorf("non-nil Lexer on nil state")
+	}
+
 	fvar, _ := ioutil.ReadFile("test/_var.scss")
 
 	items, err := testParse(string(fvar))
@@ -291,5 +296,21 @@ func testParse(input string) ([]Item, error) {
 			status = append(status, *item)
 			//fmt.Printf("Default: %d %s\n", item.Pos, item)
 		}
+	}
+}
+
+func TestLexerLookup(t *testing.T) {
+	it := Lookup("sprite-file")
+	if e := "sprite-file"; it.String() != e {
+		t.Errorf("Directive should be found was: %s, expected: %s",
+			it.String(), e)
+	}
+	it = Lookup("NOT GONNA FIND")
+	if e := ""; it.String() != e {
+		t.Errorf("Not a token was: %s, expected: %s", it.String(), e)
+	}
+	it = Lookup("/")
+	if e := ""; it.String() != e {
+		t.Errorf("Non-directive was: %s, expected: %s", it.String(), e)
 	}
 }

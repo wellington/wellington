@@ -113,6 +113,9 @@ var Tokens = [...]string{
 }
 
 func (i ItemType) String() string {
+	if i < 0 {
+		return ""
+	}
 	return Tokens[i]
 }
 
@@ -173,7 +176,7 @@ type Lexer struct {
 func New(state StateFn, input string) *Lexer {
 
 	if state == nil {
-		panic("nil start state")
+		return nil //panic("nil start state")
 	}
 	return &Lexer{
 		state: state,
@@ -574,7 +577,6 @@ func (l *Lexer) Text() StateFn {
 	// Edge case when background:sprite();
 	switch l.Current() {
 	case ":":
-		fmt.Println(l.Current())
 		l.Ignore()
 	}
 	if ok := l.AcceptString("sprite-map"); ok {
