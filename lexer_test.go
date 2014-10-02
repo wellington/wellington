@@ -161,21 +161,21 @@ div {
 func TestLexerImport(t *testing.T) {
 	fvar, _ := ioutil.ReadFile("test/import.scss")
 	items, _ := testParse(string(fvar))
-	sel := items[0].String()
-	if e := "background"; sel != e {
-		t.Errorf("Invalid token expected: %s, was %s", e, sel)
+	vals := map[int]string{
+		0: "background",
+		2: "purple",
+		4: "@import",
+		5: "compass",
 	}
-	sel = items[2].String()
-	if e := "purple"; sel != e {
-		t.Errorf("Invalid token expected: %s, was %s", e, sel)
+	errors := false
+	for i, v := range vals {
+		if v != items[i].Value {
+			errors = true
+			t.Errorf("at %d expected: %s, was: %s", i, v, items[i].Value)
+		}
 	}
-	sel = items[4].String()
-	if e := "@import"; sel != e {
-		t.Errorf("Invalid token expected: %s, was %s", e, sel)
-	}
-	sel = items[5].String()
-	if e := "var"; sel != e {
-		t.Errorf("Invalid token expected: %s, was %s", e, sel)
+	if errors {
+		printItems(items)
 	}
 }
 
