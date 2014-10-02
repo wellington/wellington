@@ -73,6 +73,41 @@ p.#{$name} {
 	}
 }
 
+func TestLexerCmds(t *testing.T) {
+	in := `$s: sprite-map("test/*.png");
+$file: sprite-file($s,"140");
+div {
+  width: image-width($file,"140");
+  height: image-height(sprite-file($s"140"));
+}`
+	items, err := parse(in)
+	if err != nil {
+		panic(err)
+	}
+
+	types := map[int]ItemType{
+		0:  VAR,
+		1:  CMDVAR,
+		3:  FILE,
+		6:  VAR,
+		7:  CMD,
+		9:  SUB,
+		10: FILE,
+		15: TEXT,
+		16: CMD,
+		18: SUB,
+		23: CMD,
+		25: CMD,
+		28: FILE,
+	}
+
+	for i, tp := range types {
+		if tp != items[i].Type {
+			t.Errorf("expected: %s, was: %s", tp, items[i].Type)
+		}
+	}
+}
+
 func TestLexerImport(t *testing.T) {
 	fvar, _ := ioutil.ReadFile("test/import.scss")
 	items, _ := parse(string(fvar))

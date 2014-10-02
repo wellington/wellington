@@ -41,6 +41,7 @@ const (
 	FILE
 	cmd_beg
 	SPRITE
+	SPRITEF
 	SPRITED
 	SPRITEH
 	SPRITEW
@@ -81,6 +82,7 @@ var Tokens = [...]string{
 	VALUE:     "value",
 	FILE:      "file",
 	SPRITE:    "sprite",
+	SPRITEF:   "sprite-file",
 	SPRITED:   "sprite-dimensions",
 	SPRITEH:   "sprite-height",
 	SPRITEW:   "sprite-width",
@@ -538,6 +540,7 @@ func (l *Lexer) Text() StateFn {
 		"sprite-map-name", "sprite-names",
 		// Other commands
 		"image-url", "inline-image",
+		"image-width", "image-height",
 	}
 
 	for _, cmd := range cmds {
