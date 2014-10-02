@@ -505,13 +505,21 @@ func (l *Lexer) Paren() StateFn {
 	case l.AcceptString("#{"):
 		l.Emit(INTP)
 	case l.Accept("("):
+		last := l.items.Back()
 		l.Emit(LPAREN)
+
 		ok := l.Accept("$")
 		if ok {
 			l.AcceptRunFunc(IsAllowedRune)
 			l.Emit(SUB)
 			l.Accept(", ")
 			return l.File()
+		} else {
+			// Special case for image-[width|height]
+			switch fmt.Sprintf("%s", last.Value) {
+			case "image-height", "image-width":
+				return l.File()
+			}
 		}
 	case l.Accept(")"):
 		l.Emit(RPAREN)
@@ -626,7 +634,11 @@ func (l *Lexer) File() StateFn {
 	l.Ignore()
 	l.AcceptRunFunc(IsAllowedRune)
 	if len(l.Current()) > 0 {
-		l.Emit(FILE)
+		if c := Lookup(l.Current()); c > 0 {
+			l.Emit(CMD)
+		} else {
+			l.Emit(FILE)
+		}
 	}
 	return l.Action()
 }

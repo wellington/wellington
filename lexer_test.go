@@ -191,6 +191,8 @@ div {
   height: -1 * sprite-height($s,"140");
   width: -sprite-width($s,"140");
   margin: - sprite-height($s, "140")px;
+  height: image-height(test/140.png);
+  width: image-width(sprite-file($s, 140));
 }`
 
 	items, err := testParse(in)
@@ -224,6 +226,21 @@ div {
 	if e := TEXT; items[37].Type != e {
 		t.Errorf("Failed to parse TEXT expected: %s, was: %s",
 			e, items[37].Type)
+	}
+
+	if e := FILE; items[43].Type != e {
+		t.Errorf("Type mismatch expected: %s, was: %s", e, items[43].Type)
+	}
+	types := map[int]ItemType{
+		48: CMD,
+		50: CMD,
+		52: SUB,
+		53: FILE,
+	}
+	for i, ty := range types {
+		if types[i] != ty {
+			t.Errorf("Type mismatch at %d expected: %s, was: %s", i, types[i], ty)
+		}
 	}
 }
 
