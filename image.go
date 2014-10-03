@@ -9,7 +9,8 @@ import (
 func (p Parser) ImageUrl(items []Item) string {
 	gdir, err := filepath.Rel(p.BuildDir, p.ImageDir)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return "url(\"\")"
 	}
 	path := filepath.Join(gdir, items[2].Value)
 	return fmt.Sprintf("url(\"%s\")", path)

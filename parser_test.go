@@ -3,6 +3,8 @@ package sprite_sass
 import (
 	"bytes"
 	"io/ioutil"
+	"log"
+	"os"
 
 	"regexp"
 	"strings"
@@ -160,4 +162,25 @@ div {
 }`; e != out {
 		t.Errorf("Mismatch expected:\n%s\nwas:\n%s\n", e, out)
 	}
+}
+
+func TestParseImageUrl(t *testing.T) {
+	p := Parser{
+		BuildDir: "/doop/doop",
+	}
+	in := bytes.NewBufferString(`background: image-url("test/140.png");`)
+	var b bytes.Buffer
+	log.SetOutput(&b)
+	out := string(p.Start(in, ""))
+
+	if e := "can't make . relative to /doop/doop\n"; !strings.HasSuffix(
+		b.String(), e) {
+		t.Errorf("No error for relative expected: %s, was: %s",
+			e, b.String())
+	}
+
+	if e := "background: url(\"\");"; e != out {
+		t.Errorf("expected: %s, was: %s", e, out)
+	}
+	log.SetOutput(os.Stdout)
 }
