@@ -80,6 +80,9 @@ func (l ImageList) Lookup(f string) int {
 // position in Image slice
 func (l ImageList) X(pos int) int {
 	x := 0
+	if pos > len(l.GoImages) {
+		return -1
+	}
 	if l.Vertical {
 		return 0
 	}
@@ -94,11 +97,11 @@ func (l ImageList) X(pos int) int {
 // position in Image slice
 func (l ImageList) Y(pos int) int {
 	y := 0
-	if !l.Vertical {
-		return 0
-	}
 	if pos > len(l.GoImages) {
 		return -1
+	}
+	if !l.Vertical {
+		return 0
 	}
 	for i := 0; i < pos; i++ {
 		y += l.ImageHeight(i)
@@ -111,6 +114,7 @@ func (l ImageList) CSS(s string) string {
 	if pos == -1 {
 		log.Printf("File not found: %s\n Try one of: %s",
 			s, l)
+		return ""
 	}
 
 	return fmt.Sprintf(`url("%s") %s`,
@@ -122,6 +126,7 @@ func (l ImageList) Position(s string) string {
 	if pos == -1 {
 		log.Printf("File not found: %s\n Try one of: %s",
 			s, l)
+		return ""
 	}
 
 	return fmt.Sprintf(`%dpx %dpx`, -l.X(pos), -l.Y(pos))
@@ -350,10 +355,6 @@ func (l *ImageList) Export() (string, error) {
 	//This call is cached if already run
 	l.Combine()
 	defer fo.Close()
-
-	if err != nil {
-		return "", err
-	}
 
 	err = png.Encode(fo, l.Out)
 	if err != nil {

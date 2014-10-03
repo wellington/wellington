@@ -1,6 +1,7 @@
 package sprite_sass
 
 import (
+	"bytes"
 	"log"
 	"os"
 	"path/filepath"
@@ -241,4 +242,55 @@ func TestSpriteInline(t *testing.T) {
 		t.Errorf("CSS length has an invalid length:%d expected: 400-500",
 			len(str))
 	}
+}
+
+func TestSpriteError(t *testing.T) {
+	var out bytes.Buffer
+	imgs := ImageList{}
+	log.SetOutput(&out)
+	imgs.Decode("test/bad/interlace.png")
+	imgs.Combine()
+	_ = imgs
+	out.ReadString('\n')
+	str := out.String()
+
+	if e := "png: unsupported feature: compression, " +
+		"filter or interlace method\n"; e != str {
+		t.Errorf("Interlaced error not received expected:\n%s, was:\n%s", e, str)
+	}
+
+	if e := -1; imgs.Y(1) != e {
+		t.Errorf("Invalid position expected: %d, was: %d", e, imgs.Y(1))
+	}
+
+	if e := -1; imgs.X(1) != e {
+		t.Errorf("Invalid position expected: %d, was: %d", e, imgs.X(1))
+	}
+
+	if e := -1; imgs.ImageHeight(-1) != -1 {
+		t.Errorf("ImageHeight not found expected: %d, was: %d",
+			e, imgs.ImageHeight(-1))
+	}
+
+	if e := -1; imgs.ImageWidth(-1) != -1 {
+		t.Errorf("ImageWidth not found expected: %d, was: %d",
+			e, imgs.ImageWidth(-1))
+	}
+
+	if e := ""; imgs.File("notfound") != e {
+		t.Errorf("Invalid file call to File expected: %s, was %s",
+			e, imgs.File("notfound"))
+	}
+
+	out.Reset()
+	if e := ""; imgs.CSS("") != e {
+		t.Errorf("Invalid css for non-file expected: %s, was: %s",
+			e, imgs.CSS(""))
+	}
+	out.Reset()
+	if e := ""; imgs.Position("") != e {
+		t.Errorf("Invalid css for non-file expected: %s, was: %s",
+			e, imgs.Position(""))
+	}
+	log.SetOutput(os.Stdout)
 }
