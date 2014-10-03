@@ -37,7 +37,7 @@ func NewParser() *Parser {
 //
 // Parser creates a map of all variables and sprites
 // (created via sprite-map calls).
-func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
+func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	p.Vars = make(map[string]string)
 	p.Sprites = make(map[string]ImageList)
 	p.InlineImgs = make(map[string]ImageList)
@@ -50,6 +50,9 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 	// This pass resolves all the imports, but positions will
 	// be off due to @import calls
 	items, input, err := p.GetItems(pkgdir, string(buf.Bytes()))
+	if err != nil {
+		return []byte(""), err
+	}
 	// This call will have valid token positions
 	items, input, err = p.GetItems(pkgdir, input)
 
@@ -67,7 +70,7 @@ func (p *Parser) Start(in io.Reader, pkgdir string) []byte {
 	p.Output = []byte(p.Input)
 	p.Replace()
 	// fmt.Printf("out: % #v\n", p.Sprites)
-	return p.Output
+	return p.Output, nil
 }
 
 // Find Paren that matches the current (
@@ -404,7 +407,7 @@ func (p *Parser) GetItems(pwd, input string) ([]Item, string, error) {
 
 				pwd, contents, err := p.ImportPath(pwd, fmt.Sprintf("%s", *item))
 				if err != nil {
-					log.Fatal(err)
+					return nil, "", err
 				}
 				//Eat the semicolon
 				item := lex.Next()

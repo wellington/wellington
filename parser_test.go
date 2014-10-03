@@ -20,7 +20,8 @@ func init() {
 func TestParserVar(t *testing.T) {
 	p := Parser{}
 	fread := fileReader("test/_var.scss")
-	output := string(p.Start(fread, "test/"))
+	bs, _ := p.Start(fread, "test/")
+	output := string(bs)
 	output = strings.TrimSpace(rerandom.ReplaceAllString(output, ""))
 	defer cleanUpSprites(p.Sprites)
 	file, _ := ioutil.ReadFile("test/var.parser")
@@ -34,7 +35,8 @@ func TestParserVar(t *testing.T) {
 
 func TestParserImporter(t *testing.T) {
 	p := Parser{}
-	output := string(p.Start(fileReader("test/import.scss"), "test/"))
+	bs, _ := p.Start(fileReader("test/import.scss"), "test/")
+	output := string(bs)
 	output = strings.TrimSpace(rerandom.ReplaceAllString(output, ""))
 
 	defer cleanUpSprites(p.Sprites)
@@ -48,7 +50,8 @@ func TestParserImporter(t *testing.T) {
 
 func TestParseSprite(t *testing.T) {
 	p := Parser{}
-	output := string(p.Start(fileReader("test/sprite.scss"), "test/"))
+	bs, _ := p.Start(fileReader("test/sprite.scss"), "test/")
+	output := string(bs)
 	output = rerandom.ReplaceAllString(output, "")
 
 	defer cleanUpSprites(p.Sprites)
@@ -71,7 +74,8 @@ func TestParseSpriteArgs(t *testing.T) {
   width: 96px;
 height: 140px;
 `
-	out := string(p.Start(in, ""))
+	bs, _ := p.Start(in, "")
+	out := string(bs)
 	defer cleanUpSprites(p.Sprites)
 	if out != e {
 		t.Errorf("Mismatch expected:\n%s\nwas:\n%s", e, out)
@@ -88,8 +92,8 @@ func TestParseInt(t *testing.T) {
 	  $line-height: 30px;
 	  font: #{$font-size}/#{$line-height};
 	}`)
-
-	res = string(p.Start(r, ""))
+	bs, _ := p.Start(r, "")
+	res = string(bs)
 
 	e = `p {
 	  $font-size: 12px;
@@ -105,7 +109,8 @@ $attr: border;
 p.#{$name} {
   #{$attr}-color: blue;
 }`)
-	res = string(p.Start(r, ""))
+	bs, _ = p.Start(r, "")
+	res = string(bs)
 
 	e = `$name: foo;
 $attr: border;
@@ -119,7 +124,8 @@ p.foo {
 
 func TestParseComment(t *testing.T) {
 	p := Parser{}
-	res := string(p.Start(fileReader("test/_comment.scss"), "test/"))
+	bs, _ := p.Start(fileReader("test/_comment.scss"), "test/")
+	res := string(bs)
 	res = strings.TrimSpace(rerandom.ReplaceAllString(res, ""))
 	e := strings.TrimSpace(fileString("test/comment.parser"))
 
@@ -131,7 +137,8 @@ func TestParseComment(t *testing.T) {
 
 func TestParseMixin(t *testing.T) {
 	p := Parser{}
-	res := string(p.Start(fileReader("test/mixin.scss"), ""))
+	bs, _ := p.Start(fileReader("test/mixin.scss"), "")
+	res := string(bs)
 	e := fileString("test/mixin.parser")
 
 	if res != e {
@@ -149,8 +156,8 @@ div {
     width: image-width(test/139.png);
     url: sprite-file($sprites, 139);
 }`)
-
-	out := string(p.Start(in, ""))
+	bs, _ := p.Start(in, "")
+	out := string(bs)
 	defer cleanUpSprites(p.Sprites)
 
 	if e := `
@@ -171,7 +178,8 @@ func TestParseImageUrl(t *testing.T) {
 	in := bytes.NewBufferString(`background: image-url("test/140.png");`)
 	var b bytes.Buffer
 	log.SetOutput(&b)
-	out := string(p.Start(in, ""))
+	bs, _ := p.Start(in, "")
+	out := string(bs)
 
 	if e := "can't make . relative to /doop/doop\n"; !strings.HasSuffix(
 		b.String(), e) {

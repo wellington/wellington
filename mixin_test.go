@@ -22,7 +22,8 @@ height: 1px;
 
 	in := bytes.NewBuffer(ib)
 	p := Parser{}
-	output := rerandom.ReplaceAllString(string(p.Start(in, "test")), "")
+	bs, _ := p.Start(in, "test")
+	output := rerandom.ReplaceAllString(string(bs), "")
 
 	if e != output {
 		t.Errorf("Mixin parsing failed was:\n%s\nexpected:\n%s", output, e)
@@ -43,7 +44,8 @@ func TestMixinImageUrl(t *testing.T) {
 	e := `background: url("test/pixel.png");`
 	in := bytes.NewBuffer(ib)
 	p := Parser{}
-	output := string(p.Start(in, "test"))
+	bs, _ := p.Start(in, "test")
+	output := string(bs)
 
 	if e != output {
 		t.Errorf("image url failed was:\n%s\nexpected:\n%s\n", output, e)
@@ -53,7 +55,8 @@ func TestMixinImageUrl(t *testing.T) {
 	e = `background: url("test/nopixel.png");`
 	in = bytes.NewBuffer(ib)
 	p = Parser{}
-	output = string(p.Start(in, "test"))
+	bs, _ = p.Start(in, "test")
+	output = string(bs)
 
 	if e != output {
 		t.Errorf("image url failed was:\n%s\nexpected:\n%s\n", output, e)

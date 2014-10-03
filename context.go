@@ -71,9 +71,12 @@ func (ctx *Context) Run(in io.Reader, out io.WriteCloser, pkgdir string) error {
 		BuildDir:  ctx.BuildDir,
 		GenImgDir: ctx.GenImgDir,
 	}
-
-	ctx.Src = string(ctx.Parser.Start(in, pkgdir))
-	err := ctx.Compile()
+	bs, err := ctx.Parser.Start(in, pkgdir)
+	if err != nil {
+		return err
+	}
+	ctx.Src = string(bs)
+	err = ctx.Compile()
 	if err != nil {
 		return err
 	}
