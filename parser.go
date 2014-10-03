@@ -426,7 +426,7 @@ func (p *Parser) GetItems(pwd, input string) ([]Item, string, error) {
 				}
 
 				if err != nil {
-					panic(err)
+					return nil, "", err
 				}
 				output = append(output, moreOutput...)
 				status = append(status, moreTokens...)
