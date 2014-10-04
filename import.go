@@ -38,7 +38,7 @@ func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 	// Ignore failures on compass
 	re := regexp.MustCompile("compass\\/?")
 	if re.Match([]byte(file)) {
-		return pwd, string(contents), nil
+		return pwd, string(contents), nil //errors.New("compass")
 	}
 	return pwd, string(contents), errors.New("Could not import: " +
 		file + "\nTried:\n" + baseerr)

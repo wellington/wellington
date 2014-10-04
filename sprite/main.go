@@ -27,10 +27,11 @@ import (
 const version = `v0.1.0`
 
 var (
-	Dir, Gen, Input, Output, Includes, Style string
-	Comments                                 bool
-	cpuprofile                               string
-	ShowVersion                              bool
+	Dir, Gen, Input, Output, Includes string
+	MainFile, Style                   string
+	Comments                          bool
+	cpuprofile                        string
+	ShowVersion                       bool
 )
 
 func init() {
@@ -98,6 +99,7 @@ func main() {
 			// Assumption that output is a file
 			BuildDir:     filepath.Dir(Output),
 			GenImgDir:    Gen,
+			MainFile:     f,
 			Comments:     Comments,
 			IncludePaths: []string{filepath.Dir(f)},
 		}

@@ -19,11 +19,12 @@ type Replace struct {
 type Parser struct {
 	Idx, shift                    int
 	Chop                          []Replace
-	Pwd, Input                    string
+	Pwd, Input, MainFile          string
 	BuildDir, ImageDir, GenImgDir string
 	Includes                      []string
 	Items                         []Item
 	Output                        []byte
+	Line                          map[int]string
 	InlineImgs, Sprites           map[string]ImageList
 	Vars                          map[string]string
 }
@@ -40,21 +41,25 @@ func NewParser() *Parser {
 func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	p.Vars = make(map[string]string)
 	p.Sprites = make(map[string]ImageList)
+	p.Line = make(map[int]string)
 	p.InlineImgs = make(map[string]ImageList)
 	if p.ImageDir == "" {
 		p.ImageDir = pkgdir
+	}
+	if p.MainFile == "" {
+		p.MainFile = "string"
 	}
 	buf := bytes.NewBuffer(make([]byte, 0, bytes.MinRead))
 	buf.ReadFrom(in)
 
 	// This pass resolves all the imports, but positions will
 	// be off due to @import calls
-	items, input, err := p.GetItems(pkgdir, string(buf.Bytes()))
+	items, input, err := p.GetItems(pkgdir, p.MainFile, string(buf.Bytes()))
 	if err != nil {
 		return []byte(""), err
 	}
 	// This call will have valid token positions
-	items, input, err = p.GetItems(pkgdir, input)
+	items, input, err = p.GetItems(pkgdir, p.MainFile, input)
 
 	p.Input = input
 	p.Items = items
@@ -368,7 +373,7 @@ func (p *Parser) Command(items []Item) ([]byte, int) {
 // Import recursively resolves all imports.  It lexes the input
 // adding the tokens to the Parser object.
 // TODO: Convert this to byte slice in/out
-func (p *Parser) GetItems(pwd, input string) ([]Item, string, error) {
+func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 
 	var (
 		status    []Item
@@ -376,6 +381,8 @@ func (p *Parser) GetItems(pwd, input string) ([]Item, string, error) {
 		output    []byte
 		pos       int
 		last      *Item
+		lastname  string
+		lineCount int
 	)
 
 	lex := New(func(lex *Lexer) StateFn {
@@ -404,8 +411,15 @@ func (p *Parser) GetItems(pwd, input string) ([]Item, string, error) {
 			status = append(status, *item)
 		default:
 			if importing {
-
-				pwd, contents, err := p.ImportPath(pwd, fmt.Sprintf("%s", *item))
+				lastname = filename
+				filename = fmt.Sprintf("%s", *item)
+				for _, nl := range output {
+					if nl == '\n' {
+						lineCount++
+					}
+				}
+				p.Line[lineCount] = filename
+				pwd, contents, err := p.ImportPath(pwd, filename)
 				if err != nil {
 					return nil, "", err
 				}
@@ -418,9 +432,11 @@ func (p *Parser) GetItems(pwd, input string) ([]Item, string, error) {
 
 				moreTokens, moreOutput, err := p.GetItems(
 					pwd,
+					filename,
 					contents)
-				// If importing was successful, each token must be moved forward
-				// by the position of the @import call that made it available.
+				// If importing was successful, each token must be moved
+				// forward by the position of the @import call that made
+				// it available.
 				for i, _ := range moreTokens {
 					moreTokens[i].Pos += last.Pos
 				}
@@ -428,6 +444,13 @@ func (p *Parser) GetItems(pwd, input string) ([]Item, string, error) {
 				if err != nil {
 					return nil, "", err
 				}
+				for _, nl := range moreOutput {
+					if nl == '\n' {
+						lineCount++
+					}
+				}
+				filename = lastname
+				p.Line[lineCount+1] = filename
 				output = append(output, moreOutput...)
 				status = append(status, moreTokens...)
 				importing = false

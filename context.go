@@ -31,7 +31,7 @@ type Context struct {
 	Comments                      bool
 	IncludePaths                  []string
 	BuildDir, ImageDir, GenImgDir string
-	Src, Out, Map                 string
+	Src, Out, Map, MainFile       string
 	Sprites                       []ImageList
 }
 

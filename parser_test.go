@@ -46,6 +46,17 @@ func TestParserImporter(t *testing.T) {
 		t.Errorf("File output did not match, was:\n%s\nexpected:\n%s",
 			output, e)
 	}
+	lines := map[int]string{
+		1:  "compass",
+		2:  "string",
+		3:  "var",
+		14: "string",
+	}
+	for i, v := range lines {
+		if v != p.Line[i] {
+			t.Errorf("Invalid expected: %s, was: %s", v, p.Line[i])
+		}
+	}
 }
 
 func TestParseSprite(t *testing.T) {
