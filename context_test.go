@@ -44,7 +44,7 @@ func TestContextRun(t *testing.T) {
 
 		err := ctx.Run(fileReader(ipath), w, "test")
 		if err != nil {
-			t.Errorf("Error returned on run")
+			panic(err)
 		}
 	}(ipath, w)
 
@@ -59,7 +59,48 @@ func TestContextRun(t *testing.T) {
 	scanned = rerandom.ReplaceAll(scanned, []byte(""))
 	if string(scanned) != string(exp) {
 		t.Errorf("Processor file did not match was: "+
-			"\n~%s~\n exp:\n~%s~", string(scanned), string(exp))
+			"\n%s\n exp:\n%s", string(scanned), string(exp))
+	}
+
+}
+
+func TestContextImport(t *testing.T) {
+
+	ctx := Context{
+		OutputStyle:  NESTED_STYLE,
+		IncludePaths: make([]string, 0),
+		Out:          "",
+	}
+
+	var scanned []byte
+	ipath := "test/import.scss"
+	exp, err := ioutil.ReadFile("test/import.css")
+	if err != nil {
+		panic(err)
+	}
+
+	r, w := io.Pipe()
+	go func(ipath string, w io.WriteCloser) {
+
+		err := ctx.Run(fileReader(ipath), w, "test")
+		if err != nil {
+			panic(err)
+		}
+	}(ipath, w)
+
+	scanner := bufio.NewScanner(r)
+	scanner.Split(bufio.ScanBytes)
+
+	for scanner.Scan() {
+		scanned = append(scanned, scanner.Bytes()...)
+	}
+	defer cleanUpSprites(ctx.Parser.Sprites)
+
+	scanned = rerandom.ReplaceAll(scanned, []byte(""))
+	res := string(scanned)
+	if e := string(exp); res != e {
+		t.Errorf("Processor file did not match \nexp: "+
+			"\n~%s~\n was:\n~%s~", e, res)
 	}
 
 }

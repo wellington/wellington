@@ -2,6 +2,7 @@ package sprite_sass
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -47,15 +48,19 @@ func TestParserImporter(t *testing.T) {
 			output, e)
 	}
 	lines := map[int]string{
-		1:  "compass",
-		2:  "string",
-		3:  "var",
-		14: "string",
+		0:  "compass",
+		1:  "var",
+		12: "string",
 	}
+	errors := false
 	for i, v := range lines {
 		if v != p.Line[i] {
 			t.Errorf("Invalid expected: %s, was: %s", v, p.Line[i])
+			errors = true
 		}
+	}
+	if errors {
+		fmt.Println(p.Line)
 	}
 }
 

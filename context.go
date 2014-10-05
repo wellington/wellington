@@ -77,16 +77,15 @@ func (ctx *Context) Run(in io.Reader, out io.WriteCloser, pkgdir string) error {
 	}
 	ctx.Src = string(bs)
 	err = ctx.Compile()
+
+	obuf := bytes.NewBufferString(ctx.Out)
+	defer out.Close()
+	io.Copy(out, obuf)
+
 	if err != nil {
 		return err
 	}
 
-	obuf := bytes.NewBufferString(ctx.Out)
-	defer out.Close()
-	_, err = io.Copy(out, obuf)
-	if err != nil {
-		panic(err)
-	}
 	return nil
 }
 

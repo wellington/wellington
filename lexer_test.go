@@ -167,10 +167,8 @@ func TestLexerImport(t *testing.T) {
 	fvar, _ := ioutil.ReadFile("test/import.scss")
 	items, _ := testParse(string(fvar))
 	vals := map[int]string{
-		0: "background",
-		2: "purple",
-		4: "@import",
-		5: "compass",
+		3: "@import",
+		1: "compass",
 	}
 	errors := false
 	for i, v := range vals {

@@ -1,0 +1,5 @@
+div {
+  background: #00FF00;
+  background: url("./image") 0px 0px;
+  background: url("./image") 0px -139px;
+  font-size: 10pt; }
