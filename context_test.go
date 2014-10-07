@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -103,6 +104,52 @@ func TestContextImport(t *testing.T) {
 			"\n~%s~\n was:\n~%s~", e, res)
 	}
 
+}
+
+func TestContextFail(t *testing.T) {
+
+	ctx := Context{
+		OutputStyle:  NESTED_STYLE,
+		IncludePaths: make([]string, 0),
+		Out:          "",
+	}
+
+	var scanned []byte
+	ipath := "test/_failimport.scss"
+
+	r, w := io.Pipe()
+	go func(ipath string, w io.WriteCloser) {
+
+		err := ctx.Run(fileReader(ipath), w, "test")
+		if err == nil {
+			t.Error("Invalid SCSS was not found")
+		}
+		errs := strings.Split(err.Error(), "\n")
+		libsassErr := errs[0]
+		parsedErr := errs[1]
+
+		e := "source string:9: error: invalid top-level expression"
+		if e != libsassErr {
+			t.Errorf("expected:\n%s\nwas:\n%s\n", e, libsassErr)
+		}
+
+		e = "error in fail:4"
+		if e != parsedErr {
+			t.Errorf("expected:\n%s\nwas:\n%s\n", e, parsedErr)
+		}
+
+	}(ipath, w)
+
+	scanner := bufio.NewScanner(r)
+	scanner.Split(bufio.ScanBytes)
+
+	for scanner.Scan() {
+		scanned = append(scanned, scanner.Bytes()...)
+	}
+	defer cleanUpSprites(ctx.Parser.Sprites)
+
+	scanned = rerandom.ReplaceAll(scanned, []byte(""))
+	_ = scanned
 }
 
 func TestContextNilRun(t *testing.T) {

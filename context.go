@@ -76,6 +76,7 @@ func (ctx *Context) Run(in io.Reader, out io.WriteCloser, pkgdir string) error {
 		return err
 	}
 	ctx.Src = string(bs)
+
 	err = ctx.Compile()
 
 	obuf := bytes.NewBufferString(ctx.Out)
@@ -137,25 +138,31 @@ func (ctx *Context) Compile() error {
 		}
 		pos, lerr := strconv.Atoi(split[1])
 		if lerr != nil {
-			return err
+			return lerr
 		}
 		lines := strings.Split(ctx.Src, "\n")
 		// Line number is off by one from libsass
 		// Find previous lines to maximum available
-		errLines := ""
+		errLines := "error in " + ctx.Parser.LookupFile(pos)
 		red := color.NewStyle(color.BlackPaint, color.RedPaint).Brush()
-		for i := 7; i > -7; i-- {
-			if pos-i > 0 && pos-i < len(lines) {
-				str := fmt.Sprintf("\n%d:", pos-i) + lines[pos-i]
-				// There is an uncertain shift between libsass and sass
-				if i == -1 {
-					str = red(str)
-				}
-				errLines += str
+		first := pos - 7
+		if first < 0 {
+			first = 0
+		}
+		last := pos + 7
+		if last > len(lines) {
+			last = len(lines)
+		}
+		for i := first; i < last; i++ {
+			// translate 0 index to 1 index
+			str := fmt.Sprintf("\n%3d: %s", i+1, lines[i])
+			if i == pos-1 {
+				str = red(str)
 			}
+			errLines += str
 		}
 
-		err = errors.New(err.Error() + errLines)
+		err = errors.New(err.Error() + "\n" + errLines)
 	}
 	return err
 }

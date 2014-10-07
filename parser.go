@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"sort"
 )
 
 func init() {
@@ -25,6 +26,7 @@ type Parser struct {
 	Items                         []Item
 	Output                        []byte
 	Line                          map[int]string
+	LineKeys                      []int
 	InlineImgs, Sprites           map[string]ImageList
 	Vars                          map[string]string
 }
@@ -41,8 +43,8 @@ func NewParser() *Parser {
 func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	p.Vars = make(map[string]string)
 	p.Sprites = make(map[string]ImageList)
-	p.Line = make(map[int]string)
 	p.InlineImgs = make(map[string]ImageList)
+	p.Line = make(map[int]string)
 	if p.ImageDir == "" {
 		p.ImageDir = pkgdir
 	}
@@ -58,9 +60,12 @@ func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	if err != nil {
 		return []byte(""), err
 	}
+	for i := range p.Line {
+		p.LineKeys = append(p.LineKeys, i)
+	}
+	sort.Ints(p.LineKeys)
 	// This call will have valid token positions
 	items, input, err = p.GetItems(pkgdir, p.MainFile, input)
-
 	p.Input = input
 	p.Items = items
 	if err != nil {
@@ -76,6 +81,22 @@ func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	p.Replace()
 	// fmt.Printf("out: % #v\n", p.Sprites)
 	return p.Output, nil
+}
+
+// LookupFile translates line positions into line number
+// and file it belongs to
+func (p *Parser) LookupFile(pos int) string {
+	pos = pos - 1
+	for i, n := range p.LineKeys {
+		if n > pos {
+			if i == 0 {
+				return fmt.Sprintf("%s:%d", p.MainFile, pos+1)
+			}
+			hit := p.LineKeys[i-1]
+			return fmt.Sprintf("%s:%d", p.Line[hit], pos-p.LineKeys[i-1])
+		}
+	}
+	return "mainfile?" + p.MainFile
 }
 
 // Find Paren that matches the current (
