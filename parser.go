@@ -79,7 +79,6 @@ func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 
 	p.Output = []byte(p.Input)
 	p.Replace()
-	// fmt.Printf("out: % #v\n", p.Sprites)
 	return p.Output, nil
 }
 
@@ -196,8 +195,6 @@ func (p *Parser) Parse(items []Item) []byte {
 			}
 		} else if items[2].Value == "sprite-map" {
 			// Special parsing of sprite-maps
-			p.Mark(items[0].Pos,
-				items[j].Pos+len(items[j].Value), "")
 			imgs := ImageList{
 				ImageDir:  p.ImageDir,
 				BuildDir:  p.BuildDir,
@@ -210,6 +207,8 @@ func (p *Parser) Parse(items []Item) []byte {
 			imgs.Combine()
 			p.Sprites[name] = imgs
 			//TODO: Generate filename
+			p.Mark(items[2].Pos,
+				items[j].Pos+len(items[j].Value), imgs.Map())
 			_, err := imgs.Export()
 			if err != nil {
 				log.Printf("Failed to save sprite: %s", name)
@@ -283,7 +282,7 @@ func (p *Parser) Command(items []Item) ([]byte, int) {
 		rightPos, _ := RParen(items[nPos:])
 		p.Command(items[nPos:rightPos])
 	}
-
+	return []byte(""), eoc
 	switch cmd.Value {
 	case "sprite":
 		//Capture sprite

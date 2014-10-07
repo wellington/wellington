@@ -1,0 +1,42 @@
+$sprites: (
+  139: (
+    width: 139,
+    height: 89,
+    x: 0,
+    y: 20,
+    url: './image.png'
+  ));
+
+$sprites: map_merge($sprites,(140: (
+    width: 140,
+    height: 89,
+    x: 0,
+    y: 20,
+    url: './image.png'
+  )));
+
+
+@function sprite-map($str){ @return }
+
+@function sprite($map, $file){
+  $select: map-get($map, $file);
+  @return url("#{map-get($select, url)}") + " " +
+    sprite-position($map, $file);
+}
+
+@function image-width($map, $file){
+  $select: map-get($map, $file);
+  @return map-get($select, width) + px;
+}
+
+@function image-height($map, $file){
+  $select: map-get($map, $file);
+  @return map-get($select, height) + px;
+}
+
+@function sprite-position($map, $file) {
+  $select: map-get($map, $file);
+  $x: map-get($select, x);
+  $y: map-get($select, y);
+  @return -#{$x}px + " " + -#{$y}px;
+}

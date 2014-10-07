@@ -105,11 +105,7 @@ func (ctx *Context) Compile() error {
 	cCtx := C.sass_new_context()
 	cCtx.source_string = C.CString(ctx.Src)
 	cCtx.options.output_style = C.int(ctx.OutputStyle)
-	if ctx.Comments {
-		cCtx.options.source_comments = C.int(1)
-	} else {
-		cCtx.options.source_comments = C.int(0)
-	}
+	cCtx.options.source_comments = C.bool(ctx.Comments)
 	cCtx.options.include_paths = C.CString(strings.Join(ctx.IncludePaths, ":"))
 	cCtx.options.image_path = C.CString(ctx.ImageDir)
 	cCtx.options.precision = C.int(ctx.Precision)

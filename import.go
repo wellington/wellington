@@ -40,6 +40,9 @@ func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 	if re.Match([]byte(file)) {
 		return pwd, string(contents), nil //errors.New("compass")
 	}
+	if file == "images" {
+		return pwd, string(contents), nil
+	}
 	return pwd, string(contents), errors.New("Could not import: " +
 		file + "\nTried:\n" + baseerr)
 }

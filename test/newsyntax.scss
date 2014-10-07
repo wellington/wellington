@@ -1,0 +1,11 @@
+@import "../sass/sprite";
+@import "images";
+$sprites: sprite-map("test/*.png");
+
+div {
+  color: black;
+  width: image-width($sprites, 139);
+  height: image-height($sprites, 139);
+  background: sprite($sprites, 139);
+  background-position: sprite-position($sprites, 139);
+}
