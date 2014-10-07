@@ -109,18 +109,20 @@ func (l ImageList) Y(pos int) int {
 	return y
 }
 
-func (l ImageList) Map() string {
+func (l ImageList) Map(name string) string {
 	var res []string
 	for i := range l.GoImages {
 		base := strings.TrimSuffix(filepath.Base(l.Files[i]),
 			filepath.Ext(l.Files[i]))
-		res = append(res, fmt.Sprintf("%s: (width: %d, height: %d, "+
-			"x: %d, y: %d, url: '%s')",
+		res = append(res, fmt.Sprintf(
+			"%s: map_merge(%s,(%s: (width: %d, height: %d, "+
+				"x: %d, y: %d, url: '%s')))",
+			name, name,
 			base, l.ImageWidth(i), l.ImageHeight(i),
 			l.X(i), l.Y(i), l.OutFile,
 		))
 	}
-	return "(" + strings.Join(res, ", ") + ")"
+	return " (); " + strings.Join(res, "; ") + ";"
 }
 
 func (l ImageList) CSS(s string) string {

@@ -208,7 +208,7 @@ func (p *Parser) Parse(items []Item) []byte {
 			p.Sprites[name] = imgs
 			//TODO: Generate filename
 			p.Mark(items[2].Pos,
-				items[j].Pos+len(items[j].Value), imgs.Map())
+				items[j].Pos+len(items[j].Value), imgs.Map(name))
 			_, err := imgs.Export()
 			if err != nil {
 				log.Printf("Failed to save sprite: %s", name)
