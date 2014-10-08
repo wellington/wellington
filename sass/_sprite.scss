@@ -1,11 +1,14 @@
-$sprites: (
+/* Example sprite-map output:
+$sprites: ($rel: "");
+
+$sprites: map_merge($sprites, (
   139: (
     width: 139,
     height: 89,
     x: 0,
     y: 20,
     url: './image.png'
-  ));
+  )));
 
 $sprites: map_merge($sprites,(140: (
     width: 140,
@@ -14,9 +17,14 @@ $sprites: map_merge($sprites,(140: (
     y: 20,
     url: './image.png'
   )));
-
+*/
 
 @function sprite-map($str){ @return }
+
+@function sprite-file($map, $file){
+	$select: map-get($map, $file);
+	@return $select;
+}
 
 @function sprite($map, $file){
   $select: map-get($map, $file);
@@ -24,13 +32,11 @@ $sprites: map_merge($sprites,(140: (
     sprite-position($map, $file);
 }
 
-@function image-width($map, $file){
-  $select: map-get($map, $file);
+@function image-width($select){
   @return map-get($select, width) + px;
 }
 
-@function image-height($map, $file){
-  $select: map-get($map, $file);
+@function image-height($select){
   @return map-get($select, height) + px;
 }
 
@@ -39,4 +45,8 @@ $sprites: map_merge($sprites,(140: (
   $x: map-get($select, x);
   $y: map-get($select, y);
   @return -#{$x}px + " " + -#{$y}px;
+}
+
+@function image-url($file) {
+	@return url('#{$rel+$file}');
 }

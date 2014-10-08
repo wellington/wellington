@@ -38,8 +38,8 @@ func init() {
 	flag.StringVar(&Output, "output", "", "Output file")
 	flag.StringVar(&Output, "o", "", "Output file")
 	flag.StringVar(&Includes, "p", "", "SASS import path")
-	flag.StringVar(&Dir, "dir", ".", "Image directory")
-	flag.StringVar(&Dir, "d", ".", "Image directory")
+	flag.StringVar(&Dir, "dir", "", "Image directory")
+	flag.StringVar(&Dir, "d", "", "Image directory")
 	flag.StringVar(&Gen, "gen", ".", "Directory for generated images")
 	flag.StringVar(&Style, "style", "nested", "CSS nested style")
 	flag.StringVar(&Style, "s", "nested", "CSS nested style")
@@ -93,6 +93,10 @@ func main() {
 	}
 
 	for _, f := range flag.Args() {
+		// If no imagedir specified, assume relative to the input file
+		if Dir == "" {
+			Dir = filepath.Dir(f)
+		}
 		ctx := sprite.Context{
 			OutputStyle: style,
 			ImageDir:    Dir,
