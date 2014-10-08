@@ -1,0 +1,8 @@
+@import "../../sass/sprite";
+@import "images";
+$sprites: sprite-map("../img/*.png");
+$width: sprite-width($sprites, 139);
+div {
+    height: sprite-height($sprites, 139);
+    width: sprite-width($sprites, 139);
+}

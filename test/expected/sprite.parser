@@ -1,0 +1,60 @@
+/* Example sprite-map output:
+$sprites: ($rel: "");
+
+$sprites: map_merge($sprites, (
+  139: (
+    width: 139,
+    height: 89,
+    x: 0,
+    y: 20,
+    url: './image.png'
+  )));
+
+$sprites: map_merge($sprites,(140: (
+    width: 140,
+    height: 89,
+    x: 0,
+    y: 20,
+    url: './image.png'
+  )));
+*/
+
+@function sprite-map($str){ @return }
+
+@function sprite-file($map, $file){
+	$select: map-get($map, $file);
+	@return $select;
+}
+
+@function sprite($map, $file){
+  $select: map-get($map, $file);
+  @return url("#{map-get($select, url)}") + " " +
+    sprite-position($map, $file);
+}
+
+@function image-width($select){
+  @return map-get($select, width) + px;
+}
+
+@function image-height($select){
+  @return map-get($select, height) + px;
+}
+
+@function sprite-position($map, $file) {
+  $select: map-get($map, $file);
+  $x: map-get($select, x);
+  $y: map-get($select, y);
+  @return -#{$x}px + " " + -#{$y}px;
+}
+
+@function image-url($file) {
+	@return url('#{$rel+$file}');
+}
+
+
+$sprites: (); $sprites: map_merge($sprites,(139: (width: 96, height: 139, x: 0, y: 0, url: './..img-d65510.png'))); $sprites: map_merge($sprites,(140: (width: 96, height: 140, x: 0, y: 139, url: './..img-d65510.png')));
+$width: sprite-width($sprites, 139);
+div {
+    height: sprite-height($sprites, 139);
+    width: sprite-width($sprites, 139);
+}

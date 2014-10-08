@@ -2,8 +2,11 @@ package sprite_sass
 
 import (
 	"bufio"
+	"bytes"
+	"crypto/md5"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"image"
 	"io"
@@ -122,7 +125,7 @@ func (l ImageList) Map(name string) string {
 			l.X(i), l.Y(i), l.OutFile,
 		))
 	}
-	return " (); " + strings.Join(res, "; ") + ";"
+	return "(); " + strings.Join(res, "; ") + ";"
 }
 
 func (l ImageList) CSS(s string) string {
@@ -259,10 +262,18 @@ func (l *ImageList) OutputPath(globpath string) {
 	path = strings.Replace(path, "/", "", -1)
 	ext := filepath.Ext(globpath)
 
+	// Encode the image so the bytestring can feed into md5.Sum
+	var b bytes.Buffer
+	err = png.Encode(&b, l.Out)
+	if err != nil {
+		panic(err)
+	}
 	// Remove invalid characters from path
 	path = strings.Replace(path, "*", "", -1)
-	l.OutFile += gdir + "/" + path + "-" +
-		randString(6) + ext
+	hasher := md5.New()
+	hasher.Write(b.Bytes())
+	salt := hex.EncodeToString(hasher.Sum(nil))[:6]
+	l.OutFile += gdir + "/" + path + "-" + salt + ext
 }
 
 // Accept a variable number of image globs appending
@@ -281,8 +292,6 @@ func (l *ImageList) Decode(rest ...string) error {
 		}
 		paths = append(paths, matches...)
 	}
-	// Send first glob as definition for output path
-	l.OutputPath(rest[0])
 
 	for _, path := range paths {
 		f, err := os.Open(path)
@@ -300,6 +309,10 @@ func (l *ImageList) Decode(rest ...string) error {
 		l.GoImages = append(l.GoImages, goimg)
 		l.Files = append(l.Files, path)
 	}
+	// Combine images so that md5 hash of filename can be created
+	l.Combine()
+	// Send first glob as definition for output path
+	l.OutputPath(rest[0])
 
 	return nil
 }
