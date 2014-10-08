@@ -63,7 +63,14 @@ func (ctx *Context) Run(in io.Reader, out io.WriteCloser, pkgdir string) error {
 		return errors.New("Input or output files were not specified")
 	}
 
-	ctx.IncludePaths = append(ctx.IncludePaths, pkgdir)
+	if pkgdir != "" {
+		ctx.IncludePaths = append(ctx.IncludePaths, pkgdir)
+	}
+
+	if ctx.GenImgDir == "" {
+		ctx.GenImgDir = ctx.BuildDir
+	}
+
 	// Run the sprite_sass parser prior to passing to libsass
 	ctx.Parser = Parser{
 		ImageDir:  ctx.ImageDir,
