@@ -124,7 +124,7 @@ func main() {
 			output = os.Stdout
 		} else {
 			dir := filepath.Dir(Output)
-			err := os.MkdirAll(dir, 0777)
+			err := os.MkdirAll(dir, 0755)
 			if err != nil {
 				log.Fatalf("Failed to create directory: %s", dir)
 			}

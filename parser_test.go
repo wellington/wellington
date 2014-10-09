@@ -14,40 +14,16 @@ import (
 
 var rerandom *regexp.Regexp
 
-const spritePreamble = `@function sprite-map($str){ @return }
-
-@function sprite-file($map, $file){
-	$select: map-get($map, $file);
-	@return $select;
-}
-
-@function sprite($map, $file){
-  $select: map-get($map, $file);
-  @return url("#{map-get($select, url)}") + " " +
-    sprite-position($map, $file);
-}
-
-@function image-width($select){
-  @return map-get($select, width) + px;
-}
-
-@function image-height($select){
-  @return map-get($select, height) + px;
-}
-
-@function sprite-position($map, $file) {
-  $select: map-get($map, $file);
-  $x: map-get($select, x);
-  $y: map-get($select, y);
-  @return -#{$x}px + " " + -#{$y}px;
-}
-
-@function image-url($file) {
-  @return url($rel/$file)
-}`
+var spritePreamble string
 
 func init() {
 	rerandom = regexp.MustCompile(`-\w{6}(?:\.(png|jpg))`)
+
+	bs, err := ioutil.ReadFile("sass/_sprite.scss")
+	if err != nil {
+		log.Fatal(err)
+	}
+	spritePreamble = strings.TrimSuffix(string(bs), "\n")
 }
 
 func TestParserVar(t *testing.T) {
@@ -58,11 +34,11 @@ func TestParserVar(t *testing.T) {
 
 	defer cleanUpSprites(p.Sprites)
 
-	file, _ := ioutil.ReadFile("test/expected/var.parser")
+	file, _ := ioutil.ReadFile("test/expected/_var.parser")
 	e := string(file)
 	if e != output {
-		t.Errorf("File output did not match, \nwas:\n%s\nexpected:\n%s",
-			output, e)
+		t.Errorf("File output did not match, \nexpected:\n%s\nwas:\n%s",
+			e, output)
 	}
 
 }
@@ -95,8 +71,16 @@ div {
 }
 
 func TestParserImporter(t *testing.T) {
-	p := Parser{}
-	bs, _ := p.Start(fileReader("test/sass/import.scss"), "test/")
+	p := Parser{
+		StaticDir: "test",
+		BuildDir:  "test/build",
+		Includes:  []string{"test/sass"},
+	}
+
+	bs, err := p.Start(fileReader("test/sass/import.scss"), "test/")
+	if err != nil {
+		log.Fatal(err)
+	}
 	output := string(bs)
 
 	defer cleanUpSprites(p.Sprites)
@@ -104,14 +88,14 @@ func TestParserImporter(t *testing.T) {
 	file, _ := ioutil.ReadFile("test/expected/import.parser")
 	e := string(file)
 	if e != output {
-		t.Errorf("File output did not match, was:\n%s\nexpected:\n%s",
+		t.Errorf("File output did not match, was:\n~%s~\nexpected:\n~%s~",
 			output, e)
 	}
 
 	lines := map[int]string{
-		0:  "compass",
-		1:  "var",
-		12: "string",
+		0:  "../sass/sprite",
+		36: "var",
+		47: "string",
 	}
 	errors := false
 	for i, v := range lines {

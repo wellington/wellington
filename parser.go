@@ -106,6 +106,7 @@ func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	sort.Ints(p.LineKeys)
 	// This call will have valid token positions
 	items, input, err = p.GetItems(pkgdir, p.MainFile, input)
+
 	p.Input = input
 	p.Items = items
 	if err != nil {
@@ -121,7 +122,6 @@ func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	// Perform substitutions
 	p.Replace()
 	rel := []byte(fmt.Sprintf(`$rel: "%s";%s`, p.Rel(), "\n"))
-
 	return append(rel, p.Output...), nil
 }
 

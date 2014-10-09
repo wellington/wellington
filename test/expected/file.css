@@ -1,28 +1,8 @@
-/* Example sprite-map output:
-$sprites: ($rel: "");
-
-$sprites: map_merge($sprites, (
-  139: (
-    width: 139,
-    height: 89,
-    x: 0,
-    y: 20,
-    url: './image.png'
-  )));
-
-$sprites: map_merge($sprites,(140: (
-    width: 140,
-    height: 89,
-    x: 0,
-    y: 20,
-    url: './image.png'
-  )));
-*/
 div {
   color: black;
   width: 96px;
   height: 139px;
-  background: url("./image") -0px -0px;
+  background: url('test/build/image-d65510.png') -0px -0px;
   background-position: -0px -0px; }
 
 p {

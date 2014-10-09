@@ -7,7 +7,7 @@
 
 @function sprite($map, $file){
   $select: map-get($map, $file);
-  @return url("#{map-get($select, url)}") + " " +
+  @return url(map-get($select, url)) + " " +
     sprite-position($map, $file);
 }
 
@@ -27,5 +27,9 @@
 }
 
 @function image-url($file) {
-  @return url($rel/$file)
+  @if not $rel {
+    @return url($file);
+  } @else {
+    @return url($rel/$file)
+  }
 }

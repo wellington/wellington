@@ -83,7 +83,6 @@ func (ctx *Context) Run(in io.Reader, out io.WriteCloser, pkgdir string) error {
 		return err
 	}
 	ctx.Src = string(bs)
-
 	err = ctx.Compile()
 
 	obuf := bytes.NewBufferString(ctx.Out)

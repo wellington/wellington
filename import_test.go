@@ -9,8 +9,8 @@ import (
 
 func TestImportPath(t *testing.T) {
 	p := NewParser()
-	dir, file := "test", "var"
-	contents, _ := ioutil.ReadFile("test/_var.scss")
+	dir, file := "test/sass", "var"
+	contents, _ := ioutil.ReadFile("test/sass/_var.scss")
 	path, res, err := p.ImportPath(dir, file)
 
 	if err != nil {
@@ -23,16 +23,19 @@ func TestImportPath(t *testing.T) {
 	}
 
 	rel := strings.Replace(path, os.Getenv("PWD"), "", 1)
-	if e := "/test"; e != rel {
+	if e := "/test/sass"; e != rel {
 		t.Errorf("Invalid path expected:%s\nwas:%s", e, rel)
 	}
 
 	p.Includes = []string{"test"}
-	dir, file = "", "var"
+	// Is this how it should work?
+	// Or should dir be appended to Includes
+	dir, file = "test/sass", "var"
 	path, res, err = p.ImportPath(dir, file)
 
 	if err != nil {
 		t.Errorf("Error accessing file: %s", file)
+		t.Error(err)
 	}
 
 	if res != string(contents) {

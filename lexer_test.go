@@ -25,7 +25,7 @@ func TestLexer(t *testing.T) {
 		t.Errorf("non-nil Lexer on nil state")
 	}
 
-	fvar, _ := ioutil.ReadFile("test/_var.scss")
+	fvar, _ := ioutil.ReadFile("test/sass/_var.scss")
 
 	items, err := testParse(string(fvar))
 
@@ -34,29 +34,29 @@ func TestLexer(t *testing.T) {
 	}
 
 	sel := items[0].String()
-	if e := "$images"; e != sel {
+	if e := "@import"; e != sel {
 		t.Errorf("Invalid VAR parsing expected: %s, was: %s",
 			e, sel)
 	}
 
-	if e := "sprite-map"; e != items[2].String() {
+	if e := "sprite-map"; e != items[5].String() {
 		t.Errorf("Invalid CMD parsing expected: %s, was: %s",
 			e, items[1].String())
 	}
 
-	sel = items[4].String()
+	sel = items[7].String()
 	if e := "*.png"; e != sel {
 		t.Errorf("Invalid FILE parsing expected: %s, was: %s",
 			e, sel)
 	}
 
-	T := items[4].Type
+	T := items[7].Type
 	if e := FILE; e != T {
 		t.Errorf("Invalid FILE parsing expected: %s, was: %s",
 			e, T)
 	}
 
-	sel = items[13].String()
+	sel = items[16].String()
 	if e := "#00FF00"; e != sel {
 		t.Errorf("Invalid TEXT parsing expected: %s, was: %s",
 			e, sel)
@@ -112,11 +112,20 @@ p.#{$name} {
 	if err != nil {
 		panic(err)
 	}
-	if e := INTP; items[9].Type != e {
-		t.Errorf("Invalid token expected: %s, was: %s", e, items[7])
+	vals := map[int]string{
+		4:  "$attr",
+		13: "#{",
+		0:  "$name",
 	}
-	if e := SUB; items[10].Type != e {
-		t.Errorf("Invalid token expected: %s, was: %s", e, items[8])
+	errors := false
+	for i, v := range vals {
+		if v != items[i].Value {
+			errors = true
+			t.Errorf("at %d expected: %s, was: %s", i, v, items[i].Value)
+		}
+	}
+	if errors {
+		printItems(items)
 	}
 }
 
@@ -164,11 +173,12 @@ div {
 }
 
 func TestLexerImport(t *testing.T) {
-	fvar, _ := ioutil.ReadFile("test/import.scss")
+	fvar, _ := ioutil.ReadFile("test/sass/import.scss")
 	items, _ := testParse(string(fvar))
 	vals := map[int]string{
-		3: "@import",
-		1: "compass",
+		0: "@import",
+		1: "var",
+		2: ";",
 	}
 	errors := false
 	for i, v := range vals {

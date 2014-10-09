@@ -34,7 +34,6 @@ func TestContextFile(t *testing.T) {
 
 	ipath := "test/sass/file.scss"
 	opath := "test/build/file.css"
-	f, err := os.Create(opath)
 	exp, err := ioutil.ReadFile("test/expected/file.css")
 	if err != nil {
 		panic(err)
@@ -46,30 +45,32 @@ func TestContextFile(t *testing.T) {
 		IncludePaths: []string{"test/sass"},
 	}
 
+	f, err := os.Create(opath)
+	if err != nil {
+		panic(err)
+	}
 	err = ctx.Run(fileReader(ipath), f, "")
 	if err != nil {
 		panic(err)
 	}
-
 	was, _ := ioutil.ReadFile("test/build/file.css")
-	was = rerandom.ReplaceAll(was, []byte(""))
-
-	if strings.TrimSpace(string(was)) != strings.TrimSpace(string(exp)) {
+	if string(was) != string(exp) {
 		t.Errorf("Expected did not match returned")
 	}
 }
 
 func TestContextRun(t *testing.T) {
-	return
+
 	ctx := Context{
 		OutputStyle:  NESTED_STYLE,
 		IncludePaths: make([]string, 0),
+		BuildDir:     "test/build",
 		Out:          "",
 	}
 
 	var scanned []byte
-	ipath := "test/_var.scss"
-	exp, err := ioutil.ReadFile("test/var.css")
+	ipath := "test/sass/_var.scss"
+	exp, err := ioutil.ReadFile("test/expected/var.css")
 	if err != nil {
 		panic(err)
 	}
@@ -91,7 +92,6 @@ func TestContextRun(t *testing.T) {
 
 	defer cleanUpSprites(ctx.Parser.Sprites)
 
-	scanned = rerandom.ReplaceAll(scanned, []byte(""))
 	if string(scanned) != string(exp) {
 		t.Errorf("Processor file did not match was: "+
 			"\n%s\n exp:\n%s", string(scanned), string(exp))
@@ -100,16 +100,17 @@ func TestContextRun(t *testing.T) {
 }
 
 func TestContextImport(t *testing.T) {
-	return
+
 	ctx := Context{
 		OutputStyle:  NESTED_STYLE,
-		IncludePaths: make([]string, 0),
+		IncludePaths: []string{"test/sass"},
+		BuildDir:     "test/build",
 		Out:          "",
 	}
 
 	var scanned []byte
-	ipath := "test/import.scss"
-	exp, err := ioutil.ReadFile("test/import.css")
+	ipath := "test/sass/import.scss"
+	exp, err := ioutil.ReadFile("test/expected/import.css")
 	if err != nil {
 		panic(err)
 	}
@@ -131,7 +132,6 @@ func TestContextImport(t *testing.T) {
 	}
 	defer cleanUpSprites(ctx.Parser.Sprites)
 
-	scanned = rerandom.ReplaceAll(scanned, []byte(""))
 	res := string(scanned)
 	if e := string(exp); res != e {
 		t.Errorf("Processor file did not match \nexp: "+

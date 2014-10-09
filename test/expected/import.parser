@@ -1,13 +1,48 @@
-$rel: ".";
+$rel: "..";
+@function sprite-map($str){ @return }
 
-$images: (); $images: map_merge($images,(139: (width: 96, height: 139, x: 0, y: 0, url: 'test/image-585dca.png'))); $images: map_merge($images,(140: (width: 96, height: 140, x: 0, y: 139, url: 'test/image-585dca.png'))); $images: map_merge($images,(pixel: (width: 1, height: 1, x: 0, y: 279, url: 'test/image-585dca.png')));
+@function sprite-file($map, $file){
+  $select: map-get($map, $file);
+  @return $select;
+}
+
+@function sprite($map, $file){
+  $select: map-get($map, $file);
+  @return url(map-get($select, url)) + " " +
+    sprite-position($map, $file);
+}
+
+@function image-width($select){
+  @return map-get($select, width) + px;
+}
+
+@function image-height($select){
+  @return map-get($select, height) + px;
+}
+
+@function sprite-position($map, $file) {
+  $select: map-get($map, $file);
+  $x: map-get($select, x);
+  $y: map-get($select, y);
+  @return -#{$x}px + " " + -#{$y}px;
+}
+
+@function image-url($file) {
+  @if not $rel {
+    @return url($file);
+  } @else {
+    @return url($rel/$file)
+  }
+}
+
+$images: (); $images: map_merge($images,(139: (width: 96, height: 139, x: 0, y: 0, url: 'test/build/image-585dca.png'))); $images: map_merge($images,(140: (width: 96, height: 140, x: 0, y: 139, url: 'test/build/image-585dca.png'))); $images: map_merge($images,(pixel: (width: 1, height: 1, x: 0, y: 279, url: 'test/build/image-585dca.png')));
 $red-var: red;
 $hex: #00FF00;
 div {
-    background: $hex;
-    $hex: #00DD00;
-    background: sprite($images, "139");
-    background: sprite($images, "140");
-    font-size: 10pt;
+  background: $hex;
+  $hex: #00DD00;
+  background: sprite($images, 139);
+  background: sprite($images, 140);
+  font-size: 10pt;
 }
 
