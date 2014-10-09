@@ -1,4 +1,5 @@
-$images: (); $images: map_merge($images,(139: (width: 96, height: 139, x: 0, y: 0, url: './image-585dca.png'))); $images: map_merge($images,(140: (width: 96, height: 140, x: 0, y: 139, url: './image-585dca.png'))); $images: map_merge($images,(pixel: (width: 1, height: 1, x: 0, y: 279, url: './image-585dca.png')));
+$rel: ".";
+$images: (); $images: map_merge($images,(139: (width: 96, height: 139, x: 0, y: 0, url: 'test/image-585dca.png'))); $images: map_merge($images,(140: (width: 96, height: 140, x: 0, y: 139, url: 'test/image-585dca.png'))); $images: map_merge($images,(pixel: (width: 1, height: 1, x: 0, y: 279, url: 'test/image-585dca.png')));
 $red-var: red;
 $hex: #00FF00;
 div {

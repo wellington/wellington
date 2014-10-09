@@ -43,7 +43,7 @@ const spritePreamble = `@function sprite-map($str){ @return }
 }
 
 @function image-url($file) {
-  @return url('#{$rel+/+$file}');
+  @return url($rel/$file)
 }`
 
 func init() {
@@ -125,19 +125,6 @@ func TestParserImporter(t *testing.T) {
 	}
 }
 
-func TestParseSprite(t *testing.T) {
-	p := Parser{}
-	bs, _ := p.Start(fileReader("test/sass/sprite.scss"), "test/sass")
-	output := string(bs)
-
-	defer cleanUpSprites(p.Sprites)
-
-	file, _ := ioutil.ReadFile("test/expected/sprite.parser")
-	if string(file) != output {
-		t.Errorf("File output did not match, was:\n%s\nexpected:\n%s", output, string(file))
-	}
-}
-
 func TestParseSpriteArgs(t *testing.T) {
 	p := Parser{}
 	in := bytes.NewBufferString(`$view_sprite: sprite-map("test/*.png",
@@ -147,8 +134,9 @@ func TestParseSpriteArgs(t *testing.T) {
   $selected-hover-spacing: 2px);
   @include sprite-dimensions($view_sprite,"140");
 `)
-	e := `$view_sprite: (); $view_sprite: map_merge($view_sprite,(139: (width: 96, height: 139, x: 0, y: 0, url: './test-585dca.png'))); $view_sprite: map_merge($view_sprite,(140: (width: 96, height: 140, x: 0, y: 139, url: './test-585dca.png'))); $view_sprite: map_merge($view_sprite,(pixel: (width: 1, height: 1, x: 0, y: 279, url: './test-585dca.png')));
-  sprite-dimensions($view_sprite,"140");
+	e := `$rel: ".";
+$view_sprite: (); $view_sprite: map_merge($view_sprite,(139: (width: 96, height: 139, x: 0, y: 0, url: 'test-585dca.png'))); $view_sprite: map_merge($view_sprite,(140: (width: 96, height: 140, x: 0, y: 139, url: 'test-585dca.png'))); $view_sprite: map_merge($view_sprite,(pixel: (width: 1, height: 1, x: 0, y: 279, url: 'test-585dca.png')));
+  @include sprite-dimensions($view_sprite,"140");
 `
 	bs, _ := p.Start(in, "")
 	out := string(bs)
@@ -164,18 +152,19 @@ func TestParseInt(t *testing.T) {
 		e, res string
 	)
 	r := bytes.NewBufferString(`p {
-	  $font-size: 12px;
-	  $line-height: 30px;
-	  font: #{$font-size}/#{$line-height};
-	}`)
+  $font-size: 12px;
+  $line-height: 30px;
+  font: #{$font-size}/#{$line-height};
+}`)
 	bs, _ := p.Start(r, "")
 	res = string(bs)
 
-	e = `p {
-	  $font-size: 12px;
-	  $line-height: 30px;
-	  font: 12px/30px;
-	}`
+	e = `$rel: ".";
+p {
+  $font-size: 12px;
+  $line-height: 30px;
+  font: #{$font-size}/#{$line-height};
+}`
 	if e != res {
 		t.Errorf("Mismatch expected:\n%s\nwas:\n%s", e, res)
 	}
@@ -188,38 +177,14 @@ p.#{$name} {
 	bs, _ = p.Start(r, "")
 	res = string(bs)
 
-	e = `$name: foo;
+	e = `$rel: ".";
+$name: foo;
 $attr: border;
-p.foo {
-  border-color: blue;
+p.#{$name} {
+  #{$attr}-color: blue;
 }`
 	if e != res {
 		t.Errorf("Mismatch expected:\n%s\nwas:\n%s", e, res)
-	}
-}
-
-func TestParseComment(t *testing.T) {
-	p := Parser{}
-	bs, _ := p.Start(fileReader("test/_comment.scss"), "test/")
-	res := string(bs)
-	res = strings.TrimSpace(rerandom.ReplaceAllString(res, ""))
-	e := strings.TrimSpace(fileString("test/comment.parser"))
-
-	if res != e {
-		t.Errorf("Comment parsing failed was:"+
-			"%s\n exp:%s\n", res, e)
-	}
-}
-
-func TestParseMixin(t *testing.T) {
-	p := Parser{}
-	bs, _ := p.Start(fileReader("test/mixin.scss"), "")
-	res := string(bs)
-	e := fileString("test/mixin.parser")
-
-	if res != e {
-		t.Errorf("Mixin parsing failed\n  was:%s\n expected:%s\n",
-			res, e)
 	}
 }
 
