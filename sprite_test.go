@@ -130,8 +130,8 @@ func TestSpriteImageDimensions(t *testing.T) {
 			imgs.Position("140"), e)
 	}
 
-	output := rerandom.ReplaceAllString(imgs.CSS("140"), "")
-	if e := `url("./test") -96px 0px`; output != e {
+	output := imgs.CSS("140")
+	if e := `url("test-585dca.png") -96px 0px`; output != e {
 		t.Errorf("Invalid CSS generated on test     was: %s\nexpected: %s",
 			output, e)
 	}
@@ -141,49 +141,34 @@ func TestSpriteImageDimensions(t *testing.T) {
 //Test file globbing
 func TestSpriteGlob(t *testing.T) {
 	imgs := ImageList{
-		ImageDir: "test",
+		ImageDir: "test/img",
 	}
 	imgs.Decode("*.png")
 
-	if f := imgs.Lookup("test/139.png"); f != 0 {
+	// Test [Un]successful lookups
+	if f := imgs.Lookup("test/img/139.png"); f != 0 {
 		t.Errorf("Invalid file location given found %d, expected %d", f, 0)
 	}
 
-	if f := imgs.Lookup("test/140.png"); f != 1 {
+	if f := imgs.Lookup("test/img/140.png"); f != 1 {
 		t.Errorf("Invalid file location given found %d, expected %d", f, 1)
 	}
 
 	if f := imgs.Lookup("notafile.png"); f != -1 {
 		t.Errorf("Found a file that doesn't exist")
 	}
-	outpath := rerandom.ReplaceAllString(imgs.OutFile, "")
-	outfile := filepath.Base(outpath)
-	if e := "image"; e != outfile {
-		t.Errorf("Outfile misnamed \n     was: %s\nexpected: %s", outpath, e)
-	}
-	ext := filepath.Ext(imgs.OutFile)
-	if e := ".png"; e != ext {
-		t.Errorf("Outfile invalid extension\n    was: %s\nexpected: %s",
-			ext, e)
-	}
-	imgs = ImageList{
+}
+
+func TestSpriteExport(t *testing.T) {
+	imgs := ImageList{
 		ImageDir:  ".",
 		GenImgDir: "build/test",
 	}
-	imgs.Decode("test/*.png")
-	outpath = rerandom.ReplaceAllString(imgs.OutFile, "")
-	outfile = filepath.Base(outpath)
+	imgs.Decode("test/img/*.png")
+	of := imgs.OutFile
 
-	if e := "test"; e != outfile {
-		t.Errorf("Outfile misnamed \n     was: %s\nexpected: %s", outpath, e)
-	}
-	ext = filepath.Ext(imgs.OutFile)
-	if e := ".png"; e != ext {
-		t.Errorf("Outfile invalid extension\n    was: %s\nexpected: %s",
-			ext, e)
-	}
-	if e := "build/test/test"; e != outpath {
-		t.Errorf("Invalid path\n     was: %s\nexpected: %s", outpath, e)
+	if e := "testimg-d65510.png"; e != of {
+		t.Errorf("Outfile misnamed \n     was: %s\nexpected: %s", of, e)
 	}
 }
 
@@ -192,8 +177,9 @@ func TestSpriteDecode(t *testing.T) {
 	i := ImageList{}
 	err := i.Decode("notafile")
 
-	if err != nil {
-		t.Errorf("Error thrown for non-existant file")
+	if e := "png: invalid format: invalid image size: 0x0"; err.Error() != e {
+		t.Errorf("Unexpected error thrown was: %s expected: %s",
+			e, err)
 	}
 
 	if len(i.GoImages) > 0 {

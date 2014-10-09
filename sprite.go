@@ -12,6 +12,7 @@ import (
 	"io"
 	"log"
 	"math"
+	mrand "math/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,6 +32,19 @@ type ImageList struct {
 	Combined                      bool
 	Files                         []string
 	Vertical                      bool
+}
+
+func funnyNames() string {
+
+	names := []string{"White_and_Nerdy",
+		"Fat",
+		"Eat_It",
+		"Foil",
+		"Like_a_Surgeon",
+		"Amish_Paradise",
+		"The_Saga_Begins",
+		"Polka_Face"}
+	return names[mrand.Intn(len(names))]
 }
 
 func (l ImageList) String() string {
@@ -248,7 +262,7 @@ func (l *ImageList) Width() int {
 
 // Build an output file location based on
 // [genimagedir|location of file matched by glob] + glob pattern
-func (l *ImageList) OutputPath(globpath string) {
+func (l *ImageList) OutputPath(globpath string) error {
 
 	path := filepath.Dir(globpath)
 	if path == "." {
@@ -261,7 +275,9 @@ func (l *ImageList) OutputPath(globpath string) {
 	var b bytes.Buffer
 	err := png.Encode(&b, l.Out)
 	if err != nil {
-		panic(err)
+		// Image is empty or has errors, generate a funny filename
+		l.OutFile = funnyNames() + "-" + randString(2) + ".png"
+		return err
 	}
 	// Remove invalid characters from path
 	path = strings.Replace(path, "*", "", -1)
@@ -269,6 +285,7 @@ func (l *ImageList) OutputPath(globpath string) {
 	hasher.Write(b.Bytes())
 	salt := hex.EncodeToString(hasher.Sum(nil))[:6]
 	l.OutFile += path + "-" + salt + ext
+	return nil
 }
 
 // Accept a variable number of image globs appending
@@ -308,9 +325,7 @@ func (l *ImageList) Decode(rest ...string) error {
 	// Combine images so that md5 hash of filename can be created
 	l.Combine()
 	// Send first glob as definition for output path
-	l.OutputPath(rest[0])
-
-	return nil
+	return l.OutputPath(rest[0])
 }
 
 // Combine all images in the slice into a final output
