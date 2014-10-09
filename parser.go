@@ -5,8 +5,30 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"path/filepath"
 	"sort"
 )
+
+/* Example sprite-map output:
+$sprites: ($rel: "");
+
+$sprites: map_merge($sprites, (
+  139: (
+    width: 139,
+    height: 89,
+    x: 0,
+    y: 20,
+    url: './image.png'
+  )));
+
+$sprites: map_merge($sprites,(140: (
+    width: 140,
+    height: 89,
+    x: 0,
+    y: 20,
+    url: './image.png'
+  )));
+*/
 
 func init() {
 	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
@@ -18,17 +40,21 @@ type Replace struct {
 }
 
 type Parser struct {
-	Idx, shift                    int
-	Chop                          []Replace
-	Pwd, Input, MainFile          string
-	BuildDir, ImageDir, GenImgDir string
-	Includes                      []string
-	Items                         []Item
-	Output                        []byte
-	Line                          map[int]string
-	LineKeys                      []int
-	InlineImgs, Sprites           map[string]ImageList
-	Vars                          map[string]string
+	Idx, shift           int
+	Chop                 []Replace
+	Pwd, Input, MainFile string
+	SassDir, BuildDir,
+	GenImgDir string
+	StaticDir           string
+	ProjDir             string
+	ImageDir            string //deprecated
+	Includes            []string
+	Items               []Item
+	Output              []byte
+	Line                map[int]string
+	LineKeys            []int
+	InlineImgs, Sprites map[string]ImageList
+	Vars                map[string]string
 }
 
 func NewParser() *Parser {
@@ -45,11 +71,15 @@ func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	p.Sprites = make(map[string]ImageList)
 	p.InlineImgs = make(map[string]ImageList)
 	p.Line = make(map[int]string)
-	if p.ImageDir == "" {
-		p.ImageDir = pkgdir
-	}
+
 	if p.MainFile == "" {
 		p.MainFile = "string"
+	}
+	if p.BuildDir == "" {
+		p.BuildDir = pkgdir
+	}
+	if p.SassDir == "" {
+		p.SassDir = pkgdir
 	}
 	buf := bytes.NewBuffer(make([]byte, 0, bytes.MinRead))
 	buf.ReadFrom(in)
@@ -75,11 +105,16 @@ func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	// for _, item := range p.Items {
 	// 	fmt.Printf("%s %s\n", item.Type, item)
 	// }
-	p.Parse(p.Items)
-
-	p.Output = []byte(p.Input)
+	rel := fmt.Sprintf(`$rel: "%s";%s`, p.Rel(), "\n")
+	p.Output = []byte(rel)
+	p.Output = append(p.Output, []byte(p.Input)...)
 	p.Replace()
 	return p.Output, nil
+}
+
+func (p *Parser) Rel() string {
+	rel, _ := filepath.Rel(p.BuildDir, p.StaticDir)
+	return filepath.Clean(rel)
 }
 
 // LookupFile translates line positions into line number
@@ -196,7 +231,7 @@ func (p *Parser) Parse(items []Item) []byte {
 		} else if items[2].Value == "sprite-map" {
 			// Special parsing of sprite-maps
 			imgs := ImageList{
-				ImageDir:  p.ImageDir,
+				ImageDir:  p.SassDir,
 				BuildDir:  p.BuildDir,
 				GenImgDir: p.GenImgDir,
 			}
@@ -379,9 +414,6 @@ func (p *Parser) Command(items []Item) ([]byte, int) {
 		}
 
 		repl := img.Inline()
-		p.Mark(items[0].Pos, items[3].Pos+len(items[3].Value), repl)
-	case "image-url":
-		repl := p.ImageUrl(items)
 		p.Mark(items[0].Pos, items[3].Pos+len(items[3].Value), repl)
 	default:
 		fmt.Println("No comprende:", items[0])

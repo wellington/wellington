@@ -1,24 +1,3 @@
-/* Example sprite-map output:
-$sprites: ($rel: "");
-
-$sprites: map_merge($sprites, (
-  139: (
-    width: 139,
-    height: 89,
-    x: 0,
-    y: 20,
-    url: './image.png'
-  )));
-
-$sprites: map_merge($sprites,(140: (
-    width: 140,
-    height: 89,
-    x: 0,
-    y: 20,
-    url: './image.png'
-  )));
-*/
-
 @function sprite-map($str){ @return }
 
 @function sprite-file($map, $file){
@@ -48,5 +27,5 @@ $sprites: map_merge($sprites,(140: (
 }
 
 @function image-url($file) {
-	@return url('#{$rel+$file}');
+  @return url('#{$rel+/+$file}');
 }

@@ -14,6 +14,38 @@ import (
 
 var rerandom *regexp.Regexp
 
+const spritePreamble = `@function sprite-map($str){ @return }
+
+@function sprite-file($map, $file){
+	$select: map-get($map, $file);
+	@return $select;
+}
+
+@function sprite($map, $file){
+  $select: map-get($map, $file);
+  @return url("#{map-get($select, url)}") + " " +
+    sprite-position($map, $file);
+}
+
+@function image-width($select){
+  @return map-get($select, width) + px;
+}
+
+@function image-height($select){
+  @return map-get($select, height) + px;
+}
+
+@function sprite-position($map, $file) {
+  $select: map-get($map, $file);
+  $x: map-get($select, x);
+  $y: map-get($select, y);
+  @return -#{$x}px + " " + -#{$y}px;
+}
+
+@function image-url($file) {
+  @return url('#{$rel+/+$file}');
+}`
+
 func init() {
 	rerandom = regexp.MustCompile(`-\w{6}(?:\.(png|jpg))`)
 }
@@ -31,6 +63,33 @@ func TestParserVar(t *testing.T) {
 	if e != output {
 		t.Errorf("File output did not match, \nwas:\n%s\nexpected:\n%s",
 			output, e)
+	}
+
+}
+
+func TestParserRelative(t *testing.T) {
+	p := Parser{
+		StaticDir: "test",
+		BuildDir:  "test/build",
+	}
+	f, err := ioutil.ReadFile("sass/_sprite.scss")
+	if err != nil {
+		log.Fatal(err)
+	}
+	in := bytes.NewBuffer(f)
+	in.WriteString(`div {
+  background: image-url('img/139.png');
+}`)
+	e := fmt.Sprintf(`$rel: "..";
+%s
+div {
+  background: image-url('img/139.png');
+}`, spritePreamble)
+	bs, _ := p.Start(in, "test")
+	out := string(bs)
+	defer cleanUpSprites(p.Sprites)
+	if out != e {
+		t.Errorf("Mismatch expected:\n%s\nwas:\n%s", e, out)
 	}
 
 }
