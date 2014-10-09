@@ -27,5 +27,5 @@
 }
 
 @function image-url($file) {
-  @return url('#{$rel+/+$file}');
+  @return url($rel/$file)
 }

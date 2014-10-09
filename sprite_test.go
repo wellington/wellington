@@ -13,7 +13,7 @@ func cleanUpSprites(sprites map[string]ImageList) {
 		return
 	}
 	for _, iml := range sprites {
-		err := os.Remove(iml.OutFile)
+		err := os.Remove(filepath.Join(iml.GenImgDir, iml.OutFile))
 		if err != nil {
 			log.Fatal(err)
 		}

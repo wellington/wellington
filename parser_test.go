@@ -224,8 +224,12 @@ func TestParseMixin(t *testing.T) {
 }
 
 func TestParseImage(t *testing.T) {
-	p := Parser{}
-	in := bytes.NewBufferString(`$sprites: sprite-map("test/*.png");
+	p := Parser{
+		StaticDir: "test",
+		GenImgDir: "test/build/img",
+		BuildDir:  "test/build",
+	}
+	in := bytes.NewBufferString(`$sprites: sprite-map("img/*.png");
 $sfile: sprite-file($sprites, 139);
 div {
     height: image-height(sprite-file($sprites, 139));
@@ -236,8 +240,9 @@ div {
 	out := string(bs)
 	defer cleanUpSprites(p.Sprites)
 
-	if e := `$sprites: (); $sprites: map_merge($sprites,(139: (width: 96, height: 139, x: 0, y: 0, url: './test-585dca.png'))); $sprites: map_merge($sprites,(140: (width: 96, height: 140, x: 0, y: 139, url: './test-585dca.png'))); $sprites: map_merge($sprites,(pixel: (width: 1, height: 1, x: 0, y: 279, url: './test-585dca.png')));
-
+	if e := `$rel: "..";
+$sprites: (); $sprites: map_merge($sprites,(139: (width: 96, height: 139, x: 0, y: 0, url: 'test/build/img/img-d65510.png'))); $sprites: map_merge($sprites,(140: (width: 96, height: 140, x: 0, y: 139, url: 'test/build/img/img-d65510.png')));
+$sfile: sprite-file($sprites, 139);
 div {
     height: image-height(sprite-file($sprites, 139));
     width: image-width(test/139.png);

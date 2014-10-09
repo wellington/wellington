@@ -122,7 +122,7 @@ func (l ImageList) Map(name string) string {
 				"x: %d, y: %d, url: '%s')))",
 			name, name,
 			base, l.ImageWidth(i), l.ImageHeight(i),
-			l.X(i), l.Y(i), l.OutFile,
+			l.X(i), l.Y(i), filepath.Join(l.GenImgDir, l.OutFile),
 		))
 	}
 	return "(); " + strings.Join(res, "; ") + ";"
@@ -250,11 +250,6 @@ func (l *ImageList) Width() int {
 // [genimagedir|location of file matched by glob] + glob pattern
 func (l *ImageList) OutputPath(globpath string) {
 
-	gdir, err := filepath.Rel(l.BuildDir, l.GenImgDir)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	path := filepath.Dir(globpath)
 	if path == "." {
 		path = "image"
@@ -264,7 +259,7 @@ func (l *ImageList) OutputPath(globpath string) {
 
 	// Encode the image so the bytestring can feed into md5.Sum
 	var b bytes.Buffer
-	err = png.Encode(&b, l.Out)
+	err := png.Encode(&b, l.Out)
 	if err != nil {
 		panic(err)
 	}
@@ -273,7 +268,7 @@ func (l *ImageList) OutputPath(globpath string) {
 	hasher := md5.New()
 	hasher.Write(b.Bytes())
 	salt := hex.EncodeToString(hasher.Sum(nil))[:6]
-	l.OutFile += gdir + "/" + path + "-" + salt + ext
+	l.OutFile += path + "-" + salt + ext
 }
 
 // Accept a variable number of image globs appending
@@ -285,6 +280,7 @@ func (l *ImageList) Decode(rest ...string) error {
 	var (
 		paths []string
 	)
+
 	for _, r := range rest {
 		matches, err := filepath.Glob(filepath.Join(l.ImageDir, r))
 		if err != nil {
@@ -370,7 +366,7 @@ func (l *ImageList) Export() (string, error) {
 	// TODO: Differentiate relative file path (in css) to this abs one
 	abs := filepath.Join(l.GenImgDir, filepath.Base(l.OutFile))
 	// Create directory if it doesn't exist
-	err := os.MkdirAll(filepath.Dir(abs), 0777)
+	err := os.MkdirAll(filepath.Dir(abs), 755)
 	if err != nil {
 		log.Printf("Failed to create image build dir: %s",
 			filepath.Dir(abs))
@@ -379,6 +375,7 @@ func (l *ImageList) Export() (string, error) {
 	fo, err := os.Create(abs)
 	if err != nil {
 		log.Printf("Failed to create file: %s\n", abs)
+		log.Print(err)
 		return "", err
 	}
 	//This call is cached if already run

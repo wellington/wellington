@@ -47,7 +47,7 @@ type Parser struct {
 	GenImgDir string
 	StaticDir           string
 	ProjDir             string
-	ImageDir            string //deprecated
+	ImageDir            string
 	Includes            []string
 	Items               []Item
 	Output              []byte
@@ -72,6 +72,7 @@ func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	p.InlineImgs = make(map[string]ImageList)
 	p.Line = make(map[int]string)
 
+	// Setup paths
 	if p.MainFile == "" {
 		p.MainFile = "string"
 	}
@@ -80,6 +81,15 @@ func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	}
 	if p.SassDir == "" {
 		p.SassDir = pkgdir
+	}
+	if p.StaticDir == "" {
+		p.StaticDir = pkgdir
+	}
+	if p.ImageDir == "" {
+		p.ImageDir = p.StaticDir
+	}
+	if p.GenImgDir == "" {
+		p.GenImgDir = p.BuildDir
 	}
 	buf := bytes.NewBuffer(make([]byte, 0, bytes.MinRead))
 	buf.ReadFrom(in)
@@ -105,11 +115,14 @@ func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	// for _, item := range p.Items {
 	// 	fmt.Printf("%s %s\n", item.Type, item)
 	// }
-	rel := fmt.Sprintf(`$rel: "%s";%s`, p.Rel(), "\n")
-	p.Output = []byte(rel)
-	p.Output = append(p.Output, []byte(p.Input)...)
+	// Process sprite calls and gen
+	p.Parse(p.Items)
+	p.Output = []byte(p.Input)
+	// Perform substitutions
 	p.Replace()
-	return p.Output, nil
+	rel := []byte(fmt.Sprintf(`$rel: "%s";%s`, p.Rel(), "\n"))
+
+	return append(rel, p.Output...), nil
 }
 
 func (p *Parser) Rel() string {
@@ -214,11 +227,6 @@ func (p *Parser) Parse(items []Item) []byte {
 		for j < len(items) && items[j].Type != SEMIC {
 			j++
 		}
-		// Eliminate variables for known commands
-		switch items[2].Value {
-		case "sprite-file":
-			p.Mark(item.Pos, items[j].Pos+len(items[j].Value), "")
-		}
 		if items[2].Type != CMDVAR {
 			// Hackery for empty sass maps
 			val := string(p.Parse(items[2:j]))
@@ -231,7 +239,7 @@ func (p *Parser) Parse(items []Item) []byte {
 		} else if items[2].Value == "sprite-map" {
 			// Special parsing of sprite-maps
 			imgs := ImageList{
-				ImageDir:  p.SassDir,
+				ImageDir:  p.ImageDir,
 				BuildDir:  p.BuildDir,
 				GenImgDir: p.GenImgDir,
 			}
@@ -250,57 +258,12 @@ func (p *Parser) Parse(items []Item) []byte {
 				log.Println(err)
 			}
 		}
-	case INTP:
-		pos, _ := RBracket(items, 0)
-		j = pos
-		val := items[1].Value
-		if val, ok := p.Vars[val]; ok {
-			p.Mark(item.Pos, items[2].Pos+len(items[2].Value), val)
-		}
-	case SUB:
-		break
-		val, ok := p.Vars[item.Value]
-		// Do not replace if nothing was found
-		if !ok {
-			val = item.Value
-		}
-		_ = val
-		//p.Mark(item.Pos, item.Pos+len(item.Value), val)
-	case CMD:
-		for j < len(items) && items[j].Type != SEMIC {
-			j++
-		}
-		out, eoc = p.Command(items[0:j])
-	case TEXT:
-		out = append(out, item.Value...)
-	case MIXIN, FUNC, IF, ELSE, EACH:
-		// Ignore the entire mixin and move to the next line
-		lpos := 0
-		for {
-			if items[lpos].Type == LBRACKET {
-				break
-			}
-			lpos++
-		}
-		pos, _ := RBracket(items, lpos)
-		for i := 0; i < pos; i++ {
-			out = append(out, items[i].Value...)
-		}
-		// fmt.Println(">>", item.Type, items[lpos:pos], "<<")
-		j = pos
-	default:
-		if item.Type == INCLUDE {
-			// Eat @include if command after is understood
-			if Lookup(items[1].Value) > -1 {
-				p.Mark(item.Pos, items[1].Pos, "")
-			}
-		}
-		out = append(out, item.Value...)
 	}
 
 	return append(out, p.Parse(items[j:])...)
 }
 
+// Deprecated
 // Passed sass-command( args...)
 func (p *Parser) Command(items []Item) ([]byte, int) {
 
