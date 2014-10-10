@@ -147,66 +147,66 @@ func (p *Parser) LookupFile(pos int) string {
 }
 
 // Find Paren that matches the current (
-func RParen(items []Item) (int, int) {
-	if len(items) == 0 {
-		return 0, 0
-	}
-	if items[0].Type != LPAREN {
-		panic("Expected: ( was: " + items[0].Value)
-	}
-	pos := 1
-	match := 1
-	nest := false
-	nestPos := 0
+// func RParen(items []Item) (int, int) {
+// 	if len(items) == 0 {
+// 		return 0, 0
+// 	}
+// 	if items[0].Type != LPAREN {
+// 		panic("Expected: ( was: " + items[0].Value)
+// 	}
+// 	pos := 1
+// 	match := 1
+// 	nest := false
+// 	nestPos := 0
 
-	for match != 0 && pos < len(items) {
-		switch items[pos].Type {
-		case LPAREN:
-			match++
-		case RPAREN:
-			match--
-		}
-		if match > 1 {
-			if !nest {
-				nestPos = pos
-			}
-			// Nested command must be resolved
-			nest = true
-		}
-		pos++
-	}
+// 	for match != 0 && pos < len(items) {
+// 		switch items[pos].Type {
+// 		case LPAREN:
+// 			match++
+// 		case RPAREN:
+// 			match--
+// 		}
+// 		if match > 1 {
+// 			if !nest {
+// 				nestPos = pos
+// 			}
+// 			// Nested command must be resolved
+// 			nest = true
+// 		}
+// 		pos++
+// 	}
 
-	return pos, nestPos
-}
+// 	return pos, nestPos
+// }
 
-func RBracket(items []Item, pos int) (int, int) {
-	if items[pos].Type != LBRACKET && items[pos].Type != INTP {
-		panic("Expected: { was: " + items[0].Value)
-	}
+// func RBracket(items []Item, pos int) (int, int) {
+// 	if items[pos].Type != LBRACKET && items[pos].Type != INTP {
+// 		panic("Expected: { was: " + items[0].Value)
+// 	}
 
-	// Move to next item and set match to 1
-	pos++
-	match := 1
-	nest := false
-	nestPos := 0
-	for match != 0 && pos < len(items) {
-		switch items[pos].Type {
-		case LBRACKET, INTP:
-			match++
-		case RBRACKET:
-			match--
-		}
-		if match > 1 {
-			if !nest {
-				nestPos = pos
-			}
-			// Nested command must be resolved
-			nest = true
-		}
-		pos++
-	}
-	return pos, nestPos
-}
+// 	// Move to next item and set match to 1
+// 	pos++
+// 	match := 1
+// 	nest := false
+// 	nestPos := 0
+// 	for match != 0 && pos < len(items) {
+// 		switch items[pos].Type {
+// 		case LBRACKET, INTP:
+// 			match++
+// 		case RBRACKET:
+// 			match--
+// 		}
+// 		if match > 1 {
+// 			if !nest {
+// 				nestPos = pos
+// 			}
+// 			// Nested command must be resolved
+// 			nest = true
+// 		}
+// 		pos++
+// 	}
+// 	return pos, nestPos
+// }
 
 func (p *Parser) Parse(items []Item) []byte {
 	var (
@@ -261,128 +261,6 @@ func (p *Parser) Parse(items []Item) []byte {
 	}
 
 	return append(out, p.Parse(items[j:])...)
-}
-
-// Deprecated
-// Passed sass-command( args...)
-func (p *Parser) Command(items []Item) ([]byte, int) {
-
-	i := 0
-	_ = i
-	cmd := items[0]
-	repl := ""
-	if len(items) == 0 {
-		panic(items)
-	}
-	eoc, nPos := RParen(items[1:])
-	// Determine our offset from the source items
-	if false && nPos != 0 {
-		rightPos, _ := RParen(items[nPos:])
-		p.Command(items[nPos:rightPos])
-	}
-	return []byte(""), eoc
-	switch cmd.Value {
-	case "sprite":
-		//Capture sprite
-		sprite := p.Sprites[fmt.Sprintf("%s", items[2])]
-		pos, _ := RParen(items[1:])
-		//Capture filename
-		name := fmt.Sprintf("%s", items[3])
-		repl = sprite.CSS(name)
-		p.Mark(items[0].Pos, items[pos].Pos+len(items[pos].Value), repl)
-	case "sprite-height":
-		sprite := p.Sprites[fmt.Sprintf("%s", items[2])]
-		repl = fmt.Sprintf("%dpx", sprite.SImageHeight(items[3].String()))
-		p.Mark(cmd.Pos, items[eoc].Pos+len(items[eoc].Value), repl)
-	case "sprite-width":
-		sprite := p.Sprites[fmt.Sprintf("%s", items[2])]
-		repl = fmt.Sprintf("%dpx",
-			sprite.SImageWidth(items[3].String()))
-		p.Mark(cmd.Pos, items[eoc].Pos+len(items[eoc].Value), repl)
-	case "sprite-dimensions":
-		sprite := p.Sprites[fmt.Sprintf("%s", items[2])]
-		repl = sprite.Dimensions(items[3].Value)
-		p.Mark(items[0].Pos, items[4].Pos+len(items[4].Value), repl)
-	case "sprite-file":
-		if items[2].Type != SUB {
-			log.Fatalf("%s must be followed by variable, was: %s",
-				cmd.Value, items[2].Value)
-		}
-		if items[3].Type != FILE {
-			log.Fatalf("sprite-file must be followed by "+
-				"sprite-variable, was: %s",
-				items[3].Type)
-		}
-		repl := p.Sprites[fmt.Sprintf("%s", items[2])].
-			File(items[3].String())
-		p.Mark(items[0].Pos, items[4].Pos+len(items[4].Value), repl)
-		return []byte(repl), eoc
-	case "image-height", "image-width":
-		if items[2].Type == FILE {
-			name := items[2].Value
-			img := ImageList{
-				ImageDir:  p.ImageDir,
-				BuildDir:  p.BuildDir,
-				GenImgDir: p.GenImgDir,
-			}
-			img.Decode(name)
-			var d int
-			if cmd.Value == "image-width" {
-				d = img.ImageWidth(0)
-			} else if cmd.Value == "image-height" {
-				d = img.ImageHeight(0)
-			}
-			repl = fmt.Sprintf("%dpx", d)
-			p.Mark(items[0].Pos, items[3].Pos+len(items[3].Value), repl)
-			return []byte(repl), eoc
-		}
-		if items[2].Type != CMD {
-			log.Fatalf("%s first arg must be sprite-file, was: %s",
-				cmd.Value, items[2].Value)
-		}
-		if items[4].Type != SUB {
-			log.Fatalf("%s must be followed by variable, was: %s",
-				cmd.Value, items[4].Type)
-		}
-		// Resolve variable
-		sprite := p.Sprites[items[4].Value]
-		var pix int
-		if cmd.Value == "image-width" {
-			pix = sprite.SImageWidth(items[5].Value)
-		} else if cmd.Value == "image-height" {
-			pix = sprite.SImageHeight(items[5].Value)
-		}
-		repl := fmt.Sprintf("%dpx", pix)
-		p.Mark(items[0].Pos, items[7].Pos+len(items[6].Value), repl)
-	case "inline-image":
-		var (
-			img ImageList
-			ok  bool
-		)
-		name := fmt.Sprintf("%s", items[2])
-		if img, ok = p.InlineImgs[name]; !ok {
-			img = ImageList{
-				ImageDir:  p.ImageDir,
-				BuildDir:  p.BuildDir,
-				GenImgDir: p.GenImgDir,
-			}
-			img.Decode(name)
-			img.Combine()
-			_, err := img.Export()
-			if err != nil {
-				log.Printf("Failed to save sprite: %s", name)
-				log.Println(err)
-			}
-			p.InlineImgs[name] = img
-		}
-
-		repl := img.Inline()
-		p.Mark(items[0].Pos, items[3].Pos+len(items[3].Value), repl)
-	default:
-		fmt.Println("No comprende:", items[0])
-	}
-
-	return []byte(""), eoc
 }
 
 // Import recursively resolves all imports.  It lexes the input
