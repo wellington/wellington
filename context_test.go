@@ -196,49 +196,6 @@ func TestContextNilRun(t *testing.T) {
 
 }
 
-func TestContextCompile(t *testing.T) {
-	return
-	ctx := Context{
-		OutputStyle:  NESTED_STYLE,
-		IncludePaths: make([]string, 0),
-		Src:          fileString("test/file1.scss"),
-		Out:          "",
-	}
-
-	err := ctx.Compile()
-	if err != nil {
-		t.Errorf("Compilation failed: %s", err)
-	}
-	fpath := "test/file1.css"
-	bytes, _ := ioutil.ReadFile(fpath)
-	exp := string(bytes)
-
-	if ctx.Out != exp {
-		t.Errorf("%s string mismatch found: \n%s, expected \n%s",
-			fpath, ctx.Out, exp)
-	}
-	fpath = "test/file1a.scss"
-	ctx.Src = fileString(fpath)
-	ctx.Compile()
-
-	if ctx.Out != exp {
-		t.Errorf("%s string mismatch found: \n%s, expected \n%s",
-			fpath, ctx.Out, exp)
-	}
-}
-
-func TestContextExport(t *testing.T) {
-	return
-	ctx := Context{
-		OutputStyle:  NESTED_STYLE,
-		IncludePaths: make([]string, 0),
-		Src:          fileString("test/sheet1.scss"),
-		Out:          "",
-	}
-	ctx.Compile()
-	defer cleanUpSprites(ctx.Parser.Sprites)
-}
-
 func BenchmarkContextCompile(b *testing.B) {
 	ctx := Context{
 		OutputStyle:  NESTED_STYLE,
