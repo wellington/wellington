@@ -116,11 +116,11 @@ func TestParseSpriteArgs(t *testing.T) {
   $normal-hover-spacing: 2px,
   $selected-spacing: 2px,
   $selected-hover-spacing: 2px);
-  @include sprite-dimensions($view_sprite,"140");
+  @include sprite-dimensions($view_sprite,140);
 `)
 	e := `$rel: ".";
 $view_sprite: (); $view_sprite: map_merge($view_sprite,(139: (width: 96, height: 139, x: 0, y: 0, url: 'test-585dca.png'))); $view_sprite: map_merge($view_sprite,(140: (width: 96, height: 140, x: 0, y: 139, url: 'test-585dca.png'))); $view_sprite: map_merge($view_sprite,(pixel: (width: 1, height: 1, x: 0, y: 279, url: 'test-585dca.png')));
-  @include sprite-dimensions($view_sprite,"140");
+  @include sprite-dimensions($view_sprite,140);
 `
 	bs, _ := p.Start(in, "")
 	out := string(bs)
