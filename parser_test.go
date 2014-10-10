@@ -214,9 +214,7 @@ func TestParseImageUrl(t *testing.T) {
 
 	if e := `$rel: "..";
 background: image-url('test/140.png');`; e != out {
-		fmt.Println(e)
-		fmt.Println("was")
-		fmt.Println(out)
+		t.Errorf("mismatch expected:\n%s\nwas:\n%s\n", e, out)
 	}
 	log.SetOutput(os.Stdout)
 }
