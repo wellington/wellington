@@ -202,24 +202,21 @@ div {
 }
 
 func TestParseImageUrl(t *testing.T) {
-	return // Test no longer useful
+
 	p := Parser{
-		BuildDir: "/doop/doop",
+		StaticDir: "test",
+		GenImgDir: "test/build/img",
+		BuildDir:  "test/build",
 	}
-	in := bytes.NewBufferString(`background: image-url("test/140.png");`)
-	var b bytes.Buffer
-	//log.SetOutput(&b)
+	in := bytes.NewBufferString(`background: image-url('test/140.png');`)
 	bs, _ := p.Start(in, "")
 	out := string(bs)
 
-	if e := "can't make . relative to /doop/doop\n"; !strings.HasSuffix(
-		b.String(), e) {
-		t.Errorf("No error for bad relative path expected:\n%s\nwas:\n%s\n",
-			e, b.String())
-	}
-
-	if e := "background: url(\"\");"; e != out {
-		//t.Errorf("expected: %s, was: %s", e, out)
+	if e := `$rel: "..";
+background: image-url('test/140.png');`; e != out {
+		fmt.Println(e)
+		fmt.Println("was")
+		fmt.Println(out)
 	}
 	log.SetOutput(os.Stdout)
 }
