@@ -12,14 +12,10 @@ import "C"
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 	"log"
-	"strconv"
 	"strings"
 	"unsafe"
-
-	"github.com/seateam/color"
 )
 
 // Context handles the interactions with libsass.  Context
@@ -33,6 +29,8 @@ type Context struct {
 	BuildDir, ImageDir, GenImgDir string
 	Src, Out, Map, MainFile       string
 	Sprites                       []ImageList
+	error                         string
+	errors                        lErrors
 }
 
 // Constants/enums for the output style.
@@ -83,22 +81,18 @@ func (ctx *Context) Run(in io.Reader, out io.WriteCloser, pkgdir string) error {
 		return err
 	}
 	ctx.Src = string(bs)
-	err = ctx.Compile()
+	ctx.Compile()
 
 	obuf := bytes.NewBufferString(ctx.Out)
 	defer out.Close()
 	io.Copy(out, obuf)
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return errors.New(ctx.Error())
 }
 
 // Compile passes off the sass compliant string to
 // libsass for generating the resulting css file.
-func (ctx *Context) Compile() error {
+func (ctx *Context) Compile() {
 
 	if ctx.Precision == 0 {
 		ctx.Precision = 5
@@ -128,43 +122,7 @@ func (ctx *Context) Compile() error {
 	// Populate Gocontext with results from c compiler
 	ctx.Out = C.GoString(cCtx.output_string)
 	ctx.Map = C.GoString(cCtx.source_map_string)
-	errString := strings.TrimSpace(C.GoString(cCtx.error_message))
-	err := errors.New(errString)
-	if err.Error() == "" {
-		err = nil
-	} else {
-		// Attempt to find the source error
-		split := strings.Split(err.Error(), ":")
-		if len(split) == 0 {
-			return err
-		}
-		pos, lerr := strconv.Atoi(split[1])
-		if lerr != nil {
-			return lerr
-		}
-		lines := strings.Split(ctx.Src, "\n")
-		// Line number is off by one from libsass
-		// Find previous lines to maximum available
-		errLines := "error in " + ctx.Parser.LookupFile(pos)
-		red := color.NewStyle(color.BlackPaint, color.RedPaint).Brush()
-		first := pos - 7
-		if first < 0 {
-			first = 0
-		}
-		last := pos + 7
-		if last > len(lines) {
-			last = len(lines)
-		}
-		for i := first; i < last; i++ {
-			// translate 0 index to 1 index
-			str := fmt.Sprintf("\n%3d: %s", i+1, lines[i])
-			if i == pos-1 {
-				str = red(str)
-			}
-			errLines += str
-		}
-
-		err = errors.New(err.Error() + "\n" + errLines)
-	}
-	return err
+	// Set the internal error string to C error return
+	ctx.error = strings.TrimSpace(C.GoString(cCtx.error_message))
+	ctx.ProcessSassError()
 }
