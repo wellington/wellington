@@ -1,0 +1,15 @@
+$images: sprite-map("../img/*.png");
+$moreimages: sprite-map("../img/*.png");
+$red-var: red;
+$hex: #00FF00;
+background: invalid;
+div {
+	background: sprite($images, 140);
+}
+div {
+    background: $hex;
+    $hex: #00DD00;
+    background: sprite($images, 139);
+    background: sprite($images, 140);
+    font-size: 10pt;
+}

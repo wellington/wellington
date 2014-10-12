@@ -3,6 +3,7 @@ package sprite_sass
 import (
 	"bytes"
 	"io"
+	"log"
 	"testing"
 )
 
@@ -89,7 +90,7 @@ div {
 	}
 }
 
-func setupCtx(in *bytes.Buffer) (Context, string, error) {
+func setupCtx(f interface{}) (Context, string, error) {
 	ctx := Context{
 		OutputStyle:  NESTED_STYLE,
 		IncludePaths: make([]string, 0),
@@ -104,10 +105,46 @@ func setupCtx(in *bytes.Buffer) (Context, string, error) {
 		err error
 	)
 	r, w := io.Pipe()
+
+	var reader io.Reader
+	switch v := f.(type) {
+	case io.Reader:
+		reader = f.(io.Reader)
+	case string:
+		reader = fileReader(f.(string))
+	default:
+		log.Printf("Unhandled type: %T", v)
+		return ctx, "", nil
+	}
+
 	go func(in io.Reader, w io.WriteCloser) {
-		err = ctx.Run(in, w, "test")
-	}(in, w)
+		err = ctx.Run(in, w, "test/sass")
+		if err != nil {
+			// log.Fatal(err)
+		}
+	}(reader, w)
 
 	io.Copy(&out, r)
 	return ctx, out.String(), err
+}
+
+func TestErrorImport(t *testing.T) {
+	ctx, _, _ := setupCtx("test/sass/failimport.scss")
+
+	testMap := []lError{
+		lError{38, "unclosed parenthesis"},
+	}
+
+	for i := range testMap {
+		e, w := testMap[i], ctx.errors.Errors[i]
+		if e.Pos != w.Pos {
+			t.Errorf("mismatch expected: %d was: %d",
+				e.Pos, w.Pos)
+		}
+
+		if e.Message != w.Message {
+			t.Errorf("mismatch expected: %d was: %d",
+				e.Message, w.Message)
+		}
+	}
 }
