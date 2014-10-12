@@ -6,16 +6,17 @@ import (
 	"testing"
 )
 
-func TestLibsassErrorBasic(t *testing.T) {
+func TestErrorBasic(t *testing.T) {
 	in := bytes.NewBufferString(`div {
   @include invalid-function('');
 }`)
 
+	ctx, _, _ := setupCtx(in)
+
 	testMap := []lError{
 		lError{2, "no mixin named invalid-function"},
-		lError{Pos: 2, Message: ""},
+		lError{2, ""},
 	}
-	ctx, _, _ := setupCtx(in)
 
 	for i := range testMap {
 		e, w := testMap[i], ctx.errors.Errors[i]
@@ -32,14 +33,32 @@ func TestLibsassErrorBasic(t *testing.T) {
 
 }
 
-func TestLibsassErrorUnbound(t *testing.T) {
+func TestErrorUnbound(t *testing.T) {
 	in := bytes.NewBufferString(`div {
   background: map-get($sprite,139);
 }`)
-	setupCtx(in)
+	ctx, _, _ := setupCtx(in)
+
+	testMap := []lError{
+		lError{2, "unbound variable $sprite"},
+	}
+
+	for i := range testMap {
+		e, w := testMap[i], ctx.errors.Errors[i]
+		if e.Pos != w.Pos {
+			t.Errorf("mismatch expected: %d was: %d",
+				e.Pos, w.Pos)
+		}
+
+		if e.Message != w.Message {
+			t.Errorf("mismatch expected: %d was: %d",
+				e.Message, w.Message)
+		}
+	}
+
 }
 
-func TestLibsassErrorFunctionTrace(t *testing.T) {
+func TestErrorFunction(t *testing.T) {
 	in := bytes.NewBufferString(`// Empty line
 @function uniqueFnName($file) {
   @return map-get($file,prop);
@@ -47,7 +66,27 @@ func TestLibsassErrorFunctionTrace(t *testing.T) {
 div {
   background: uniqueFnName(randfile);
 }`)
-	setupCtx(in)
+	ctx, _, _ := setupCtx(in)
+
+	testMap := []lError{
+		lError{3, "argument `$map` of `map-get($map $key)` must be a map"},
+		lError{3, "in function `map-get`"},
+		lError{3, "in function `uniqueFnName`"},
+		lError{6, ""},
+	}
+
+	for i := range testMap {
+		e, w := testMap[i], ctx.errors.Errors[i]
+		if e.Pos != w.Pos {
+			t.Errorf("mismatch expected: %d was: %d",
+				e.Pos, w.Pos)
+		}
+
+		if e.Message != w.Message {
+			t.Errorf("mismatch expected: %d was: %d",
+				e.Message, w.Message)
+		}
+	}
 }
 
 func setupCtx(in *bytes.Buffer) (Context, string, error) {
