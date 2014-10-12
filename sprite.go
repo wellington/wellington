@@ -322,6 +322,13 @@ func (l *ImageList) Decode(rest ...string) error {
 		l.GoImages = append(l.GoImages, goimg)
 		l.Files = append(l.Files, path)
 	}
+
+	if len(l.Files) == 0 {
+		log.Fatalf("No images were found for glob: %v",
+			rest,
+		)
+	}
+
 	// Combine images so that md5 hash of filename can be created
 	l.Combine()
 	// Send first glob as definition for output path
