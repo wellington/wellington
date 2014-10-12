@@ -324,7 +324,7 @@ func (l *ImageList) Decode(rest ...string) error {
 	}
 
 	if len(l.Files) == 0 {
-		log.Fatalf("No images were found for glob: %v",
+		log.Printf("No images were found for glob: %v",
 			rest,
 		)
 	}

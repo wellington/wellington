@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -239,10 +240,11 @@ func TestSpriteError(t *testing.T) {
 	_ = imgs
 	out.ReadString('\n')
 	str := out.String()
-
+	strFirst := strings.Split(str, "\n")[0]
 	if e := "png: unsupported feature: compression, " +
-		"filter or interlace method\n"; e != str {
-		t.Errorf("Interlaced error not received expected:\n%s, was:\n%s", e, str)
+		"filter or interlace method"; e != strFirst {
+		t.Errorf("Interlaced error not received expected:\n%s was:\n%s",
+			e, strFirst)
 	}
 
 	if e := -1; imgs.Y(1) != e {

@@ -132,7 +132,7 @@ func TestErrorImport(t *testing.T) {
 	ctx, _, _ := setupCtx("test/sass/failimport.scss")
 
 	testMap := []lError{
-		lError{38, "unclosed parenthesis"},
+		lError{42, "invalid top-level expression"},
 	}
 
 	for i := range testMap {
