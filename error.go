@@ -64,8 +64,7 @@ func (ctx *Context) ErrorTokenizer(src string) lErrors {
 
 // Error reads the original libsass error and creates helpful debuggin
 // information for debuggin that error.
-func (ctx *Context) ProcessSassError() {
-	err := ctx.error
+func (ctx *Context) ProcessSassError(err string) {
 	// Attempt to find the source error
 	split := strings.Split(err, ":")
 	if len(split) == 0 {
@@ -96,9 +95,9 @@ func (ctx *Context) ProcessSassError() {
 		}
 		errLines += str
 	}
-	ctx.error = err + "\n" + errLines
+	ctx.errorString = err + "\n" + errLines
 }
 
 func (ctx *Context) Error() string {
-	return ctx.error
+	return ctx.errorString
 }

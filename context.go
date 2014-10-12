@@ -29,7 +29,7 @@ type Context struct {
 	BuildDir, ImageDir, GenImgDir string
 	Src, Out, Map, MainFile       string
 	Sprites                       []ImageList
-	error                         string
+	errorString                   string
 	errors                        lErrors
 }
 
@@ -123,6 +123,5 @@ func (ctx *Context) Compile() {
 	ctx.Out = C.GoString(cCtx.output_string)
 	ctx.Map = C.GoString(cCtx.source_map_string)
 	// Set the internal error string to C error return
-	ctx.error = strings.TrimSpace(C.GoString(cCtx.error_message))
-	ctx.ProcessSassError()
+	ctx.ProcessSassError(C.GoString(cCtx.error_message))
 }
