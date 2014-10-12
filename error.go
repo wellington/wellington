@@ -89,7 +89,7 @@ func (ctx *Context) ProcessSassError(err string) {
 	}
 	for i := first; i < last; i++ {
 		// translate 0 index to 1 index
-		str := fmt.Sprintf("\n%3d: %s", i+1, lines[i])
+		str := fmt.Sprintf("\n%3d: %.80s", i+1, lines[i])
 		if i == pos-1 {
 			str = red(str)
 		}
