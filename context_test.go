@@ -51,7 +51,7 @@ func TestContextFile(t *testing.T) {
 	}
 	err = ctx.Run(fileReader(ipath), f, "")
 	if err != nil {
-		panic(err)
+		t.Error(err)
 	}
 	was, _ := ioutil.ReadFile("test/build/file.css")
 	if string(was) != string(exp) {
@@ -72,7 +72,7 @@ func TestContextRun(t *testing.T) {
 	ipath := "test/sass/_var.scss"
 	exp, err := ioutil.ReadFile("test/expected/var.css")
 	if err != nil {
-		panic(err)
+		t.Error(err)
 	}
 
 	r, w := io.Pipe()
@@ -80,7 +80,7 @@ func TestContextRun(t *testing.T) {
 
 		err := ctx.Run(fileReader(ipath), w, "test")
 		if err != nil {
-			panic(err)
+			t.Error(err)
 		}
 	}(ipath, w)
 
@@ -112,7 +112,7 @@ func TestContextImport(t *testing.T) {
 	ipath := "test/sass/import.scss"
 	exp, err := ioutil.ReadFile("test/expected/import.css")
 	if err != nil {
-		panic(err)
+		t.Error(err)
 	}
 
 	r, w := io.Pipe()
@@ -120,7 +120,7 @@ func TestContextImport(t *testing.T) {
 
 		err := ctx.Run(fileReader(ipath), w, "test")
 		if err != nil {
-			panic(err)
+			t.Error(err)
 		}
 	}(ipath, w)
 

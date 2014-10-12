@@ -67,7 +67,7 @@ func (ctx *Context) ErrorTokenizer(src string) lErrors {
 func (ctx *Context) ProcessSassError(err string) {
 	// Attempt to find the source error
 	split := strings.Split(err, ":")
-	if len(split) == 0 {
+	if len(split) < 2 {
 		return
 	}
 	eObj := ctx.ErrorTokenizer(err)

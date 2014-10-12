@@ -87,6 +87,10 @@ func (ctx *Context) Run(in io.Reader, out io.WriteCloser, pkgdir string) error {
 	defer out.Close()
 	io.Copy(out, obuf)
 
+	if len(ctx.Error()) == 0 {
+		return nil
+	}
+
 	return errors.New(ctx.Error())
 }
 
