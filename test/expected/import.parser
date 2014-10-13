@@ -2,8 +2,8 @@ $rel: "..";
 @function sprite-map($str){ @return }
 
 @function sprite-file($map, $file){
-  $select: map-get($map, $file);
-  @return $select;
+	$select: map-get($map, $file);
+	@return $select;
 }
 
 @function sprite($map, $file){
@@ -13,10 +13,18 @@ $rel: "..";
 }
 
 @function image-width($select){
+  @if type-of($select) != "map" {
+    @warn "`#{$select}` is not a map.";
+    @return false;
+  }
   @return map-get($select, width) + px;
 }
 
 @function image-height($select){
+  @if type-of($select) != "map" {
+    @warn "`#{$select}` is not a map.";
+    @return false;
+  }
   @return map-get($select, height) + px;
 }
 
@@ -33,6 +41,14 @@ $rel: "..";
   } @else {
     @return url($rel/$file)
   }
+}
+
+@mixin sprite-dimensions($map, $file) {
+	$select: map-get($map, $file);
+	$w: map-get($select, width);
+	$h: map-get($select, height);
+	height: #{$h}px;
+	Width: #{$w}px;
 }
 
 $images: (); $images: map_merge($images,(139: (width: 96, height: 139, x: 0, y: 0, url: 'test/build/image-585dca.png'))); $images: map_merge($images,(140: (width: 96, height: 140, x: 0, y: 139, url: 'test/build/image-585dca.png'))); $images: map_merge($images,(pixel: (width: 1, height: 1, x: 0, y: 279, url: 'test/build/image-585dca.png')));

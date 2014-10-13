@@ -132,14 +132,14 @@ func TestErrorImport(t *testing.T) {
 	ctx, _, _ := setupCtx("test/sass/failimport.scss")
 
 	testMap := []lError{
-		lError{42, "invalid top-level expression"},
+		lError{58, "invalid top-level expression"},
 	}
 
 	for i := range testMap {
 		e, w := testMap[i], ctx.errors.Errors[i]
 		if e.Pos != w.Pos {
-			t.Errorf("mismatch expected: %d was: %d",
-				e.Pos, w.Pos)
+			t.Errorf("mismatch expected: %d:%s was: %d:%s",
+				e.Pos, e.Message, w.Pos, w.Message)
 		}
 
 		if e.Message != w.Message {
@@ -157,24 +157,15 @@ div {
 }`)
 	ctx, _, _ := setupCtx(in)
 
-	testMap := []lError{
-		lError{20, "argument `$map` of `map-get($map $key)` must be a map"},
-		lError{20, "in function `map-get`"},
-		lError{20, "in function `image-height`"},
-		lError{39, ""},
+	if len(ctx.errors.Errors) > 0 {
+		t.Error("Non-warn thrown for image-height('file')")
 	}
 
-	for i := range testMap {
-		e, w := testMap[i], ctx.errors.Errors[i]
-		if e.Pos != w.Pos {
-			t.Errorf("mismatch expected: %d was: %d",
-				e.Pos, w.Pos)
-		}
+	return // libsass throws warnings to stdout, let's wait to test this
+	warnLine := "?"
 
-		if e.Message != w.Message {
-			t.Errorf("mismatch expected: %d was: %d",
-				e.Message, w.Message)
-		}
+	if e := "WARNING: `test/img/139.png` is not a map."; e != warnLine {
+		t.Errorf("Warning did not match expected:\n%s\nwas:\n%s\n",
+			e, warnLine)
 	}
-
 }

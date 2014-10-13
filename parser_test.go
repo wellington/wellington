@@ -94,18 +94,18 @@ func TestParserImporter(t *testing.T) {
 
 	lines := map[int]string{
 		0:  "../sass/sprite",
-		36: "var",
-		47: "string",
+		52: "var",
+		63: "string",
 	}
 	errors := false
 	for i, v := range lines {
 		if v != p.Line[i] {
-			t.Errorf("Invalid expected: %s, was: %s", v, p.Line[i])
+			t.Errorf("Invalid expected: %s, was: %s", lines[i], p.Line[i])
 			errors = true
 		}
 	}
 	if errors {
-		fmt.Println(p.Line)
+		fmt.Printf("% #v\n", p.Line)
 	}
 }
 

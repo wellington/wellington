@@ -1,8 +1,8 @@
 @function sprite-map($str){ @return }
 
 @function sprite-file($map, $file){
-  $select: map-get($map, $file);
-  @return $select;
+	$select: map-get($map, $file);
+	@return $select;
 }
 
 @function sprite($map, $file){
@@ -12,10 +12,18 @@
 }
 
 @function image-width($select){
+  @if type-of($select) != "map" {
+    @warn "`#{$select}` is not a map.";
+    @return false;
+  }
   @return map-get($select, width) + px;
 }
 
 @function image-height($select){
+  @if type-of($select) != "map" {
+    @warn "`#{$select}` is not a map.";
+    @return false;
+  }
   @return map-get($select, height) + px;
 }
 
@@ -32,4 +40,12 @@
   } @else {
     @return url($rel/$file)
   }
+}
+
+@mixin sprite-dimensions($map, $file) {
+	$select: map-get($map, $file);
+	$w: map-get($select, width);
+	$h: map-get($select, height);
+	height: #{$h}px;
+	Width: #{$w}px;
 }
