@@ -148,3 +148,33 @@ func TestErrorImport(t *testing.T) {
 		}
 	}
 }
+
+func TestErrorNonmap(t *testing.T) {
+	in := bytes.NewBufferString(`
+@import "sprite";
+div {
+  height: image-height('test/img/139.png');
+}`)
+	ctx, _, _ := setupCtx(in)
+
+	testMap := []lError{
+		lError{20, "argument `$map` of `map-get($map $key)` must be a map"},
+		lError{20, "in function `map-get`"},
+		lError{20, "in function `image-height`"},
+		lError{39, ""},
+	}
+
+	for i := range testMap {
+		e, w := testMap[i], ctx.errors.Errors[i]
+		if e.Pos != w.Pos {
+			t.Errorf("mismatch expected: %d was: %d",
+				e.Pos, w.Pos)
+		}
+
+		if e.Message != w.Message {
+			t.Errorf("mismatch expected: %d was: %d",
+				e.Message, w.Message)
+		}
+	}
+
+}
