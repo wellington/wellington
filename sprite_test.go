@@ -171,6 +171,10 @@ func TestSpriteExport(t *testing.T) {
 	if e := "testimg-d65510.png"; e != of {
 		t.Errorf("Outfile misnamed \n     was: %s\nexpected: %s", of, e)
 	}
+
+	if e := `(); $sprites: map_merge($sprites,(139: (width: 96, height: 139, x: 0, y: 0, url: 'build/test/testimg-d65510.png'))); $sprites: map_merge($sprites,(140: (width: 96, height: 140, x: 96, y: 0, url: 'build/test/testimg-d65510.png')));`; e != imgs.Map("$sprites") {
+		t.Error("Map mismatch")
+	}
 }
 
 func TestSpriteDecode(t *testing.T) {
