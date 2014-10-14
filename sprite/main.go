@@ -32,11 +32,13 @@ var (
 	Comments                          bool
 	cpuprofile                        string
 	ShowVersion                       bool
+	BuildDir                          string
 )
 
 func init() {
 	flag.StringVar(&Output, "output", "", "Output file")
 	flag.StringVar(&Output, "o", "", "Output file")
+	flag.StringVar(&BuildDir, "b", "", "Build Directory")
 	flag.StringVar(&Includes, "p", "", "SASS import path")
 	flag.StringVar(&Dir, "dir", "", "Image directory")
 	flag.StringVar(&Dir, "d", "", "Image directory")
@@ -93,49 +95,56 @@ func main() {
 	}
 
 	for _, f := range flag.Args() {
+		// Remove partials
+		if strings.HasPrefix(filepath.Base(f), "_") {
+			continue
+		}
+		log.Println("Open:", f)
 		// If no imagedir specified, assume relative to the input file
 		if Dir == "" {
 			Dir = filepath.Dir(f)
 		}
+		rel, _ := filepath.Rel(Includes, filepath.Dir(f))
+		filename := strings.Replace(filepath.Base(f), ".scss", ".css", 1)
+		output := filepath.Join(BuildDir, rel, filename)
 		ctx := sprite.Context{
 			OutputStyle: style,
 			ImageDir:    Dir,
 			// Assumption that output is a file
-			BuildDir:     filepath.Dir(Output),
+			BuildDir:     filepath.Dir(output),
 			GenImgDir:    Gen,
 			MainFile:     f,
 			Comments:     Comments,
 			IncludePaths: []string{filepath.Dir(f)},
 		}
-
 		if Includes != "" {
 			ctx.IncludePaths = append(ctx.IncludePaths,
 				strings.Split(Includes, ",")...)
 		}
-
 		fRead, err := os.Open(f)
 		if err != nil {
 			panic(err)
 		}
 
-		var output io.WriteCloser
+		var out io.WriteCloser
 
-		if Output == "" {
-			output = os.Stdout
+		if output == "" {
+			out = os.Stdout
 		} else {
-			dir := filepath.Dir(Output)
+			dir := filepath.Dir(output)
 			err := os.MkdirAll(dir, 0755)
 			if err != nil {
 				log.Fatalf("Failed to create directory: %s", dir)
 			}
 
-			output, err = os.Create(Output)
+			out, err = os.Create(output)
+			log.Println("Created:", output)
 			if err != nil {
 				log.Fatalf("Failed to create file: %s", Output)
 			}
 		}
 
-		err = ctx.Run(fRead, output, filepath.Dir(Input))
+		err = ctx.Run(fRead, out, filepath.Dir(Input))
 		if err != nil {
 			log.Fatal(err)
 		}

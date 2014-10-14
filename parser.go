@@ -320,7 +320,7 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 				item := lex.Next()
 				pos = item.Pos + len(item.Value)
 				if item.Type != SEMIC {
-					panic("@import statement must be followed by ;")
+					log.Println("@import statement must be followed by ;")
 				}
 
 				moreTokens, moreOutput, err := p.GetItems(

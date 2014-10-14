@@ -388,7 +388,7 @@ func (l *ImageList) Export() (string, error) {
 	// TODO: Differentiate relative file path (in css) to this abs one
 	abs := filepath.Join(l.GenImgDir, filepath.Base(l.OutFile))
 	// Create directory if it doesn't exist
-	err := os.MkdirAll(filepath.Dir(abs), 755)
+	err := os.MkdirAll(filepath.Dir(abs), 0755)
 	if err != nil {
 		log.Printf("Failed to create image build dir: %s",
 			filepath.Dir(abs))
