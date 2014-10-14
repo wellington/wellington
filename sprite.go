@@ -384,9 +384,13 @@ func randString(n int) string {
 // Export saves out the ImageList to the specified file
 func (l *ImageList) Export() (string, error) {
 	// Use the auto generated path if none is specified
-
 	// TODO: Differentiate relative file path (in css) to this abs one
 	abs := filepath.Join(l.GenImgDir, filepath.Base(l.OutFile))
+
+	if _, err := os.Stat(abs); os.IsExist(err) {
+		return abs, nil
+	}
+
 	// Create directory if it doesn't exist
 	err := os.MkdirAll(filepath.Dir(abs), 0755)
 	if err != nil {
@@ -394,6 +398,7 @@ func (l *ImageList) Export() (string, error) {
 			filepath.Dir(abs))
 		return "", err
 	}
+
 	fo, err := os.Create(abs)
 	if err != nil {
 		log.Printf("Failed to create file: %s\n", abs)
