@@ -93,13 +93,13 @@ func main() {
 	if !ok {
 		style = sprite.NESTED_STYLE
 	}
-
 	for _, f := range flag.Args() {
 		// Remove partials
 		if strings.HasPrefix(filepath.Base(f), "_") {
 			continue
 		}
 		log.Println("Open:", f)
+
 		// If no imagedir specified, assume relative to the input file
 		if Dir == "" {
 			Dir = filepath.Dir(f)
@@ -146,7 +146,7 @@ func main() {
 
 		err = ctx.Run(fRead, out, filepath.Dir(Input))
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 	}
 }
