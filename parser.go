@@ -242,11 +242,11 @@ func (p *Parser) Parse(items []Item) []byte {
 				ImageDir:  p.ImageDir,
 				BuildDir:  p.BuildDir,
 				GenImgDir: p.GenImgDir,
+				Vertical:  true,
 			}
 			name := fmt.Sprintf("%s", items[0])
 			glob := fmt.Sprintf("%s", items[4])
 			imgs.Decode(glob)
-			imgs.Vertical = true
 			imgs.Combine()
 			p.Sprites[name] = imgs
 			//TODO: Generate filename

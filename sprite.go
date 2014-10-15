@@ -128,6 +128,7 @@ func (l ImageList) Y(pos int) int {
 
 func (l ImageList) Map(name string) string {
 	var res []string
+	rel, _ := filepath.Rel(l.BuildDir, l.GenImgDir)
 	for i := range l.GoImages {
 		base := strings.TrimSuffix(filepath.Base(l.Files[i]),
 			filepath.Ext(l.Files[i]))
@@ -136,7 +137,7 @@ func (l ImageList) Map(name string) string {
 				"x: %d, y: %d, url: '%s')))",
 			name, name,
 			base, l.ImageWidth(i), l.ImageHeight(i),
-			l.X(i), l.Y(i), filepath.Join(l.GenImgDir, l.OutFile),
+			l.X(i), l.Y(i), filepath.Join(rel, l.OutFile),
 		))
 	}
 	return "(); " + strings.Join(res, "; ") + ";"
@@ -348,7 +349,6 @@ func (l *ImageList) Combine() {
 	}
 
 	maxW, maxH = l.Width(), l.Height()
-
 	curH, curW := 0, 0
 
 	goimg := image.NewRGBA(image.Rect(0, 0, maxW, maxH))
@@ -367,7 +367,6 @@ func (l *ImageList) Combine() {
 			curW -= img.Bounds().Dx()
 		}
 	}
-
 	l.Combined = true
 }
 
