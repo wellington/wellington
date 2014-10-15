@@ -121,8 +121,8 @@ func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	p.Output = []byte(p.Input)
 	// Perform substitutions
 	p.Replace()
-	rel := []byte(fmt.Sprintf(`$rel: "%s"; /* $rel: %s */%s`,
-		p.Rel(), p.Rel(), "\n"))
+	rel := []byte(fmt.Sprintf(`$rel: "%s";%s`,
+		p.Rel(), "\n"))
 	return append(rel, p.Output...), nil
 }
 

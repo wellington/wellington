@@ -10,7 +10,6 @@ package sprite_sass
 import "C"
 
 import (
-	"bytes"
 	"errors"
 	"io"
 	"log"
@@ -55,8 +54,7 @@ func init() {
 // export out css with generated spritesheets based on
 // the ImageDir option.  WriteCloser is necessary to
 // notify readers when the stream is finished.
-func (ctx *Context) Run(in io.Reader, out io.WriteCloser, pkgdir string) error {
-
+func (ctx *Context) Run(in io.Reader, out io.Writer, pkgdir string) error {
 	if in == nil {
 		return errors.New("Input or output files were not specified")
 	}
@@ -80,11 +78,11 @@ func (ctx *Context) Run(in io.Reader, out io.WriteCloser, pkgdir string) error {
 	if err != nil {
 		return err
 	}
+
 	ctx.Src = string(bs)
 	ctx.Compile()
-	obuf := bytes.NewBufferString(ctx.Out)
-	defer out.Close()
-	io.Copy(out, obuf)
+
+	io.WriteString(out, ctx.Out)
 
 	if len(ctx.Error()) == 0 {
 		return nil

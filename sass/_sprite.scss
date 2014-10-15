@@ -5,17 +5,32 @@
 	@return $select;
 }
 
-@function sprite($map, $file){
+@function sprite($map, $file, $offsetx:false, $offsety:false){
+  @if type-of($map) != "map" {
+	  @warn "`#{$map}` is not a map.";
+	  @return false;
+  }
   $select: map-get($map, $file);
-  @return url(map-get($select, url)) + " " +
+  @if type-of($select) != "map" {
+	  @warn "`#{$select}` is not a map.";
+	  @return false;
+  }  @return url(map-get($select, url)) + " " +
     sprite-position($map, $file);
 }
 
 @function image-width($select){
+  @if type-of($select) != "map" {
+    @warn "`#{$select}` is not a map.";
+    @return false;
+  }
   @return map-get($select, width) + px;
 }
 
 @function image-height($select){
+  @if type-of($select) != "map" {
+    @warn "`#{$select}` is not a map.";
+    @return false;
+  }
   @return map-get($select, height) + px;
 }
 
@@ -27,9 +42,18 @@
 }
 
 @function image-url($file) {
-  @if not $rel {
+  @if type-of($rel) != "string" {
+    @warn "$rel not set";
     @return url($file);
   } @else {
-    @return url($rel/$file)
+    @return url("#{$rel}/#{$file}")
   }
+}
+
+@mixin sprite-dimensions($map, $file) {
+	$select: map-get($map, $file);
+	$w: map-get($select, width);
+	$h: map-get($select, height);
+	height: #{$h}px;
+	Width: #{$w}px;
 }

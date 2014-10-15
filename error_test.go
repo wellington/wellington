@@ -7,6 +7,43 @@ import (
 	"testing"
 )
 
+func setupCtx(f interface{}) (Context, string, error) {
+	ctx := Context{
+		OutputStyle:  NESTED_STYLE,
+		IncludePaths: make([]string, 0),
+		BuildDir:     "test/build",
+		ImageDir:     "test/img",
+		GenImgDir:    "test/build/img",
+		Out:          "",
+		Parser: Parser{
+			MainFile: "testname",
+		},
+	}
+	var (
+		out bytes.Buffer
+		err error
+	)
+
+	var reader io.Reader
+	switch v := f.(type) {
+	case io.Reader:
+		reader = f.(io.Reader)
+	case string:
+		reader = fileReader(f.(string))
+	default:
+		log.Printf("Unhandled type: %T", v)
+		return ctx, "", nil
+	}
+
+	err = ctx.Run(reader, &out, "test/sass")
+	if err != nil {
+		// This will mask iport errors
+		// panic(err)
+	}
+
+	return ctx, out.String(), err
+}
+
 func TestErrorBasic(t *testing.T) {
 	in := bytes.NewBufferString(`div {
   @include invalid-function('');
@@ -90,49 +127,12 @@ div {
 	}
 }
 
-func setupCtx(f interface{}) (Context, string, error) {
-	ctx := Context{
-		OutputStyle:  NESTED_STYLE,
-		IncludePaths: make([]string, 0),
-		BuildDir:     "test/build",
-		Out:          "",
-		Parser: Parser{
-			MainFile: "testname",
-		},
-	}
-	var (
-		out bytes.Buffer
-		err error
-	)
-	r, w := io.Pipe()
-
-	var reader io.Reader
-	switch v := f.(type) {
-	case io.Reader:
-		reader = f.(io.Reader)
-	case string:
-		reader = fileReader(f.(string))
-	default:
-		log.Printf("Unhandled type: %T", v)
-		return ctx, "", nil
-	}
-
-	go func(in io.Reader, w io.WriteCloser) {
-		err = ctx.Run(in, w, "test/sass")
-		if err != nil {
-			// log.Fatal(err)
-		}
-	}(reader, w)
-
-	io.Copy(&out, r)
-	return ctx, out.String(), err
-}
-
 func TestErrorImport(t *testing.T) {
+	//return // Tests on files cause race conditions
 	ctx, _, _ := setupCtx("test/sass/failimport.scss")
 
 	testMap := []lError{
-		lError{58, "invalid top-level expression"},
+		lError{66, "invalid top-level expression"},
 	}
 
 	for i := range testMap {

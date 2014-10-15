@@ -33,109 +33,56 @@ func init() {
 func TestContextFile(t *testing.T) {
 
 	ipath := "test/sass/file.scss"
-	opath := "test/build/file.css"
 	exp, err := ioutil.ReadFile("test/expected/file.css")
 	if err != nil {
 		panic(err)
 	}
-	ctx := Context{
-		OutputStyle:  NESTED_STYLE,
-		BuildDir:     "./test/build",
-		ImageDir:     "test/img",
-		IncludePaths: []string{"test/sass"},
-	}
 
-	f, err := os.Create(opath)
-	if err != nil {
-		panic(err)
-	}
-	err = ctx.Run(fileReader(ipath), f, "")
-	if err != nil {
-		t.Error(err)
-	}
-	was, _ := ioutil.ReadFile("test/build/file.css")
-	if string(was) != string(exp) {
-		t.Errorf("Expected did not match returned")
+	ctx, scanned, _ := setupCtx(ipath)
+
+	defer cleanUpSprites(ctx.Parser.Sprites)
+
+	if string(scanned) != string(exp) {
+		t.Errorf("Expected did not match returned exp:\n%s\n"+
+			"was:\n%s\n", string(exp), string(scanned))
 	}
 }
 
 func TestContextRun(t *testing.T) {
 
-	ctx := Context{
-		OutputStyle:  NESTED_STYLE,
-		IncludePaths: make([]string, 0),
-		BuildDir:     "test/build",
-		Out:          "",
-	}
-
-	var scanned []byte
 	ipath := "test/sass/_var.scss"
 	exp, err := ioutil.ReadFile("test/expected/var.css")
 	if err != nil {
 		t.Error(err)
 	}
 
-	r, w := io.Pipe()
-	go func(ipath string, w io.WriteCloser) {
-
-		err := ctx.Run(fileReader(ipath), w, "test")
-		if err != nil {
-			t.Error(err)
-		}
-	}(ipath, w)
-
-	scanner := bufio.NewScanner(r)
-	scanner.Split(bufio.ScanBytes)
-	for scanner.Scan() {
-		scanned = append(scanned, scanner.Bytes()...)
-	}
+	ctx, scanned, _ := setupCtx(ipath)
 
 	defer cleanUpSprites(ctx.Parser.Sprites)
 
 	if string(scanned) != string(exp) {
-		t.Errorf("Processor file did not match was: "+
-			"\n%s\n exp:\n%s", string(scanned), string(exp))
+		t.Errorf("Processor file did not match exp: "+
+			"\n%s\n was:\n%s", string(exp), string(scanned))
 	}
 
 }
 
 func TestContextImport(t *testing.T) {
 
-	ctx := Context{
-		OutputStyle:  NESTED_STYLE,
-		IncludePaths: []string{"test/sass"},
-		BuildDir:     "test/build",
-		Out:          "",
-	}
-
-	var scanned []byte
 	ipath := "test/sass/import.scss"
 	exp, err := ioutil.ReadFile("test/expected/import.css")
 	if err != nil {
 		t.Error(err)
 	}
 
-	r, w := io.Pipe()
-	go func(ipath string, w io.WriteCloser) {
+	ctx, scanned, _ := setupCtx(ipath)
 
-		err := ctx.Run(fileReader(ipath), w, "test")
-		if err != nil {
-			t.Error(err)
-		}
-	}(ipath, w)
-
-	scanner := bufio.NewScanner(r)
-	scanner.Split(bufio.ScanBytes)
-
-	for scanner.Scan() {
-		scanned = append(scanned, scanner.Bytes()...)
-	}
 	defer cleanUpSprites(ctx.Parser.Sprites)
 
 	res := string(scanned)
 	if e := string(exp); res != e {
 		t.Errorf("Processor file did not match \nexp: "+
-			"\n~%s~\n was:\n~%s~", e, res)
+			"\n%s\n was:\n%s", e, res)
 	}
 
 }
