@@ -26,23 +26,6 @@ func init() {
 	spritePreamble = strings.TrimSuffix(string(bs), "\n")
 }
 
-func TestParserVar(t *testing.T) {
-	p := Parser{}
-	fread := fileReader("test/sass/_var.scss")
-	bs, _ := p.Start(fread, "test/")
-	output := string(bs)
-
-	defer cleanUpSprites(p.Sprites)
-
-	file, _ := ioutil.ReadFile("test/expected/_var.parser")
-	e := string(file)
-	if e != output {
-		t.Errorf("File output did not match, \nexpected:\n%s\nwas:\n%s",
-			e, output)
-	}
-
-}
-
 func TestParserRelative(t *testing.T) {
 	p := Parser{
 		StaticDir: "test",
@@ -88,14 +71,14 @@ func TestParserImporter(t *testing.T) {
 	file, _ := ioutil.ReadFile("test/expected/import.parser")
 	e := string(file)
 	if e != output {
-		t.Errorf("File output did not match, was:\n~%s~\nexpected:\n~%s~",
-			output, e)
+		t.Errorf("File output did not match, exp:\n%s\nwas:\n~%s~",
+			e, output)
 	}
 
 	lines := map[int]string{
-		0:  "../sass/sprite",
-		52: "var",
-		63: "string",
+		0:  "../../sass/sprite",
+		60: "var",
+		71: "string",
 	}
 	errors := false
 	for i, v := range lines {
@@ -119,7 +102,7 @@ func TestParseSpriteArgs(t *testing.T) {
   @include sprite-dimensions($view_sprite,140);
 `)
 	e := `$rel: ".";
-$view_sprite: (); $view_sprite: map_merge($view_sprite,(139: (width: 96, height: 139, x: 0, y: 0, url: 'test-585dca.png'))); $view_sprite: map_merge($view_sprite,(140: (width: 96, height: 140, x: 0, y: 139, url: 'test-585dca.png'))); $view_sprite: map_merge($view_sprite,(pixel: (width: 1, height: 1, x: 0, y: 279, url: 'test-585dca.png')));
+$view_sprite: (); $view_sprite: map_merge($view_sprite,(139: (width: 96, height: 139, x: 0, y: 0, url: 'test-d01d06.png'))); $view_sprite: map_merge($view_sprite,(140: (width: 96, height: 140, x: 0, y: 139, url: 'test-d01d06.png'))); $view_sprite: map_merge($view_sprite,(pixel: (width: 1, height: 1, x: 0, y: 279, url: 'test-d01d06.png')));
   @include sprite-dimensions($view_sprite,140);
 `
 	bs, _ := p.Start(in, "")
@@ -190,7 +173,7 @@ div {
 	defer cleanUpSprites(p.Sprites)
 
 	if e := `$rel: "..";
-$sprites: (); $sprites: map_merge($sprites,(139: (width: 96, height: 139, x: 0, y: 0, url: 'test/build/img/img-d65510.png'))); $sprites: map_merge($sprites,(140: (width: 96, height: 140, x: 0, y: 139, url: 'test/build/img/img-d65510.png')));
+$sprites: (); $sprites: map_merge($sprites,(139: (width: 96, height: 139, x: 0, y: 0, url: 'img/img-554064.png'))); $sprites: map_merge($sprites,(140: (width: 96, height: 140, x: 0, y: 139, url: 'img/img-554064.png')));
 $sfile: sprite-file($sprites, 139);
 div {
     height: image-height(sprite-file($sprites, 139));

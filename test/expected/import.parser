@@ -6,9 +6,16 @@ $rel: "..";
 	@return $select;
 }
 
-@function sprite($map, $file){
+@function sprite($map, $file, $offsetx:false, $offsety:false){
+  @if type-of($map) != "map" {
+	  @warn "`#{$map}` is not a map.";
+	  @return false;
+  }
   $select: map-get($map, $file);
-  @return url(map-get($select, url)) + " " +
+  @if type-of($select) != "map" {
+	  @warn "`#{$select}` is not a map.";
+	  @return false;
+  }  @return url(map-get($select, url)) + " " +
     sprite-position($map, $file);
 }
 
@@ -36,10 +43,11 @@ $rel: "..";
 }
 
 @function image-url($file) {
-  @if not $rel {
+  @if type-of($rel) != "string" {
+    @warn "$rel not set";
     @return url($file);
   } @else {
-    @return url($rel/$file)
+    @return url("#{$rel}/#{$file}")
   }
 }
 
@@ -51,7 +59,7 @@ $rel: "..";
 	Width: #{$w}px;
 }
 
-$images: (); $images: map_merge($images,(139: (width: 96, height: 139, x: 0, y: 0, url: 'test/build/image-585dca.png'))); $images: map_merge($images,(140: (width: 96, height: 140, x: 0, y: 139, url: 'test/build/image-585dca.png'))); $images: map_merge($images,(pixel: (width: 1, height: 1, x: 0, y: 279, url: 'test/build/image-585dca.png')));
+$images: (); $images: map_merge($images,(139: (width: 96, height: 139, x: 0, y: 0, url: 'image-d01d06.png'))); $images: map_merge($images,(140: (width: 96, height: 140, x: 0, y: 139, url: 'image-d01d06.png'))); $images: map_merge($images,(pixel: (width: 1, height: 1, x: 0, y: 279, url: 'image-d01d06.png')));
 $red-var: red;
 $hex: #00FF00;
 div {
