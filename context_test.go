@@ -27,7 +27,7 @@ func fileReader(path string) io.Reader {
 
 func init() {
 	// Setup build directory
-	os.MkdirAll("test/build", 755)
+	os.MkdirAll("test/build", 0755)
 }
 
 func TestContextFile(t *testing.T) {
