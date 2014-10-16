@@ -7,6 +7,8 @@ import (
 	"log"
 	"path/filepath"
 	"sort"
+
+	. "github.com/drewwells/spritewell"
 )
 
 /* Example sprite-map output:

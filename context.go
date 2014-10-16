@@ -15,6 +15,8 @@ import (
 	"log"
 	"strings"
 	"unsafe"
+
+	. "github.com/drewwells/spritewell"
 )
 
 // Context handles the interactions with libsass.  Context
