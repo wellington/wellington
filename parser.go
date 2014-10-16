@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"sort"
 
+	. "github.com/drewwells/sprite_sass/lexer"
+
 	. "github.com/drewwells/spritewell"
 )
 

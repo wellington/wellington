@@ -1,4 +1,4 @@
-package sprite_sass
+package lexer
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ func TestLexer(t *testing.T) {
 		t.Errorf("non-nil Lexer on nil state")
 	}
 
-	fvar, _ := ioutil.ReadFile("test/sass/_var.scss")
+	fvar, _ := ioutil.ReadFile("../test/sass/_var.scss")
 
 	items, err := testParse(string(fvar))
 
@@ -173,7 +173,7 @@ div {
 }
 
 func TestLexerImport(t *testing.T) {
-	fvar, _ := ioutil.ReadFile("test/sass/import.scss")
+	fvar, _ := ioutil.ReadFile("../test/sass/import.scss")
 	items, _ := testParse(string(fvar))
 	vals := map[int]string{
 		0: "@import",

@@ -2,7 +2,7 @@
 The lexer processes text flagging any sass extended commands
 sprite* as commands
 */
-package sprite_sass
+package lexer
 
 import (
 	"container/list"
