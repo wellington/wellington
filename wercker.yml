@@ -2,16 +2,7 @@
 box: wercker/golang
 build:
   steps:
-    #- add-ssh-key:
-    #    keyname: GITHUB_TOKEN
     - setup-go-workspace
-
-    # Get dependencies
-    - script:
-        name: go get
-        code: |
-          cd $WERCKER_SOURCE_DIR
-          go get -t ./...
 
     - script:
         name: install gcc-4.8
@@ -32,6 +23,12 @@ build:
           cd libsass
           make
 
+    # Get dependencies
+    - script:
+        name: go get
+        code: |
+          cd $WERCKER_SOURCE_DIR
+          go get -t ./...
 
     # Build the project
     - script:
