@@ -3,7 +3,7 @@
 package main
 
 /*
-#cgo LDFLAGS: -Llibsass -lsass -lstdc++
+#cgo LDFLAGS: -Llibsass -lsass -lstdc++ -lm
 #cgo CFLAGS: -Ilibsass
 
 #include <stdlib.h>
