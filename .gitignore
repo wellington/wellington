@@ -4,3 +4,4 @@ cover.out
 rmn_test.go
 *.test
 test/build
+dist/
