@@ -31,6 +31,7 @@ type Context struct {
 	BuildDir, ImageDir, GenImgDir string
 	Src, Out, Map, MainFile       string
 	Sprites                       []ImageList
+	Status                        int
 	errorString                   string
 	errors                        lErrors
 }
@@ -135,6 +136,8 @@ func (ctx *Context) Compile() {
 	_ = C.sass_compile_data_context(dc)
 	cc := C.sass_data_context_get_context(dc)
 	ctx.Out = C.GoString(C.sass_context_get_output_string(cc))
+	ctx.Status = int(C.sass_context_get_error_status(cc))
+	ctx.ProcessSassError([]byte(C.GoString(C.sass_context_get_error_json(cc))))
 }
 
 func (ctx *Context) oldCompile() {
@@ -169,5 +172,5 @@ func (ctx *Context) oldCompile() {
 	ctx.Out = C.GoString(cCtx.output_string)
 	ctx.Map = C.GoString(cCtx.source_map_string)
 	// Set the internal error string to C error return
-	ctx.ProcessSassError(C.GoString(cCtx.error_message))
+	ctx.ProcessSassError([]byte(C.GoString(cCtx.error_message)))
 }

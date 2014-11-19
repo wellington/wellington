@@ -3,7 +3,9 @@ package sprite_sass
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -62,15 +64,40 @@ func (ctx *Context) ErrorTokenizer(src string) lErrors {
 	return ctx.errors
 }
 
+/*
+{
+	"status": 1,
+	"file": "stdin",
+	"line": 3,
+	"column": 12,
+	"message": "no mixin named invalid-function\nBacktrace:\n\tstdin:3"
+}
+*/
+
+type SassError struct {
+	Status, Line, Column int
+	File, Message        string
+}
+
 // Error reads the original libsass error and creates helpful debuggin
 // information for debuggin that error.
-func (ctx *Context) ProcessSassError(err string) {
+func (ctx *Context) ProcessSassError(bs []byte) {
+
+	e := SassError{}
+	err := json.Unmarshal(bs, &e)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("% #v\n", e)
+
+	s := string(bs)
+
 	// Attempt to find the source error
-	split := strings.Split(err, ":")
+	split := strings.Split(s, ":")
 	if len(split) < 2 {
 		return
 	}
-	eObj := ctx.ErrorTokenizer(err)
+	eObj := ctx.ErrorTokenizer(s)
 	pos := eObj.Pos
 	// Decrement for $rel line
 	pos = pos - 1
@@ -95,7 +122,7 @@ func (ctx *Context) ProcessSassError(err string) {
 		}
 		errLines += str
 	}
-	ctx.errorString = err + "\n" + errLines
+	ctx.errorString = s + "\n" + errLines
 }
 
 func (ctx *Context) Error() string {
