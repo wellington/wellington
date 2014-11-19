@@ -6,6 +6,7 @@ package sprite_sass
 
 #include <stdlib.h>
 #include <sass_interface.h>
+#include <sass_context.h>
 */
 import "C"
 
@@ -96,6 +97,47 @@ func (ctx *Context) Run(in io.Reader, out io.Writer, pkgdir string) error {
 // Compile passes off the sass compliant string to
 // libsass for generating the resulting css file.
 func (ctx *Context) Compile() {
+	if ctx.Precision == 0 {
+		ctx.Precision = 5
+	}
+
+	if ctx.Src == "" {
+		log.Fatal("No input string specified")
+	}
+	// Setup params for delivery to C
+	src := C.CString(ctx.Src)
+	// style := C.int(ctx.OutputStyle)
+	cmt := C.bool(ctx.Comments)
+	// This might be interesting instead of stringifying everything
+	// inc := C.CString(strings.Join(ctx.IncludePaths, ":"))
+	imgpath := C.CString(ctx.ImageDir)
+	prec := C.int(ctx.Precision)
+
+	// Create a data context from source string
+	opts := C.sass_make_options()
+	dc := C.sass_make_data_context(src)
+	defer func() {
+		C.free(unsafe.Pointer(src))
+		// C.free(unsafe.Pointer(inc))
+		C.free(unsafe.Pointer(imgpath))
+		// How do you release these?
+		// C.free(unsafe.Pointer(style))
+		// C.free(unsafe.Pointer(cmt))
+		// C.free(unsafe.Pointer(prec))
+		C.sass_delete_data_context(dc)
+	}()
+
+	// Set passed options
+	C.sass_option_set_precision(opts, prec)
+	// C.sass_option_set_output_style(opts, style)
+	C.sass_option_set_source_comments(opts, cmt)
+	C.sass_data_context_set_options(dc, opts)
+	_ = C.sass_compile_data_context(dc)
+	cc := C.sass_data_context_get_context(dc)
+	ctx.Out = C.GoString(C.sass_context_get_output_string(cc))
+}
+
+func (ctx *Context) oldCompile() {
 
 	if ctx.Precision == 0 {
 		ctx.Precision = 5
@@ -104,6 +146,7 @@ func (ctx *Context) Compile() {
 	if ctx.Src == "" {
 		log.Fatal("No input string specified")
 	}
+
 	// set up the underlying C context struct
 	cCtx := C.sass_new_context()
 	cCtx.source_string = C.CString(ctx.Src)

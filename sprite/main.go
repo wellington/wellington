@@ -7,7 +7,7 @@ package main
 #cgo CFLAGS: -Ilibsass
 
 #include <stdlib.h>
-#include <sass_interface.h>
+#include <sass_context.h>
 */
 import "C"
 
