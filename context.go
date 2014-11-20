@@ -1,7 +1,7 @@
 package sprite_sass
 
 /*
-#cgo LDFLAGS: -Llibsass -lsass -lstdc++ -lm
+#cgo LDFLAGS: -Llibsass/lib -lsass -lstdc++ -lm
 #cgo CFLAGS: -Ilibsass
 
 #include <stdlib.h>
