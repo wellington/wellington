@@ -5,3 +5,6 @@ rmn_test.go
 *.test
 test/build
 dist/
+sprite/release
+snapshot
+
