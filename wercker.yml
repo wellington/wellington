@@ -42,11 +42,12 @@ deploy:
         name: get version
         code: |
           # create binary
-          go install github.com/drewwells/sprite_sass/sprite
+          find $GOPATH
+          cd $WERCKER_SOURCE_DIR
+          go install ./sprite/.
           export RELEASE_TAG=$(cat .release_tag)
           export SPRITE=$($GOPATH/bin/sprite)
           echo $RELEASE_TAG
-          find $GOPATH
     - wercker/github-create-release:
         token: $GITHUB_TOKEN
         tag: $APP_VERSION
