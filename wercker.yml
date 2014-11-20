@@ -20,9 +20,10 @@ build:
 
     # Build the project
     - script:
-        name: go build
+        name: goxc build & package
         code: |
-          go build ./...
+          cd $WERCKER_SOURCE_DIR/sprite
+          goxc -tasks='xc archive' -bc 'linux' -arch 'amd64' -d $WERCKER_OUTPUT_DIR -n sprite
     - script:
         name: go test
         code: |
@@ -36,24 +37,25 @@ build:
           go get github.com/mattn/goveralls
           go test -v -covermode=count -coverprofile=coverage.out
           GIT_BRANCH=$WERCKER_GIT_BRANCH goveralls -coverprofile=coverage.out -service=wercker.com -repotoken $COVERALLS_TOKEN
+    - script:
+        name: Package deployment
 deploy:
   steps:
     - script:
         name: get version
         code: |
           # create binary
-          find $GOPATH
           cd $WERCKER_SOURCE_DIR
-          go install ./sprite/.
           export RELEASE_TAG=$(cat .release_tag)
           export SPRITE=$($GOPATH/bin/sprite)
+          find .
           echo $RELEASE_TAG
     - wercker/github-create-release:
         token: $GITHUB_TOKEN
-        tag: $APP_VERSION
+        tag: $RELEASE_TAG
         #title: Sprite sass tool $APP_VERSION
         #draft: true
     - wercker/github-upload-asset:
         token: $GITHUB_TOKEN
-        file: $SPRITE
+        file: snapshot/sprite_linux_amd64.tar.gz
         #filename: sprite
