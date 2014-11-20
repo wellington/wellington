@@ -53,7 +53,6 @@ func TestErrorBasic(t *testing.T) {
 
 	testMap := []lError{
 		lError{2, "no mixin named invalid-function"},
-		lError{2, ""},
 	}
 
 	for i := range testMap {
@@ -64,7 +63,7 @@ func TestErrorBasic(t *testing.T) {
 		}
 
 		if e.Message != w.Message {
-			t.Errorf("mismatch expected: %d was: %d",
+			t.Errorf("mismatch expected: %s was: %s",
 				e.Message, w.Message)
 		}
 	}
@@ -108,9 +107,13 @@ div {
 
 	testMap := []lError{
 		lError{3, "argument `$map` of `map-get($map $key)` must be a map"},
-		lError{3, "in function `map-get`"},
-		lError{3, "in function `uniqueFnName`"},
-		lError{6, ""},
+		// lError{3, "in function `map-get`"},
+		// lError{3, "in function `uniqueFnName`"},
+		// lError{6, ""},
+	}
+
+	if len(ctx.errors.Errors) != len(testMap) {
+		t.Error("Test map and error map are not the same length")
 	}
 
 	for i := range testMap {

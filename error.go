@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 
 	"github.com/seateam/color"
@@ -22,43 +21,49 @@ type lErrors struct {
 	Pos    int
 }
 
-func (ctx *Context) ErrorTokenizer(src string) lErrors {
+type SassError struct {
+	Status, Line, Column int
+	File, Message        string
+}
+
+func (ctx *Context) ErrorTokenizer(e SassError) lErrors {
 	errors := []lError{}
 	r := strings.NewReplacer(":", " ", ",", " ")
+	src := e.Message
+	line := e.Line - 1
 	src = r.Replace(src)
 	scanner := bufio.NewScanner(strings.NewReader(src))
 	scanner.Split(bufio.ScanWords)
 	var (
-		line int64
-		str  string
+		str string
 	)
 	for scanner.Scan() {
-		var err error
 
 		if scanner.Text() != "Backtrace" && scanner.Text() != "stdin" {
 			str += scanner.Text() + " "
 		} else {
+			// Disable backtrace parsing until new format is sorted out
+			break
 			if line == 0 && str == "" {
 			} else {
-				le := lError{int(line - 1), strings.TrimSpace(str)}
+				le := lError{
+					Pos:     line,
+					Message: strings.TrimSpace(str)}
 				errors = append(errors, le)
 				str = ""
 				line = 0
 			}
 		}
-
-		if scanner.Text() == "stdin" {
-			if scanner.Scan() {
-				line, err = strconv.ParseInt(scanner.Text(), 10, 16)
-				if err != nil {
-					panic(err)
-				}
-			}
-		}
 	}
-	errors = append(errors, lError{int(line - 1), strings.TrimSpace(str)})
+
+	// This looks a little stupid, perhaps simplify the nested
+	// errors another way
+	errors = append(errors, lError{
+		Pos:     line,
+		Message: strings.TrimSpace(str)})
+
 	ctx.errors = lErrors{
-		Pos:    int(line),
+		Pos:    line,
 		Errors: errors,
 	}
 	return ctx.errors
@@ -74,21 +79,19 @@ func (ctx *Context) ErrorTokenizer(src string) lErrors {
 }
 */
 
-type SassError struct {
-	Status, Line, Column int
-	File, Message        string
-}
-
 // Error reads the original libsass error and creates helpful debuggin
 // information for debuggin that error.
 func (ctx *Context) ProcessSassError(bs []byte) {
+
+	if len(bs) == 0 {
+		return
+	}
 
 	e := SassError{}
 	err := json.Unmarshal(bs, &e)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("% #v\n", e)
 
 	s := string(bs)
 
@@ -97,10 +100,11 @@ func (ctx *Context) ProcessSassError(bs []byte) {
 	if len(split) < 2 {
 		return
 	}
-	eObj := ctx.ErrorTokenizer(s)
-	pos := eObj.Pos
-	// Decrement for $rel line
-	pos = pos - 1
+	// Shortcut this step and do it locally until this is made
+	// useful for json parser
+	ctx.ErrorTokenizer(e)
+	pos := ctx.errors.Pos
+
 	lines := bytes.Split(ctx.Parser.Output, []byte("\n"))
 	// Line number is off by one from libsass
 	// Find previous lines to maximum available
