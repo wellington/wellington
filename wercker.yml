@@ -41,15 +41,15 @@ deploy:
     - script:
         name: get version
         code: |
-          export APP_VERSION=$(go run sprite/main.go --version)
+          export RELEASE_TAG=$(cat .release_tag)
           export SPRITE=$($GOPATH/bin/sprite)
-          echo $SPRITE
-    - github-create-release:
+          echo $RELEASE_TAG
+    - wercker/github-create-release:
         token: $GITHUB_TOKEN
         tag: $APP_VERSION
-        title: Sprite sass tool $APP_VERSION
-        draft: true
-    - github-upload-asset:
+        #title: Sprite sass tool $APP_VERSION
+        #draft: true
+    - wercker/github-upload-asset:
         token: $GITHUB_TOKEN
         file: $SPRITE
-        filename: sprite
+        #filename: sprite
