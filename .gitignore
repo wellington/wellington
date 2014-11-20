@@ -6,3 +6,5 @@ rmn_test.go
 test/build
 dist/
 sprite/release
+snapshot
+

@@ -23,7 +23,7 @@ build:
         name: goxc build & package
         code: |
           cd $WERCKER_SOURCE_DIR/sprite
-          goxc -tasks='xc archive' -bc 'darwin linux' -arch 'amd64' -d $WERCKER_OUTPUT_DIR -n sprite
+          goxc -tasks='xc archive' -bc 'linux' -arch 'amd64' -d $WERCKER_OUTPUT_DIR -n sprite
     - script:
         name: go test
         code: |
