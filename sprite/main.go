@@ -24,7 +24,7 @@ import (
 	sprite "github.com/drewwells/sprite_sass"
 )
 
-const version = `v0.1.0`
+const version = `v0.2.0`
 
 var (
 	Dir, Gen, Input, Output, Includes string
