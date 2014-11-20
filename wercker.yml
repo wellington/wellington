@@ -45,7 +45,8 @@ deploy:
         name: get version
         code: |
           # create binary
-          cd $WERCKER_SOURCE_DIR
+          pwd
+          find .
           export RELEASE_TAG=$(cat .release_tag)
           export SPRITE=$($GOPATH/bin/sprite)
           find .
