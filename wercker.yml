@@ -45,11 +45,7 @@ deploy:
         name: get version
         code: |
           # create binary
-          pwd
-          find .
-          export RELEASE_TAG=$(cat .release_tag)
-          export SPRITE=$($GOPATH/bin/sprite)
-          find .
+          export RELEASE_TAG=$(./snapshot/linux_amd64/sprite -version)
           echo $RELEASE_TAG
     - wercker/github-create-release:
         token: $GITHUB_TOKEN
