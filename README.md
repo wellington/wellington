@@ -35,7 +35,6 @@ cd $GOPATH/drewwells/sprite_sass
 git submodule update --init --recursive
 cd libsass
 make
-make install # puts libsass.a in /usr/local/lib
 go install github.com/drewwells/sprite_sass/sprite
 sprite // Should now be available in your path
 ```
