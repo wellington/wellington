@@ -83,8 +83,7 @@ func (ctx *Context) ProcessSassError(bs []byte) string {
 		return ""
 	}
 
-	e := SassError{}
-	err := json.Unmarshal(bs, &e)
+	err := json.Unmarshal(bs, &ctx.Errors)
 	if err != nil {
 		log.Fatal(err)
 	}

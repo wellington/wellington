@@ -33,8 +33,10 @@ type Context struct {
 	Status                        int
 	errorString                   string
 	errors                        lErrors
-	in                            io.Reader
-	out                           io.Writer
+
+	in     io.Reader
+	out    io.Writer
+	Errors SassError
 }
 
 // Constants/enums for the output style.

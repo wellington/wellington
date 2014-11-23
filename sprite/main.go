@@ -3,8 +3,8 @@
 package main
 
 /*
-#cgo LDFLAGS: -Llibsass/lib -lsass -lstdc++ -lm
-#cgo CFLAGS: -Ilibsass
+#cgo LDFLAGS: -L../libsass/lib -lsass -lstdc++ -lm
+#cgo CFLAGS: -I../libsass
 
 #include <stdlib.h>
 #include <sass_context.h>
@@ -12,6 +12,7 @@ package main
 import "C"
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -90,10 +91,10 @@ func main() {
 		return
 	}
 
-	style, ok := sprite.Style[Style]
+	style, ok := context.Style[Style]
 
 	if !ok {
-		style = sprite.NESTED_STYLE
+		style = context.NESTED_STYLE
 	}
 	for _, f := range flag.Args() {
 		// Remove partials
@@ -109,7 +110,8 @@ func main() {
 		rel, _ := filepath.Rel(Includes, filepath.Dir(f))
 		filename := strings.Replace(filepath.Base(f), ".scss", ".css", 1)
 		output := filepath.Join(BuildDir, rel, filename)
-		ctx := sprite.Context{
+		ctx := context.Context{
+			// TODO: Most of these fields are no longer used
 			OutputStyle: style,
 			ImageDir:    Dir,
 			// Assumption that output is a file
@@ -127,7 +129,6 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-
 		var out io.WriteCloser
 
 		if output == "" {
@@ -145,15 +146,17 @@ func main() {
 				log.Fatalf("Failed to create file: %s", Output)
 			}
 		}
-		startParser(ctx, fRead, filepath.Dir(Input))
-		err = ctx.Run(fRead, out, filepath.Dir(Input))
+		var pout bytes.Buffer
+		startParser(ctx, fRead, &pout, filepath.Dir(Input))
+		err = ctx.Compile(&pout, out, filepath.Dir(Input))
+		// err = ctx.Run(fRead, out, filepath.Dir(Input))
 		if err != nil {
 			log.Println(err)
 		}
 	}
 }
 
-func startParser(ctx context.Context, in io.Reader, pkgdir string) {
+func startParser(ctx context.Context, in io.Reader, out io.Writer, pkgdir string) error {
 	// Run the sprite_sass parser prior to passing to libsass
 	parser := sprite.Parser{
 		ImageDir:  ctx.ImageDir,
@@ -165,5 +168,6 @@ func startParser(ctx context.Context, in io.Reader, pkgdir string) {
 	if err != nil {
 		return err
 	}
-
+	out.Write(bs)
+	return err
 }

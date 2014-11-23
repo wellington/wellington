@@ -44,28 +44,30 @@ func setupCtx(f interface{}) (Context, string, error) {
 	return ctx, out.String(), err
 }
 
+type ErrorMap struct {
+	line    int
+	message string
+}
+
 func TestErrorBasic(t *testing.T) {
 	in := bytes.NewBufferString(`div {
   @include invalid-function('');
 }`)
-
-	ctx, _, _ := setupCtx(in)
-
-	testMap := []lError{
-		lError{2, "no mixin named invalid-function"},
+	out := bytes.NewBuffer([]byte(""))
+	ctx := Context{}
+	err := ctx.Compile(in, out, "")
+	if err == nil {
+		t.Error("No error returned")
 	}
 
-	for i := range testMap {
-		e, w := testMap[i], ctx.errors.Errors[i]
-		if e.Pos != w.Pos {
-			t.Errorf("mismatch expected: %d was: %d",
-				e.Pos, w.Pos)
-		}
+	e := ErrorMap{2, "no mixin named invalid-function\nBacktrace:\n\tstdin:2"}
 
-		if e.Message != w.Message {
-			t.Errorf("mismatch expected: %s was: %s",
-				e.Message, w.Message)
-		}
+	if e.line != ctx.Errors.Line {
+		t.Error("wanted:\n%s\ngot:\n%s", e.line, ctx.Errors.Line)
+	}
+
+	if e.message != ctx.Errors.Message {
+		t.Errorf("wanted:\n%s\ngot:\n%s", e.message, ctx.Errors.Message)
 	}
 
 }
@@ -74,23 +76,16 @@ func TestErrorUnbound(t *testing.T) {
 	in := bytes.NewBufferString(`div {
   background: map-get($sprite,139);
 }`)
-	ctx, _, _ := setupCtx(in)
-
-	testMap := []lError{
-		lError{2, "unbound variable $sprite"},
+	out := bytes.NewBuffer([]byte(""))
+	ctx := Context{}
+	err := ctx.Compile(in, out, "")
+	if err == nil {
+		t.Error("No error returned")
 	}
 
-	for i := range testMap {
-		e, w := testMap[i], ctx.errors.Errors[i]
-		if e.Pos != w.Pos {
-			t.Errorf("mismatch expected: %d was: %d",
-				e.Pos, w.Pos)
-		}
-
-		if e.Message != w.Message {
-			t.Errorf("mismatch expected: %d was: %d",
-				e.Message, w.Message)
-		}
+	e := ErrorMap{2, "unbound variable $sprite"}
+	if e.line != ctx.Errors.Line {
+		t.Errorf("wanted:\n%d\ngot:\n%d", e.line, ctx.Errors.Line)
 	}
 
 }
@@ -103,72 +98,55 @@ func TestErrorFunction(t *testing.T) {
 div {
   background: uniqueFnName(randfile);
 }`)
-	ctx, _, _ := setupCtx(in)
-
-	testMap := []lError{
-		lError{3, "argument `$map` of `map-get($map $key)` must be a map"},
-		// lError{3, "in function `map-get`"},
-		// lError{3, "in function `uniqueFnName`"},
-		// lError{6, ""},
+	out := bytes.NewBuffer([]byte(""))
+	ctx := Context{}
+	err := ctx.Compile(in, out, "")
+	if err == nil {
+		t.Error("No error returned")
 	}
 
-	if len(ctx.errors.Errors) != len(testMap) {
-		t.Error("Test map and error map are not the same length")
+	e := ErrorMap{3, "argument `$map` of `map-get($map, $key)`" + ` must be a map
+Backtrace:
+	stdin:3, in function ` + "`map-get`" + `
+	stdin:3, in function ` + "`uniqueFnName`" + `
+	stdin:6`}
+	if e.line != ctx.Errors.Line {
+		t.Errorf("wanted:\n%d\ngot:\n%d", e.line, ctx.Errors.Line)
 	}
 
-	for i := range testMap {
-		e, w := testMap[i], ctx.errors.Errors[i]
-		if e.Pos != w.Pos {
-			t.Errorf("mismatch expected: %d was: %d",
-				e.Pos, w.Pos)
-		}
-
-		if e.Message != w.Message {
-			t.Errorf("mismatch expected: %d was: %d",
-				e.Message, w.Message)
-		}
+	if e.message != ctx.Errors.Message {
+		t.Errorf("wanted:\n%s\ngot:\n%s", e.message, ctx.Errors.Message)
 	}
 }
 
 func TestErrorImport(t *testing.T) {
-	//return // Tests on files cause race conditions
-	ctx, _, _ := setupCtx("test/sass/failimport.scss")
-
-	testMap := []lError{
-		lError{66, "invalid top-level expression"},
+	in := bytes.NewBufferString(`span {}
+@import "fail";
+`)
+	out := bytes.NewBuffer([]byte(""))
+	ctx := Context{}
+	err := ctx.Compile(in, out, "")
+	if err == nil {
+		t.Error("No error returned")
+	}
+	e := ErrorMap{2, "file to import not found or unreadable: fail\nCurrent dir: "}
+	if e.line != ctx.Errors.Line {
+		t.Errorf("wanted:\n%d\ngot:\n%d", e.line, ctx.Errors.Line)
 	}
 
-	for i := range testMap {
-		e, w := testMap[i], ctx.errors.Errors[i]
-		if e.Pos != w.Pos {
-			t.Errorf("mismatch expected: %d:%s was: %d:%s",
-				e.Pos, e.Message, w.Pos, w.Message)
-		}
-
-		if e.Message != w.Message {
-			t.Errorf("mismatch expected: %d was: %d",
-				e.Message, w.Message)
-		}
+	if e.message != ctx.Errors.Message {
+		t.Errorf("wanted:\n%s\ngot:\n%s", e.message, ctx.Errors.Message)
 	}
+
 }
 
-func TestErrorNonmap(t *testing.T) {
+func TestErrorWarn(t *testing.T) {
+	return
+	// Disabled while new warn integration is built
 	in := bytes.NewBufferString(`
-@import "sprite";
-div {
-  height: image-height('test/img/139.png');
-}`)
-	ctx, _, _ := setupCtx(in)
-
-	if len(ctx.errors.Errors) > 0 {
-		t.Error("Non-warn thrown for image-height('file')")
-	}
-
-	return // libsass throws warnings to stdout, let's wait to test this
-	warnLine := "?"
-
-	if e := "WARNING: `test/img/139.png` is not a map."; e != warnLine {
-		t.Errorf("Warning did not match expected:\n%s\nwas:\n%s\n",
-			e, warnLine)
-	}
+@warn "WARNING";`)
+	out := bytes.NewBuffer([]byte(""))
+	ctx := Context{}
+	err := ctx.Compile(in, out, "")
+	_ = err
 }
