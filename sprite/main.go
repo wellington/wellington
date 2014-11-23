@@ -143,7 +143,11 @@ func main() {
 		}
 
 		var pout bytes.Buffer
-		startParser(ctx, fRead, &pout, filepath.Dir(Input))
+		err = startParser(ctx, fRead, &pout, filepath.Dir(Input))
+		if err != nil {
+			log.Println(err)
+			continue
+		}
 		err = ctx.Compile(&pout, out, filepath.Dir(Input))
 
 		if err != nil {
