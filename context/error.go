@@ -1,14 +1,10 @@
-package sprite_sass
+package context
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
-	"fmt"
 	"log"
 	"strings"
-
-	"github.com/seateam/color"
 )
 
 type lError struct {
@@ -81,10 +77,10 @@ func (ctx *Context) ErrorTokenizer(e SassError) lErrors {
 
 // Error reads the original libsass error and creates helpful debuggin
 // information for debuggin that error.
-func (ctx *Context) ProcessSassError(bs []byte) {
+func (ctx *Context) ProcessSassError(bs []byte) string {
 
 	if len(bs) == 0 {
-		return
+		return ""
 	}
 
 	e := SassError{}
@@ -93,40 +89,32 @@ func (ctx *Context) ProcessSassError(bs []byte) {
 		log.Fatal(err)
 	}
 
-	s := string(bs)
+	return string(bs)
 
-	// Attempt to find the source error
-	split := strings.Split(s, ":")
-	if len(split) < 2 {
-		return
-	}
-	// Shortcut this step and do it locally until this is made
-	// useful for json parser
-	ctx.ErrorTokenizer(e)
-	pos := ctx.errors.Pos
-
-	lines := bytes.Split(ctx.Parser.Output, []byte("\n"))
-	// Line number is off by one from libsass
-	// Find previous lines to maximum available
-	errLines := "" //"error in " + ctx.Parser.LookupFile(pos)
-	red := color.NewStyle(color.BlackPaint, color.RedPaint).Brush()
-	first := pos - 7
-	if first < 0 {
-		first = 0
-	}
-	last := pos + 7
-	if last > len(lines) {
-		last = len(lines)
-	}
-	for i := first; i < last; i++ {
-		// translate 0 index to 1 index
-		str := fmt.Sprintf("\n%3d: %.80s", i+1, lines[i])
-		if i == pos-1 {
-			str = red(str)
-		}
-		errLines += str
-	}
-	ctx.errorString = s + "\n" + errLines
+	/*
+		lines := bytes.Split(ctx.Parser.Output, []byte("\n"))
+			// Line number is off by one from libsass
+			// Find previous lines to maximum available
+			errLines := "" //"error in " + ctx.Parser.LookupFile(pos)
+			red := color.NewStyle(color.BlackPaint, color.RedPaint).Brush()
+			first := pos - 7
+			if first < 0 {
+				first = 0
+			}
+			last := pos + 7
+			if last > len(lines) {
+				last = len(lines)
+			}
+			for i := first; i < last; i++ {
+				// translate 0 index to 1 index
+				str := fmt.Sprintf("\n%3d: %.80s", i+1, lines[i])
+				if i == pos-1 {
+					str = red(str)
+				}
+				errLines += str
+			}
+			ctx.errorString = s + "\n" + errLines
+	*/
 }
 
 func (ctx *Context) Error() string {

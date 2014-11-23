@@ -21,6 +21,8 @@ import (
 	"runtime/pprof"
 	"strings"
 
+	"github.com/drewwells/sprite_sass/context"
+
 	sprite "github.com/drewwells/sprite_sass"
 )
 
@@ -143,10 +145,25 @@ func main() {
 				log.Fatalf("Failed to create file: %s", Output)
 			}
 		}
-
+		startParser(ctx, fRead, filepath.Dir(Input))
 		err = ctx.Run(fRead, out, filepath.Dir(Input))
 		if err != nil {
 			log.Println(err)
 		}
 	}
+}
+
+func startParser(ctx context.Context, in io.Reader, pkgdir string) {
+	// Run the sprite_sass parser prior to passing to libsass
+	parser := sprite.Parser{
+		ImageDir:  ctx.ImageDir,
+		Includes:  ctx.IncludePaths,
+		BuildDir:  ctx.BuildDir,
+		GenImgDir: ctx.GenImgDir,
+	}
+	bs, err := parser.Start(in, pkgdir)
+	if err != nil {
+		return err
+	}
+
 }

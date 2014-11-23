@@ -1,4 +1,4 @@
-package sprite_sass
+package context
 
 import (
 	"bytes"
@@ -15,9 +15,9 @@ func setupCtx(f interface{}) (Context, string, error) {
 		ImageDir:     "test/img",
 		GenImgDir:    "test/build/img",
 		Out:          "",
-		Parser: Parser{
-			MainFile: "testname",
-		},
+		// Parser: Parser{
+		// 	MainFile: "testname",
+		// },
 	}
 	var (
 		out bytes.Buffer
@@ -35,10 +35,10 @@ func setupCtx(f interface{}) (Context, string, error) {
 		return ctx, "", nil
 	}
 
-	err = ctx.Run(reader, &out, "test/sass")
+	err = ctx.Compile(reader, &out, "test/sass")
 	if err != nil {
 		// This will mask iport errors
-		// panic(err)
+		log.Print(err)
 	}
 
 	return ctx, out.String(), err
