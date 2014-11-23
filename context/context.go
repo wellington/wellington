@@ -13,7 +13,6 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-	"log"
 
 	"unsafe"
 
@@ -93,7 +92,10 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer, s string) error {
 	}
 	bs, err := ioutil.ReadAll(in)
 	if err != nil {
-		log.Fatal(err)
+		return err
+	}
+	if len(bs) == 0 {
+		return errors.New("No input provided")
 	}
 	src := C.CString(string(bs))
 	cmt := C.bool(ctx.Comments)
