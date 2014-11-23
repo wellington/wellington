@@ -2,15 +2,6 @@
 // See -h for list of available options
 package main
 
-/*
-#cgo LDFLAGS: -L../libsass/lib -lsass -lstdc++ -lm
-#cgo CFLAGS: -I../libsass
-
-#include <stdlib.h>
-#include <sass_context.h>
-*/
-import "C"
-
 import (
 	"bytes"
 	"flag"
@@ -27,7 +18,7 @@ import (
 	sprite "github.com/drewwells/sprite_sass"
 )
 
-const version = `v0.2.0`
+const version = `v0.2.1`
 
 var (
 	Dir, Gen, Input, Includes string

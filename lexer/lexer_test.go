@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"testing"
+
+	. "github.com/drewwells/sprite_sass/token"
 )
 
 func printItems(items []Item) {

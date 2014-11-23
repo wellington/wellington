@@ -1,8 +1,8 @@
 package context
 
 /*
-#cgo LDFLAGS: -L../libsass/lib -lsass -lstdc++ -lm
-#cgo CFLAGS: -I../libsass
+#cgo LDFLAGS: -Llibsass/lib -lsass -lstdc++ -lm
+#cgo CFLAGS: -Ilibsass
 
 #include <stdlib.h>
 #include <sass_context.h>
