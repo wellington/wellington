@@ -57,36 +57,6 @@ func init() {
 	Style["compressed"] = COMPRESSED_STYLE
 }
 
-// Run uses the specified pathnames to read in sass and
-// export out css with generated spritesheets based on
-// the ImageDir option.  WriteCloser is necessary to
-// notify readers when the stream is finished.
-/*func (ctx *Context) Run(in io.Reader, out io.Writer, pkgdir string) error {
-	if in == nil {
-		return errors.New("Input or output files were not specified")
-	}
-
-	if pkgdir != "" {
-		ctx.IncludePaths = append(ctx.IncludePaths, pkgdir)
-	}
-
-	if ctx.GenImgDir == "" {
-		ctx.GenImgDir = ctx.BuildDir
-	}
-
-	ctx.Src = string(bs)
-	ctx.Compile()
-
-	io.WriteString(out, ctx.Out)
-
-	if len(ctx.Error()) == 0 {
-		return nil
-	}
-
-	ctx.ProcessSassError([]byte(C.GoString(C.sass_context_get_error_json(cc))))
-	return errors.New(ctx.Error())
-}*/
-
 // libsass for generating the resulting css file.
 func (ctx *Context) Compile(in io.Reader, out io.Writer, s string) error {
 	if ctx.Precision == 0 {

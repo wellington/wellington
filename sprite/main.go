@@ -30,17 +30,15 @@ import (
 const version = `v0.2.0`
 
 var (
-	Dir, Gen, Input, Output, Includes string
-	MainFile, Style                   string
-	Comments                          bool
-	cpuprofile                        string
-	ShowVersion                       bool
-	BuildDir                          string
+	Dir, Gen, Input, Includes string
+	MainFile, Style           string
+	Comments                  bool
+	cpuprofile                string
+	ShowVersion               bool
+	BuildDir                  string
 )
 
 func init() {
-	flag.StringVar(&Output, "output", "", "Output file")
-	flag.StringVar(&Output, "o", "", "Output file")
 	flag.StringVar(&BuildDir, "b", "", "Build Directory")
 	flag.StringVar(&Includes, "p", "", "SASS import path")
 	flag.StringVar(&Dir, "dir", "", "Image directory")
@@ -107,15 +105,25 @@ func main() {
 		if Dir == "" {
 			Dir = filepath.Dir(f)
 		}
-		rel, _ := filepath.Rel(Includes, filepath.Dir(f))
-		filename := strings.Replace(filepath.Base(f), ".scss", ".css", 1)
-		output := filepath.Join(BuildDir, rel, filename)
+		var (
+			out  io.WriteCloser
+			fout string
+		)
+		if BuildDir != "" {
+			// Build output file based off build directory and input filename
+			rel, _ := filepath.Rel(Includes, filepath.Dir(f))
+			filename := strings.Replace(filepath.Base(f), ".scss", ".css", 1)
+			fout = filepath.Join(BuildDir, rel, filename)
+		} else {
+			out = os.Stdout
+		}
+
 		ctx := context.Context{
 			// TODO: Most of these fields are no longer used
 			OutputStyle: style,
 			ImageDir:    Dir,
 			// Assumption that output is a file
-			BuildDir:     filepath.Dir(output),
+			BuildDir:     BuildDir,
 			GenImgDir:    Gen,
 			MainFile:     f,
 			Comments:     Comments,
@@ -127,29 +135,26 @@ func main() {
 		}
 		fRead, err := os.Open(f)
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
-		var out io.WriteCloser
-
-		if output == "" {
-			out = os.Stdout
-		} else {
-			dir := filepath.Dir(output)
+		if fout != "" {
+			dir := filepath.Dir(fout)
 			err := os.MkdirAll(dir, 0755)
 			if err != nil {
 				log.Fatalf("Failed to create directory: %s", dir)
 			}
 
-			out, err = os.Create(output)
-			log.Println("Created:", output)
+			out, err = os.Create(fout)
 			if err != nil {
-				log.Fatalf("Failed to create file: %s", Output)
+				log.Fatalf("Failed to create file: %s", f)
 			}
+			log.Println("Created:", fout)
 		}
+
 		var pout bytes.Buffer
 		startParser(ctx, fRead, &pout, filepath.Dir(Input))
 		err = ctx.Compile(&pout, out, filepath.Dir(Input))
-		// err = ctx.Run(fRead, out, filepath.Dir(Input))
+
 		if err != nil {
 			log.Println(err)
 		}
