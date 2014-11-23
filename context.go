@@ -5,7 +5,6 @@ package sprite_sass
 #cgo CFLAGS: -Ilibsass
 
 #include <stdlib.h>
-#include <sass_interface.h>
 #include <sass_context.h>
 */
 import "C"
@@ -14,7 +13,6 @@ import (
 	"errors"
 	"io"
 	"log"
-	"strings"
 	"unsafe"
 
 	. "github.com/drewwells/spritewell"
@@ -138,39 +136,4 @@ func (ctx *Context) Compile() {
 	ctx.Out = C.GoString(C.sass_context_get_output_string(cc))
 	ctx.Status = int(C.sass_context_get_error_status(cc))
 	ctx.ProcessSassError([]byte(C.GoString(C.sass_context_get_error_json(cc))))
-}
-
-func (ctx *Context) oldCompile() {
-
-	if ctx.Precision == 0 {
-		ctx.Precision = 5
-	}
-
-	if ctx.Src == "" {
-		log.Fatal("No input string specified")
-	}
-
-	// set up the underlying C context struct
-	cCtx := C.sass_new_context()
-	cCtx.source_string = C.CString(ctx.Src)
-	cCtx.options.output_style = C.int(ctx.OutputStyle)
-	cCtx.options.source_comments = C.bool(ctx.Comments)
-	cCtx.options.include_paths = C.CString(strings.Join(ctx.IncludePaths, ":"))
-	cCtx.options.image_path = C.CString(ctx.ImageDir)
-	cCtx.options.precision = C.int(ctx.Precision)
-	defer func() {
-		C.free(unsafe.Pointer(cCtx.source_string))
-		C.free(unsafe.Pointer(cCtx.options.include_paths))
-		C.free(unsafe.Pointer(cCtx.options.image_path))
-		C.sass_free_context(cCtx)
-	}()
-
-	// Call the libsass compile function to populate the C context
-	C.sass_compile(cCtx)
-
-	// Populate Gocontext with results from c compiler
-	ctx.Out = C.GoString(cCtx.output_string)
-	ctx.Map = C.GoString(cCtx.source_map_string)
-	// Set the internal error string to C error return
-	ctx.ProcessSassError([]byte(C.GoString(cCtx.error_message)))
 }
