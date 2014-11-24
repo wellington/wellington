@@ -47,7 +47,7 @@ build:
     - script:
         name: Store cache
         code: |
-          rsync -avz --exclude "sprite_sass/" --exclude ".git/" "$GOPATH/" "$WERCKER_CACHE_DIR/sprite_path"
+          rsync -avz --exclude ".hg/" --exclude "sprite_sass/" --exclude ".git/" "$GOPATH/" "$WERCKER_CACHE_DIR/sprite_path"
           rsync -avz "$WERCKER_SOURCE_DIR/libsass/" "$WERCKER_CACHE_DIR/libsass_$LIB_VER/"
 deploy:
   steps:
