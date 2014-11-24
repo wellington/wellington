@@ -26,17 +26,24 @@ Sprite_sass adds file awareness to the sass language.  It has been written in Go
 #### Installation
 Check out the releases for compiled binaries
 
-#### Using Go
+#### Building from source
 Install Go and add $GOPATH/bin to your $PATH. [Detailed instructions](https://golang.org/doc/install)
 
+You must have libsass installed to build this project.  Do so by checking
+out the repo or building [libsass](https://github.com/sass/libsass) via the  instruction in the repo.
+
 ```
-go get -u github.com/drewwells/sprite_sass/cmd/sprite
+# This will fail if you don't have libsass installed, that's OK.
+go get -u github.com/drewwells/sprite_sass/sprite
 cd $GOPATH/drewwells/sprite_sass
-git submodule update --init --recursive
-cd libsass
-make
-go install github.com/drewwells/sprite_sass/sprite
-sprite // Should now be available in your path
+make deps
+# Attempt install again
+go get -u github.com/drewwells/sprite_sass/sprite
+```
+
+Test out if the installation worked
+```
+sprite
 ```
 
 ### List of Available Commands
