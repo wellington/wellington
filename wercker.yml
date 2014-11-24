@@ -5,6 +5,10 @@ build:
     - setup-go-workspace
 
     - script:
+        name: Populate cache
+        code: |
+          if test -d "$WERCKER_CACHE_DIR/sprite_path"; then rsync -avz "$WERCKER_CACHE_DIR/sprite_path" "$GOPATH"; fi
+    - script:
         name: build libsass
         code: |
           make deps
@@ -37,6 +41,11 @@ build:
           GIT_BRANCH=$WERCKER_GIT_BRANCH goveralls -coverprofile=coverage.out -service=wercker.com -repotoken $COVERALLS_TOKEN
     - script:
         name: Package deployment
+
+    - script:
+        name: Store cache
+        code: |
+          rsync -avz --exclude "$WERCKER_SOURCE_DIR" "$GOPATH/" "$WERCKER_CACHE_DIR/sprite_path"
 deploy:
   steps:
     - script:
