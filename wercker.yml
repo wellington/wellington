@@ -8,8 +8,7 @@ build:
         name: build libsass
         code: |
           make deps
-          # Clean up C files so `go get -t` doesn't fail
-          rm -rf libsass
+
     # Get dependencies
     - script:
         name: go get
