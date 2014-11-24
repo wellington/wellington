@@ -1,11 +1,11 @@
 package context
 
 /*
-#cgo LDFLAGS: -Llibsass/lib -lsass -lstdc++ -lm
-#cgo CFLAGS: -Ilibsass
+#cgo LDFLAGS: -lsass -lstdc++ -lm
+#cgo CFLAGS:
 
 #include <stdlib.h>
-#include <sass_context.h>
+#include "sass_context.h"
 */
 import "C"
 
