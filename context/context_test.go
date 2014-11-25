@@ -66,7 +66,7 @@ p {
 
 	var out bytes.Buffer
 	ctx := Context{}
-	err := ctx.Compile(in, &out, "")
+	err := ctx.Compile(in, &out)
 	if err != nil {
 		panic(err)
 	}
@@ -90,7 +90,7 @@ p {
 func TestContextNilRun(t *testing.T) {
 	var in, out bytes.Buffer
 	ctx := Context{}
-	err := ctx.Compile(&in, &out, "")
+	err := ctx.Compile(&in, &out)
 	if err == nil {
 		t.Error("No error returned")
 	}
@@ -112,7 +112,7 @@ div {
 
 	var out bytes.Buffer
 	ctx := Context{}
-	err := ctx.Compile(in, &out, "")
+	err := ctx.Compile(in, &out)
 	if err != nil {
 		panic(err)
 	}

@@ -15,8 +15,6 @@ import (
 	"io/ioutil"
 
 	"unsafe"
-
-	. "github.com/drewwells/spritewell"
 )
 
 // Context handles the interactions with libsass.  Context
@@ -29,7 +27,6 @@ type Context struct {
 	IncludePaths                  []string
 	BuildDir, ImageDir, GenImgDir string
 	In, Src, Out, Map, MainFile   string
-	Sprites                       []ImageList
 	Status                        int
 	errorString                   string
 	errors                        lErrors
@@ -58,7 +55,7 @@ func init() {
 }
 
 // libsass for generating the resulting css file.
-func (ctx *Context) Compile(in io.Reader, out io.Writer, s string) error {
+func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	if ctx.Precision == 0 {
 		ctx.Precision = 5
 	}

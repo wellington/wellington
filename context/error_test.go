@@ -35,7 +35,7 @@ func setupCtx(f interface{}) (Context, string, error) {
 		return ctx, "", nil
 	}
 
-	err = ctx.Compile(reader, &out, "test/sass")
+	err = ctx.Compile(reader, &out)
 	if err != nil {
 		// This will mask iport errors
 		log.Print(err)
@@ -55,7 +55,7 @@ func TestErrorBasic(t *testing.T) {
 }`)
 	out := bytes.NewBuffer([]byte(""))
 	ctx := Context{}
-	err := ctx.Compile(in, out, "")
+	err := ctx.Compile(in, out)
 	if err == nil {
 		t.Error("No error returned")
 	}
@@ -78,7 +78,7 @@ func TestErrorUnbound(t *testing.T) {
 }`)
 	out := bytes.NewBuffer([]byte(""))
 	ctx := Context{}
-	err := ctx.Compile(in, out, "")
+	err := ctx.Compile(in, out)
 	if err == nil {
 		t.Error("No error returned")
 	}
@@ -100,7 +100,7 @@ div {
 }`)
 	out := bytes.NewBuffer([]byte(""))
 	ctx := Context{}
-	err := ctx.Compile(in, out, "")
+	err := ctx.Compile(in, out)
 	if err == nil {
 		t.Error("No error returned")
 	}
@@ -125,7 +125,7 @@ func TestErrorImport(t *testing.T) {
 `)
 	out := bytes.NewBuffer([]byte(""))
 	ctx := Context{}
-	err := ctx.Compile(in, out, "")
+	err := ctx.Compile(in, out)
 	if err == nil {
 		t.Error("No error returned")
 	}
@@ -147,6 +147,6 @@ func TestErrorWarn(t *testing.T) {
 @warn "WARNING";`)
 	out := bytes.NewBuffer([]byte(""))
 	ctx := Context{}
-	err := ctx.Compile(in, out, "")
+	err := ctx.Compile(in, out)
 	_ = err
 }

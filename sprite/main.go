@@ -100,7 +100,7 @@ func main() {
 		if err != nil {
 			log.Println(err)
 		}
-		err = ctx.Compile(&pout, out, "")
+		err = ctx.Compile(&pout, out)
 
 		if err != nil {
 			log.Println(err)
@@ -170,7 +170,7 @@ func main() {
 			log.Println(err)
 			continue
 		}
-		err = ctx.Compile(&pout, out, filepath.Dir(Input))
+		err = ctx.Compile(&pout, out)
 
 		if err != nil {
 			log.Println(err)
