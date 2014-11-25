@@ -10,7 +10,7 @@ package context
 
 #include <stdlib.h>
 #include "sass_context.h"
-
+#include "sass_functions.h"
 typedef void (*Callback)(int argnum);
 
 void CallMe( Callback f ) {
@@ -70,13 +70,16 @@ func init() {
 }
 
 // export Custom
-func Custom() string {
+func Custom() {
 	log.Print("HELLO THERE")
-	return "hi"
+	return
 }
 
 // Unused, currently
 type CustomList C.Sass_C_Function_List
+
+//type CustomDesc C.Sass_C_Function_Descriptor
+type CustomFn C.Sass_C_Function_Callback
 
 // Libsass for generating the resulting css file.
 func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
@@ -99,19 +102,28 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	if len(ctx.Customs) > 0 {
 		// Find out the size of a function
 		dummy := C.sass_make_function(C.CString(""), (*[0]byte)(C.CallMe), nil)
-		size := C.size_t(len(ctx.Customs))
+		size := C.size_t(len(ctx.Customs) + 1)
 		fns_len := size * C.size_t(unsafe.Sizeof(dummy))
 		fns := C.sass_make_function_list(fns_len)
 
+		fmt.Printf("Size: %d Val: % #v Address: %s\n", unsafe.Sizeof(fns), fns, &fns)
 		bfns := C.GoBytes(unsafe.Pointer(fns), C.int(fns_len))
-		fmt.Printf("Size: %d Val: % #v\n", unsafe.Sizeof(bfns), bfns)
 		for i, v := range ctx.Customs {
-			_, _ = i, v
-			fn := C.sass_make_function(C.CString("foo($bar,$baz)"), (*[0]byte)(C.CallMe), nil)
-			bfns[i] = unsafe.Pointer(fn)
-			_ = fn
+			fn := C.sass_make_function(C.CString(v), (*[0]byte)(C.CallMe), nil)
+			bfns[i] = byte(*(*C.int)(unsafe.Pointer(fn)))
 		}
-		C.sass_option_set_c_functions(opts, fns)
+
+		fmt.Printf("Size: %d Val: % #v\n", unsafe.Sizeof(bfns), bfns)
+		// c := new(CustomList)
+		// &c[0] = C.sass_make_function(C.CString("foo($bar,$baz)"), (*[0]byte)(C.CallMe), nil)
+
+		//
+		ptr := unsafe.Pointer(fns)
+		ptr = unsafe.Pointer(&bfns[0])
+		//C.sass_option_set_c_functions(opts, ptr)
+		cpfns := (**C.struct_Sass_C_Function_Descriptor)(ptr)
+
+		C.sass_option_set_c_functions(opts, cpfns)
 	}
 
 	dc := C.sass_make_data_context(src)
