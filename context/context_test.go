@@ -129,6 +129,22 @@ div {
 
 }
 
+func TestContextCustomFn(t *testing.T) {
+	in := bytes.NewBufferString(`div {
+foo(1,2);
+}`)
+
+	var out bytes.Buffer
+	ctx := Context{
+		Customs: []string{"foo($bar,$baz)"},
+	}
+	err := ctx.Compile(in, &out)
+	if err != nil {
+		panic(err)
+	}
+
+}
+
 func BenchmarkContextCompile(b *testing.B) {
 	// TBD
 }

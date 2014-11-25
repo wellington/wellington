@@ -11,6 +11,12 @@ package context
 #include <stdlib.h>
 #include "sass_context.h"
 
+typedef void (*Callback)(int argnum);
+
+void CallMe( Callback f ) {
+  f(0);
+}
+
 */
 import "C"
 
@@ -19,6 +25,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 
 	"unsafe"
 )
@@ -37,9 +44,10 @@ type Context struct {
 	errorString                   string
 	errors                        lErrors
 
-	in     io.Reader
-	out    io.Writer
-	Errors SassError
+	in      io.Reader
+	out     io.Writer
+	Errors  SassError
+	Customs []string
 }
 
 // Constants/enums for the output style.
@@ -58,11 +66,17 @@ func init() {
 	Style["expanded"] = EXPANDED_STYLE
 	Style["compact"] = COMPACT_STYLE
 	Style["compressed"] = COMPRESSED_STYLE
+
 }
 
-func Custom(bs []byte, ptr unsafe.Pointer) *[0]byte {
-	return &[0]byte{}
+// export Custom
+func Custom() string {
+	log.Print("HELLO THERE")
+	return "hi"
 }
+
+// Unused, currently
+type CustomList C.Sass_C_Function_List
 
 // Libsass for generating the resulting css file.
 func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
@@ -82,15 +96,23 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	prec := C.int(ctx.Precision)
 
 	opts := C.sass_make_options()
+	if len(ctx.Customs) > 0 {
+		// Find out the size of a function
+		dummy := C.sass_make_function(C.CString(""), (*[0]byte)(C.CallMe), nil)
+		size := C.size_t(len(ctx.Customs))
+		fns_len := size * C.size_t(unsafe.Sizeof(dummy))
+		fns := C.sass_make_function_list(fns_len)
 
-	fns := C.sass_make_function_list(1)
-	ffns := *fns
-	fn := C.sass_make_function(C.CString("inline-image()"), Custom, nil)
-	_, _ = Ffns, fn
-
-	// *fns[0] = fn
-	fmt.Printf("% #v\n% #v\n", fns, ffns)
-	C.sass_option_set_c_functions(opts, fns)
+		bfns := C.GoBytes(unsafe.Pointer(fns), C.int(fns_len))
+		fmt.Printf("Size: %d Val: % #v\n", unsafe.Sizeof(bfns), bfns)
+		for i, v := range ctx.Customs {
+			_, _ = i, v
+			fn := C.sass_make_function(C.CString("foo($bar,$baz)"), (*[0]byte)(C.CallMe), nil)
+			bfns[i] = unsafe.Pointer(fn)
+			_ = fn
+		}
+		C.sass_option_set_c_functions(opts, fns)
+	}
 
 	dc := C.sass_make_data_context(src)
 	defer func() {
