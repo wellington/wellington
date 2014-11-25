@@ -1,16 +1,22 @@
 package context
 
+// Callback gateway of type
+// union Sass_Value call_sass_function(const union Sass_Value s_args, void *cookie)
+
 /*
 #cgo LDFLAGS: -lsass -lstdc++ -lm
 #cgo CFLAGS:
 
+
 #include <stdlib.h>
 #include "sass_context.h"
+
 */
 import "C"
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 
@@ -54,7 +60,11 @@ func init() {
 	Style["compressed"] = COMPRESSED_STYLE
 }
 
-// libsass for generating the resulting css file.
+func Custom(bs []byte, ptr unsafe.Pointer) *[0]byte {
+	return &[0]byte{}
+}
+
+// Libsass for generating the resulting css file.
 func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	if ctx.Precision == 0 {
 		ctx.Precision = 5
@@ -72,6 +82,16 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	prec := C.int(ctx.Precision)
 
 	opts := C.sass_make_options()
+
+	fns := C.sass_make_function_list(1)
+	ffns := *fns
+	fn := C.sass_make_function(C.CString("inline-image()"), Custom, nil)
+	_, _ = Ffns, fn
+
+	// *fns[0] = fn
+	fmt.Printf("% #v\n% #v\n", fns, ffns)
+	C.sass_option_set_c_functions(opts, fns)
+
 	dc := C.sass_make_data_context(src)
 	defer func() {
 		C.free(unsafe.Pointer(src))
