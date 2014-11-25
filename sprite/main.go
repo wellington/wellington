@@ -25,13 +25,15 @@ var (
 	MainFile, Style           string
 	Comments                  bool
 	cpuprofile                string
-	ShowVersion               bool
+	Help, ShowVersion         bool
 	BuildDir                  string
 )
 
 func init() {
 	flag.StringVar(&BuildDir, "b", "", "Build Directory")
 	flag.StringVar(&Includes, "p", "", "SASS import path")
+	flag.BoolVar(&Help, "help", false, "this help")
+	flag.BoolVar(&Help, "h", false, "this help")
 	flag.StringVar(&Dir, "dir", "", "Image directory")
 	flag.StringVar(&Dir, "d", "", "Image directory")
 	flag.StringVar(&Gen, "gen", ".", "Directory for generated images")
@@ -73,7 +75,7 @@ func main() {
 		}
 	}
 
-	if len(flag.Args()) == 0 {
+	if Help {
 		fmt.Println("Please specify input filepath.")
 		fmt.Println("\nAvailable options:")
 		flag.PrintDefaults()
@@ -85,6 +87,26 @@ func main() {
 	if !ok {
 		style = context.NESTED_STYLE
 	}
+
+	if len(flag.Args()) == 0 {
+		// Read from stdin
+		log.Print("Reading from stdin, -h for help")
+		out := os.Stdout
+		in := os.Stdin
+
+		var pout bytes.Buffer
+		ctx := context.Context{}
+		err := startParser(ctx, in, &pout, "")
+		if err != nil {
+			log.Println(err)
+		}
+		err = ctx.Compile(&pout, out, "")
+
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
 	for _, f := range flag.Args() {
 		// Remove partials
 		if strings.HasPrefix(filepath.Base(f), "_") {
