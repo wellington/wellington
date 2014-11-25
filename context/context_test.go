@@ -2,6 +2,7 @@ package context
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -131,18 +132,18 @@ div {
 
 func TestContextCustomFn(t *testing.T) {
 	in := bytes.NewBufferString(`div {
-foo(1,2);
+  background: foo();
 }`)
 
 	var out bytes.Buffer
 	ctx := Context{
-		Customs: []string{"foo($bar,$baz)"},
+		Customs: []string{"foo()"},
 	}
 	err := ctx.Compile(in, &out)
 	if err != nil {
 		panic(err)
 	}
-
+	fmt.Printf("%s", out.String())
 }
 
 func BenchmarkContextCompile(b *testing.B) {
