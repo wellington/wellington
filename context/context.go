@@ -7,14 +7,23 @@ package context
 #cgo LDFLAGS: -lsass -lstdc++ -lm
 #cgo CFLAGS:
 
-
 #include <stdlib.h>
+#include <stdio.h>
 #include "sass_context.h"
 #include "sass_functions.h"
-typedef void (*Callback)(int argnum);
 
-void CallMe( Callback f ) {
-  f(0);
+union Sass_Value* CallSassFunction( union Sass_Value* s_args, void* cookie ) {
+    printf("callback yo");
+	// f(0);
+	union Sass_Value* sass_value = NULL;
+    return sass_value;
+}
+
+void Call( Sass_C_Function f) {
+   printf("Calling function\n");
+   union Sass_Value* a = sass_make_list(1, SASS_COMMA);
+   void* b;
+   f(a, b);
 }
 
 */
@@ -22,7 +31,6 @@ import "C"
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -101,29 +109,40 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	opts := C.sass_make_options()
 	if len(ctx.Customs) > 0 {
 		// Find out the size of a function
-		dummy := C.sass_make_function(C.CString(""), (*[0]byte)(C.CallMe), nil)
+		dummy := C.sass_make_function(C.CString(""), C.Sass_C_Function(C.CallSassFunction), nil)
 		size := C.size_t(len(ctx.Customs) + 1)
+		_, _ = dummy, size
 		fns_len := size * C.size_t(unsafe.Sizeof(dummy))
 		fns := C.sass_make_function_list(fns_len)
 
-		fmt.Printf("Size: %d Val: % #v Address: %s\n", unsafe.Sizeof(fns), fns, &fns)
-		bfns := C.GoBytes(unsafe.Pointer(fns), C.int(fns_len))
+		//fmt.Printf("Size: %d Val: % #v Address: %s\n", unsafe.Sizeof(fns), fns, &fns)
+		//fns := make([]C.Sass_C_Function_Callback, len(ctx.Customs))
+		//bfns := C.GoBytes(unsafe.Pointer(fns), C.int(fns_len))
+		var fn C.Sass_C_Function_Callback
 		for i, v := range ctx.Customs {
-			fn := C.sass_make_function(C.CString(v), (*[0]byte)(C.CallMe), nil)
-			bfns[i] = byte(*(*C.int)(unsafe.Pointer(fn)))
+			_ = i
+			bs := []byte(v)
+			cv := (*C.char)(unsafe.Pointer(&bs[0]))
+			_ = cv // const *char
+
+			fn = C.sass_make_function(C.CString(v), C.Sass_C_Function(C.CallSassFunction), nil)
+			//bfns[i] = byte(*(*C.int)(unsafe.Pointer(fn)))
+			C.sass_set_function(fns, fn, C.int(i))
 		}
 
-		fmt.Printf("Size: %d Val: % #v\n", unsafe.Sizeof(bfns), bfns)
+		//fmt.Printf("Size: %d Val: % #v\n", unsafe.Sizeof(bfns), bfns)
 		// c := new(CustomList)
 		// &c[0] = C.sass_make_function(C.CString("foo($bar,$baz)"), (*[0]byte)(C.CallMe), nil)
 
 		//
-		ptr := unsafe.Pointer(fns)
-		ptr = unsafe.Pointer(&bfns[0])
+		//ptr := unsafe.Pointer(fns)
+		//ptr = unsafe.Pointer(&bfns[0])
 		//C.sass_option_set_c_functions(opts, ptr)
-		cpfns := (**C.struct_Sass_C_Function_Descriptor)(ptr)
-
-		C.sass_option_set_c_functions(opts, cpfns)
+		//cpfns := (C.Sass_C_Function_List)(&fns[0])
+		// ptr := C.Sass_C_Function_List(unsafe.Pointer(fns))
+		//fmt.Printf("In array: % #v\n", C.Call(C.sass_function_get_function(fns[0])))
+		//fmt.Printf("Direct  : % #v\n", C.sass_function_get_function(fn)())
+		C.sass_option_set_c_functions(opts, fns)
 	}
 
 	dc := C.sass_make_data_context(src)

@@ -137,7 +137,7 @@ func TestContextCustomFn(t *testing.T) {
 
 	var out bytes.Buffer
 	ctx := Context{
-		Customs: []string{"foo()"},
+		Customs: []string{"foo()", "foo($bar,$baz)"},
 	}
 	err := ctx.Compile(in, &out)
 	if err != nil {
