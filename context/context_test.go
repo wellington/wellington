@@ -130,7 +130,7 @@ div {
 
 }
 
-func TestContextCustomFn(t *testing.T) {
+func ExampleCompile_custom_function() {
 	in := bytes.NewBufferString(`div {
   color: red(blue);
   background: foo();
@@ -144,7 +144,12 @@ func TestContextCustomFn(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%s", out.String())
+
+	fmt.Print(out.String())
+	// Output:
+	// div {
+	//   color: 0;
+	//   background: false; }
 }
 
 func BenchmarkContextCompile(b *testing.B) {

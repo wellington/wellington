@@ -13,10 +13,9 @@ package context
 #include "sass_functions.h"
 
 union Sass_Value* CallSassFunction( union Sass_Value* s_args, void* cookie ) {
-    printf("callback yo");
-	// f(0);
-	union Sass_Value* sass_value = NULL;
-    return sass_value;
+    // printf("callback yo\n");
+	// union Sass_Value* sass_value = NULL;
+    return sass_make_boolean(false);
 }
 
 void Call( Sass_C_Function f) {
@@ -89,6 +88,8 @@ type CustomList C.Sass_C_Function_List
 //type CustomDesc C.Sass_C_Function_Descriptor
 type CustomFn C.Sass_C_Function_Callback
 
+func Compile() {}
+
 // Libsass for generating the resulting css file.
 func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	if ctx.Precision == 0 {
@@ -126,9 +127,6 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 		fns_len := size * C.size_t(unsafe.Sizeof(dummy))
 		fns := C.sass_make_function_list(fns_len)
 
-		//fmt.Printf("Size: %d Val: % #v Address: %s\n", unsafe.Sizeof(fns), fns, &fns)
-		//fns := make([]C.Sass_C_Function_Callback, len(ctx.Customs))
-		//bfns := C.GoBytes(unsafe.Pointer(fns), C.int(fns_len))
 		var fn C.Sass_C_Function_Callback
 		for i, v := range ctx.Customs {
 			_ = i
@@ -141,18 +139,6 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 			C.sass_set_function(&fns, fn, C.int(i))
 		}
 
-		//fmt.Printf("Size: %d Val: % #v\n", unsafe.Sizeof(bfns), bfns)
-		// c := new(CustomList)
-		// &c[0] = C.sass_make_function(C.CString("foo($bar,$baz)"), (*[0]byte)(C.CallMe), nil)
-
-		//
-		//ptr := unsafe.Pointer(fns)
-		//ptr = unsafe.Pointer(&bfns[0])
-		//C.sass_option_set_c_functions(opts, ptr)
-		//cpfns := (C.Sass_C_Function_List)(&fns[0])
-		// ptr := C.Sass_C_Function_List(unsafe.Pointer(fns))
-		//fmt.Printf("In array: % #v\n", C.Call(C.sass_function_get_function(fns[0])))
-		//fmt.Printf("Direct  : % #v\n", C.sass_function_get_function(fn)())
 		C.sass_option_set_c_functions(opts, fns)
 	}
 
