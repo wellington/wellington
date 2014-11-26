@@ -132,12 +132,13 @@ div {
 
 func TestContextCustomFn(t *testing.T) {
 	in := bytes.NewBufferString(`div {
+  color: red(blue);
   background: foo();
 }`)
 
 	var out bytes.Buffer
 	ctx := Context{
-		Customs: []string{"foo()", "foo($bar,$baz)"},
+		Customs: []string{"foo()"},
 	}
 	err := ctx.Compile(in, &out)
 	if err != nil {

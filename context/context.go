@@ -106,7 +106,18 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	imgpath := C.CString(ctx.ImageDir)
 	prec := C.int(ctx.Precision)
 
-	opts := C.sass_make_options()
+	dc := C.sass_make_data_context(src)
+	cc := C.sass_data_context_get_context(dc)
+	opts := C.sass_context_get_options(cc)
+
+	defer func() {
+		C.free(unsafe.Pointer(src))
+
+		C.free(unsafe.Pointer(imgpath))
+
+		C.sass_delete_data_context(dc)
+	}()
+
 	if len(ctx.Customs) > 0 {
 		// Find out the size of a function
 		dummy := C.sass_make_function(C.CString(""), C.Sass_C_Function(C.CallSassFunction), nil)
@@ -127,7 +138,7 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 
 			fn = C.sass_make_function(C.CString(v), C.Sass_C_Function(C.CallSassFunction), nil)
 			//bfns[i] = byte(*(*C.int)(unsafe.Pointer(fn)))
-			C.sass_set_function(fns, fn, C.int(i))
+			C.sass_set_function(&fns, fn, C.int(i))
 		}
 
 		//fmt.Printf("Size: %d Val: % #v\n", unsafe.Sizeof(bfns), bfns)
@@ -145,21 +156,12 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 		C.sass_option_set_c_functions(opts, fns)
 	}
 
-	dc := C.sass_make_data_context(src)
-	defer func() {
-		C.free(unsafe.Pointer(src))
-
-		C.free(unsafe.Pointer(imgpath))
-
-		C.sass_delete_data_context(dc)
-	}()
-
 	C.sass_option_set_precision(opts, prec)
 
 	C.sass_option_set_source_comments(opts, cmt)
+
 	C.sass_data_context_set_options(dc, opts)
 	_ = C.sass_compile_data_context(dc)
-	cc := C.sass_data_context_get_context(dc)
 	cout := C.GoString(C.sass_context_get_output_string(cc))
 	io.WriteString(out, cout)
 
