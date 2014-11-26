@@ -130,7 +130,7 @@ div {
 
 }
 
-func ExampleCompile_custom_function() {
+func ExampleContext_Compile() {
 	in := bytes.NewBufferString(`div {
   color: red(blue);
   background: foo();
