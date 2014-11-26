@@ -88,8 +88,6 @@ type CustomList C.Sass_C_Function_List
 //type CustomDesc C.Sass_C_Function_Descriptor
 type CustomFn C.Sass_C_Function_Callback
 
-func Compile() {}
-
 // Libsass for generating the resulting css file.
 func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	if ctx.Precision == 0 {
