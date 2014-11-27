@@ -139,7 +139,9 @@ func ExampleContext_Compile() {
 	var out bytes.Buffer
 	ctx := Context{
 		Customs: []string{"foo()"},
+		Lane:    len(Pool),
 	}
+	Pool = append(Pool, ctx)
 	err := ctx.Compile(in, &out)
 	if err != nil {
 		panic(err)

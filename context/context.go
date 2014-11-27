@@ -17,15 +17,17 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-	"log"
 
 	"unsafe"
 )
 
 //export customHandler
-func customHandler() C.int {
-	log.Print("HELLO THERE")
-	return C.int(1)
+func customHandler(ptr unsafe.Pointer) {
+	// Recover the lane int from the pointer,
+	// this may not be safe to do
+	lane := *(*int)(ptr)
+	_ = Pool[lane] // Reference to original context
+	return
 }
 
 // Context handles the interactions with libsass.  Context
@@ -46,6 +48,7 @@ type Context struct {
 	out     io.Writer
 	Errors  SassError
 	Customs []string
+	Lane    int // Reference to pool position
 }
 
 // Constants/enums for the output style.
@@ -57,6 +60,8 @@ const (
 )
 
 var Style map[string]int
+
+var Pool []Context
 
 func init() {
 	Style = make(map[string]int)
@@ -117,7 +122,7 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 			cv := (*C.char)(unsafe.Pointer(&bs[0]))
 			_ = cv // const *char
 
-			fn = C.sass_make_function(C.CString(v), C.Sass_C_Function(C.CallSassFunction), nil)
+			fn = C.sass_make_function(C.CString(v), C.Sass_C_Function(C.CallSassFunction), unsafe.Pointer(&ctx.Lane))
 			//bfns[i] = byte(*(*C.int)(unsafe.Pointer(fn)))
 			C.sass_set_function(&fns, fn, C.int(i))
 		}
