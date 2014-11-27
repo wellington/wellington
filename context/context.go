@@ -14,7 +14,7 @@ import "C"
 
 import (
 	"errors"
-	"fmt"
+	"image/color"
 	"io"
 	"io/ioutil"
 
@@ -27,37 +27,55 @@ func customHandler(args *C.union_Sass_Value, ptr unsafe.Pointer) *C.union_Sass_V
 	// this may not be safe to do
 	lane := *(*int)(ptr)
 	arglen := int(C.sass_list_get_length(args))
-	// fmt.Println(arglen)
+	infs := make([]interface{}, arglen)
 	for i := 0; i < arglen; i++ {
 		arg := C.sass_list_get_value(args, C.size_t(i))
-
-		switch {
-		case bool(C.sass_value_is_null(arg)):
-			fmt.Println("null!    ")
-		case bool(C.sass_value_is_number(arg)):
-			fmt.Printf("number!  %d\n", int(C.sass_number_get_value(arg)))
-		case bool(C.sass_value_is_string(arg)):
-			c := C.sass_string_get_value(arg)
-			fmt.Printf("string!  %s\n", C.GoString(c))
-		case bool(C.sass_value_is_boolean(arg)):
-			fmt.Printf("boolean! %t\n", bool(C.sass_boolean_get_value(arg)))
-		case bool(C.sass_value_is_color(arg)):
-			r := int(C.sass_color_get_r(arg))
-			g := int(C.sass_color_get_g(arg))
-			b := int(C.sass_color_get_b(arg))
-			a := int(C.sass_color_get_a(arg))
-			fmt.Printf("color!   (%d,%d,%d,%d)\n", r, g, b, a)
-		case bool(C.sass_value_is_list(arg)):
-			fmt.Printf("list!    No compatible Go type\n")
-		case bool(C.sass_value_is_map(arg)):
-			fmt.Printf("map!     No compatible Go type\n")
-		case bool(C.sass_value_is_error(arg)):
-			fmt.Printf("error!   %s", C.GoString(C.sass_error_get_message(arg)))
-		}
+		infs[i] = SVtoInf(arg)
 	}
-
-	_ = Pool[lane] // Reference to original context
+	// Reference to original context
+	swim := Pool[lane]
+	swim.values = append(swim.values, infs)
 	return C.sass_make_boolean(false)
+}
+
+// SVtoInf converts Sass Value to Go compatible data types.
+func SVtoInf(arg *C.union_Sass_Value) interface{} {
+	switch {
+	case bool(C.sass_value_is_null(arg)):
+		return nil
+	case bool(C.sass_value_is_number(arg)):
+		return int(C.sass_number_get_value(arg))
+	case bool(C.sass_value_is_string(arg)):
+		c := C.sass_string_get_value(arg)
+		return C.GoString(c)
+	case bool(C.sass_value_is_boolean(arg)):
+		return bool(C.sass_boolean_get_value(arg))
+	case bool(C.sass_value_is_color(arg)):
+		col := color.RGBA{
+			R: uint8(C.sass_color_get_r(arg)),
+			G: uint8(C.sass_color_get_g(arg)),
+			B: uint8(C.sass_color_get_b(arg)),
+			A: uint8(C.sass_color_get_a(arg)),
+		}
+		return col
+	case bool(C.sass_value_is_list(arg)):
+		l := make([]interface{}, C.sass_list_get_length(arg))
+		for i := range l {
+			l[i] = SVtoInf(C.sass_list_get_value(arg, C.size_t(i)))
+		}
+		return l
+	case bool(C.sass_value_is_map(arg)):
+		len := int(C.sass_map_get_length(arg))
+		m := make(map[interface{}]interface{}, len)
+		for i := 0; i < len; i++ {
+			m[SVtoInf(C.sass_map_get_key(arg, C.size_t(i)))] =
+				SVtoInf(C.sass_map_get_value(arg, C.size_t(i)))
+		}
+		return m
+	case bool(C.sass_value_is_error(arg)):
+		return C.GoString(C.sass_error_get_message(arg))
+	}
+	return nil
 }
 
 // Context handles the interactions with libsass.  Context
@@ -79,6 +97,9 @@ type Context struct {
 	Errors  SassError
 	Customs []string
 	Lane    int // Reference to pool position
+
+	//TODO: Remove this likely, here now for easier testing
+	values []interface{}
 }
 
 // Constants/enums for the output style.
@@ -91,7 +112,7 @@ const (
 
 var Style map[string]int
 
-var Pool []Context
+var Pool []*Context
 
 func init() {
 	Style = make(map[string]int)

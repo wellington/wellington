@@ -3,11 +3,13 @@ package context
 import (
 	"bytes"
 	"fmt"
+	"image/color"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"testing"
 
@@ -130,7 +132,7 @@ div {
 
 }
 
-func TestContextCustom(t *testing.T) {
+func TestContextCustomSimpleTypes(t *testing.T) {
 	in := bytes.NewBufferString(`div {
   background: foo(null, 3, asdf, false, #005500, (a,b), (a:1));
 }`)
@@ -141,12 +143,65 @@ func TestContextCustom(t *testing.T) {
 		Customs: []string{"foo($null, $num, $str, $bool, $color, $list, $map, $error:\"\")"},
 		Lane:    len(Pool),
 	}
-	Pool = append(Pool, ctx)
+	Pool = append(Pool, &ctx)
 	err := ctx.Compile(in, &out)
 	if err != nil {
 		t.Error(err)
 	}
-	fmt.Printf("%s\n", out.String())
+
+	e := []interface{}{
+		[]interface{}{
+			interface{}(nil),
+			3,
+			"asdf",
+			false,
+			color.RGBA{R: 0x0, G: 0x55, B: 0x0, A: 0x1},
+			[]interface{}{"a", "b"},
+			map[interface{}]interface{}{"a": 1},
+		},
+	}
+
+	if !reflect.DeepEqual(e, ctx.values) {
+		t.Errorf("wanted:\n%#v\ngot:\n% #v", e, ctx.values)
+	}
+}
+
+func TestContextCustomComplexTypes(t *testing.T) {
+	in := bytes.NewBufferString(`div {
+  background: foo((a,b,1,#003300), (a:(b:#003300,c:(d:4,e:str))));
+}`)
+
+	var out bytes.Buffer
+	ctx := Context{
+		// How do we show an error?
+		Customs: []string{"foo($list, $map)"},
+		Lane:    len(Pool),
+	}
+	Pool = append(Pool, &ctx)
+	err := ctx.Compile(in, &out)
+	if err != nil {
+		t.Error(err)
+	}
+
+	e := []interface{}{
+		[]interface{}{
+			[]interface{}{
+				"a",
+				"b",
+				1,
+				color.RGBA{R: 0x0, G: 0x33, B: 0x0, A: 0x1},
+			},
+			map[interface{}]interface{}{
+				"a": map[interface{}]interface{}{
+					"b": color.RGBA{R: 0x0, G: 0x33, B: 0x0, A: 0x1},
+					"c": map[interface{}]interface{}{"d": 4, "e": "str"},
+				},
+			},
+		},
+	}
+	if !reflect.DeepEqual(e, ctx.values) {
+		t.Errorf("wanted:\n%#v\ngot:\n% #v", e, ctx.values)
+	}
 }
 
 func TestContextCustomArity(t *testing.T) {
@@ -160,7 +215,7 @@ func TestContextCustomArity(t *testing.T) {
 		Customs: []string{"foo()"},
 		Lane:    len(Pool),
 	}
-	Pool = append(Pool, ctx)
+	Pool = append(Pool, &ctx)
 	err := ctx.Compile(in, &out)
 	if err == nil {
 		t.Error("No error thrown for incorrect arity")
@@ -182,7 +237,7 @@ func ExampleContext_Compile() {
 		Customs: []string{"foo()"},
 		Lane:    len(Pool),
 	}
-	Pool = append(Pool, ctx)
+	Pool = append(Pool, &ctx)
 	err := ctx.Compile(in, &out)
 	if err != nil {
 		panic(err)
