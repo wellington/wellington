@@ -149,15 +149,15 @@ func TestContextCustomSimpleTypes(t *testing.T) {
 		t.Error(err)
 	}
 
-	e := []interface{}{
-		[]interface{}{
-			interface{}(nil),
+	e := []SassValue{
+		[]SassValue{
+			SassValue(nil),
 			3,
 			"asdf",
 			false,
 			color.RGBA{R: 0x0, G: 0x55, B: 0x0, A: 0x1},
-			[]interface{}{"a", "b"},
-			map[interface{}]interface{}{"a": 1},
+			[]SassValue{"a", "b"},
+			map[SassValue]SassValue{"a": 1},
 		},
 	}
 
@@ -183,18 +183,18 @@ func TestContextCustomComplexTypes(t *testing.T) {
 		t.Error(err)
 	}
 
-	e := []interface{}{
-		[]interface{}{
-			[]interface{}{
+	e := []SassValue{
+		[]SassValue{
+			[]SassValue{
 				"a",
 				"b",
 				1,
 				color.RGBA{R: 0x0, G: 0x33, B: 0x0, A: 0x1},
 			},
-			map[interface{}]interface{}{
-				"a": map[interface{}]interface{}{
+			map[SassValue]SassValue{
+				"a": map[SassValue]SassValue{
 					"b": color.RGBA{R: 0x0, G: 0x33, B: 0x0, A: 0x1},
-					"c": map[interface{}]interface{}{"d": 4, "e": "str"},
+					"c": map[SassValue]SassValue{"d": 4, "e": "str"},
 				},
 			},
 		},

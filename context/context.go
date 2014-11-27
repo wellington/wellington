@@ -27,10 +27,10 @@ func customHandler(args *C.union_Sass_Value, ptr unsafe.Pointer) *C.union_Sass_V
 	// this may not be safe to do
 	lane := *(*int)(ptr)
 	arglen := int(C.sass_list_get_length(args))
-	infs := make([]interface{}, arglen)
+	infs := make([]SassValue, arglen)
 	for i := 0; i < arglen; i++ {
 		arg := C.sass_list_get_value(args, C.size_t(i))
-		infs[i] = SVtoInf(arg)
+		infs[i] = Decode(arg)
 	}
 	// Reference to original context
 	swim := Pool[lane]
@@ -38,8 +38,10 @@ func customHandler(args *C.union_Sass_Value, ptr unsafe.Pointer) *C.union_Sass_V
 	return C.sass_make_boolean(false)
 }
 
-// SVtoInf converts Sass Value to Go compatible data types.
-func SVtoInf(arg *C.union_Sass_Value) interface{} {
+type SassValue interface{}
+
+// Decode converts Sass Value to Go compatible data types.
+func Decode(arg *C.union_Sass_Value) SassValue {
 	switch {
 	case bool(C.sass_value_is_null(arg)):
 		return nil
@@ -59,17 +61,17 @@ func SVtoInf(arg *C.union_Sass_Value) interface{} {
 		}
 		return col
 	case bool(C.sass_value_is_list(arg)):
-		l := make([]interface{}, C.sass_list_get_length(arg))
+		l := make([]SassValue, C.sass_list_get_length(arg))
 		for i := range l {
-			l[i] = SVtoInf(C.sass_list_get_value(arg, C.size_t(i)))
+			l[i] = Decode(C.sass_list_get_value(arg, C.size_t(i)))
 		}
 		return l
 	case bool(C.sass_value_is_map(arg)):
 		len := int(C.sass_map_get_length(arg))
-		m := make(map[interface{}]interface{}, len)
+		m := make(map[SassValue]SassValue, len)
 		for i := 0; i < len; i++ {
-			m[SVtoInf(C.sass_map_get_key(arg, C.size_t(i)))] =
-				SVtoInf(C.sass_map_get_value(arg, C.size_t(i)))
+			m[Decode(C.sass_map_get_key(arg, C.size_t(i)))] =
+				Decode(C.sass_map_get_value(arg, C.size_t(i)))
 		}
 		return m
 	case bool(C.sass_value_is_error(arg)):
@@ -99,7 +101,7 @@ type Context struct {
 	Lane    int // Reference to pool position
 
 	//TODO: Remove this likely, here now for easier testing
-	values []interface{}
+	values []SassValue
 }
 
 // Constants/enums for the output style.
