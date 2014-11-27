@@ -130,6 +130,28 @@ div {
 
 }
 
+func TestContextCustomArity(t *testing.T) {
+	in := bytes.NewBufferString(`div {
+  color: red(blue);
+  background: foo(1, 2);
+}`)
+
+	var out bytes.Buffer
+	ctx := Context{
+		Customs: []string{"foo()"},
+		Lane:    len(Pool),
+	}
+	Pool = append(Pool, ctx)
+	err := ctx.Compile(in, &out)
+	if err == nil {
+		t.Error("No error thrown for incorrect arity")
+	}
+
+	if e := "function foo only takes 0 arguments; given 2"; e != ctx.Errors.Message {
+		t.Errorf("wanted:\n%s\ngot:\n%s\n", e, ctx.Errors.Message)
+	}
+}
+
 func ExampleContext_Compile() {
 	in := bytes.NewBufferString(`div {
   color: red(blue);

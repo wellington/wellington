@@ -21,12 +21,20 @@ import (
 )
 
 //export customHandler
-func customHandler(ptr unsafe.Pointer) {
+func customHandler(args *C.union_Sass_Value, ptr unsafe.Pointer) *C.union_Sass_Value {
 	// Recover the lane int from the pointer,
 	// this may not be safe to do
 	lane := *(*int)(ptr)
+	arglen := int(C.sass_list_get_length(args))
+	// fmt.Println(arglen)
+	for i := 0; i < arglen; i++ {
+		arg := C.sass_list_get_value(args, C.size_t(i))
+		_ = arg
+		// fmt.Println(arg)
+	}
+
 	_ = Pool[lane] // Reference to original context
-	return
+	return C.sass_make_boolean(false)
 }
 
 // Context handles the interactions with libsass.  Context
