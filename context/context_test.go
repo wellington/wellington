@@ -130,6 +130,25 @@ div {
 
 }
 
+func TestContextCustom(t *testing.T) {
+	in := bytes.NewBufferString(`div {
+  background: foo(null, 3, asdf, false, #005500, (a,b), (a:1));
+}`)
+
+	var out bytes.Buffer
+	ctx := Context{
+		// How do we show an error?
+		Customs: []string{"foo($null, $num, $str, $bool, $color, $list, $map, $error:\"\")"},
+		Lane:    len(Pool),
+	}
+	Pool = append(Pool, ctx)
+	err := ctx.Compile(in, &out)
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Printf("%s\n", out.String())
+}
+
 func TestContextCustomArity(t *testing.T) {
 	in := bytes.NewBufferString(`div {
   color: red(blue);

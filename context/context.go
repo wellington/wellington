@@ -14,6 +14,7 @@ import "C"
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 
@@ -29,8 +30,30 @@ func customHandler(args *C.union_Sass_Value, ptr unsafe.Pointer) *C.union_Sass_V
 	// fmt.Println(arglen)
 	for i := 0; i < arglen; i++ {
 		arg := C.sass_list_get_value(args, C.size_t(i))
-		_ = arg
-		// fmt.Println(arg)
+
+		switch {
+		case bool(C.sass_value_is_null(arg)):
+			fmt.Println("null!    ")
+		case bool(C.sass_value_is_number(arg)):
+			fmt.Printf("number!  %d\n", int(C.sass_number_get_value(arg)))
+		case bool(C.sass_value_is_string(arg)):
+			c := C.sass_string_get_value(arg)
+			fmt.Printf("string!  %s\n", C.GoString(c))
+		case bool(C.sass_value_is_boolean(arg)):
+			fmt.Printf("boolean! %t\n", bool(C.sass_boolean_get_value(arg)))
+		case bool(C.sass_value_is_color(arg)):
+			r := int(C.sass_color_get_r(arg))
+			g := int(C.sass_color_get_g(arg))
+			b := int(C.sass_color_get_b(arg))
+			a := int(C.sass_color_get_a(arg))
+			fmt.Printf("color!   (%d,%d,%d,%d)\n", r, g, b, a)
+		case bool(C.sass_value_is_list(arg)):
+			fmt.Printf("list!    No compatible Go type\n")
+		case bool(C.sass_value_is_map(arg)):
+			fmt.Printf("map!     No compatible Go type\n")
+		case bool(C.sass_value_is_error(arg)):
+			fmt.Printf("error!   %s", C.GoString(C.sass_error_get_message(arg)))
+		}
 	}
 
 	_ = Pool[lane] // Reference to original context
