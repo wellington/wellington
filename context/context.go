@@ -1,8 +1,5 @@
 package context
 
-// Callback gateway of type
-// union Sass_Value call_sass_function(const union Sass_Value s_args, void *cookie)
-
 /*
 #cgo LDFLAGS: -lsass -lstdc++ -lm
 #cgo CFLAGS:
@@ -12,19 +9,7 @@ package context
 #include "sass_context.h"
 #include "sass_functions.h"
 
-union Sass_Value* CallSassFunction( union Sass_Value* s_args, void* cookie ) {
-    // printf("callback yo\n");
-	// union Sass_Value* sass_value = NULL;
-    return sass_make_boolean(false);
-}
-
-void Call( Sass_C_Function f) {
-   printf("Calling function\n");
-   union Sass_Value* a = sass_make_list(1, SASS_COMMA);
-   void* b;
-   f(a, b);
-}
-
+static union Sass_Value* CallSassFunction( union Sass_Value* s_args, void* cookie);
 */
 import "C"
 
@@ -36,6 +21,12 @@ import (
 
 	"unsafe"
 )
+
+//export customHandler
+func customHandler() C.int {
+	log.Print("HELLO THERE")
+	return C.int(1)
+}
 
 // Context handles the interactions with libsass.  Context
 // exposes libsass options that are available.
@@ -74,12 +65,6 @@ func init() {
 	Style["compact"] = COMPACT_STYLE
 	Style["compressed"] = COMPRESSED_STYLE
 
-}
-
-// export Custom
-func Custom() {
-	log.Print("HELLO THERE")
-	return
 }
 
 // Unused, currently
