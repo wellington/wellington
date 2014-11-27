@@ -72,12 +72,6 @@ func init() {
 
 }
 
-// Unused, currently
-type CustomList C.Sass_C_Function_List
-
-//type CustomDesc C.Sass_C_Function_Descriptor
-type CustomFn C.Sass_C_Function_Callback
-
 // Libsass for generating the resulting css file.
 func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	if ctx.Precision == 0 {
@@ -101,40 +95,35 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 
 	defer func() {
 		C.free(unsafe.Pointer(src))
-
 		C.free(unsafe.Pointer(imgpath))
-
+		//C.free(unsafe.Pointer(cc))
 		C.sass_delete_data_context(dc)
 	}()
 
+	// Set custom sass functions
 	if len(ctx.Customs) > 0 {
-		// Find out the size of a function
-		dummy := C.sass_make_function(C.CString(""), C.Sass_C_Function(C.CallSassFunction), nil)
 		size := C.size_t(len(ctx.Customs) + 1)
-		_, _ = dummy, size
-		fns_len := size * C.size_t(unsafe.Sizeof(dummy))
-		fns := C.sass_make_function_list(fns_len)
-
-		var fn C.Sass_C_Function_Callback
+		// TODO: Does this get cleaned up by sass_delete_data_context?
+		fns := C.sass_make_function_list(size)
 		for i, v := range ctx.Customs {
-			_ = i
-			bs := []byte(v)
-			cv := (*C.char)(unsafe.Pointer(&bs[0]))
-			_ = cv // const *char
-
-			fn = C.sass_make_function(C.CString(v), C.Sass_C_Function(C.CallSassFunction), unsafe.Pointer(&ctx.Lane))
-			//bfns[i] = byte(*(*C.int)(unsafe.Pointer(fn)))
+			fn := C.sass_make_function(C.CString(v),
+				C.Sass_C_Function(C.CallSassFunction),
+				unsafe.Pointer(&ctx.Lane))
 			C.sass_set_function(&fns, fn, C.int(i))
 		}
 
 		C.sass_option_set_c_functions(opts, fns)
 	}
-
 	C.sass_option_set_precision(opts, prec)
-
 	C.sass_option_set_source_comments(opts, cmt)
-
 	C.sass_data_context_set_options(dc, opts)
+
+	// Compile
+	compiler := C.sass_make_data_compiler(dc)
+	C.sass_compiler_parse(compiler)
+	C.sass_compiler_execute(compiler)
+	//C.sass_delete_compiler(compiler)
+
 	_ = C.sass_compile_data_context(dc)
 	cout := C.GoString(C.sass_context_get_output_string(cc))
 	io.WriteString(out, cout)
