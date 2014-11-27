@@ -5,7 +5,6 @@ package context
 #cgo CFLAGS:
 
 #include <stdlib.h>
-#include <stdio.h>
 #include "sass_context.h"
 #include "sass_functions.h"
 
@@ -72,32 +71,21 @@ func init() {
 
 }
 
-// Libsass for generating the resulting css file.
-func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
+// Init validates options in the struct and returns a Sass Options.
+func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options {
 	if ctx.Precision == 0 {
 		ctx.Precision = 5
 	}
-	bs, err := ioutil.ReadAll(in)
-	if err != nil {
-		return err
-	}
-	if len(bs) == 0 {
-		return errors.New("No input provided")
-	}
-	src := C.CString(string(bs))
 	cmt := C.bool(ctx.Comments)
 	imgpath := C.CString(ctx.ImageDir)
 	prec := C.int(ctx.Precision)
 
-	dc := C.sass_make_data_context(src)
-	cc := C.sass_data_context_get_context(dc)
-	opts := C.sass_context_get_options(cc)
+	opts := C.sass_data_context_get_options(dc)
 
 	defer func() {
-		C.free(unsafe.Pointer(src))
 		C.free(unsafe.Pointer(imgpath))
-		//C.free(unsafe.Pointer(cc))
-		C.sass_delete_data_context(dc)
+		// C.free(unsafe.Pointer(cc))
+		// C.sass_delete_data_context(dc)
 	}()
 
 	// Set custom sass functions
@@ -116,20 +104,46 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	}
 	C.sass_option_set_precision(opts, prec)
 	C.sass_option_set_source_comments(opts, cmt)
-	C.sass_data_context_set_options(dc, opts)
+	return opts
+}
 
-	// Compile
+// Compile reads in and writes the libsass compiled result to out.
+// Options and custom functions are applied as specified in Context.
+func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
+
+	bs, err := ioutil.ReadAll(in)
+	if err != nil {
+		return err
+	}
+	if len(bs) == 0 {
+		return errors.New("No input provided")
+	}
+	src := C.CString(string(bs))
+	defer C.free(unsafe.Pointer(src))
+
+	dc := C.sass_make_data_context(src)
+	defer C.sass_delete_data_context(dc)
+
+	opts := ctx.Init(dc)
+	// TODO: Manually free options memory without throwing
+	// malloc errors
+	// defer C.free(unsafe.Pointer(opts))
+	C.sass_data_context_set_options(dc, opts)
+	cc := C.sass_data_context_get_context(dc)
 	compiler := C.sass_make_data_compiler(dc)
+
 	C.sass_compiler_parse(compiler)
 	C.sass_compiler_execute(compiler)
-	//C.sass_delete_compiler(compiler)
+	defer func() {
+		C.sass_delete_compiler(compiler)
+	}()
 
-	_ = C.sass_compile_data_context(dc)
 	cout := C.GoString(C.sass_context_get_output_string(cc))
 	io.WriteString(out, cout)
 
 	ctx.Status = int(C.sass_context_get_error_status(cc))
-	errS := ctx.ProcessSassError([]byte(C.GoString(C.sass_context_get_error_json(cc))))
+	errJson := C.sass_context_get_error_json(cc)
+	errS := ctx.ProcessSassError([]byte(C.GoString(errJson)))
 
 	if errS != "" {
 		return errors.New(errS)
