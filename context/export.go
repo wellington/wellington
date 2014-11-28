@@ -4,10 +4,7 @@ package context
 #cgo LDFLAGS: -lsass -lstdc++ -lm
 #cgo CFLAGS:
 
-#include <stdlib.h>
-#include <stdio.h>
 #include "sass_context.h"
-#include "sass_functions.h"
 
 extern union Sass_Value* customHandler( union Sass_Value* s_args, void* cookie);
 
