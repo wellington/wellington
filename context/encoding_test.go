@@ -1,11 +1,13 @@
 package context
 
-import (
-	"fmt"
-	"testing"
-)
+import "testing"
 
 func TestUnmarshal(t *testing.T) {
-
-	fmt.Printf("% #v\n", makevalue("string"))
+	e := "example"
+	input := makevalue("string", e)
+	var s string
+	Decode(input, &s)
+	if e != s {
+		t.Errorf("got: %s\nwanted: %s", s, e)
+	}
 }

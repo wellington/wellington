@@ -1,6 +1,9 @@
 package context
 
-import "image/color"
+import (
+	"image/color"
+	"reflect"
+)
 
 /*
 
@@ -11,16 +14,16 @@ import "C"
 type SassValue interface{}
 
 // make is needed to create types for use by test
-func makevalue(t string) *C.union_Sass_Value {
+func makevalue(t string, v interface{}) *C.union_Sass_Value {
 	switch t {
 	case "string":
-		return C.sass_make_string(C.CString("example"))
+		return C.sass_make_string(C.CString(v.(string)))
 	}
 	return nil
 }
 
 // Decode converts Sass Value to Go compatible data types.
-func Decode(arg *C.union_Sass_Value, sv *SassValue) {
+func Decode(arg *C.union_Sass_Value, v interface{}) {
 	switch {
 	case bool(C.sass_value_is_null(arg)):
 		//return nil
@@ -28,8 +31,9 @@ func Decode(arg *C.union_Sass_Value, sv *SassValue) {
 		// return int(C.sass_number_get_value(arg))
 	case bool(C.sass_value_is_string(arg)):
 		c := C.sass_string_get_value(arg)
-		_ = c
-		// return C.GoString(c)
+		gc := C.GoString(c)
+		f := reflect.ValueOf(v).Elem()
+		f.SetString(gc)
 	case bool(C.sass_value_is_boolean(arg)):
 		// return bool(C.sass_boolean_get_value(arg))
 	case bool(C.sass_value_is_color(arg)):
