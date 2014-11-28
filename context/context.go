@@ -26,7 +26,7 @@ func customHandler(args *C.union_Sass_Value, ptr unsafe.Pointer) *C.union_Sass_V
 	infs := make([]SassValue, arglen)
 	for i := 0; i < arglen; i++ {
 		arg := C.sass_list_get_value(args, C.size_t(i))
-		infs[i] = Decode(arg)
+		Decode(arg, &infs[i])
 	}
 	// Reference to original context
 	swim := Pool[lane]
