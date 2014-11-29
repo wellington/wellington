@@ -2,20 +2,35 @@ package context
 
 import "testing"
 
-func TestUnmarshal(t *testing.T) {
+func TestUnmarshalNumber(t *testing.T) {
+
+	c := 1
+	sv := makevalue(c)
+	var i int
+	Unmarshal(sv, &i)
+	if c != i {
+		t.Errorf("got: %d wanted: %d", i, c)
+	}
+
+	d := 1.5
+	dv := makevalue(d)
+	var ed float32
+	Unmarshal(dv, &ed)
+}
+
+func TestUnmarshalValue(t *testing.T) {
 	e := "example"
 	input := makevalue(e)
-
 	var s string
 	Unmarshal(input, &s)
 	if e != s {
 		t.Errorf("got: % #v\nwanted: %s", s, e)
 	}
 
-	var sv SassValue
-	Unmarshal(input, &sv)
-	if e != sv {
-		t.Errorf("got: % #v\nwanted: %s", sv, e)
+	var gsv SassValue
+	Unmarshal(input, &gsv)
+	if e != gsv {
+		t.Errorf("got: % #v\nwanted: %s", gsv, e)
 	}
 
 }
