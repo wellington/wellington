@@ -1,6 +1,7 @@
 package context
 
 import (
+	"fmt"
 	"image/color"
 	"log"
 	"reflect"
@@ -17,7 +18,7 @@ func makevalue(v interface{}) *C.union_Sass_Value {
 	switch f.Kind() {
 	default:
 		log.Printf("% #v\n", v)
-		log.Fatalf("Fail: %v", f.Kind())
+		log.Fatalf("Type unsupported: %v", f.Kind())
 		return C.sass_make_null()
 	case reflect.Float32, reflect.Float64:
 		switch f.Kind() {
@@ -46,14 +47,23 @@ func makevalue(v interface{}) *C.union_Sass_Value {
 func unmarshal(arg *C.union_Sass_Value, v interface{}) {
 	f := reflect.ValueOf(v).Elem()
 	switch {
+	default:
+		fmt.Printf("Unsupported SASS Value\n")
 	case bool(C.sass_value_is_null(arg)):
-		//return nil
+
 	case bool(C.sass_value_is_number(arg)):
 		i := C.sass_number_get_value(arg)
 		// Always cast to float64 and let the passed interface
 		// decide the number precision.
 		flow := float64(i)
-		switch f.Kind() {
+		f.Set(reflect.ValueOf(flow))
+
+		break
+		// Is it necessary to check integer precision?
+		switch t := f.Kind(); t {
+		default:
+			log.Printf("fail: %s %v\n", t, t)
+			f.Set(reflect.ValueOf(flow))
 		case reflect.Int:
 			f.SetInt(int64(flow))
 		case reflect.Float32:
@@ -75,7 +85,8 @@ func unmarshal(arg *C.union_Sass_Value, v interface{}) {
 			f.Set(reflect.ValueOf(gc))
 		}
 	case bool(C.sass_value_is_boolean(arg)):
-		// return bool(C.sass_boolean_get_value(arg))
+		b := bool(C.sass_boolean_get_value(arg))
+		f.Set(reflect.ValueOf(b))
 	case bool(C.sass_value_is_color(arg)):
 		col := color.RGBA{
 			R: uint8(C.sass_color_get_r(arg)),
@@ -85,6 +96,7 @@ func unmarshal(arg *C.union_Sass_Value, v interface{}) {
 		}
 		_ = col
 		// return col
+		f.Set(reflect.ValueOf(col))
 	case bool(C.sass_value_is_list(arg)):
 		l := make([]SassValue, C.sass_list_get_length(arg))
 		for i := range l {
@@ -104,7 +116,6 @@ func unmarshal(arg *C.union_Sass_Value, v interface{}) {
 	case bool(C.sass_value_is_error(arg)):
 		// return C.GoString(C.sass_error_get_message(arg))
 	}
-	return
 }
 
 // Decode converts Sass Value to Go compatible data types.

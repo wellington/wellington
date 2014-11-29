@@ -134,13 +134,13 @@ div {
 
 func TestContextCustomSimpleTypes(t *testing.T) {
 	in := bytes.NewBufferString(`div {
-  background: foo(null, 3, asdf, false, #005500, (a,b), (a:1));
+  background: foo(null, 3, asdf, false, #005500);
 }`)
 
 	var out bytes.Buffer
 	ctx := Context{
 		// How do we show an error?
-		Customs: []string{"foo($null, $num, $str, $bool, $color, $list, $map, $error:\"\")"},
+		Customs: []string{"foo($null, $num, $str, $bool, $color)"},
 		Lane:    len(Pool),
 	}
 	Pool = append(Pool, &ctx)
@@ -152,17 +152,15 @@ func TestContextCustomSimpleTypes(t *testing.T) {
 	e := []SassValue{
 		[]SassValue{
 			SassValue(nil),
-			3,
+			3.0,
 			"asdf",
 			false,
 			color.RGBA{R: 0x0, G: 0x55, B: 0x0, A: 0x1},
-			[]SassValue{"a", "b"},
-			map[SassValue]SassValue{"a": 1},
 		},
 	}
 
 	if !reflect.DeepEqual(e, ctx.values) {
-		t.Errorf("wanted:\n%#v\ngot:\n% #v", e, ctx.values)
+		t.Errorf("wanted:\n% #v\ngot:\n% #v", e, ctx.values)
 	}
 }
 
