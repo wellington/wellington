@@ -4,9 +4,9 @@ import "testing"
 
 func TestUnmarshalNumber(t *testing.T) {
 
-	c := 1
+	c := float64(1)
 	sv := makevalue(c)
-	var i int
+	var i float64
 	Unmarshal(sv, &i)
 	if c != i {
 		t.Errorf("got: %d wanted: %d", i, c)
@@ -14,8 +14,11 @@ func TestUnmarshalNumber(t *testing.T) {
 
 	d := 1.5
 	dv := makevalue(d)
-	var ed float32
+	var ed float64
 	Unmarshal(dv, &ed)
+	if d != ed {
+		t.Errorf("got: %d wanted: %d", ed, d)
+	}
 }
 
 func TestUnmarshalValue(t *testing.T) {
