@@ -68,3 +68,7 @@ func TestUnmarshalComplex(t *testing.T) {
 		}
 	}
 }
+
+func TestMarshalNumber(t *testing.T) {
+	testMarshalNumber(t)
+}

@@ -6,44 +6,13 @@ import (
 	"image/color"
 	"log"
 	"reflect"
+	"testing"
 )
 
 // #include "sass_context.h"
 import "C"
 
 type SassValue interface{}
-
-// make is needed to create types for use by test
-func makevalue(v interface{}) *C.union_Sass_Value {
-	f := reflect.ValueOf(v)
-	switch f.Kind() {
-	default:
-		log.Printf("% #v\n", v)
-		log.Fatalf("Type unsupported: %v", f.Kind())
-		return C.sass_make_null()
-	case reflect.Float32, reflect.Float64:
-		switch f.Kind() {
-		default:
-			return C.sass_make_number(C.double(0), C.CString("wtfisthis"))
-		case reflect.Float32:
-			return C.sass_make_number(C.double(v.(float32)), C.CString("wtfisthis"))
-		case reflect.Float64:
-			return C.sass_make_number(C.double(v.(float64)), C.CString("wtfisthis"))
-		}
-	case reflect.Int:
-		return C.sass_make_number(C.double(v.(int)), C.CString("wtfisthis"))
-	case reflect.String:
-		return C.sass_make_string(C.CString(v.(string)))
-	case reflect.Slice:
-		// Initialize the list
-		l := C.sass_make_list(C.size_t(f.Len()), C.SASS_COMMA)
-		for i := 0; i < f.Len(); i++ {
-			t := makevalue(f.Index(i).Interface())
-			C.sass_list_set_value(l, C.size_t(i), t)
-		}
-		return l
-	}
-}
 
 func unmarshal(arg *C.union_Sass_Value, v interface{}) error {
 	f := reflect.ValueOf(v).Elem()
@@ -131,4 +100,52 @@ func unmarshal(arg *C.union_Sass_Value, v interface{}) error {
 // Decode converts Sass Value to Go compatible data types.
 func Unmarshal(arg *C.union_Sass_Value, v interface{}) error {
 	return unmarshal(arg, v)
+}
+
+func Marshal(v interface{}) *C.union_Sass_Value {
+	return makevalue(v)
+}
+
+// make is needed to create types for use by test
+func makevalue(v interface{}) *C.union_Sass_Value {
+	f := reflect.ValueOf(v)
+	switch f.Kind() {
+	default:
+		log.Printf("% #v\n", v)
+		log.Fatalf("Type unsupported: %v", f.Kind())
+		return C.sass_make_null()
+	case reflect.Float32, reflect.Float64:
+		switch f.Kind() {
+		default:
+			return C.sass_make_number(C.double(0), C.CString("wtfisthis"))
+		case reflect.Float32:
+			return C.sass_make_number(C.double(v.(float32)), C.CString("wtfisthis"))
+		case reflect.Float64:
+			return C.sass_make_number(C.double(v.(float64)), C.CString("wtfisthis"))
+		}
+	case reflect.Int:
+		return C.sass_make_number(C.double(v.(int)), C.CString("wtfisthis"))
+	case reflect.String:
+		return C.sass_make_string(C.CString(v.(string)))
+	case reflect.Slice:
+		// Initialize the list
+		l := C.sass_make_list(C.size_t(f.Len()), C.SASS_COMMA)
+		for i := 0; i < f.Len(); i++ {
+			t := makevalue(f.Index(i).Interface())
+			C.sass_list_set_value(l, C.size_t(i), t)
+		}
+		return l
+	}
+}
+
+// Can't import C in the test package, so this is how to test cgo code
+func testMarshalNumber(t *testing.T) {
+	num := float64(24)
+	e := C.double(num)
+	x := Marshal(num)
+	fmt.Println("HELLO")
+	if d := C.sass_number_get_value(x); d != e {
+		t.Errorf("got: %v wanted: %v", d, e)
+	}
+
 }
