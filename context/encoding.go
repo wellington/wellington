@@ -2,13 +2,11 @@ package context
 
 import (
 	"image/color"
+	"log"
 	"reflect"
 )
 
-/*
-
-#include "sass_context.h"
-*/
+// #include "sass_context.h"
 import "C"
 
 type SassValue interface{}
@@ -22,8 +20,7 @@ func makevalue(t string, v interface{}) *C.union_Sass_Value {
 	return nil
 }
 
-// Decode converts Sass Value to Go compatible data types.
-func Decode(arg *C.union_Sass_Value, v interface{}) {
+func unmarshal(arg *C.union_Sass_Value, v interface{}) {
 	switch {
 	case bool(C.sass_value_is_null(arg)):
 		//return nil
@@ -33,7 +30,18 @@ func Decode(arg *C.union_Sass_Value, v interface{}) {
 		c := C.sass_string_get_value(arg)
 		gc := C.GoString(c)
 		f := reflect.ValueOf(v).Elem()
-		f.SetString(gc)
+		if !f.CanSet() {
+			return
+		}
+
+		switch f.Kind() {
+		default:
+			log.Fatal("unknown type")
+		case reflect.String:
+			f.SetString(gc)
+		case reflect.Interface:
+			f.Set(reflect.ValueOf(gc))
+		}
 	case bool(C.sass_value_is_boolean(arg)):
 		// return bool(C.sass_boolean_get_value(arg))
 	case bool(C.sass_value_is_color(arg)):
@@ -66,4 +74,9 @@ func Decode(arg *C.union_Sass_Value, v interface{}) {
 		// return C.GoString(C.sass_error_get_message(arg))
 	}
 	return
+}
+
+// Decode converts Sass Value to Go compatible data types.
+func Unmarshal(arg *C.union_Sass_Value, v interface{}) {
+	unmarshal(arg, v)
 }
