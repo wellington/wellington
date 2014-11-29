@@ -1,6 +1,7 @@
 package context
 
 import (
+	"errors"
 	"fmt"
 	"image/color"
 	"log"
@@ -44,7 +45,7 @@ func makevalue(v interface{}) *C.union_Sass_Value {
 	}
 }
 
-func unmarshal(arg *C.union_Sass_Value, v interface{}) {
+func unmarshal(arg *C.union_Sass_Value, v interface{}) error {
 	f := reflect.ValueOf(v).Elem()
 	switch {
 	default:
@@ -55,25 +56,30 @@ func unmarshal(arg *C.union_Sass_Value, v interface{}) {
 		i := C.sass_number_get_value(arg)
 		// Always cast to float64 and let the passed interface
 		// decide the number precision.
-		flow := float64(i)
-		f.Set(reflect.ValueOf(flow))
+		if f.Kind() == reflect.Int {
+			sl := fmt.Sprintf("Can not cast %v to type reflect.Float64", f.Kind())
+			return errors.New(sl)
+			break
+		}
+		vv := float64(i)
+		f.Set(reflect.ValueOf(vv))
 
 		break
 		// Is it necessary to check integer precision?
 		switch t := f.Kind(); t {
 		default:
 			log.Printf("fail: %s %v\n", t, t)
-			f.Set(reflect.ValueOf(flow))
+			f.Set(reflect.ValueOf(vv))
 		case reflect.Int:
-			f.SetInt(int64(flow))
+			f.SetInt(int64(vv))
 		case reflect.Float32:
-			f.SetFloat(flow)
+			f.SetFloat(vv)
 		}
 	case bool(C.sass_value_is_string(arg)):
 		c := C.sass_string_get_value(arg)
 		gc := C.GoString(c)
 		if !f.CanSet() {
-			return
+			return errors.New("Can not set string")
 		}
 
 		switch t := f.Kind(); t {
@@ -100,7 +106,10 @@ func unmarshal(arg *C.union_Sass_Value, v interface{}) {
 	case bool(C.sass_value_is_list(arg)):
 		l := make([]SassValue, C.sass_list_get_length(arg))
 		for i := range l {
-			unmarshal(C.sass_list_get_value(arg, C.size_t(i)), &l[i])
+			err := unmarshal(C.sass_list_get_value(arg, C.size_t(i)), &l[i])
+			if err != nil {
+				return err
+			}
 		}
 		fl := reflect.ValueOf(l)
 		f.Set(fl)
@@ -116,9 +125,10 @@ func unmarshal(arg *C.union_Sass_Value, v interface{}) {
 	case bool(C.sass_value_is_error(arg)):
 		// return C.GoString(C.sass_error_get_message(arg))
 	}
+	return nil
 }
 
 // Decode converts Sass Value to Go compatible data types.
-func Unmarshal(arg *C.union_Sass_Value, v interface{}) {
-	unmarshal(arg, v)
+func Unmarshal(arg *C.union_Sass_Value, v interface{}) error {
+	return unmarshal(arg, v)
 }

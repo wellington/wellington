@@ -19,6 +19,18 @@ func TestUnmarshalNumber(t *testing.T) {
 	if d != ed {
 		t.Errorf("got: %d wanted: %d", ed, d)
 	}
+
+	d = 2
+	dv = makevalue(d)
+	var ei int
+	err := Unmarshal(dv, &ei)
+	if err == nil {
+		t.Error("No error thrown for invalid type")
+	}
+	if e := "Can not cast int to type reflect.Float64"; e != err.Error() {
+		t.Errorf("got:\n%s\nwanted:\n%s\n", e, err.Error())
+	}
+
 }
 
 func TestUnmarshalValue(t *testing.T) {
