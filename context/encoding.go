@@ -12,15 +12,30 @@ import "C"
 type SassValue interface{}
 
 // make is needed to create types for use by test
-func makevalue(t string, v interface{}) *C.union_Sass_Value {
-	switch t {
-	case "string":
+func makevalue(v interface{}) *C.union_Sass_Value {
+	f := reflect.ValueOf(v)
+	switch f.Kind() {
+	default:
+		log.Printf("% #v\n", v)
+		log.Fatalf("Fail: %v", f.Kind())
+		return C.sass_make_null()
+	case reflect.String:
 		return C.sass_make_string(C.CString(v.(string)))
+	case reflect.Slice:
+		// Initialize the list
+		l := C.sass_make_list(C.size_t(f.Len()), C.SASS_COMMA)
+
+		for i := 0; i < f.Len(); i++ {
+			t := makevalue(f.Index(i).Interface())
+			C.sass_list_set_value(l, C.size_t(i), t)
+		}
+
+		return l
 	}
-	return nil
 }
 
 func unmarshal(arg *C.union_Sass_Value, v interface{}) {
+	f := reflect.ValueOf(v).Elem()
 	switch {
 	case bool(C.sass_value_is_null(arg)):
 		//return nil
@@ -29,7 +44,6 @@ func unmarshal(arg *C.union_Sass_Value, v interface{}) {
 	case bool(C.sass_value_is_string(arg)):
 		c := C.sass_string_get_value(arg)
 		gc := C.GoString(c)
-		f := reflect.ValueOf(v).Elem()
 		if !f.CanSet() {
 			return
 		}
@@ -56,11 +70,10 @@ func unmarshal(arg *C.union_Sass_Value, v interface{}) {
 	case bool(C.sass_value_is_list(arg)):
 		l := make([]SassValue, C.sass_list_get_length(arg))
 		for i := range l {
-			_ = i
-			//l[i] = Decode(C.sass_list_get_value(arg, C.size_t(i)))
+			unmarshal(C.sass_list_get_value(arg, C.size_t(i)), &l[i])
 		}
-		_ = l
-		// return l
+		fl := reflect.ValueOf(l)
+		f.Set(fl)
 	case bool(C.sass_value_is_map(arg)):
 		len := int(C.sass_map_get_length(arg))
 		m := make(map[SassValue]SassValue, len)
