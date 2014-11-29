@@ -9,7 +9,7 @@ func TestUnmarshalNumber(t *testing.T) {
 	var i float64
 	Unmarshal(sv, &i)
 	if c != i {
-		t.Errorf("got: %d wanted: %d", i, c)
+		t.Errorf("got: %f wanted: %f", i, c)
 	}
 
 	d := 1.5
@@ -17,7 +17,7 @@ func TestUnmarshalNumber(t *testing.T) {
 	var ed float64
 	Unmarshal(dv, &ed)
 	if d != ed {
-		t.Errorf("got: %d wanted: %d", ed, d)
+		t.Errorf("got: %f wanted: %f", ed, d)
 	}
 
 	d = 2
