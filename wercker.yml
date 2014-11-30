@@ -39,8 +39,8 @@ build:
           # wercker as project environment variable.
           go get github.com/axw/gocov/gocov
           go get github.com/mattn/goveralls
-          go test -v -covermode=count -coverprofile=coverage.out ./...
-          GIT_BRANCH=$WERCKER_GIT_BRANCH goveralls -coverprofile=coverage.out -service=wercker.com -repotoken $COVERALLS_TOKEN
+          go test -v -covermode=count -coverprofile=profile.cov -service=travis-ci
+          Git_BRANCH=$WERCKER_GIT_BRANCH goveralls -coverprofile=coverage.out -service=wercker.com -repotoken $COVERALLS_TOKEN
     - script:
         name: Package deployment
 
