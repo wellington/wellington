@@ -143,9 +143,34 @@ func testMarshalNumber(t *testing.T) {
 	num := float64(24)
 	e := C.double(num)
 	x := Marshal(num)
-	fmt.Println("HELLO")
+
 	if d := C.sass_number_get_value(x); d != e {
 		t.Errorf("got: %v wanted: %v", d, e)
 	}
+}
 
+func testMarshalList(t *testing.T) {
+
+	lst := []SassValue{1, 2, 3, 4}
+	e := C.sass_make_list(C.size_t(len(lst)), C.SASS_COMMA)
+
+	for i := range lst {
+		C.sass_list_set_value(e, C.size_t(i), Marshal(lst[i]))
+	}
+
+	x := Marshal(lst)
+	if C.sass_list_get_length(x) != C.sass_list_get_length(e) {
+		t.Error("list length mismatch")
+	}
+
+	for i := range lst {
+		v1, v2 :=
+			C.sass_list_get_value(x, C.size_t(i)),
+			C.sass_list_get_value(e, C.size_t(i))
+		f1, f2 := C.sass_number_get_value(v1),
+			C.sass_number_get_value(v2)
+		if f1 != f2 {
+			t.Errorf("wanted: %d got: %d", v2, v1)
+		}
+	}
 }
