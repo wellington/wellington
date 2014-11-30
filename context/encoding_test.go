@@ -76,3 +76,7 @@ func TestMarshalNumber(t *testing.T) {
 func TestMarshalList(t *testing.T) {
 	testMarshalList(t)
 }
+
+func TestMarshalListInterface(t *testing.T) {
+	testMarshalListInterface(t)
+}
