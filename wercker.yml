@@ -54,7 +54,7 @@ build:
     - hipchat-notify:
         token: $HIPCHAT_TOKEN
         room-id: 550303
-        from-name: Wellington build
+        from-name: Wellington_build
 deploy:
   steps:
     - script:
