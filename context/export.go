@@ -1,5 +1,8 @@
 package context
 
+// The use of //export in context.go prevents being able to define any C code in the preamble of that file.  Export defines additional C code necessary for the context<->sass_context bridge.
+// See: http://golang.org/cmd/cgo/#hdr-C_references_to_Go
+
 /*
 #cgo LDFLAGS: -lsass -lstdc++ -lm
 #cgo CFLAGS:
