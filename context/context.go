@@ -13,26 +13,24 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"log"
+
+	"github.com/drewwells/spritewell"
 
 	"unsafe"
 )
 
 //export customHandler
-func customHandler(args *C.union_Sass_Value, ptr unsafe.Pointer) *C.union_Sass_Value {
-	// Recover the lane int from the pointer,
-	// this may not be safe to do
-	lane := *(*int)(ptr)
-	arglen := int(C.sass_list_get_length(args))
-	infs := make([]SassValue, arglen)
+func customHandler(cargs *C.union_Sass_Value, ptr unsafe.Pointer) *C.union_Sass_Value {
+	// Recover the Cookie struct passed in
+	ck := *(*Cookie)(ptr)
+	arglen := int(C.sass_list_get_length(cargs))
+	goargs := make([]SassValue, arglen)
 	for i := 0; i < arglen; i++ {
-		arg := C.sass_list_get_value(args, C.size_t(i))
-		// initialize pointer
-		//var s interface{}
-		Unmarshal(arg, &infs[i])
+		carg := C.sass_list_get_value(cargs, C.size_t(i))
+		Unmarshal(carg, &goargs[i])
 	}
-	// Reference to original context
-	swim := Pool[lane]
-	swim.values = append(swim.values, infs)
+	ck.fn(goargs)
 	return C.sass_make_boolean(false)
 }
 
@@ -50,11 +48,16 @@ type Context struct {
 	errorString                   string
 	errors                        lErrors
 
-	in      io.Reader
-	out     io.Writer
-	Errors  SassError
-	Customs []string
+	in     io.Reader
+	out    io.Writer
+	Errors SassError
+	// Place to keep cookies, so Go doesn't garbage collect them before C
+	// is done with them
+	Cookies []Cookie
 	Lane    int // Reference to pool position
+
+	// Used for callbacks to retrieve sprite information, etc.
+	InlineImgs, Sprites map[string]spritewell.ImageList
 
 	//TODO: Remove this likely, here now for easier testing
 	values []SassValue
@@ -81,6 +84,12 @@ func init() {
 
 }
 
+func test() {
+	log.Print("hi")
+}
+
+var d = []Cookie{}
+
 // Init validates options in the struct and returns a Sass Options.
 func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options {
 	if ctx.Precision == 0 {
@@ -99,14 +108,15 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 	}()
 
 	// Set custom sass functions
-	if len(ctx.Customs) > 0 {
-		size := C.size_t(len(ctx.Customs) + 1)
-		// TODO: Does this get cleaned up by sass_delete_data_context?
+	if len(ctx.Cookies) > 0 {
+		size := C.size_t(len(ctx.Cookies) + 1)
 		fns := C.sass_make_function_list(size)
-		for i, v := range ctx.Customs {
-			fn := C.sass_make_function(C.CString(v),
+		for i, v := range ctx.Cookies {
+			fn := C.sass_make_function(C.CString(v.sign),
 				C.Sass_C_Function(C.CallSassFunction),
-				unsafe.Pointer(&ctx.Lane))
+				// Only pass reference to global array, so
+				// GC won't clean it up.
+				unsafe.Pointer(&ctx.Cookies[i]))
 			C.sass_set_function(&fns, fn, C.int(i))
 		}
 

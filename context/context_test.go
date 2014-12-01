@@ -138,29 +138,33 @@ func TestContextCustomSimpleTypes(t *testing.T) {
 }`)
 
 	var out bytes.Buffer
-	ctx := Context{
-		// How do we show an error?
-		Customs: []string{"foo($null, $num, $str, $bool, $color)"},
-		Lane:    len(Pool),
+
+	ctx := Context{}
+	ctx.Cookies = make([]Cookie, 1)
+	// Communication channel for the C Sass callback function
+	ch := make(chan []SassValue, 1)
+	ctx.Cookies[0] = Cookie{
+		0, "foo($null, $num, $str, $bool, $color)", func(sv []SassValue) {
+			// Send the SassValue fn arguments to the ch channel
+			ch <- sv
+		}, &ctx,
 	}
-	Pool = append(Pool, &ctx)
+
 	err := ctx.Compile(in, &out)
 	if err != nil {
 		t.Error(err)
 	}
 
 	e := []SassValue{
-		[]SassValue{
-			"<nil>",
-			3.0,
-			"asdf",
-			false,
-			color.RGBA{R: 0x0, G: 0x55, B: 0x0, A: 0x1},
-		},
+		"<nil>",
+		3.0,
+		"asdf",
+		false,
+		color.RGBA{R: 0x0, G: 0x55, B: 0x0, A: 0x1},
 	}
-
-	if !reflect.DeepEqual(e, ctx.values) {
-		t.Errorf("wanted:\n% #v\ngot:\n% #v", e, ctx.values)
+	args := <-ch
+	if !reflect.DeepEqual(e, args) {
+		t.Errorf("wanted:\n% #v\ngot:\n% #v", e, args)
 	}
 }
 
@@ -170,12 +174,16 @@ func TestContextCustomComplexTypes(t *testing.T) {
 }`)
 
 	var out bytes.Buffer
-	ctx := Context{
-		// How do we show an error?
-		Customs: []string{"foo($list, $map)"},
-		Lane:    len(Pool),
+	ctx := Context{}
+	if ctx.Cookies == nil {
+		ctx.Cookies = make([]Cookie, 1)
 	}
-	Pool = append(Pool, &ctx)
+	ch := make(chan []SassValue, 1)
+	ctx.Cookies[0] = Cookie{
+		0, "foo($list, $map)", func(sv []SassValue) {
+			ch <- sv
+		}, &ctx,
+	}
 	err := ctx.Compile(in, &out)
 	if err != nil {
 		t.Error(err)
@@ -183,22 +191,24 @@ func TestContextCustomComplexTypes(t *testing.T) {
 
 	e := []SassValue{
 		[]SassValue{
-			[]SassValue{
-				"a",
-				"b",
-				1,
-				color.RGBA{R: 0x0, G: 0x33, B: 0x0, A: 0x1},
-			},
-			map[SassValue]SassValue{
-				"a": map[SassValue]SassValue{
-					"b": color.RGBA{R: 0x0, G: 0x33, B: 0x0, A: 0x1},
-					"c": map[SassValue]SassValue{"d": 4, "e": "str"},
-				},
+			"a",
+			"b",
+			float64(1),
+			color.RGBA{R: 0x0, G: 0x33, B: 0x0, A: 0x1},
+		},
+		//maps not implemented
+		map[SassValue]SassValue{
+			"a": map[SassValue]SassValue{
+				"b": color.RGBA{R: 0x0, G: 0x33, B: 0x0, A: 0x1},
+				"c": map[SassValue]SassValue{"d": 4, "e": "str"},
 			},
 		},
 	}
-	if !reflect.DeepEqual(e, ctx.values) {
-		t.Skipf("wanted:\n%#v\ngot:\n% #v", e, ctx.values)
+
+	args := <-ch
+
+	if !reflect.DeepEqual(e[0], args[0]) {
+		t.Errorf("wanted:\n%#v\ngot:\n% #v", e[0], args[0])
 	}
 }
 
@@ -209,11 +219,14 @@ func TestContextCustomArity(t *testing.T) {
 }`)
 
 	var out bytes.Buffer
-	ctx := Context{
-		Customs: []string{"foo()"},
-		Lane:    len(Pool),
+	ctx := Context{}
+	if ctx.Cookies == nil {
+		ctx.Cookies = make([]Cookie, 1)
 	}
-	Pool = append(Pool, &ctx)
+
+	ctx.Cookies[0] = Cookie{
+		0, "foo()", SampleCB, &ctx,
+	}
 	err := ctx.Compile(in, &out)
 	if err == nil {
 		t.Error("No error thrown for incorrect arity")
@@ -232,20 +245,44 @@ func ExampleContext_Compile() {
 
 	var out bytes.Buffer
 	ctx := Context{
-		Customs: []string{"foo()"},
-		Lane:    len(Pool),
+	//Customs: []string{"foo()"},
 	}
-	Pool = append(Pool, &ctx)
+	if ctx.Cookies == nil {
+		ctx.Cookies = make([]Cookie, 1)
+	}
+	ctx.Cookies[0] = Cookie{
+		0, "foo()", func(sv []SassValue) {
+		}, &ctx,
+	}
 	err := ctx.Compile(in, &out)
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Print(out.String())
-	// Output:
+	// // Output:
 	// div {
 	//   color: 0;
 	//   background: false; }
+}
+
+func TestContextCallback(t *testing.T) {
+	in := bytes.NewBufferString(`div {
+  background: foo(3, asdf);
+}`)
+
+	var out bytes.Buffer
+	ctx := Context{
+		// How do we show an error?
+		// Customs: []string{"foo($num, $str)"},
+		Lane: len(Pool),
+	}
+	Pool = append(Pool, &ctx)
+	err := ctx.Compile(in, &out)
+	if err != nil {
+		t.Error(err)
+	}
+
 }
 
 func BenchmarkContextCompile(b *testing.B) {

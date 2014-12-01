@@ -186,6 +186,7 @@ func startParser(ctx context.Context, in io.Reader, out io.Writer, pkgdir string
 		BuildDir:  ctx.BuildDir,
 		GenImgDir: ctx.GenImgDir,
 	}
+	// Save reference to parser in context
 	bs, err := parser.Start(in, pkgdir)
 	if err != nil {
 		return err

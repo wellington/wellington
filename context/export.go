@@ -12,12 +12,31 @@ package context
 extern union Sass_Value* customHandler( union Sass_Value* s_args, void* cookie);
 
 union Sass_Value* CallSassFunction( union Sass_Value* s_args, void* cookie ) {
-    // printf("callback yo\n");
-    // union Sass_Value* sass_value = NULL;
-    // int a;
-    // return sass_make_boolean(false);
     return customHandler(s_args, cookie);
 }
-
 */
 import "C"
+import "log"
+
+type Cookie struct {
+	Lane int
+	sign string
+	fn   CookieCb
+	ctx  *Context
+}
+
+// CookieCb defines the callback libsass eventually executes in sprite_sass
+type CookieCb func(sv []SassValue)
+
+// NewCookie creates C.Cookie from Go strings.  It is not safe and will leak
+// memory, so structs created need to be cleaned up manually.
+func NewCookie(lane int, sign string) Cookie {
+	var c Cookie
+	c.Lane = lane
+	c.sign = sign
+	return c
+}
+
+func SampleCB(sv []SassValue) {
+	log.Printf("Arguments: % #v\n", sv)
+}
