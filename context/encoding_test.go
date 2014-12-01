@@ -33,6 +33,10 @@ func TestUnmarshalNumber(t *testing.T) {
 
 }
 
+func TestUnmarshalUnknown(t *testing.T) {
+	testUnmarshalUnknown(t)
+}
+
 func TestUnmarshalValue(t *testing.T) {
 	e := "example"
 	input := makevalue(e)

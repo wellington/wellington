@@ -153,7 +153,11 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 
 	ctx.Status = int(C.sass_context_get_error_status(cc))
 	errJson := C.sass_context_get_error_json(cc)
-	errS := ctx.ProcessSassError([]byte(C.GoString(errJson)))
+	errS, err := ctx.ProcessSassError([]byte(C.GoString(errJson)))
+
+	if err != nil {
+		return err
+	}
 
 	if errS != "" {
 		return errors.New(errS)

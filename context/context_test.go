@@ -151,7 +151,7 @@ func TestContextCustomSimpleTypes(t *testing.T) {
 
 	e := []SassValue{
 		[]SassValue{
-			SassValue(nil),
+			"<nil>",
 			3.0,
 			"asdf",
 			false,

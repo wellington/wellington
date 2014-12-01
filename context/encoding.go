@@ -18,9 +18,12 @@ func unmarshal(arg *C.union_Sass_Value, v interface{}) error {
 	f := reflect.ValueOf(v).Elem()
 	switch {
 	default:
-		fmt.Printf("Unsupported SASS Value\n")
+		return errors.New("Unsupported SASS Value")
+	case bool(C.sass_value_is_error(arg)):
+		return errors.New("FUCK")
 	case bool(C.sass_value_is_null(arg)):
-
+		f.Set(reflect.ValueOf("<nil>"))
+		return nil
 	case bool(C.sass_value_is_number(arg)):
 		i := C.sass_number_get_value(arg)
 		// Always cast to float64 and let the passed interface
@@ -28,22 +31,20 @@ func unmarshal(arg *C.union_Sass_Value, v interface{}) error {
 		if f.Kind() == reflect.Int {
 			sl := fmt.Sprintf("Can not cast %v to type reflect.Float64", f.Kind())
 			return errors.New(sl)
-			break
 		}
 		vv := float64(i)
 		f.Set(reflect.ValueOf(vv))
 
-		break
 		// Is it necessary to check integer precision?
-		switch t := f.Kind(); t {
-		default:
-			log.Printf("fail: %s %v\n", t, t)
-			f.Set(reflect.ValueOf(vv))
-		case reflect.Int:
-			f.SetInt(int64(vv))
-		case reflect.Float32:
-			f.SetFloat(vv)
-		}
+		// switch t := f.Kind(); t {
+		// default:
+		// 	log.Printf("fail: %s %v\n", t, t)
+		// 	f.Set(reflect.ValueOf(vv))
+		// case reflect.Int:
+		// 	f.SetInt(int64(vv))
+		// case reflect.Float32:
+		// 	f.SetFloat(vv)
+		// }
 	case bool(C.sass_value_is_string(arg)):
 		c := C.sass_string_get_value(arg)
 		gc := C.GoString(c)
@@ -111,8 +112,6 @@ func makevalue(v interface{}) *C.union_Sass_Value {
 	f := reflect.ValueOf(v)
 	switch f.Kind() {
 	default:
-		log.Printf("% #v\n", v)
-		log.Fatalf("Type unsupported: %v", f.Kind())
 		return C.sass_make_null()
 	case reflect.Float32, reflect.Float64:
 		switch f.Kind() {
@@ -139,6 +138,19 @@ func makevalue(v interface{}) *C.union_Sass_Value {
 }
 
 // Can't import C in the test package, so this is how to test cgo code
+func testUnmarshalUnknown(t *testing.T) {
+	// Test for nil (no value, pointer, or empty error)
+	var unk *C.union_Sass_Value
+	x := Marshal(unk)
+	var v interface{}
+	_ = Unmarshal(x, &v)
+	if v != "<nil>" {
+		t.Error("non-nil returned")
+	}
+
+	// Need a test for non-supported type
+}
+
 func testMarshalNumber(t *testing.T) {
 	num := float64(24)
 	e := C.double(num)
