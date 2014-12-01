@@ -63,13 +63,16 @@ func TestErrorBasic(t *testing.T) {
 	e := ErrorMap{2, "no mixin named invalid-function\nBacktrace:\n\tstdin:2"}
 
 	if e.line != ctx.Errors.Line {
-		t.Error("wanted:\n%s\ngot:\n%s", e.line, ctx.Errors.Line)
+		t.Errorf("wanted: %d\ngot: %d", e.line, ctx.Errors.Line)
 	}
 
 	if e.message != ctx.Errors.Message {
 		t.Errorf("wanted:\n%s\ngot:\n%s", e.message, ctx.Errors.Message)
 	}
 
+	if ctx.errorString != ctx.Error() {
+		t.Errorf("wanted: %s got: %s", ctx.errorString, ctx.Error())
+	}
 }
 
 func TestErrorUnbound(t *testing.T) {
@@ -141,12 +144,20 @@ func TestErrorImport(t *testing.T) {
 }
 
 func TestErrorWarn(t *testing.T) {
-	return
 	// Disabled while new warn integration is built
-	in := bytes.NewBufferString(`
-@warn "WARNING";`)
-	out := bytes.NewBuffer([]byte(""))
+	// in := bytes.NewBufferString(`
+	// @warn "WARNING";`)
+	// 	out := bytes.NewBuffer([]byte(""))
+	// 	ctx := Context{}
+	// 	err := ctx.Compile(in, out)
+	// 	_ = err
+}
+
+func TestErrorInvalid(t *testing.T) {
 	ctx := Context{}
-	err := ctx.Compile(in, out)
-	_ = err
+	_, err := ctx.ProcessSassError([]byte("/a"))
+
+	if len(err.Error()) == 0 {
+		t.Error("No error thrown on invalid sass json package")
+	}
 }
