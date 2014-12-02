@@ -19,7 +19,6 @@ import "C"
 import "log"
 
 type Cookie struct {
-	Lane int
 	sign string
 	fn   SassCallback
 	ctx  *Context
@@ -34,7 +33,6 @@ type SassCallback func(csv UnionSassValue) UnionSassValue
 // memory, so structs created need to be cleaned up manually.
 func NewCookie(lane int, sign string) Cookie {
 	var c Cookie
-	c.Lane = lane
 	c.sign = sign
 	return c
 }

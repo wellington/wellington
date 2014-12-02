@@ -144,7 +144,7 @@ func TestContextCustomSimpleTypes(t *testing.T) {
 	// Communication channel for the C Sass callback function
 	ch := make(chan []SassValue, 1)
 	ctx.Cookies[0] = Cookie{
-		0, "foo($null, $num, $str, $bool, $color)", func(usv UnionSassValue) UnionSassValue {
+		"foo($null, $num, $str, $bool, $color)", func(usv UnionSassValue) UnionSassValue {
 			// Send the SassValue fn arguments to the ch channel
 			var sv []SassValue
 			Unmarshal(usv, &sv)
@@ -184,7 +184,7 @@ func TestContextCustomComplexTypes(t *testing.T) {
 	}
 	ch := make(chan []SassValue, 1)
 	ctx.Cookies[0] = Cookie{
-		0, "foo($list, $map)", func(usv UnionSassValue) UnionSassValue {
+		"foo($list, $map)", func(usv UnionSassValue) UnionSassValue {
 			var sv []SassValue
 			Unmarshal(usv, &sv)
 			ch <- sv
@@ -232,7 +232,7 @@ func TestContextCustomArity(t *testing.T) {
 	}
 
 	ctx.Cookies[0] = Cookie{
-		0, "foo()", SampleCB, &ctx,
+		"foo()", SampleCB, &ctx,
 	}
 	err := ctx.Compile(in, &out)
 	if err == nil {
@@ -258,7 +258,7 @@ func ExampleContext_Compile() {
 		ctx.Cookies = make([]Cookie, 1)
 	}
 	ctx.Cookies[0] = Cookie{
-		0, "foo()", func(usv UnionSassValue) UnionSassValue {
+		"foo()", func(usv UnionSassValue) UnionSassValue {
 			return Marshal("no-repeat")
 		}, &ctx,
 	}
@@ -280,12 +280,7 @@ func TestContextCallback(t *testing.T) {
 }`)
 
 	var out bytes.Buffer
-	ctx := Context{
-		// How do we show an error?
-		// Customs: []string{"foo($num, $str)"},
-		Lane: len(Pool),
-	}
-	Pool = append(Pool, &ctx)
+	ctx := Context{}
 	err := ctx.Compile(in, &out)
 	if err != nil {
 		t.Error(err)

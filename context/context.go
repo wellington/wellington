@@ -48,7 +48,6 @@ type Context struct {
 	// Place to keep cookies, so Go doesn't garbage collect them before C
 	// is done with them
 	Cookies []Cookie
-	Lane    int // Reference to pool position
 
 	// Used for callbacks to retrieve sprite information, etc.
 	InlineImgs, Sprites map[string]spritewell.ImageList
@@ -66,8 +65,6 @@ const (
 )
 
 var Style map[string]int
-
-var Pool []*Context
 
 func init() {
 	Style = make(map[string]int)
