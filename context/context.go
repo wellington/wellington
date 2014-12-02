@@ -21,7 +21,7 @@ import (
 )
 
 //export customHandler
-func customHandler(cargs *C.union_Sass_Value, ptr unsafe.Pointer) *C.union_Sass_Value {
+func customHandler(cargs UnionSassValue, ptr unsafe.Pointer) UnionSassValue {
 	// Recover the Cookie struct passed in
 	ck := *(*Cookie)(ptr)
 	usv := ck.fn(cargs)
@@ -106,7 +106,10 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 		size := C.size_t(len(ctx.Cookies) + 1)
 		fns := C.sass_make_function_list(size)
 		for i, v := range ctx.Cookies {
-			fn := C.sass_make_function(C.CString(v.sign),
+			fn := C.sass_make_function(
+				// sass signature
+				C.CString(v.sign),
+				// C bridge
 				C.Sass_C_Function(C.CallSassFunction),
 				// Only pass reference to global array, so
 				// GC won't clean it up.

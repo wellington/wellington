@@ -14,7 +14,7 @@ import "C"
 
 type SassValue interface{}
 
-func unmarshal(arg *C.union_Sass_Value, v interface{}) error {
+func unmarshal(arg UnionSassValue, v interface{}) error {
 	f := reflect.ValueOf(v).Elem()
 	switch {
 	default:
@@ -103,12 +103,12 @@ func Unmarshal(arg UnionSassValue, v interface{}) error {
 	return unmarshal(arg, v)
 }
 
-func Marshal(v interface{}) *C.union_Sass_Value {
+func Marshal(v interface{}) UnionSassValue {
 	return makevalue(v)
 }
 
 // make is needed to create types for use by test
-func makevalue(v interface{}) *C.union_Sass_Value {
+func makevalue(v interface{}) UnionSassValue {
 	f := reflect.ValueOf(v)
 	switch f.Kind() {
 	default:
@@ -140,7 +140,7 @@ func makevalue(v interface{}) *C.union_Sass_Value {
 // Can't import C in the test package, so this is how to test cgo code
 func testUnmarshalUnknown(t *testing.T) {
 	// Test for nil (no value, pointer, or empty error)
-	var unk *C.union_Sass_Value
+	var unk UnionSassValue
 	x := Marshal(unk)
 	var v interface{}
 	_ = Unmarshal(x, &v)
