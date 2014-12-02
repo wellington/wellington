@@ -144,7 +144,7 @@ func TestContextCustomSimpleTypes(t *testing.T) {
 	// Communication channel for the C Sass callback function
 	ch := make(chan []SassValue, 1)
 	ctx.Cookies[0] = Cookie{
-		"foo($null, $num, $str, $bool, $color)", func(usv UnionSassValue) UnionSassValue {
+		"foo($null, $num, $str, $bool, $color)", func(c *Context, usv UnionSassValue) UnionSassValue {
 			// Send the SassValue fn arguments to the ch channel
 			var sv []SassValue
 			Unmarshal(usv, &sv)
@@ -184,7 +184,7 @@ func TestContextCustomComplexTypes(t *testing.T) {
 	}
 	ch := make(chan []SassValue, 1)
 	ctx.Cookies[0] = Cookie{
-		"foo($list, $map)", func(usv UnionSassValue) UnionSassValue {
+		"foo($list, $map)", func(c *Context, usv UnionSassValue) UnionSassValue {
 			var sv []SassValue
 			Unmarshal(usv, &sv)
 			ch <- sv
@@ -258,7 +258,7 @@ func ExampleContext_Compile() {
 		ctx.Cookies = make([]Cookie, 1)
 	}
 	ctx.Cookies[0] = Cookie{
-		"foo()", func(usv UnionSassValue) UnionSassValue {
+		"foo()", func(c *Context, usv UnionSassValue) UnionSassValue {
 			return Marshal("no-repeat")
 		}, &ctx,
 	}

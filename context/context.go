@@ -13,6 +13,7 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"path/filepath"
 
 	"github.com/drewwells/spritewell"
 
@@ -91,10 +92,17 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 		// C.sass_delete_data_context(dc)
 	}()
 
-	// Set custom sass functions
+	// Append registered handlers to cookie array
+	for _, h := range handlers {
+		ctx.Cookies = append(ctx.Cookies, Cookie{
+			h.sign, h.callback, ctx,
+		})
+	}
+
+	size := C.size_t(len(ctx.Cookies) + 1)
+	fns := C.sass_make_function_list(size)
+	// Send cookies to libsass
 	if len(ctx.Cookies) > 0 {
-		size := C.size_t(len(ctx.Cookies) + 1)
-		fns := C.sass_make_function_list(size)
 		for i, v := range ctx.Cookies {
 			fn := C.sass_make_function(
 				// sass signature
@@ -106,9 +114,10 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 				unsafe.Pointer(&ctx.Cookies[i]))
 			C.sass_set_function(&fns, fn, C.int(i))
 		}
-
-		C.sass_option_set_c_functions(opts, fns)
 	}
+
+	C.sass_option_set_c_functions(opts, fns)
+
 	C.sass_option_set_precision(opts, prec)
 	C.sass_option_set_source_comments(opts, cmt)
 	return opts
@@ -161,4 +170,12 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	}
 
 	return nil
+}
+
+// Rel creates relative paths between the build directory where the CSS lives
+// and the image directory that is being linked.  This is not compatible
+// with generated images like sprites.
+func (p *Context) RelativeImage() string {
+	rel, _ := filepath.Rel(p.BuildDir, p.ImageDir)
+	return filepath.Clean(rel)
 }
