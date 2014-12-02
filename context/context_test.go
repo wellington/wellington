@@ -274,20 +274,6 @@ func ExampleContext_Compile() {
 	//   background: no-repeat; }
 }
 
-func TestContextCallback(t *testing.T) {
-	in := bytes.NewBufferString(`div {
-  background: foo(3, asdf);
-}`)
-
-	var out bytes.Buffer
-	ctx := Context{}
-	err := ctx.Compile(in, &out)
-	if err != nil {
-		t.Error(err)
-	}
-
-}
-
 func BenchmarkContextCompile(b *testing.B) {
 	// TBD
 }
