@@ -13,7 +13,6 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-	"log"
 
 	"github.com/drewwells/spritewell"
 
@@ -74,12 +73,6 @@ func init() {
 	Style["compressed"] = COMPRESSED_STYLE
 
 }
-
-func test() {
-	log.Print("hi")
-}
-
-var d = []Cookie{}
 
 // Init validates options in the struct and returns a Sass Options.
 func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options {
