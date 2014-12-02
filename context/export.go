@@ -21,12 +21,14 @@ import "log"
 type Cookie struct {
 	Lane int
 	sign string
-	fn   CookieCb
+	fn   SassCallback
 	ctx  *Context
 }
 
+type UnionSassValue *C.union_Sass_Value
+
 // CookieCb defines the callback libsass eventually executes in sprite_sass
-type CookieCb func(sv []SassValue)
+type SassCallback func(csv UnionSassValue) UnionSassValue
 
 // NewCookie creates C.Cookie from Go strings.  It is not safe and will leak
 // memory, so structs created need to be cleaned up manually.
@@ -37,6 +39,9 @@ func NewCookie(lane int, sign string) Cookie {
 	return c
 }
 
-func SampleCB(sv []SassValue) {
+func SampleCB(usv UnionSassValue) UnionSassValue {
+	var sv []SassValue
+	Unmarshal(usv, &sv)
 	log.Printf("Arguments: % #v\n", sv)
+	return C.sass_make_boolean(false)
 }

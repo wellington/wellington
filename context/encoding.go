@@ -99,7 +99,7 @@ func unmarshal(arg *C.union_Sass_Value, v interface{}) error {
 }
 
 // Decode converts Sass Value to Go compatible data types.
-func Unmarshal(arg *C.union_Sass_Value, v interface{}) error {
+func Unmarshal(arg UnionSassValue, v interface{}) error {
 	return unmarshal(arg, v)
 }
 

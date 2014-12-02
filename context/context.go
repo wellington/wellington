@@ -24,14 +24,8 @@ import (
 func customHandler(cargs *C.union_Sass_Value, ptr unsafe.Pointer) *C.union_Sass_Value {
 	// Recover the Cookie struct passed in
 	ck := *(*Cookie)(ptr)
-	arglen := int(C.sass_list_get_length(cargs))
-	goargs := make([]SassValue, arglen)
-	for i := 0; i < arglen; i++ {
-		carg := C.sass_list_get_value(cargs, C.size_t(i))
-		Unmarshal(carg, &goargs[i])
-	}
-	ck.fn(goargs)
-	return C.sass_make_boolean(false)
+	usv := ck.fn(cargs)
+	return usv
 }
 
 // Context handles the interactions with libsass.  Context
