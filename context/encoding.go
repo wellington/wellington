@@ -12,6 +12,8 @@ import (
 // #include "sass_context.h"
 import "C"
 
+type UnionSassValue *C.union_Sass_Value
+
 type SassValue interface{}
 
 func unmarshal(arg UnionSassValue, v interface{}) error {

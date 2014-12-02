@@ -1,12 +1,12 @@
 package context
 
-/*
-
-#include <stdlib.h>
-#include "sass_context.h"
-
-static union Sass_Value* CallSassFunction( union Sass_Value* s_args, void* cookie);
-*/
+// #include <stdlib.h>
+// #include "sass_context.h"
+//
+// extern union Sass_Value* goBridge( union Sass_Value* s_args, void* cookie);
+// union Sass_Value* CallSassFunction( union Sass_Value* s_args, void* cookie ) {
+//     return goBridge(s_args, cookie);
+// }
 import "C"
 
 import (
@@ -20,12 +20,12 @@ import (
 	"unsafe"
 )
 
-//export customHandler
-func customHandler(cargs UnionSassValue, ptr unsafe.Pointer) UnionSassValue {
-	// Recover the Cookie struct passed in
-	ck := *(*Cookie)(ptr)
-	usv := ck.fn(cargs)
-	return usv
+// Cookie is used for passing context information to libsass.  Cookie is
+// passed to custom handlers when libsass executes them through the go bridge.
+type Cookie struct {
+	sign string
+	fn   SassCallback
+	ctx  *Context
 }
 
 // Context handles the interactions with libsass.  Context
