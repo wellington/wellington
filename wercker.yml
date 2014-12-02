@@ -31,7 +31,7 @@ build:
     - script:
         name: go test
         code: |
-          go test -cover
+          go test ./...
     - script:
         name: Coveralls.io
         code: |
