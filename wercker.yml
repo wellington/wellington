@@ -51,10 +51,10 @@ build:
           rsync -avz --exclude ".hg/" --exclude "sprite_sass/" --exclude ".git/" "$GOPATH/" "$WERCKER_CACHE_DIR/sprite_path"
           rsync -avz "$WERCKER_SOURCE_DIR/libsass/" "$WERCKER_CACHE_DIR/libsass_$LIB_VER/"
   after-steps:
-    - hipchat-notify:
+    - hipchat-notify@1.0.5:
         token: $HIPCHAT_TOKEN
         room-id: 550303
-        from-name: Wellington_build
+        from-name: Wellington
 deploy:
   steps:
     - script:
