@@ -33,7 +33,7 @@ type handler struct {
 var handlers []handler
 
 func SampleCB(ctx *Context, usv UnionSassValue) UnionSassValue {
-	var sv []SassValue
+	var sv []interface{}
 	Unmarshal(usv, &sv)
 	return C.sass_make_boolean(false)
 }
