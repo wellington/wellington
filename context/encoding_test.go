@@ -27,8 +27,8 @@ func TestUnmarshalNumber(t *testing.T) {
 	if err == nil {
 		t.Error("No error thrown for invalid type")
 	}
-	if e := "Can not cast int to type reflect.Float64"; e != err.Error() {
-		t.Errorf("got:\n%s\nwanted:\n%s\n", e, err.Error())
+	if e := "Unsupported SassValue"; e != err.Error() {
+		t.Errorf("got:\n%s\nwanted:\n%s\n", err.Error(), e)
 	}
 
 }
@@ -37,7 +37,7 @@ func TestUnmarshalUnknown(t *testing.T) {
 	testUnmarshalUnknown(t)
 }
 
-func TestUnmarshalValue(t *testing.T) {
+func TestUnmarshalStringValue(t *testing.T) {
 	e := "example"
 	input := makevalue(e)
 	var s string
@@ -45,20 +45,13 @@ func TestUnmarshalValue(t *testing.T) {
 	if e != s {
 		t.Errorf("got: % #v\nwanted: %s", s, e)
 	}
-
-	var gsv SassValue
-	Unmarshal(input, &gsv)
-	if e != gsv {
-		t.Errorf("got: % #v\nwanted: %s", gsv, e)
-	}
-
 }
 
 func TestUnmarshalComplex(t *testing.T) {
-	// Only SassValue supported for lists, is this ok?
-	e := []SassValue{"ex1", "ex2"}
+	// Only interfaces supported for lists, is this ok?
+	e := []string{"ex1", "ex2"}
 	list := makevalue(e)
-	var s []SassValue
+	var s []string
 	Unmarshal(list, &s)
 
 	if len(s) != len(e) {
@@ -82,5 +75,83 @@ func TestMarshalList(t *testing.T) {
 }
 
 func TestMarshalListInterface(t *testing.T) {
-	testMarshalListInterface(t)
+	testMarshalNumberInterface(t)
+}
+
+// Can't import C in the test package, so this is how to test cgo code
+func testUnmarshalUnknown(t *testing.T) {
+	// Test for nil (no value, pointer, or empty error)
+	var unk UnionSassValue
+	x := Marshal(unk)
+	var v interface{}
+	_ = Unmarshal(x, &v)
+	if v != "<nil>" {
+		t.Error("non-nil returned")
+	}
+
+	// Need a test for non-supported type
+}
+
+func testMarshalNumber(t *testing.T) {
+	num := float64(24)
+	var num2 float64
+	x := Marshal(num)
+	_ = Unmarshal(x, &num2)
+
+	if num2 != num {
+		t.Errorf("got: %v wanted: %v", num2, num)
+	}
+}
+
+func testMarshalList(t *testing.T) {
+	lst1 := []float64{1, 2, 3, 4}
+	var lst2 []float64
+
+	x := Marshal(lst1)
+	_ = Unmarshal(x, &lst2)
+
+	if len(lst1) != len(lst2) {
+		t.Error("List length mismatch")
+	}
+
+	for i := range lst1 {
+		if lst1[i] != lst2[i] {
+			t.Errorf("wanted: %f got: %f", lst1[i], lst2[i])
+		}
+	}
+}
+
+func testMarshalNumberInterface(t *testing.T) {
+	var fl = float64(3)
+	var intf interface{}
+
+	x := Marshal(fl)
+	_ = Unmarshal(x, &intf)
+
+	if fl != intf {
+		t.Errorf("got: %v wanted: %v", intf, fl)
+	}
+}
+
+func testMarshalInterfaceListToMultiVariable(t *testing.T) {
+	var lst = []interface{}{5, "a", true}
+	var i float64
+	var s string
+	var b bool
+	var ir = float64(5)
+	var sr = string("a")
+	var br = bool(true)
+
+	lstm := Marshal(lst)
+	_ = Unmarshal(lstm, &i, &s, &b)
+
+	if i != ir {
+		t.Errorf("got: %f wanted: %f", ir, i)
+	}
+	if s != sr {
+		t.Errorf("got: %s wanted: %s", sr, s)
+	}
+	if b != br {
+		t.Errorf("got: %b wanted: %b", br, b)
+	}
 }

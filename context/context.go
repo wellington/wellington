@@ -53,7 +53,7 @@ type Context struct {
 	InlineImgs, Sprites map[string]spritewell.ImageList
 
 	//TODO: Remove this likely, here now for easier testing
-	values []SassValue
+	values []interface{}
 }
 
 // Constants/enums for the output style.
