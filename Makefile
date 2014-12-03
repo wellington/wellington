@@ -1,3 +1,4 @@
+.PHONY: test
 run:
 	go run sprite/main.go -o /tmp/core.css -p ~/work/rmn/www/gui/sass -d ~/work/rmn/www/gui/im/sass ~/work/rmn/www/gui/sass/rmn/_core.scss
 home:
@@ -16,4 +17,4 @@ build:
 exec:
 	docker run -it -v "$(pwd)":/gopath/src/app sprite bash
 test:
-	scripts/getclean.sh
+	scripts/goclean.sh
