@@ -132,3 +132,26 @@ func testMarshalNumberInterface(t *testing.T) {
 		t.Errorf("got: %v wanted: %v", intf, fl)
 	}
 }
+
+func testMarshalInterfaceListToMultiVariable(t *testing.T) {
+	var lst = []interface{}{5, "a", true}
+	var i float64
+	var s string
+	var b bool
+	var ir = float64(5)
+	var sr = string("a")
+	var br = bool(true)
+
+	lstm := Marshal(lst)
+	_ = Unmarshal(lstm, &i, &s, &b)
+
+	if i != ir {
+		t.Errorf("got: %f wanted: %f", ir, i)
+	}
+	if s != sr {
+		t.Errorf("got: %s wanted: %s", sr, s)
+	}
+	if b != br {
+		t.Errorf("got: %b wanted: %b", br, b)
+	}
+}
