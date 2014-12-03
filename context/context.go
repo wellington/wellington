@@ -51,9 +51,6 @@ type Context struct {
 
 	// Used for callbacks to retrieve sprite information, etc.
 	InlineImgs, Sprites map[string]spritewell.ImageList
-
-	//TODO: Remove this likely, here now for easier testing
-	values []interface{}
 }
 
 // Constants/enums for the output style.

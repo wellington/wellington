@@ -21,3 +21,27 @@ func ImageUrl(ctx *Context, csv UnionSassValue) UnionSassValue {
 	res, _ := Marshal(filepath.Join(ctx.RelativeImage(), path))
 	return res
 }
+
+func ImageHeight(ctx *Context, usv UnionSassValue) UnionSassValue {
+	return usv
+}
+
+func ImageWidth(ctx *Context, usv UnionSassValue) UnionSassValue {
+	return usv
+}
+
+func InlineImage(ctx *Context, usv UnionSassValue) UnionSassValue {
+	return usv
+}
+
+func SpriteFile(ctx *Context, usv UnionSassValue) UnionSassValue {
+	return usv
+}
+
+func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
+	return usv
+}
+
+func Sprite(ctx *Context, usv UnionSassValue) UnionSassValue {
+	return usv
+}
