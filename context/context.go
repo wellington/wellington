@@ -91,18 +91,23 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 		// C.free(unsafe.Pointer(cc))
 		// C.sass_delete_data_context(dc)
 	}()
-
+	cookies := make([]Cookie, len(handlers)+len(ctx.Cookies))
 	// Append registered handlers to cookie array
-	/*for _, h := range handlers {
-		ctx.Cookies = append(ctx.Cookies, Cookie{
+	for i, h := range handlers {
+		cookies[i] = Cookie{
 			h.sign, h.callback, ctx,
-		})
-	}*/
+		}
+	}
+	for i, h := range ctx.Cookies {
+		cookies[i+len(handlers)] = Cookie{
+			h.sign, h.fn, ctx,
+		}
+	}
 
 	size := C.size_t(len(ctx.Cookies) + 1)
 	fns := C.sass_make_function_list(size)
 	// Send cookies to libsass
-	if len(ctx.Cookies) > 0 {
+	if len(cookies) > 0 {
 		for i, v := range ctx.Cookies {
 			fn := C.sass_make_function(
 				// sass signature
