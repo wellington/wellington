@@ -57,3 +57,15 @@ sprite
 |@include *sprite-dimensions*($images,"file");|Creates height/width css for the container size|
 |background-image: inline-image($images,"justone");|Base64 encoded data uri of the requested image|
 |background: *image-url*("nopixel.png");|Creates a relative path to your image directory|
+
+
+### Development
+
+Testing on linux (via docker)
+
+```
+#only needed once
+docker build -t sprite .
+#start the container and run all tests in it
+docker run -it -v $(pwd):/gopath/src/app sprite go test ./...
+```
