@@ -11,10 +11,10 @@
 set -e
 
 # Automatic checks
-#test -z "$(gofmt -l -w .     | tee /dev/stderr)"
-#test -z "$(goimports -l -w . | tee /dev/stderr)"
+test -z "$(gofmt -l -w .     | tee /dev/stderr)"
+test -z "$(goimports -l -w . | tee /dev/stderr)"
 #test -z "$(golint .          | tee /dev/stderr)"
-#go vet ./...
+go vet ./...
 go test -race ./...
 
 # Run test coverage on each subdirectories and merge the coverage profile.
