@@ -152,6 +152,6 @@ func testMarshalInterfaceListToMultiVariable(t *testing.T) {
 		t.Errorf("got: %s wanted: %s", sr, s)
 	}
 	if b != br {
-		t.Errorf("got: %b wanted: %b", br, b)
+		t.Errorf("got: %t wanted: %t", br, b)
 	}
 }

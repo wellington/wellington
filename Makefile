@@ -15,3 +15,5 @@ build:
 	docker build -t sprite .
 exec:
 	docker run -it -v "$(pwd)":/gopath/src/app sprite bash
+test:
+	scripts/getclean.sh
