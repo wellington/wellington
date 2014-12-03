@@ -116,7 +116,7 @@ func testMarshalList(t *testing.T) {
 
 	for i := range lst1 {
 		if lst1[i] != lst2[i] {
-			t.Errorf("wanted: %d got: %d", lst1[i], lst2[i])
+			t.Errorf("wanted: %f got: %f", lst1[i], lst2[i])
 		}
 	}
 }
