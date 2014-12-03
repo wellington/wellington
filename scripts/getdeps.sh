@@ -18,5 +18,5 @@ if [ -w '/usr/local/lib/libsass.a' ];
 then
 	cd libsass; make install
 else
-	cd libsass; sudo make install
+	cd libsass; make install
 fi

@@ -11,3 +11,7 @@ deps:
 	scripts/getdeps.sh
 headers:
 	scripts/getheaders.sh
+build:
+	docker build -t sprite .
+exec:
+	docker run -it -v "$(pwd)":/gopath/src/app sprite bash

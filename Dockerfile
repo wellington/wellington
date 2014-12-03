@@ -1,9 +1,10 @@
-FROM subosito/golang-xc
-ADD . /usr/local/go/src/github.com/drewwells/sprite_sass
+FROM google/golang
+WORKDIR /gopath/src/app
+ADD . /gopath/src/app
 
-WORKDIR /usr/local/go/src/github.com/drewwells/sprite_sass
-RUN cd libsass; make clean all
+RUN make deps
 RUN go get ./...
-RUN go build
 
-#-> % docker run -it -v /Users/drew/go/src/github.com/drewwells/sprite_sass:/usr/local/go/src/github.com/drewwells/sprite_sass subosito/golang-xc /bin/bash
+VOLUME ["/gopath/src/app"]
+
+CMD []
