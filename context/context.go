@@ -93,11 +93,11 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 	}()
 
 	// Append registered handlers to cookie array
-	for _, h := range handlers {
+	/*for _, h := range handlers {
 		ctx.Cookies = append(ctx.Cookies, Cookie{
 			h.sign, h.callback, ctx,
 		})
-	}
+	}*/
 
 	size := C.size_t(len(ctx.Cookies) + 1)
 	fns := C.sass_make_function_list(size)
