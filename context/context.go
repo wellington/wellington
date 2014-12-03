@@ -72,6 +72,14 @@ func init() {
 
 }
 
+func NewContext() *Context {
+	c := Context{}
+
+	// Initiailize image map(s)
+	c.Sprites = make(map[string]spritewell.ImageList)
+	return &c
+}
+
 // Init validates options in the struct and returns a Sass Options.
 func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options {
 	if ctx.Precision == 0 {

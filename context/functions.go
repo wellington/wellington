@@ -3,6 +3,8 @@ package context
 import (
 	"log"
 	"path/filepath"
+
+	sw "github.com/drewwells/spritewell"
 )
 
 func init() {
@@ -39,7 +41,22 @@ func SpriteFile(ctx *Context, usv UnionSassValue) UnionSassValue {
 }
 
 func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
-	return usv
+	var glob string
+	Unmarshal(usv, &glob)
+	imgs := sw.ImageList{
+		ImageDir:  ctx.ImageDir,
+		BuildDir:  ctx.BuildDir,
+		GenImgDir: ctx.GenImgDir,
+		Vertical:  true,
+	}
+	imgs.Decode(glob)
+	imgs.Combine()
+	ctx.Sprites[glob] = imgs
+	gpath, err := imgs.Export()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return Marshal(gpath)
 }
 
 func Sprite(ctx *Context, usv UnionSassValue) UnionSassValue {
