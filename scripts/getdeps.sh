@@ -9,6 +9,7 @@ then
 else
 	echo "Fetching source of $HASH"
 	cd libsass
+	make clean
 	curl -L "https://github.com/drewwells/libsass/archive/$HASH.tar.gz" -o "libsass.$HASH.tar.gz"
 	tar xvf "libsass.$HASH.tar.gz" --strip 1
 	cd ..
