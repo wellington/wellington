@@ -12,7 +12,7 @@ func init() {
 
 	RegisterHandler("image-width($a)", ImageURL)
 	RegisterHandler("sprite-map($a,$position:0px,$spacing:5px)", SpriteMap)
-	//RegisterHandler("image-width($a)", ImageURL)
+	// RegisterHandler("image-width($a)", ImageURL)
 }
 
 // ImageURL handles calls to resolve a local image from the
@@ -55,7 +55,6 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 	var glob string
 	var spacing float64
 	var position float64
-	fmt.Println("Sprite Map")
 	err := Unmarshal(usv, &glob, &spacing, &position)
 	if err != nil {
 		log.Fatal(err)
@@ -66,7 +65,10 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 		GenImgDir: ctx.GenImgDir,
 		Vertical:  true,
 	}
-	imgs.Decode(glob)
+	err = imgs.Decode(filepath.Join(imgs.ImageDir, glob))
+	if err != nil {
+		log.Fatal(err)
+	}
 	imgs.Combine()
 	ctx.Sprites[glob] = imgs
 	gpath, err := imgs.Export()

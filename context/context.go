@@ -11,10 +11,10 @@ import "C"
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"path/filepath"
+	"reflect"
 
 	"github.com/drewwells/spritewell"
 
@@ -112,27 +112,34 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 	ctx.Cookies = cookies
 	size := C.size_t(len(ctx.Cookies))
 	fns := C.sass_make_function_list(size)
-
+	signatures := make([]string, len(ctx.Cookies))
 	// Send cookies to libsass
-	for i := range ctx.Cookies {
-		fmt.Println(i)
+	// Create a slice that's backed by a C array
+	length := len(ctx.Cookies) + 1
+	hdr := reflect.SliceHeader{
+		Data: uintptr(unsafe.Pointer(fns)),
+		Len:  length, Cap: length,
+	}
+	gofns := *(*[]C.Sass_C_Function_Callback)(unsafe.Pointer(&hdr))
+	for i, v := range ctx.Cookies {
+		signatures[i] = ctx.Cookies[i].sign
+		_ = v
+		cg := C.CString(signatures[i])
+		_ = cg
+
 		fn := C.sass_make_function(
 			// sass signature
-			C.CString(ctx.Cookies[i].sign),
+			C.CString(v.sign),
 			// C bridge
 			C.Sass_C_Function(C.CallSassFunction),
 			// Only pass reference to global array, so
 			// GC won't clean it up.
 			unsafe.Pointer(&ctx.Cookies[i]))
-		C.sass_function_set_list_entry(fns, fn, C.size_t(i))
+
+		gofns[i] = fn
 	}
 
-	/*for i := range ctx.Cookies {
-		ptr := C.sass_function_get_list_entry(&fns, C.size_t(i))
-		fmt.Printf(">> % #v\n", C.GoString(ptr.signature))
-	}*/
-	//C.sass_option_set_c_functions(opts, fns)
-
+	C.sass_option_set_c_functions(opts, (C.Sass_C_Function_List)(unsafe.Pointer(&gofns[0])))
 	C.sass_option_set_precision(opts, prec)
 	C.sass_option_set_source_comments(opts, cmt)
 	return opts
