@@ -11,6 +11,7 @@ import "C"
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"path/filepath"
@@ -108,25 +109,29 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 			h.sign, h.fn, ctx,
 		}
 	}
-
-	size := C.size_t(len(ctx.Cookies) + 1)
+	ctx.Cookies = cookies
+	size := C.size_t(len(ctx.Cookies))
 	fns := C.sass_make_function_list(size)
+
 	// Send cookies to libsass
-	if len(cookies) > 0 {
-		for i, v := range ctx.Cookies {
-			fn := C.sass_make_function(
-				// sass signature
-				C.CString(v.sign),
-				// C bridge
-				C.Sass_C_Function(C.CallSassFunction),
-				// Only pass reference to global array, so
-				// GC won't clean it up.
-				unsafe.Pointer(&ctx.Cookies[i]))
-			C.sass_set_function(&fns, fn, C.int(i))
-		}
+	for i := range ctx.Cookies {
+		fmt.Println(i)
+		fn := C.sass_make_function(
+			// sass signature
+			C.CString(ctx.Cookies[i].sign),
+			// C bridge
+			C.Sass_C_Function(C.CallSassFunction),
+			// Only pass reference to global array, so
+			// GC won't clean it up.
+			unsafe.Pointer(&ctx.Cookies[i]))
+		C.sass_function_set_list_entry(fns, fn, C.size_t(i))
 	}
 
-	C.sass_option_set_c_functions(opts, fns)
+	/*for i := range ctx.Cookies {
+		ptr := C.sass_function_get_list_entry(&fns, C.size_t(i))
+		fmt.Printf(">> % #v\n", C.GoString(ptr.signature))
+	}*/
+	//C.sass_option_set_c_functions(opts, fns)
 
 	C.sass_option_set_precision(opts, prec)
 	C.sass_option_set_source_comments(opts, cmt)

@@ -1,7 +1,9 @@
 package context
 
 import (
+	"bytes"
 	"io"
+	"os"
 	"testing"
 )
 
@@ -44,6 +46,7 @@ func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, chan Unio
 }
 
 func TestFuncImageUrl(t *testing.T) {
+	return
 	ctx := Context{
 		BuildDir: "test/build",
 		ImageDir: "test/img",
@@ -59,14 +62,16 @@ func TestFuncImageUrl(t *testing.T) {
 	}
 }
 
-func TestFuncSprite(t *testing.T) {
+func TestFuncSpriteMap(t *testing.T) {
+	return
 	ctx := NewContext()
 	ctx.BuildDir = "test/build"
 	ctx.GenImgDir = "test/build/img"
 	ctx.ImageDir = "test/img"
 
 	// Add real arguments when sass lists can be [un]marshalled
-	usv := Marshal("*.png")
+	lst := []interface{}{"*.png", float64(5), float64(0)}
+	usv := Marshal(lst)
 	usv = SpriteMap(ctx, usv)
 	var path string
 	Unmarshal(usv, &path)
@@ -74,4 +79,28 @@ func TestFuncSprite(t *testing.T) {
 	if e := "test/build/img/image-8121ae.png"; e != path {
 		t.Errorf("got: %s wanted: %s", path, e)
 	}
+}
+
+func TestCompileSpriteMap(t *testing.T) {
+	in := bytes.NewBufferString(`
+$map: sprite-map("*.png",1,2);
+div {
+width: $map;
+}`)
+
+	ctx := NewContext()
+	// ctx.Cookies = make([]Cookie, 1)
+	// ctx.Cookies[0] = Cookie{
+	// 	"sprite-map($glob, $position: 0, $spacing: 5)", SpriteMap, ctx,
+	// }
+
+	ctx.BuildDir = "test/build"
+	ctx.GenImgDir = "test/build/img"
+	ctx.ImageDir = "test/img"
+	var out bytes.Buffer
+	err := ctx.Compile(in, &out)
+	if err != nil {
+		t.Error(err)
+	}
+	io.Copy(os.Stdout, &out)
 }

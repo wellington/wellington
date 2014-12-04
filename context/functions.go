@@ -1,6 +1,7 @@
 package context
 
 import (
+	"fmt"
 	"log"
 	"path/filepath"
 
@@ -9,18 +10,26 @@ import (
 
 func init() {
 
-	RegisterHandler("image-url($a)", ImageUrl)
+	RegisterHandler("image-width($a)", ImageURL)
+	RegisterHandler("sprite-map($a,$position:0px,$spacing:5px)", SpriteMap)
+	//RegisterHandler("image-width($a)", ImageURL)
 }
 
-// ImageUrl handles calls to Rel()
-func ImageUrl(ctx *Context, csv UnionSassValue) UnionSassValue {
-	var path string
+// ImageURL handles calls to resolve a local image from the
+// built css file path.
+func ImageURL(ctx *Context, csv UnionSassValue) UnionSassValue {
+	var path []string
 	err := Unmarshal(csv, &path)
+	fmt.Println("Imageurl")
 	// This should create and throw a sass error
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
+		fmt.Println(err)
 	}
-	res, _ := Marshal(filepath.Join(ctx.RelativeImage(), path))
+	res, err := Marshal(filepath.Join(ctx.RelativeImage(), path))
+    if err != nil {
+        fmt.Println(err)
+    }
 	return res
 }
 
@@ -40,9 +49,17 @@ func SpriteFile(ctx *Context, usv UnionSassValue) UnionSassValue {
 	return usv
 }
 
+// SpriteMap generates a sprite from the passed glob and sprite
+// parameters.
 func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 	var glob string
-	Unmarshal(usv, &glob)
+	var spacing float64
+	var position float64
+	fmt.Println("Sprite Map")
+	err := Unmarshal(usv, &glob, &spacing, &position)
+	if err != nil {
+		log.Fatal(err)
+	}
 	imgs := sw.ImageList{
 		ImageDir:  ctx.ImageDir,
 		BuildDir:  ctx.BuildDir,
