@@ -2,6 +2,7 @@ package context
 
 import (
 	"errors"
+	"fmt"
 	//"fmt"
 	"image/color"
 	"reflect"
@@ -73,7 +74,7 @@ func unmarshal(arg UnionSassValue, v interface{}) error {
 			return errors.New("Matching SassValue is not a string")
 		}
 	case reflect.Bool:
-		if C.sass_value_is_string(arg) {
+		if C.sass_value_is_boolean(arg) {
 			b := bool(C.sass_boolean_get_value(arg))
 			f.Set(reflect.ValueOf(b))
 		} else {
@@ -119,7 +120,8 @@ func Unmarshal(arg UnionSassValue, v ...interface{}) error {
 	}
 	if len(v) > 1 {
 		if len(v) != int(C.sass_list_get_length(arg)) {
-			return errors.New("Function argument length didn't match c arguments")
+			return errors.New(fmt.Sprintf("Arguments mismatch %d C arguments did not match %d",
+				int(C.sass_list_get_length(arg)), len(v)))
 		}
 		for i := range v {
 			err = unmarshal(C.sass_list_get_value(arg, C.size_t(i)), v[i])
