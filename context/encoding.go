@@ -3,7 +3,6 @@ package context
 import (
 	"errors"
 	"fmt"
-	//"fmt"
 	"image/color"
 	"reflect"
 )
@@ -12,7 +11,10 @@ import (
 import "C"
 
 type UnionSassValue *C.union_Sass_Value
-type IntSassComma C.int
+type SassNumber struct {
+	value float64
+	unit  string
+}
 
 func unmarshal(arg UnionSassValue, v interface{}) error {
 	//Get the underlying value of v and its kind
@@ -90,6 +92,13 @@ func unmarshal(arg UnionSassValue, v interface{}) error {
 				A: uint8(C.sass_color_get_a(arg)),
 			}
 			f.Set(reflect.ValueOf(col))
+		} else if C.sass_value_is_number(arg) {
+			sn := SassNumber{
+				value: float64(C.sass_number_get_value(arg)),
+				unit:  C.GoString(C.sass_number_get_unit(arg)),
+			}
+			f.Set(reflect.ValueOf(sn))
+
 		} else {
 			return errors.New("Matching SassValue is not a color.RGBA")
 		}
@@ -147,16 +156,21 @@ func makevalue(v interface{}) UnionSassValue {
 	case reflect.Float32, reflect.Float64:
 		switch f.Kind() {
 		default:
-			return C.sass_make_number(C.double(0), C.CString("wtfisthis"))
+			return C.sass_make_number(C.double(0), C.CString("none"))
 		case reflect.Float32:
-			return C.sass_make_number(C.double(v.(float32)), C.CString("wtfisthis"))
+			return C.sass_make_number(C.double(v.(float32)), C.CString("none"))
 		case reflect.Float64:
-			return C.sass_make_number(C.double(v.(float64)), C.CString("wtfisthis"))
+			return C.sass_make_number(C.double(v.(float64)), C.CString("none"))
 		}
 	case reflect.Int:
-		return C.sass_make_number(C.double(v.(int)), C.CString("wtfisthis"))
+		return C.sass_make_number(C.double(v.(int)), C.CString("none"))
+	case reflect.Bool:
+		return C.sass_make_boolean(C.bool(v.(bool)))
 	case reflect.String:
 		return C.sass_make_string(C.CString(v.(string)))
+	case reflect.Struct: //only number is supported right now
+		var sn = v.(SassNumber)
+		return C.sass_make_number(C.double(sn.value), C.CString(sn.unit))
 	case reflect.Slice:
 		// Initialize the list
 		l := C.sass_make_list(C.size_t(f.Len()), C.SASS_COMMA)

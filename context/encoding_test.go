@@ -1,6 +1,9 @@
 package context
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestUnmarshalNumber(t *testing.T) {
 
@@ -33,10 +36,6 @@ func TestUnmarshalNumber(t *testing.T) {
 
 }
 
-func TestUnmarshalUnknown(t *testing.T) {
-	testUnmarshalUnknown(t)
-}
-
 func TestUnmarshalStringValue(t *testing.T) {
 	e := "example"
 	input := makevalue(e)
@@ -66,20 +65,8 @@ func TestUnmarshalComplex(t *testing.T) {
 	}
 }
 
-func TestMarshalNumber(t *testing.T) {
-	testMarshalNumber(t)
-}
-
-func TestMarshalList(t *testing.T) {
-	testMarshalList(t)
-}
-
-func TestMarshalListInterface(t *testing.T) {
-	testMarshalNumberInterface(t)
-}
-
 // Can't import C in the test package, so this is how to test cgo code
-func testUnmarshalUnknown(t *testing.T) {
+func TestUnmarshalUnknown(t *testing.T) {
 	// Test for nil (no value, pointer, or empty error)
 	var unk UnionSassValue
 	x := Marshal(unk)
@@ -92,7 +79,7 @@ func testUnmarshalUnknown(t *testing.T) {
 	// Need a test for non-supported type
 }
 
-func testMarshalNumber(t *testing.T) {
+func TestMarshalNumber(t *testing.T) {
 	num := float64(24)
 	var num2 float64
 	x := Marshal(num)
@@ -103,7 +90,7 @@ func testMarshalNumber(t *testing.T) {
 	}
 }
 
-func testMarshalList(t *testing.T) {
+func TestMarshalList(t *testing.T) {
 	lst1 := []float64{1, 2, 3, 4}
 	var lst2 []float64
 
@@ -121,7 +108,7 @@ func testMarshalList(t *testing.T) {
 	}
 }
 
-func testMarshalNumberInterface(t *testing.T) {
+func TestMarshalNumberInterface(t *testing.T) {
 	var fl = float64(3)
 	var intf interface{}
 
@@ -133,7 +120,19 @@ func testMarshalNumberInterface(t *testing.T) {
 	}
 }
 
-func testMarshalInterfaceListToMultiVariable(t *testing.T) {
+func TestMarshalBool(t *testing.T) {
+	var b = bool(true)
+	var be bool
+
+	bm := Marshal(b)
+	_ = Unmarshal(bm, &be)
+
+	if b != be {
+		t.Errorf("got: %t wanted: %t", be, b)
+	}
+}
+
+func TestMarshalInterfaceListToMultiVariable(t *testing.T) {
 	var lst = []interface{}{5, "a", true}
 	var i float64
 	var s string
@@ -146,12 +145,27 @@ func testMarshalInterfaceListToMultiVariable(t *testing.T) {
 	_ = Unmarshal(lstm, &i, &s, &b)
 
 	if i != ir {
-		t.Errorf("got: %f wanted: %f", ir, i)
+		t.Errorf("got: %f wanted: %f", i, ir)
 	}
 	if s != sr {
-		t.Errorf("got: %s wanted: %s", sr, s)
+		t.Errorf("got: %s wanted: %s", s, sr)
 	}
 	if b != br {
-		t.Errorf("got: %t wanted: %t", br, b)
+		t.Errorf("got: %t wanted: %t", b, br)
+	}
+}
+
+func TestMarshalSassNumber(t *testing.T) {
+	sn := SassNumber{
+		value: float64(3.5),
+		unit:  "px",
+	}
+	var sne = SassNumber{}
+
+	snm := Marshal(sn)
+	_ = Unmarshal(snm, &sne)
+
+	if !reflect.DeepEqual(sne, sn) {
+		t.Errorf("wanted:\n%#v\ngot:\n% #v", sne, snm)
 	}
 }

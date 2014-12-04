@@ -8,3 +8,4 @@ snapshot
 libsass
 .wercker
 *.cov
+profile.cov
