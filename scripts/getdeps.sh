@@ -17,7 +17,7 @@ fi
 # Check file permissions
 if [ -w '/usr/local/lib/libsass.a' ];
 then
-	cd libsass; make install
+	cd libsass; make clean install
 else
-	cd libsass; sudo make install
+	cd libsass; sudo make clean install
 fi
