@@ -1,7 +1,6 @@
 package context
 
 import (
-	"errors"
 	"fmt"
 	"image/color"
 	"reflect"
@@ -10,6 +9,14 @@ import (
 
 type unsupportedStruct struct {
 	value float64
+}
+
+func testMarshal(t *testing.T, v interface{}) UnionSassValue {
+	res, err := Marshal(v)
+	if err != nil {
+		t.Error(err)
+	}
+	return res
 }
 
 func TestUnmarshalNumber(t *testing.T) {
@@ -76,7 +83,7 @@ func TestUnmarshalComplex(t *testing.T) {
 func TestUnmarshalUnknown(t *testing.T) {
 	// Test for nil (no value, pointer, or empty error)
 	var unk UnionSassValue
-	x, _ := Marshal(unk)
+	x := testMarshal(t, unk)
 	var v interface{}
 	_ = Unmarshal(x, &v)
 	if v != "<nil>" {
@@ -89,7 +96,7 @@ func TestUnmarshalUnknown(t *testing.T) {
 func TestMarshalNumber(t *testing.T) {
 	num := float64(24)
 	var num2 float64
-	x, _ := Marshal(num)
+	x := testMarshal(t, num)
 	_ = Unmarshal(x, &num2)
 
 	if num2 != num {
@@ -101,7 +108,7 @@ func TestMarshalList(t *testing.T) {
 	lst1 := []float64{1, 2, 3, 4}
 	var lst2 []float64
 
-	x, _ := Marshal(lst1)
+	x := testMarshal(t, lst1)
 	_ = Unmarshal(x, &lst2)
 
 	if len(lst1) != len(lst2) {
@@ -119,7 +126,7 @@ func TestMarshalNumberInterface(t *testing.T) {
 	var fl = float64(3)
 	var intf interface{}
 
-	x, _ := Marshal(fl)
+	x := testMarshal(t, fl)
 	_ = Unmarshal(x, &intf)
 
 	if fl != intf {
@@ -131,8 +138,8 @@ func TestMarshalBool(t *testing.T) {
 	var b = bool(true)
 	var be bool
 
-	bm, _ := Marshal(b)
-	_ = Unmarshal(bm, &be)
+	bm := testMarshal(t, b)
+	Unmarshal(bm, &be)
 
 	if b != be {
 		t.Errorf("got: %t wanted: %t", be, b)
@@ -148,7 +155,7 @@ func TestMarshalInterfaceListToMultiVariable(t *testing.T) {
 	var sr = string("a")
 	var br = bool(true)
 
-	lstm, _ := Marshal(lst)
+	lstm := testMarshal(t, lst)
 	_ = Unmarshal(lstm, &i, &s, &b)
 
 	if i != ir {
@@ -167,7 +174,7 @@ func TestMarshalInterfaceListSingleVariable(t *testing.T) {
 	var i float64
 	var ir = float64(5)
 
-	lstm, _ := Marshal(lst)
+	lstm := testMarshal(t, lst)
 	_ = Unmarshal(lstm, &i)
 
 	if i != ir {
@@ -182,7 +189,7 @@ func TestMarshalSassNumber(t *testing.T) {
 	}
 	var sne = SassNumber{}
 
-	snm, _ := Marshal(sn)
+	snm := testMarshal(t, sn)
 	_ = Unmarshal(snm, &sne)
 
 	if !reflect.DeepEqual(sne, sn) {
@@ -199,7 +206,7 @@ func TestMarshalColor(t *testing.T) {
 	}
 	var ce = color.RGBA{}
 
-	cm, _ := Marshal(c)
+	cm := testMarshal(t, c)
 	_ = Unmarshal(cm, &ce)
 
 	if !reflect.DeepEqual(ce, c) {
@@ -212,10 +219,13 @@ func TestMarshalUnsupportedStruct(t *testing.T) {
 		value: 5.5,
 	}
 
-	_, er := Marshal(us)
-	expectedErr := errors.New(fmt.Sprintf("The struct type %s is unsupported for marshalling", reflect.TypeOf(us).String()))
+	_, err := Marshal(us)
 
-	if !reflect.DeepEqual(expectedErr, er) {
+	expectedErr := fmt.Errorf(
+		"The struct type %s is unsupported for marshalling",
+		reflect.TypeOf(us).String())
+
+	if !reflect.DeepEqual(expectedErr, err) {
 		t.Errorf("Marshalling of unsupported struct did not return an error")
 	}
 }

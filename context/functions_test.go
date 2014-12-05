@@ -44,14 +44,14 @@ func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, chan Unio
 	return ctx, cc, ec
 }
 
-func TestFuncImageUrl(t *testing.T) {
+func TestFuncImageURL(t *testing.T) {
 	ctx := Context{
 		BuildDir: "test/build",
 		ImageDir: "test/img",
 	}
 
-	usv, _ := Marshal("image.png")
-	usv = ImageUrl(&ctx, usv)
+	usv := testMarshal(t, []string{"image.png"})
+	usv = ImageURL(&ctx, usv)
 	var path string
 	Unmarshal(usv, &path)
 
@@ -68,10 +68,13 @@ func TestFuncSpriteMap(t *testing.T) {
 
 	// Add real arguments when sass lists can be [un]marshalled
 	lst := []interface{}{"*.png", float64(5), float64(0)}
-	usv := Marshal(lst)
+	usv := testMarshal(t, lst)
 	usv = SpriteMap(ctx, usv)
 	var path string
-	Unmarshal(usv, &path)
+	err := Unmarshal(usv, &path)
+	if err != nil {
+		t.Error(err)
+	}
 
 	if e := "test/build/img/image-8121ae.png"; e != path {
 		t.Errorf("got: %s wanted: %s", path, e)

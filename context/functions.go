@@ -24,10 +24,10 @@ func ImageURL(ctx *Context, csv UnionSassValue) UnionSassValue {
 	if err != nil {
 		fmt.Println(err)
 	}
-	res, err := Marshal(filepath.Join(ctx.RelativeImage(), path))
-    if err != nil {
-        fmt.Println(err)
-    }
+	res, err := Marshal(filepath.Join(ctx.RelativeImage(), path[0]))
+	if err != nil {
+		fmt.Println(err)
+	}
 	return res
 }
 
@@ -76,7 +76,11 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return Marshal(gpath)
+	res, err := Marshal(gpath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return res
 }
 
 func Sprite(ctx *Context, usv UnionSassValue) UnionSassValue {
