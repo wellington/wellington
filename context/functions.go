@@ -18,5 +18,6 @@ func ImageUrl(ctx *Context, csv UnionSassValue) UnionSassValue {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return Marshal(filepath.Join(ctx.RelativeImage(), path))
+	res, _ := Marshal(filepath.Join(ctx.RelativeImage(), path))
+	return res
 }

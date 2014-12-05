@@ -3,13 +3,13 @@ package context
 import (
 	"bytes"
 	"fmt"
-	//"image/color"
+	"image/color"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
-	//"reflect"
+	"reflect"
 	"regexp"
 	"testing"
 
@@ -132,7 +132,6 @@ div {
 
 }
 
-/*
 func TestContextCustomSimpleTypes(t *testing.T) {
 	in := bytes.NewBufferString(`div {
   background: foo(null, 3, asdf, false, #005500);
@@ -147,11 +146,17 @@ func TestContextCustomSimpleTypes(t *testing.T) {
 	ctx.Cookies[0] = Cookie{
 		"foo($null, $num, $str, $bool, $color)", func(c *Context, usv UnionSassValue) UnionSassValue {
 			// Send the interface fn arguments to the ch channel
-			var sv []interface{}
-			Unmarshal(usv, &sv)
-			ch <- sv
 
-			return Marshal(false)
+			var n interface{}
+			var num float64
+			var s string
+			var b bool
+			var col = color.RGBA{}
+			var intf = []interface{}{n, num, s, b, col}
+			Unmarshal(usv, &intf)
+			ch <- intf
+			res, _ := Marshal(false)
+			return res
 		}, &ctx,
 	}
 	var out bytes.Buffer
@@ -172,11 +177,10 @@ func TestContextCustomSimpleTypes(t *testing.T) {
 		t.Errorf("wanted:\n% #v\ngot:\n% #v", e, args)
 	}
 }
-*/
 
-/*func TestContextCustomComplexTypes(t *testing.T) {
+func TestContextCustomComplexTypes(t *testing.T) {
 	in := bytes.NewBufferString(`div {
-	     background: foo((a,b,1,#003300), (a:(b:#003300,c:(d:4,e:str))));
+	     background: foo((a,b,1,#003300));
 	   }`)
 
 	var out bytes.Buffer
@@ -184,13 +188,14 @@ func TestContextCustomSimpleTypes(t *testing.T) {
 	if ctx.Cookies == nil {
 		ctx.Cookies = make([]Cookie, 1)
 	}
-	ch := make(chan []interface{}, 1)
+	ch := make(chan interface{}, 1)
 	ctx.Cookies[0] = Cookie{
-		"foo($list, $map)", func(c *Context, usv UnionSassValue) UnionSassValue {
-			var sv []interface{}
+		"foo($list)", func(c *Context, usv UnionSassValue) UnionSassValue {
+			var sv interface{}
 			Unmarshal(usv, &sv)
 			ch <- sv
-			return Marshal(false)
+			res, _ := Marshal(false)
+			return res
 		}, &ctx,
 	}
 	err := ctx.Compile(in, &out)
@@ -199,27 +204,16 @@ func TestContextCustomSimpleTypes(t *testing.T) {
 	}
 
 	e := []interface{}{
-		[]interface{}{
-			"a",
-			"b",
-			float64(1),
-			color.RGBA{R: 0x0, G: 0x33, B: 0x0, A: 0x1},
-		},
-		//maps not implemented
-		map[interface{}]interface{}{
-			"a": map[interface{}]interface{}{
-				"b": color.RGBA{R: 0x0, G: 0x33, B: 0x0, A: 0x1},
-				"c": map[interface{}]interface{}{"d": 4, "e": "str"},
-			},
-		},
+		"a",
+		"b",
+		float64(1),
+		color.RGBA{R: 0x0, G: 0x33, B: 0x0, A: 0x1},
 	}
-
 	args := <-ch
-
-	if !reflect.DeepEqual(e[0], args[0]) {
-		t.Errorf("wanted:\n%#v\ngot:\n% #v", e[0], args[0])
+	if !reflect.DeepEqual(e, args) {
+		t.Errorf("wanted:\n%#v\ngot:\n% #v", e, args)
 	}
-}*/
+}
 
 func TestContextCustomArity(t *testing.T) {
 	in := bytes.NewBufferString(`div {
@@ -261,7 +255,8 @@ func ExampleContext_Compile() {
 	}
 	ctx.Cookies[0] = Cookie{
 		"foo()", func(c *Context, usv UnionSassValue) UnionSassValue {
-			return Marshal("no-repeat")
+			res, _ := Marshal("no-repeat")
+			return res
 		}, &ctx,
 	}
 	err := ctx.Compile(in, &out)

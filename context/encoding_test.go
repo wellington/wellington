@@ -1,14 +1,21 @@
 package context
 
 import (
+	"errors"
+	"fmt"
+	"image/color"
 	"reflect"
 	"testing"
 )
 
+type unsupportedStruct struct {
+	value float64
+}
+
 func TestUnmarshalNumber(t *testing.T) {
 
 	c := float64(1)
-	sv := makevalue(c)
+	sv, _ := makevalue(c)
 	var i float64
 	Unmarshal(sv, &i)
 	if c != i {
@@ -16,7 +23,7 @@ func TestUnmarshalNumber(t *testing.T) {
 	}
 
 	d := 1.5
-	dv := makevalue(d)
+	dv, _ := makevalue(d)
 	var ed float64
 	Unmarshal(dv, &ed)
 	if d != ed {
@@ -24,7 +31,7 @@ func TestUnmarshalNumber(t *testing.T) {
 	}
 
 	d = 2
-	dv = makevalue(d)
+	dv, _ = makevalue(d)
 	var ei int
 	err := Unmarshal(dv, &ei)
 	if err == nil {
@@ -38,7 +45,7 @@ func TestUnmarshalNumber(t *testing.T) {
 
 func TestUnmarshalStringValue(t *testing.T) {
 	e := "example"
-	input := makevalue(e)
+	input, _ := makevalue(e)
 	var s string
 	Unmarshal(input, &s)
 	if e != s {
@@ -49,7 +56,7 @@ func TestUnmarshalStringValue(t *testing.T) {
 func TestUnmarshalComplex(t *testing.T) {
 	// Only interfaces supported for lists, is this ok?
 	e := []string{"ex1", "ex2"}
-	list := makevalue(e)
+	list, _ := makevalue(e)
 	var s []string
 	Unmarshal(list, &s)
 
@@ -69,7 +76,7 @@ func TestUnmarshalComplex(t *testing.T) {
 func TestUnmarshalUnknown(t *testing.T) {
 	// Test for nil (no value, pointer, or empty error)
 	var unk UnionSassValue
-	x := Marshal(unk)
+	x, _ := Marshal(unk)
 	var v interface{}
 	_ = Unmarshal(x, &v)
 	if v != "<nil>" {
@@ -82,7 +89,7 @@ func TestUnmarshalUnknown(t *testing.T) {
 func TestMarshalNumber(t *testing.T) {
 	num := float64(24)
 	var num2 float64
-	x := Marshal(num)
+	x, _ := Marshal(num)
 	_ = Unmarshal(x, &num2)
 
 	if num2 != num {
@@ -94,7 +101,7 @@ func TestMarshalList(t *testing.T) {
 	lst1 := []float64{1, 2, 3, 4}
 	var lst2 []float64
 
-	x := Marshal(lst1)
+	x, _ := Marshal(lst1)
 	_ = Unmarshal(x, &lst2)
 
 	if len(lst1) != len(lst2) {
@@ -112,7 +119,7 @@ func TestMarshalNumberInterface(t *testing.T) {
 	var fl = float64(3)
 	var intf interface{}
 
-	x := Marshal(fl)
+	x, _ := Marshal(fl)
 	_ = Unmarshal(x, &intf)
 
 	if fl != intf {
@@ -124,7 +131,7 @@ func TestMarshalBool(t *testing.T) {
 	var b = bool(true)
 	var be bool
 
-	bm := Marshal(b)
+	bm, _ := Marshal(b)
 	_ = Unmarshal(bm, &be)
 
 	if b != be {
@@ -141,7 +148,7 @@ func TestMarshalInterfaceListToMultiVariable(t *testing.T) {
 	var sr = string("a")
 	var br = bool(true)
 
-	lstm := Marshal(lst)
+	lstm, _ := Marshal(lst)
 	_ = Unmarshal(lstm, &i, &s, &b)
 
 	if i != ir {
@@ -155,6 +162,19 @@ func TestMarshalInterfaceListToMultiVariable(t *testing.T) {
 	}
 }
 
+func TestMarshalInterfaceListSingleVariable(t *testing.T) {
+	var lst = []interface{}{5}
+	var i float64
+	var ir = float64(5)
+
+	lstm, _ := Marshal(lst)
+	_ = Unmarshal(lstm, &i)
+
+	if i != ir {
+		t.Errorf("got: %f wanted: %f", i, ir)
+	}
+}
+
 func TestMarshalSassNumber(t *testing.T) {
 	sn := SassNumber{
 		value: float64(3.5),
@@ -162,10 +182,40 @@ func TestMarshalSassNumber(t *testing.T) {
 	}
 	var sne = SassNumber{}
 
-	snm := Marshal(sn)
+	snm, _ := Marshal(sn)
 	_ = Unmarshal(snm, &sne)
 
 	if !reflect.DeepEqual(sne, sn) {
-		t.Errorf("wanted:\n%#v\ngot:\n% #v", sne, snm)
+		t.Errorf("wanted:\n%#v\ngot:\n% #v", sn, sne)
+	}
+}
+
+func TestMarshalColor(t *testing.T) {
+	c := color.RGBA{
+		R: uint8(5),
+		G: uint8(6),
+		B: uint8(7),
+		A: uint8(8),
+	}
+	var ce = color.RGBA{}
+
+	cm, _ := Marshal(c)
+	_ = Unmarshal(cm, &ce)
+
+	if !reflect.DeepEqual(ce, c) {
+		t.Errorf("wanted:\n%#v\ngot:\n% #v", c, ce)
+	}
+}
+
+func TestMarshalUnsupportedStruct(t *testing.T) {
+	us := unsupportedStruct{
+		value: 5.5,
+	}
+
+	_, er := Marshal(us)
+	expectedErr := errors.New(fmt.Sprintf("The struct type %s is unsupported for marshalling", reflect.TypeOf(us).String()))
+
+	if !reflect.DeepEqual(expectedErr, er) {
+		t.Errorf("Marshalling of unsupported struct did not return an error")
 	}
 }
