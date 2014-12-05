@@ -216,7 +216,6 @@ func TestContextCustomComplexTypes(t *testing.T) {
 }
 
 func TestContextCustomArity(t *testing.T) {
-	return
 	in := bytes.NewBufferString(`div {
   color: red(blue);
   background: foo(1, 2);

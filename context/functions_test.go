@@ -3,7 +3,6 @@ package context
 import (
 	"bytes"
 	"io"
-	"os"
 	"testing"
 )
 
@@ -46,7 +45,6 @@ func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, chan Unio
 }
 
 func TestFuncImageUrl(t *testing.T) {
-	return
 	ctx := Context{
 		BuildDir: "test/build",
 		ImageDir: "test/img",
@@ -63,7 +61,6 @@ func TestFuncImageUrl(t *testing.T) {
 }
 
 func TestFuncSpriteMap(t *testing.T) {
-	return
 	ctx := NewContext()
 	ctx.BuildDir = "test/build"
 	ctx.GenImgDir = "test/build/img"
@@ -89,10 +86,6 @@ width: $map;
 }`)
 
 	ctx := NewContext()
-	// ctx.Cookies = make([]Cookie, 1)
-	// ctx.Cookies[0] = Cookie{
-	// 	"sprite-map($glob, $position: 0, $spacing: 5)", SpriteMap, ctx,
-	// }
 
 	ctx.BuildDir = "test/build"
 	ctx.GenImgDir = "test/build/img"
@@ -102,5 +95,11 @@ width: $map;
 	if err != nil {
 		t.Error(err)
 	}
-	io.Copy(os.Stdout, &out)
+	exp := `div {
+  width: test/build/img/image-8121ae.png; }
+`
+
+	if exp != out.String() {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), exp)
+	}
 }

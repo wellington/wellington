@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"strconv"
 
 	sw "github.com/drewwells/spritewell"
 )
@@ -12,7 +13,6 @@ func init() {
 
 	RegisterHandler("image-width($a)", ImageURL)
 	RegisterHandler("sprite-map($a,$position:0px,$spacing:5px)", SpriteMap)
-	// RegisterHandler("image-width($a)", ImageURL)
 }
 
 // ImageURL handles calls to resolve a local image from the
@@ -20,10 +20,8 @@ func init() {
 func ImageURL(ctx *Context, csv UnionSassValue) UnionSassValue {
 	var path []string
 	err := Unmarshal(csv, &path)
-	fmt.Println("Imageurl")
 	// This should create and throw a sass error
 	if err != nil {
-		panic(err)
 		fmt.Println(err)
 	}
 	res, err := Marshal(filepath.Join(ctx.RelativeImage(), path))
@@ -65,7 +63,10 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 		GenImgDir: ctx.GenImgDir,
 		Vertical:  true,
 	}
-	err = imgs.Decode(filepath.Join(imgs.ImageDir, glob))
+	if cglob, err := strconv.Unquote(glob); err == nil {
+		glob = cglob
+	}
+	err = imgs.Decode(glob)
 	if err != nil {
 		log.Fatal(err)
 	}
