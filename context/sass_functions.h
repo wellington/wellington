@@ -49,20 +49,27 @@ char* sass_import_take_srcmap (struct Sass_Import*);
 void sass_delete_import_list (struct Sass_Import**);
 
 
-// Forward declaration
-struct Sass_C_Function_Descriptor;
-
 // Typedef defining null terminated list of custom callbacks
 typedef struct Sass_C_Function_Descriptor* (*Sass_C_Function_List);
 typedef struct Sass_C_Function_Descriptor (*Sass_C_Function_Callback);
 // Typedef defining custom function prototype and its return value type
 typedef union Sass_Value*(*Sass_C_Function) (union Sass_Value*, void *cookie);
 
+// Forward declaration
+struct Sass_C_Function_Descriptor {
+  const char*     signature;
+  Sass_C_Function function;
+  void*           cookie;
+};
+
 
 // Creators for sass function list and function descriptors
 Sass_C_Function_List sass_make_function_list (size_t length);
 Sass_C_Function_Callback sass_make_function (const char* signature, Sass_C_Function fn, void* cookie);
-void* sass_set_function(Sass_C_Function_List* list, Sass_C_Function_Callback cb, int pos);
+
+// Setters and getters for callbacks on function lists
+Sass_C_Function_Callback sass_function_get_list_entry(Sass_C_Function_List* list, size_t pos);
+void sass_function_set_list_entry(Sass_C_Function_List* list, Sass_C_Function_Callback cb, size_t pos);
 
 // Getters for custom function descriptors
 const char* sass_function_get_signature (Sass_C_Function_Callback fn);

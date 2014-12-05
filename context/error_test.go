@@ -2,47 +2,9 @@ package context
 
 import (
 	"bytes"
-	"io"
-	"log"
+
 	"testing"
 )
-
-func setupCtx(f interface{}) (Context, string, error) {
-	ctx := Context{
-		OutputStyle:  NESTED_STYLE,
-		IncludePaths: make([]string, 0),
-		BuildDir:     "test/build",
-		ImageDir:     "test/img",
-		GenImgDir:    "test/build/img",
-		Out:          "",
-		// Parser: Parser{
-		// 	MainFile: "testname",
-		// },
-	}
-	var (
-		out bytes.Buffer
-		err error
-	)
-
-	var reader io.Reader
-	switch v := f.(type) {
-	case io.Reader:
-		reader = f.(io.Reader)
-	case string:
-		reader = fileReader(f.(string))
-	default:
-		log.Printf("Unhandled type: %T", v)
-		return ctx, "", nil
-	}
-
-	err = ctx.Compile(reader, &out)
-	if err != nil {
-		// This will mask iport errors
-		log.Print(err)
-	}
-
-	return ctx, out.String(), err
-}
 
 type ErrorMap struct {
 	line    int

@@ -14,6 +14,7 @@ import (
 	"io"
 	"io/ioutil"
 	"path/filepath"
+	"reflect"
 
 	"github.com/drewwells/spritewell"
 
@@ -51,9 +52,6 @@ type Context struct {
 
 	// Used for callbacks to retrieve sprite information, etc.
 	InlineImgs, Sprites map[string]spritewell.ImageList
-
-	//TODO: Remove this likely, here now for easier testing
-	values []interface{}
 }
 
 // Constants/enums for the output style.
@@ -73,6 +71,14 @@ func init() {
 	Style["compact"] = COMPACT_STYLE
 	Style["compressed"] = COMPRESSED_STYLE
 
+}
+
+func NewContext() *Context {
+	c := Context{}
+
+	// Initiailize image map(s)
+	c.Sprites = make(map[string]spritewell.ImageList)
+	return &c
 }
 
 // Init validates options in the struct and returns a Sass Options.
@@ -103,26 +109,37 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 			h.sign, h.fn, ctx,
 		}
 	}
-
-	size := C.size_t(len(ctx.Cookies) + 1)
+	ctx.Cookies = cookies
+	size := C.size_t(len(ctx.Cookies))
 	fns := C.sass_make_function_list(size)
+	signatures := make([]string, len(ctx.Cookies))
 	// Send cookies to libsass
-	if len(cookies) > 0 {
-		for i, v := range ctx.Cookies {
-			fn := C.sass_make_function(
-				// sass signature
-				C.CString(v.sign),
-				// C bridge
-				C.Sass_C_Function(C.CallSassFunction),
-				// Only pass reference to global array, so
-				// GC won't clean it up.
-				unsafe.Pointer(&ctx.Cookies[i]))
-			C.sass_set_function(&fns, fn, C.int(i))
-		}
+	// Create a slice that's backed by a C array
+	length := len(ctx.Cookies) + 1
+	hdr := reflect.SliceHeader{
+		Data: uintptr(unsafe.Pointer(fns)),
+		Len:  length, Cap: length,
+	}
+	gofns := *(*[]C.Sass_C_Function_Callback)(unsafe.Pointer(&hdr))
+	for i, v := range ctx.Cookies {
+		signatures[i] = ctx.Cookies[i].sign
+		_ = v
+		cg := C.CString(signatures[i])
+		_ = cg
+
+		fn := C.sass_make_function(
+			// sass signature
+			C.CString(v.sign),
+			// C bridge
+			C.Sass_C_Function(C.CallSassFunction),
+			// Only pass reference to global array, so
+			// GC won't clean it up.
+			unsafe.Pointer(&ctx.Cookies[i]))
+
+		gofns[i] = fn
 	}
 
-	C.sass_option_set_c_functions(opts, fns)
-
+	C.sass_option_set_c_functions(opts, (C.Sass_C_Function_List)(unsafe.Pointer(&gofns[0])))
 	C.sass_option_set_precision(opts, prec)
 	C.sass_option_set_source_comments(opts, cmt)
 	return opts
