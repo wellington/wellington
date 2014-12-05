@@ -12,7 +12,7 @@ import (
 func init() {
 
 	RegisterHandler("image-width($a)", ImageURL)
-	RegisterHandler("sprite-map($a,$position:0px,$spacing:5px)", SpriteMap)
+	RegisterHandler("sprite-map($glob,$position:0px,$spacing:5px)", SpriteMap)
 }
 
 // ImageURL handles calls to resolve a local image from the

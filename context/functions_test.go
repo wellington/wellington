@@ -83,9 +83,11 @@ func TestFuncSpriteMap(t *testing.T) {
 
 func TestCompileSpriteMap(t *testing.T) {
 	in := bytes.NewBufferString(`
-$map: sprite-map("*.png",1,2);
+$aritymap: sprite-map("*.png",1,2); // Optional arguments
+$map: sprite-map("*.png"); // One argument
 div {
 width: $map;
+height: $aritymap;
 }`)
 
 	ctx := NewContext()
