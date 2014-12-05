@@ -101,7 +101,8 @@ height: $aritymap;
 		t.Error(err)
 	}
 	exp := `div {
-  width: test/build/img/image-8121ae.png; }
+  width: test/build/img/image-8121ae.png;
+  height: test/build/img/image-8121ae.png; }
 `
 
 	if exp != out.String() {
