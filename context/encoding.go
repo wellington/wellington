@@ -131,8 +131,9 @@ func unmarshal(arg UnionSassValue, v interface{}) error {
 // Decode converts Sass Value to Go compatible data types.
 func Unmarshal(arg UnionSassValue, v ...interface{}) error {
 	var err error
-
-	if len(v) == 0 {
+	if arg == nil {
+		return errors.New("I can't work with this. arg UnionSassValue must not be nil. - Unmarshaller")
+	} else if len(v) == 0 {
 		return errors.New("Cannot Unmarshal an empty value - Michael Scott")
 	} else if len(v) > 1 {
 		if len(v) < int(C.sass_list_get_length(arg)) { //check for optional arguements that are not passed and pad with nil

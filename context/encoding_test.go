@@ -273,3 +273,13 @@ func TestOptionalParameters(t *testing.T) {
 	}
 
 }
+
+func TestNullUnionSassValue(t *testing.T) {
+	var usv UnionSassValue
+	var inf interface{}
+	err := Unmarshal(usv, &inf)
+
+	if err.Error() != "I can't work with this. arg UnionSassValue must not be nil. - Unmarshaller" {
+		t.Errorf("got: %s wanted 'I can't work with this. arg UnionSassValue must not be nil. - Unmarshaller'", err)
+	}
+}
