@@ -241,3 +241,35 @@ func TestQuotedStringUnMarshal(t *testing.T) {
 		t.Errorf("got: %s wanted: %s", se, "Taylor Swift")
 	}
 }
+
+func TestOptionalParameters(t *testing.T) {
+	var lst = []interface{}{5, "a", true}
+	var i float64
+	var s string
+	var b bool
+	var s2 string
+	var i2 float64
+	var ir = float64(5)
+	var sr = string("a")
+	var br = bool(true)
+
+	lstm := testMarshal(t, lst)
+	_ = Unmarshal(lstm, &i, &s, &b, &s2, &i2)
+
+	if i != ir {
+		t.Errorf("got: %f wanted: %f", i, ir)
+	}
+	if s != sr {
+		t.Errorf("got: %s wanted: %s", s, sr)
+	}
+	if b != br {
+		t.Errorf("got: %t wanted: %t", b, br)
+	}
+	if s2 != "" {
+		t.Errorf("got: %s wanted empty string", s)
+	}
+	if i2 != 0 {
+		t.Errorf("got: %f wanted: 0", i2)
+	}
+
+}
