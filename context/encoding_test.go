@@ -229,3 +229,15 @@ func TestMarshalUnsupportedStruct(t *testing.T) {
 		t.Errorf("Marshalling of unsupported struct did not return an error")
 	}
 }
+
+func TestQuotedStringUnMarshal(t *testing.T) {
+	var s = "\"Taylor Swift\""
+	var se string
+
+	sm := testMarshal(t, s)
+	Unmarshal(sm, &se)
+
+	if se != "Taylor Swift" {
+		t.Errorf("got: %s wanted: %s", se, "Taylor Swift")
+	}
+}
