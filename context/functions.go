@@ -12,6 +12,7 @@ import (
 func init() {
 
 	RegisterHandler("sprite-map($glob,$position:0px,$spacing:5px)", SpriteMap)
+	RegisterHandler("image-url($name)", ImageURL)
 	RegisterHandler("image-height($map, $name)", ImageHeight)
 	RegisterHandler("image-width($map, $name)", ImageWidth)
 }
@@ -25,7 +26,8 @@ func ImageURL(ctx *Context, csv UnionSassValue) UnionSassValue {
 	if err != nil {
 		fmt.Println(err)
 	}
-	res, err := Marshal(filepath.Join(ctx.RelativeImage(), path[0]))
+	url := filepath.Join(ctx.RelativeImage(), path[0])
+	res, err := Marshal(fmt.Sprintf("url('%s')", url))
 	if err != nil {
 		fmt.Println(err)
 	}

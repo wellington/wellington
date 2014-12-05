@@ -37,6 +37,7 @@ func testSprite(ctx *Context) {
 }
 
 func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, UnionSassValue, error) {
+	var usv UnionSassValue
 	ctx := Context{
 		Sprites:      make(map[string]spritewell.ImageList),
 		OutputStyle:  NESTED_STYLE,
@@ -47,7 +48,7 @@ func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, UnionSass
 		Out:          "",
 	}
 	testSprite(&ctx)
-	var cc chan UnionSassValue
+	cc := make(chan UnionSassValue, len(cookies))
 	// If callbacks were made, add them to the context
 	// and create channels for communicating with them.
 	if len(cookies) > 0 {
@@ -59,10 +60,9 @@ func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, UnionSass
 				&ctx,
 			}
 		}
+		usv = <-cc
 	}
 	err := ctx.Compile(r, out)
-	var usv UnionSassValue
-	//usv := <-cc
 	return ctx, usv, err
 }
 
@@ -76,8 +76,7 @@ func TestFuncImageURL(t *testing.T) {
 	usv = ImageURL(&ctx, usv)
 	var path string
 	Unmarshal(usv, &path)
-
-	if e := "../img/image.png"; e != path {
+	if e := "url('../img/image.png')"; e != path {
 		t.Errorf("got: %s wanted: %s", path, e)
 	}
 }
@@ -149,7 +148,7 @@ div {
 	}
 }
 
-func TestFuncImageWidth(t *testing.T) {
+func TestRegImageWidth(t *testing.T) {
 	in := bytes.NewBufferString(`
 $map: "test/build/img/image-8121ae.png";
 div {
@@ -162,6 +161,24 @@ div {
 	}
 	e := `div {
   height: 96px; }
+`
+	if e != out.String() {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
+	}
+}
+
+func TestRegImageURL(t *testing.T) {
+	in := bytes.NewBufferString(`
+div {
+    background: image-url("139.png");
+}`)
+	var out bytes.Buffer
+	_, _, err := setupCtx(in, &out)
+	if err != nil {
+		t.Error(err)
+	}
+	e := `div {
+  background: url('../img/139.png'); }
 `
 	if e != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
