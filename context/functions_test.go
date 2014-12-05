@@ -16,6 +16,26 @@ func wrapCallback(sc SassCallback, ch chan UnionSassValue) SassCallback {
 	}
 }
 
+func testSprite(ctx *Context) {
+	// Generate test sprite
+	imgs := spritewell.ImageList{
+		ImageDir:  ctx.ImageDir,
+		BuildDir:  ctx.BuildDir,
+		GenImgDir: ctx.GenImgDir,
+		Vertical:  true,
+	}
+	err := imgs.Decode("*.png")
+	if err != nil {
+		panic(err)
+	}
+	imgs.Combine()
+	gpath, err := imgs.Export()
+	if err != nil {
+		panic(err)
+	}
+	ctx.Sprites[gpath] = imgs
+}
+
 func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, UnionSassValue, error) {
 	ctx := Context{
 		Sprites:      make(map[string]spritewell.ImageList),
@@ -26,6 +46,7 @@ func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, UnionSass
 		GenImgDir:    "test/build/img",
 		Out:          "",
 	}
+	testSprite(&ctx)
 	var cc chan UnionSassValue
 	// If callbacks were made, add them to the context
 	// and create channels for communicating with them.
@@ -122,6 +143,25 @@ div {
 
 	e := `div {
   height: 139px; }
+`
+	if e != out.String() {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
+	}
+}
+
+func TestFuncImageWidth(t *testing.T) {
+	in := bytes.NewBufferString(`
+$map: "test/build/img/image-8121ae.png";
+div {
+    height: image-width($map, "139");
+}`)
+	var out bytes.Buffer
+	_, _, err := setupCtx(in, &out)
+	if err != nil {
+		t.Error(err)
+	}
+	e := `div {
+  height: 96px; }
 `
 	if e != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)

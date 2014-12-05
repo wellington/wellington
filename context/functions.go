@@ -11,9 +11,9 @@ import (
 
 func init() {
 
-	RegisterHandler("image-width($a)", ImageURL)
 	RegisterHandler("sprite-map($glob,$position:0px,$spacing:5px)", SpriteMap)
 	RegisterHandler("image-height($map, $name)", ImageHeight)
+	RegisterHandler("image-width($map, $name)", ImageWidth)
 }
 
 // ImageURL handles calls to resolve a local image from the
@@ -55,7 +55,25 @@ func ImageHeight(ctx *Context, usv UnionSassValue) UnionSassValue {
 }
 
 func ImageWidth(ctx *Context, usv UnionSassValue) UnionSassValue {
-	return usv
+	var (
+		glob string
+		name string
+	)
+	err := Unmarshal(usv, &glob, &name)
+	if err != nil {
+		fmt.Println(err)
+	}
+	sprite := ctx.Sprites[glob]
+	width := sprite.SImageWidth(name)
+	Hwidth := SassNumber{
+		value: float64(width),
+		unit:  "px",
+	}
+	res, err := Marshal(Hwidth)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return res
 }
 
 func InlineImage(ctx *Context, usv UnionSassValue) UnionSassValue {
