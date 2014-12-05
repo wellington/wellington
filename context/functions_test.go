@@ -24,16 +24,21 @@ func testSprite(ctx *Context) {
 		GenImgDir: ctx.GenImgDir,
 		Vertical:  true,
 	}
-	err := imgs.Decode("*.png")
+	glob := "*.png"
+	err := imgs.Decode(glob)
 	if err != nil {
 		panic(err)
 	}
-	imgs.Combine()
-	gpath, err := imgs.Export()
+	err = imgs.Combine()
 	if err != nil {
 		panic(err)
 	}
-	ctx.Sprites[gpath] = imgs
+	err = imgs.OutputPath()
+
+	if err != nil {
+		panic(err)
+	}
+	ctx.Sprites[glob] = imgs
 }
 
 func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, UnionSassValue, error) {
@@ -97,7 +102,7 @@ func TestFuncSpriteMap(t *testing.T) {
 		t.Error(err)
 	}
 
-	if e := "test/build/img/image-8121ae.png"; e != path {
+	if e := "test/build/img/testimg-8121ae.png"; e != path {
 		t.Errorf("got: %s wanted: %s", path, e)
 	}
 }
@@ -122,8 +127,8 @@ height: $aritymap;
 		t.Error(err)
 	}
 	exp := `div {
-  width: test/build/img/image-8121ae.png;
-  height: test/build/img/image-8121ae.png; }
+  width: test/build/img/testimg-8121ae.png;
+  height: test/build/img/testimg-8121ae.png; }
 `
 
 	if exp != out.String() {
@@ -135,10 +140,14 @@ func TestFuncImageHeight(t *testing.T) {
 	in := bytes.NewBufferString(`
 $map: sprite-map("*.png",0,0);
 div {
-    height: image-height($map, "139");
+    height: image-height("139");
 }`)
 	var out bytes.Buffer
-	setupCtx(in, &out)
+	_, _, err := setupCtx(in, &out)
+
+	if err != nil {
+		t.Error(err)
+	}
 
 	e := `div {
   height: 139px; }
@@ -150,9 +159,8 @@ div {
 
 func TestRegImageWidth(t *testing.T) {
 	in := bytes.NewBufferString(`
-$map: "test/build/img/image-8121ae.png";
 div {
-    height: image-width($map, "139");
+    height: image-width("139");
 }`)
 	var out bytes.Buffer
 	_, _, err := setupCtx(in, &out)

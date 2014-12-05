@@ -13,8 +13,8 @@ func init() {
 
 	RegisterHandler("sprite-map($glob,$position:0px,$spacing:5px)", SpriteMap)
 	RegisterHandler("image-url($name)", ImageURL)
-	RegisterHandler("image-height($map, $name)", ImageHeight)
-	RegisterHandler("image-width($map, $name)", ImageWidth)
+	RegisterHandler("image-height($path)", ImageHeight)
+	RegisterHandler("image-width($path)", ImageWidth)
 }
 
 // ImageURL handles calls to resolve a local image from the
@@ -36,15 +36,19 @@ func ImageURL(ctx *Context, csv UnionSassValue) UnionSassValue {
 
 func ImageHeight(ctx *Context, usv UnionSassValue) UnionSassValue {
 	var (
-		glob string
 		name string
 	)
-	err := Unmarshal(usv, &glob, &name)
+	err := Unmarshal(usv, &name)
 	if err != nil {
 		fmt.Println(err)
 	}
-	sprite := ctx.Sprites[glob]
-	height := sprite.SImageHeight(name)
+	imgs := sw.ImageList{
+		ImageDir:  ctx.ImageDir,
+		GenImgDir: ctx.GenImgDir,
+	}
+	imgs.Decode(name)
+	imgs.Combine()
+	height := imgs.SImageHeight(name)
 	Hheight := SassNumber{
 		value: float64(height),
 		unit:  "px",
@@ -58,20 +62,24 @@ func ImageHeight(ctx *Context, usv UnionSassValue) UnionSassValue {
 
 func ImageWidth(ctx *Context, usv UnionSassValue) UnionSassValue {
 	var (
-		glob string
 		name string
 	)
-	err := Unmarshal(usv, &glob, &name)
+	err := Unmarshal(usv, &name)
 	if err != nil {
 		fmt.Println(err)
 	}
-	sprite := ctx.Sprites[glob]
-	width := sprite.SImageWidth(name)
-	Hwidth := SassNumber{
-		value: float64(width),
+	imgs := sw.ImageList{
+		ImageDir:  ctx.ImageDir,
+		GenImgDir: ctx.GenImgDir,
+	}
+	imgs.Decode(name)
+	imgs.Combine()
+	v := imgs.SImageWidth(name)
+	vv := SassNumber{
+		value: float64(v),
 		unit:  "px",
 	}
-	res, err := Marshal(Hwidth)
+	res, err := Marshal(vv)
 	if err != nil {
 		fmt.Println(err)
 	}
