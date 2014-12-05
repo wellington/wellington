@@ -210,7 +210,7 @@ func TestMarshalColor(t *testing.T) {
 	_ = Unmarshal(cm, &ce)
 
 	if !reflect.DeepEqual(ce, c) {
-		t.Errorf("wanted:\n%#v\ngot:\n% #v", c, ce)
+		t.Errorf("What the damn hell. Wanted:\n%#v\ngot:\n% #v", c, ce)
 	}
 }
 
@@ -238,6 +238,6 @@ func TestQuotedStringUnMarshal(t *testing.T) {
 	Unmarshal(sm, &se)
 
 	if se != "Taylor Swift" {
-		t.Errorf("got: %s wanted: %s", se, "Taylor Swift")
+		t.Errorf("What the damn hell. Got: %s wanted: %s", se, "Taylor Swift")
 	}
 }

@@ -12,10 +12,6 @@ import (
 import "C"
 
 type UnionSassValue *C.union_Sass_Value
-type SassNumber struct {
-	value float64
-	unit  string
-}
 
 func unmarshal(arg UnionSassValue, v interface{}) error {
 
