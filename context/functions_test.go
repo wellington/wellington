@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"io"
 	"testing"
+
+	"github.com/drewwells/spritewell"
 )
 
 func wrapCallback(sc SassCallback, ch chan UnionSassValue) SassCallback {
@@ -14,8 +16,9 @@ func wrapCallback(sc SassCallback, ch chan UnionSassValue) SassCallback {
 	}
 }
 
-func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, chan UnionSassValue, chan error) {
+func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, UnionSassValue, error) {
 	ctx := Context{
+		Sprites:      make(map[string]spritewell.ImageList),
 		OutputStyle:  NESTED_STYLE,
 		IncludePaths: make([]string, 0),
 		BuildDir:     "test/build",
@@ -24,8 +27,6 @@ func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, chan Unio
 		Out:          "",
 	}
 	var cc chan UnionSassValue
-	ec := make(chan error, 1)
-	_ = ec
 	// If callbacks were made, add them to the context
 	// and create channels for communicating with them.
 	if len(cookies) > 0 {
@@ -38,10 +39,10 @@ func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, chan Unio
 			}
 		}
 	}
-
-	ec <- ctx.Compile(r, out)
-
-	return ctx, cc, ec
+	err := ctx.Compile(r, out)
+	var usv UnionSassValue
+	//usv := <-cc
+	return ctx, usv, err
 }
 
 func TestFuncImageURL(t *testing.T) {
@@ -107,5 +108,22 @@ height: $aritymap;
 
 	if exp != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), exp)
+	}
+}
+
+func TestFuncImageHeight(t *testing.T) {
+	in := bytes.NewBufferString(`
+$map: sprite-map("*.png",0,0);
+div {
+    height: image-height($map, "139");
+}`)
+	var out bytes.Buffer
+	setupCtx(in, &out)
+
+	e := `div {
+  height: 139px; }
+`
+	if e != out.String() {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
 	}
 }
