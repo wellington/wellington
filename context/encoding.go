@@ -59,7 +59,7 @@ func unmarshal(arg UnionSassValue, v interface{}) error {
 			vv := float64(i)
 			f.Set(reflect.ValueOf(vv))
 		} else {
-			return errors.New("Matching SassValue is not a float64")
+			return throwMisMatchTypeError(arg, "float64")
 		}
 	case reflect.String:
 		if C.sass_value_is_string(arg) {
@@ -80,14 +80,14 @@ func unmarshal(arg UnionSassValue, v interface{}) error {
 				f.Set(reflect.ValueOf(gc))
 			}
 		} else {
-			return errors.New("Matching SassValue is not a string")
+			return throwMisMatchTypeError(arg, "string")
 		}
 	case reflect.Bool:
 		if C.sass_value_is_boolean(arg) {
 			b := bool(C.sass_boolean_get_value(arg))
 			f.Set(reflect.ValueOf(b))
 		} else {
-			return errors.New("Matching SassValue is not a bool")
+			return throwMisMatchTypeError(arg, "bool")
 		}
 	case reflect.Struct:
 		//Check for color
@@ -107,7 +107,7 @@ func unmarshal(arg UnionSassValue, v interface{}) error {
 			f.Set(reflect.ValueOf(sn))
 
 		} else {
-			return errors.New("Matching SassValue is not a color.RGBA")
+			return throwMisMatchTypeError(arg, "color.RGBA or SassNumber")
 		}
 	case reflect.Slice:
 		if C.sass_value_is_list(arg) {
@@ -122,7 +122,7 @@ func unmarshal(arg UnionSassValue, v interface{}) error {
 			}
 			f.Set(newv)
 		} else {
-			return errors.New("Matching SassValue is not a list")
+			return throwMisMatchTypeError(arg, "slice")
 		}
 	}
 	return nil
@@ -213,4 +213,10 @@ func makevalue(v interface{}) (UnionSassValue, error) {
 		}
 		return l, err
 	}
+}
+
+func throwMisMatchTypeError(arg UnionSassValue, expectedType string) error {
+	var intf interface{}
+	unmarshal(arg, &intf)
+	return fmt.Errorf("SassValue type mismatch.  Sassvalue is type \"%s\" and has value \"%s\" but expected %s", reflect.TypeOf(intf), intf, expectedType)
 }
