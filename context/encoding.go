@@ -135,11 +135,11 @@ func Unmarshal(arg UnionSassValue, v ...interface{}) error {
 	if len(v) == 0 {
 		return errors.New("Cannot Unmarshal an empty value - Michael Scott")
 	} else if len(v) > 1 {
-		if len(v) != int(C.sass_list_get_length(arg)) {
+		if len(v) < int(C.sass_list_get_length(arg)) { //check for optional arguements that are not passed and pad with nil
 			return errors.New(fmt.Sprintf("Arguments mismatch %d C arguments did not match %d",
 				int(C.sass_list_get_length(arg)), len(v)))
 		}
-		for i := range v {
+		for i := 0; i < int(C.sass_list_get_length(arg)); i++ {
 			err = unmarshal(C.sass_list_get_value(arg, C.size_t(i)), v[i])
 			if err != nil {
 				return err
