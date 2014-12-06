@@ -12,6 +12,7 @@ import (
 func init() {
 
 	RegisterHandler("sprite-map($glob,$position:0px,$spacing:5px)", SpriteMap)
+	RegisterHandler("sprite-file($map, $name)", SpriteFile)
 	RegisterHandler("image-url($name)", ImageURL)
 	RegisterHandler("image-height($path)", ImageHeight)
 	RegisterHandler("image-width($path)", ImageWidth)
@@ -91,7 +92,17 @@ func InlineImage(ctx *Context, usv UnionSassValue) UnionSassValue {
 }
 
 func SpriteFile(ctx *Context, usv UnionSassValue) UnionSassValue {
-	return usv
+	var glob, name string
+	err := Unmarshal(usv, &glob, &name)
+	if err != nil {
+		panic(err)
+	}
+	sprite := ctx.Sprites[glob].File(name)
+	res, err := Marshal(sprite)
+	if err != nil {
+		panic(err)
+	}
+	return res
 }
 
 // SpriteMap generates a sprite from the passed glob and sprite

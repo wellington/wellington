@@ -136,6 +136,23 @@ height: $aritymap;
 	}
 }
 
+func TestFuncSpriteFile(t *testing.T) {
+	in := bytes.NewBufferString(`
+$map: sprite-map("*.png"); // One argument
+div {
+  background: sprite-file($map, "139");
+}`)
+	var out bytes.Buffer
+	setupCtx(in, &out)
+
+	e := `div {
+  background: test/img/139.png; }
+`
+	if e != out.String() {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
+	}
+}
+
 func TestFuncImageHeight(t *testing.T) {
 	in := bytes.NewBufferString(`
 $map: sprite-map("*.png",0,0);
