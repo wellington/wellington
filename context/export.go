@@ -38,6 +38,10 @@ func SampleCB(ctx *Context, usv UnionSassValue) UnionSassValue {
 	return C.sass_make_boolean(false)
 }
 
+func Error(err error) UnionSassValue {
+	return C.sass_make_error(C.CString(err.Error()))
+}
+
 // RegisterHandler sets the passed signature and callback to the
 // handlers array.
 func RegisterHandler(sign string,
