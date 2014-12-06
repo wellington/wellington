@@ -121,13 +121,25 @@ func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	// 	fmt.Printf("%s %s\n", item.Type, item)
 	// }
 	// Process sprite calls and gen
-	p.Parse(p.Items)
+
+	// Parsing is no longer necessary
+	// p.Parse(p.Items)
 	p.Output = []byte(p.Input)
 	// Perform substitutions
-	p.Replace()
-	rel := []byte(fmt.Sprintf(`$rel: "%s";%s`,
-		p.Rel(), "\n"))
-	return append(rel, p.Output...), nil
+	// p.Replace()
+	// rel := []byte(fmt.Sprintf(`$rel: "%s";%s`,
+	//   p.Rel(), "\n"))
+
+	// Code that we will never support, ever
+	weAreNeverGettingBackTogether := []byte(`
+@mixin sprite-dimensions($map, $name) {
+  $file: sprite-file($map, $name);
+  height: image-height($file);
+  width: image-width($file);
+}
+`)
+
+	return append(weAreNeverGettingBackTogether, p.Output...), nil
 }
 
 func (p *Parser) Rel() string {
