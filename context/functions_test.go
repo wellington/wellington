@@ -146,7 +146,7 @@ div {
 	setupCtx(in, &out)
 
 	e := `div {
-  background: test/img/139.png; }
+  background: 139.png; }
 `
 	if e != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
