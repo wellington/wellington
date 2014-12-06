@@ -60,13 +60,15 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		log.Println("Starting profiler")
 		pprof.StartCPUProfile(f)
 		defer func() {
+			pprof.StopCPUProfile()
 			err := f.Close()
 			if err != nil {
 				log.Fatal(err)
 			}
-			pprof.StopCPUProfile()
+			log.Println("Stopping Profiller")
 		}()
 	}
 
