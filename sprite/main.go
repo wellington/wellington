@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/drewwells/sprite_sass/context"
+	"github.com/drewwells/spritewell"
 
 	sprite "github.com/drewwells/sprite_sass"
 )
@@ -133,6 +134,7 @@ func main() {
 
 		ctx := context.Context{
 			// TODO: Most of these fields are no longer used
+			Sprites:     make(map[string]spritewell.ImageList),
 			OutputStyle: style,
 			ImageDir:    Dir,
 			// Assumption that output is a file
