@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 HASH=$(cat libsass/.lib_version)
 
