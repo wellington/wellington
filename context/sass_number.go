@@ -133,5 +133,16 @@ var sassUnitConversions = map[string]map[string]float64{
 }
 
 func (sn SassNumber) Add(sn2 SassNumber) SassNumber {
-	return sn2
+	var sn2Value float64
+	if sn2.unit != sn.unit {
+		sn2Value = convertUnits(sn2, sn)
+	} else {
+		sn2Value = sn2.value
+	}
+
+	return SassNumber{value: sn.value + sn2Value, unit: sn.unit}
+}
+
+func convertUnits(from SassNumber, to SassNumber) float64 {
+	return sassUnitConversions[from.unit][to.unit] * from.value
 }
