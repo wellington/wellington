@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 // #include "sass_context.h"
@@ -68,6 +69,9 @@ func unmarshal(arg UnionSassValue, v interface{}) error {
 			//drop quotes
 			if t, err := strconv.Unquote(gc); err == nil {
 				gc = t
+			}
+			if strings.HasPrefix(gc, "'") && strings.HasSuffix(gc, "'") {
+				gc = gc[1 : len(gc)-1]
 			}
 			if !f.CanSet() {
 				return errors.New("Can not set string")

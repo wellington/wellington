@@ -230,15 +230,22 @@ func TestMarshalUnsupportedStruct(t *testing.T) {
 	}
 }
 
-func TestQuotedStringUnMarshal(t *testing.T) {
-	var s = "\"Taylor Swift\""
+func TestQuotedStringUnmarshal(t *testing.T) {
+	testmap := []string{
+		"\"Taylor Swift\"",
+		"'Taylor Swift'",
+	}
+	e := "Taylor Swift"
+
 	var se string
 
-	sm := testMarshal(t, s)
-	Unmarshal(sm, &se)
+	for _, s := range testmap {
+		sm := testMarshal(t, s)
+		Unmarshal(sm, &se)
+		if e != se {
+			t.Errorf("What the damn hell. Got: %s wanted: %s", se, e)
+		}
 
-	if se != "Taylor Swift" {
-		t.Errorf("What the damn hell. Got: %s wanted: %s", se, "Taylor Swift")
 	}
 }
 
