@@ -1,6 +1,7 @@
 package context
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -132,17 +133,62 @@ var sassUnitConversions = map[string]map[string]float64{
 	},
 }
 
+var sassUnitTypes = map[string]string{
+	"in":   "distance",
+	"cm":   "distance",
+	"pc":   "distance",
+	"mm":   "distance",
+	"pt":   "distance",
+	"px":   "distance",
+	"deg":  "angle",
+	"grad": "angle",
+	"rad":  "angle",
+	"turn": "angle",
+}
+
 func (sn SassNumber) Add(sn2 SassNumber) SassNumber {
+	sn1Value, sn2Value := getConvertedUnits(sn, sn2)
+	return SassNumber{value: sn1Value + sn2Value, unit: sn.unit}
+}
+
+func (sn SassNumber) Subtract(sn2 SassNumber) SassNumber {
+	sn1Value, sn2Value := getConvertedUnits(sn, sn2)
+	return SassNumber{value: sn1Value - sn2Value, unit: sn.unit}
+}
+
+func (sn SassNumber) Multiply(sn2 SassNumber) SassNumber {
+	sn1Value, sn2Value := getConvertedUnits(sn, sn2)
+	return SassNumber{value: sn1Value * sn2Value, unit: sn.unit}
+}
+
+func (sn SassNumber) Divide(sn2 SassNumber) SassNumber {
+	sn1Value, sn2Value := getConvertedUnits(sn, sn2)
+	return SassNumber{value: sn1Value / sn2Value, unit: sn.unit}
+}
+
+func getConvertedUnits(sn1 SassNumber, sn2 SassNumber) (float64, float64) {
 	var sn2Value float64
-	if sn2.unit != sn.unit {
-		sn2Value = convertUnits(sn2, sn)
+	if sn2.unit != sn1.unit {
+		sn2Value = convertUnits(sn2, sn1)
 	} else {
 		sn2Value = sn2.value
 	}
 
-	return SassNumber{value: sn.value + sn2Value, unit: sn.unit}
+	return sn1.value, sn2Value
 }
 
 func convertUnits(from SassNumber, to SassNumber) float64 {
 	return sassUnitConversions[from.unit][to.unit] * from.value
+}
+
+func safeConvert(from SassNumber, to SassNumber) error {
+	if _, ok := sassUnitConversions[from.unit][to.unit]; !ok {
+		return fmt.Errorf("Can not convert from %s to %s", from.unit, to.unit)
+	}
+
+	if sassUnitTypes[from.unit] != sassUnitTypes[to.unit] {
+		return fmt.Errorf("Can not convert sass units between angles and distances: %s, %s", from.unit, to.unit)
+	}
+
+	return nil
 }
