@@ -107,6 +107,32 @@ func TestFuncSpriteMap(t *testing.T) {
 	}
 }
 
+func TestFuncSpriteFile(t *testing.T) {
+	ctx := NewContext()
+	ctx.BuildDir = "test/build"
+	ctx.GenImgDir = "test/build/img"
+	ctx.ImageDir = "test/img"
+
+	// Add real arguments when sass lists can be [un]marshalled
+	lst := []interface{}{"*.png", "139"}
+	usv := testMarshal(t, lst)
+	usv = SpriteFile(ctx, usv)
+	var glob, path string
+	err := Unmarshal(usv, &glob, &path)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if e := "*.png"; e != glob {
+		t.Errorf("got: %s wanted: %s", e, glob)
+	}
+
+	if e := "139"; e != path {
+		t.Errorf("got: %s wanted: %s", e, path)
+	}
+
+}
+
 func TestCompileSpriteMap(t *testing.T) {
 	in := bytes.NewBufferString(`
 $aritymap: sprite-map("*.png",1,2); // Optional arguments
@@ -133,23 +159,6 @@ height: $aritymap;
 
 	if exp != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), exp)
-	}
-}
-
-func TestFuncSpriteFile(t *testing.T) {
-	in := bytes.NewBufferString(`
-$map: sprite-map("*.png"); // One argument
-div {
-  background: sprite-file($map, "139");
-}`)
-	var out bytes.Buffer
-	setupCtx(in, &out)
-
-	e := `div {
-  background: 139.png; }
-`
-	if e != out.String() {
-		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
 	}
 }
 

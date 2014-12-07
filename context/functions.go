@@ -116,17 +116,15 @@ func InlineImage(ctx *Context, usv UnionSassValue) UnionSassValue {
 	return res
 }
 
+// SpriteFile proxies the sprite glob and image name through.
 func SpriteFile(ctx *Context, usv UnionSassValue) UnionSassValue {
 	var glob, name string
 	err := Unmarshal(usv, &glob, &name)
 	if err != nil {
 		panic(err)
 	}
-	sprite := ctx.Sprites[glob].File(name)
-	res, err := Marshal(sprite)
-	if err != nil {
-		panic(err)
-	}
+	infs := []interface{}{glob, name}
+	res, err := Marshal(infs)
 	return res
 }
 
