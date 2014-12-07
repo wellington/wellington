@@ -209,3 +209,21 @@ div {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
 	}
 }
+
+func TestRegInlineImage(t *testing.T) {
+	in := bytes.NewBufferString(`
+div {
+    background: inline-image("pixel/1x1.png");
+}`)
+	var out bytes.Buffer
+	_, _, err := setupCtx(in, &out)
+	if err != nil {
+		t.Error(err)
+	}
+	e := `div {
+  background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAMAAAAoyzS7AAAAA1BMVEX/TQBcNTh/AAAAAXRSTlMz/za5cAAAAA5JREFUeJxiYgAEAAD//wAGAAP60FmuAAAAAElFTkSuQmCC'); }
+`
+	if e != out.String() {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
+	}
+}

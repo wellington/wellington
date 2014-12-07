@@ -16,6 +16,7 @@ func init() {
 	RegisterHandler("image-url($name)", ImageURL)
 	RegisterHandler("image-height($path)", ImageHeight)
 	RegisterHandler("image-width($path)", ImageWidth)
+	RegisterHandler("inline-image($path)", InlineImage)
 }
 
 // ImageURL handles calls to resolve a local image from the
@@ -88,7 +89,31 @@ func ImageWidth(ctx *Context, usv UnionSassValue) UnionSassValue {
 }
 
 func InlineImage(ctx *Context, usv UnionSassValue) UnionSassValue {
-	return usv
+	var (
+		name string
+	)
+	err := Unmarshal(usv, &name)
+	if err != nil {
+		fmt.Println(err)
+	}
+	imgs := sw.ImageList{
+		ImageDir:  ctx.ImageDir,
+		GenImgDir: ctx.GenImgDir,
+	}
+	err = imgs.Decode(name)
+	if err != nil {
+		return Error(err)
+	}
+	err = imgs.Combine()
+	if err != nil {
+		fmt.Println(err)
+	}
+	str := imgs.Inline()
+	res, err := Marshal(str)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return res
 }
 
 func SpriteFile(ctx *Context, usv UnionSassValue) UnionSassValue {
