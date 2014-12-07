@@ -163,9 +163,7 @@ height: $aritymap;
 }
 
 func TestFuncImageHeight(t *testing.T) {
-	in := bytes.NewBufferString(`
-$map: sprite-map("*.png",0,0);
-div {
+	in := bytes.NewBufferString(`div {
     height: image-height("139");
 }`)
 	var out bytes.Buffer
@@ -184,8 +182,7 @@ div {
 }
 
 func TestRegImageWidth(t *testing.T) {
-	in := bytes.NewBufferString(`
-div {
+	in := bytes.NewBufferString(`div {
     height: image-width("139");
 }`)
 	var out bytes.Buffer
@@ -195,6 +192,24 @@ div {
 	}
 	e := `div {
   height: 96px; }
+`
+	if e != out.String() {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
+	}
+}
+
+func TestRegSpriteImageHeight(t *testing.T) {
+	in := bytes.NewBufferString(`$map: sprite-map("*.png");
+div {
+    height: image-height(sprite-file($map,"139"));
+}`)
+	var out bytes.Buffer
+	_, _, err := setupCtx(in, &out)
+	if err != nil {
+		t.Error(err)
+	}
+	e := `div {
+  height: 139px; }
 `
 	if e != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)

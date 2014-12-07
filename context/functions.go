@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"reflect"
 	"strconv"
 
 	sw "github.com/drewwells/spritewell"
@@ -38,18 +39,38 @@ func ImageURL(ctx *Context, csv UnionSassValue) UnionSassValue {
 
 func ImageHeight(ctx *Context, usv UnionSassValue) UnionSassValue {
 	var (
+		glob string
 		name string
 	)
 	err := Unmarshal(usv, &name)
+	// Check for sprite-file override first
 	if err != nil {
-		fmt.Println(err)
+		var inf interface{}
+		var infs []interface{}
+		// Can't unmarshal to []interface{}, so unmarshal to
+		// interface{} then reflect it into a []interface{}
+		err = Unmarshal(usv, &inf)
+		k := reflect.ValueOf(&infs).Elem()
+		k.Set(reflect.ValueOf(inf))
+
+		if err != nil {
+			log.Fatal(err)
+			return Error(err)
+		} else {
+			glob = infs[0].(string)
+			name = infs[1].(string)
+		}
 	}
 	imgs := sw.ImageList{
 		ImageDir:  ctx.ImageDir,
 		GenImgDir: ctx.GenImgDir,
 	}
-	imgs.Decode(name)
-	imgs.Combine()
+	if glob == "" {
+		imgs.Decode(name)
+		imgs.Combine()
+	} else {
+		imgs = ctx.Sprites[glob]
+	}
 	height := imgs.SImageHeight(name)
 	Hheight := SassNumber{
 		value: float64(height),
@@ -68,7 +89,7 @@ func ImageWidth(ctx *Context, usv UnionSassValue) UnionSassValue {
 	)
 	err := Unmarshal(usv, &name)
 	if err != nil {
-		fmt.Println(err)
+		return Error(err)
 	}
 	imgs := sw.ImageList{
 		ImageDir:  ctx.ImageDir,
