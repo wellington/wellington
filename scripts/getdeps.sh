@@ -17,13 +17,13 @@ fi
 # Check file permissions
 if [ -w '/usr/local/lib/libsass.a' ];
 then
-	cd libsass;	make clean install
+	cd libsass; make install
 else
 	cd libsass;
-	if [ test -z "$(sudo)" ];
+	if [ test -z "$(sudo)" eq 1 ];
 	then
-		sudo make clean install
+		sudo make install
 	else
-		make clean install
+		make install
 	fi
 fi
