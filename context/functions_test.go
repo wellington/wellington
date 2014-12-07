@@ -201,7 +201,7 @@ func TestRegImageWidth(t *testing.T) {
 func TestRegSpriteImageHeight(t *testing.T) {
 	in := bytes.NewBufferString(`$map: sprite-map("*.png");
 div {
-    height: image-height(sprite-file($map,"139"));
+  height: image-height(sprite-file($map,"139"));
 }`)
 	var out bytes.Buffer
 	_, _, err := setupCtx(in, &out)
@@ -210,6 +210,24 @@ div {
 	}
 	e := `div {
   height: 139px; }
+`
+	if e != out.String() {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
+	}
+}
+
+func TestRegSpriteImageWidth(t *testing.T) {
+	in := bytes.NewBufferString(`$map: sprite-map("*.png");
+div {
+  width: image-width(sprite-file($map,"139"));
+}`)
+	var out bytes.Buffer
+	_, _, err := setupCtx(in, &out)
+	if err != nil {
+		t.Error(err)
+	}
+	e := `div {
+  width: 96px; }
 `
 	if e != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)

@@ -83,20 +83,41 @@ func ImageHeight(ctx *Context, usv UnionSassValue) UnionSassValue {
 	return res
 }
 
+// ImageWidth takes a file path (or sprite glob) and returns the
+// height in pixels of the image being referenced.
 func ImageWidth(ctx *Context, usv UnionSassValue) UnionSassValue {
 	var (
-		name string
+		glob, name string
 	)
 	err := Unmarshal(usv, &name)
+	// Check for sprite-file override first
 	if err != nil {
-		return Error(err)
+		var inf interface{}
+		var infs []interface{}
+		// Can't unmarshal to []interface{}, so unmarshal to
+		// interface{} then reflect it into a []interface{}
+		err = Unmarshal(usv, &inf)
+		k := reflect.ValueOf(&infs).Elem()
+		k.Set(reflect.ValueOf(inf))
+
+		if err != nil {
+			log.Fatal(err)
+			return Error(err)
+		} else {
+			glob = infs[0].(string)
+			name = infs[1].(string)
+		}
 	}
 	imgs := sw.ImageList{
 		ImageDir:  ctx.ImageDir,
 		GenImgDir: ctx.GenImgDir,
 	}
-	imgs.Decode(name)
-	imgs.Combine()
+	if glob == "" {
+		imgs.Decode(name)
+		imgs.Combine()
+	} else {
+		imgs = ctx.Sprites[glob]
+	}
 	v := imgs.SImageWidth(name)
 	vv := SassNumber{
 		value: float64(v),
