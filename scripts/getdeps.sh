@@ -20,10 +20,10 @@ then
 	cd libsass; make install
 else
 	cd libsass;
-	if [ test -z "$(sudo)" eq 1 ];
+	if [ test -z "$(which sudo)" eq true ];
 	then
-		sudo make install
-	else
 		make install
+	else
+		sudo make install
 	fi
 fi
