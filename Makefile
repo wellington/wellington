@@ -15,15 +15,13 @@ headers:
 	scripts/getheaders.sh
 build:
 	docker build -t sprite .
-exec:
-	docker run -it -v $(current_dir):/gopath/src/app sprite bash
 docker:
 	docker run -it -v $(rmnpath):/rmn -v $(current_dir):/usr/src/myapp sprite bash
 dockerprofile:
-	docker run -it -v $(rmnpath):/rmn -v $(current_dir):/usr/src/myapp sprite make exec
+	docker run -it -v $(rmnpath):/rmn -v $(current_dir):/usr/src/myapp sprite make dockerexec
 dockerexec:
 	go run sprite/main.go -gen /rmn/www/gui/build/im  --cpuprofile=sprite.prof -b /rmn/www/gui/build/css/ -p /rmn/www/gui/sass -d /rmn/www/gui/im/sass /rmn/www/gui/**/*.scss
-	go tool pprof /usr/bin/sprite sprite.prof
+	go tool pprof --pdf /usr/bin/sprite sprite.prof > profile.pdf
 test:
 	scripts/goclean.sh
 compass:

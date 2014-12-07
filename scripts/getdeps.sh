@@ -15,15 +15,10 @@ else
 	cd ..
 fi
 # Check file permissions
+touch /usr/local/lib/libsass.a
 if [ -w '/usr/local/lib/libsass.a' ];
 then
 	cd libsass; make install
 else
-	cd libsass;
-	if [ test -z "$(which sudo)" eq true ];
-	then
-		make install
-	else
-		sudo make install
-	fi
+	cd libsass; sudo make install
 fi
