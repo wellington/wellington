@@ -76,6 +76,23 @@ func TestFuncImageURL(t *testing.T) {
 	if e := "url('../img/image.png')"; e != path {
 		t.Errorf("got: %s wanted: %s", path, e)
 	}
+
+	// Test sending invalid date to imageURL
+	usv = testMarshal(t, float64(1))
+	_ = usv
+	errusv := ImageURL(&ctx, usv)
+	var s string
+	merr := Unmarshal(errusv, &s)
+	if merr != nil {
+		t.Error(merr)
+	}
+
+	e := "Sassvalue is type float64 and has value %!s(float64=1) but expected slice"
+
+	if e != s {
+		t.Errorf("got:\n%s\nwanted:\n%s", s, e)
+	}
+
 }
 
 func TestFuncSpriteMap(t *testing.T) {

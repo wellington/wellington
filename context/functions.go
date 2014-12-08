@@ -27,12 +27,12 @@ func ImageURL(ctx *Context, csv UnionSassValue) UnionSassValue {
 	err := Unmarshal(csv, &path)
 	// This should create and throw a sass error
 	if err != nil {
-		fmt.Println(err)
+		return Error(err)
 	}
 	url := filepath.Join(ctx.RelativeImage(), path[0])
 	res, err := Marshal(fmt.Sprintf("url('%s')", url))
 	if err != nil {
-		fmt.Println(err)
+		return Error(err)
 	}
 	return res
 }
@@ -244,8 +244,4 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 		log.Fatal(err)
 	}
 	return res
-}
-
-func Sprite(ctx *Context, usv UnionSassValue) UnionSassValue {
-	return usv
 }
