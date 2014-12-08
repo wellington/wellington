@@ -151,7 +151,9 @@ func Unmarshal(arg UnionSassValue, v ...interface{}) error {
 			}
 		}
 		return err
-	} else if C.sass_value_is_list(arg) && getKind(v[0]) != reflect.Slice { //arg is a slice of 1 but we want back a non slice
+	} else if C.sass_value_is_list(arg) && getKind(v[0]) != reflect.Slice && int(C.sass_list_get_length(arg)) == 1 { //arg is a slice of 1 but we want back a non slice
+		return unmarshal(C.sass_list_get_value(arg, C.size_t(0)), v[0])
+	} else if C.sass_value_is_list(arg) && getKind(v[0]) == reflect.Slice && C.sass_value_is_list(C.sass_list_get_value(arg, C.size_t(0))) && int(C.sass_list_get_length(arg)) == 1 { //arg is a list of single list and we only want back a list so we need to unwrap
 		return unmarshal(C.sass_list_get_value(arg, C.size_t(0)), v[0])
 	} else {
 		return unmarshal(arg, v[0])

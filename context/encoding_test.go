@@ -169,6 +169,34 @@ func TestMarshalInterfaceListToMultiVariable(t *testing.T) {
 	}
 }
 
+func TestMarshalInterfaceListToMultiVariablewList(t *testing.T) {
+	var lst = []interface{}{5, "a", true, []string{"a", "b", "c", "d"}}
+	var i float64
+	var s string
+	var b bool
+	var sl []string
+	var ir = float64(5)
+	var sr = string("a")
+	var br = bool(true)
+	var slr = []string{"a", "b", "c", "d"}
+
+	lstm := testMarshal(t, lst)
+	_ = Unmarshal(lstm, &i, &s, &b, &sl)
+
+	if i != ir {
+		t.Errorf("got: %f wanted: %f", i, ir)
+	}
+	if s != sr {
+		t.Errorf("got: %s wanted: %s", s, sr)
+	}
+	if b != br {
+		t.Errorf("got: %t wanted: %t", b, br)
+	}
+	if !reflect.DeepEqual(sl, slr) {
+		t.Errorf("got: %t wanted: %t", sl, slr)
+	}
+}
+
 func TestMarshalInterfaceListSingleVariable(t *testing.T) {
 	var lst = []interface{}{5}
 	var i float64
@@ -211,6 +239,26 @@ func TestMarshalColor(t *testing.T) {
 
 	if !reflect.DeepEqual(ce, c) {
 		t.Errorf("What the damn hell. Wanted:\n%#v\ngot:\n% #v", c, ce)
+	}
+}
+
+func TestListListtoInterfaceList(t *testing.T) {
+	var lst = []interface{}{"a", "b"}
+	var lstlst = []interface{}{lst}
+
+	var lst2 []interface{}
+
+	var elst = []interface{}{"a", "b"}
+
+	x := testMarshal(t, lstlst)
+	_ = Unmarshal(x, &lst2)
+
+	if len(lst2) != len(elst) {
+		t.Error("List length mismatch")
+	}
+
+	if !reflect.DeepEqual(lst2, elst) {
+		t.Errorf("What the damn hell. Wanted:\n%#v\ngot:\n% #v", elst, lst2)
 	}
 }
 
