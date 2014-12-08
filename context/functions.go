@@ -66,8 +66,13 @@ func ImageHeight(ctx *Context, usv UnionSassValue) UnionSassValue {
 		GenImgDir: ctx.GenImgDir,
 	}
 	if glob == "" {
-		imgs.Decode(name)
-		imgs.Combine()
+		if hit, ok := ctx.Imgs[name]; ok {
+			imgs = hit
+		} else {
+			imgs.Decode(name)
+			imgs.Combine()
+			ctx.Imgs[name] = imgs
+		}
 	} else {
 		imgs = ctx.Sprites[glob]
 	}

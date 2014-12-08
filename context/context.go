@@ -51,7 +51,7 @@ type Context struct {
 	Cookies []Cookie
 
 	// Used for callbacks to retrieve sprite information, etc.
-	InlineImgs, Sprites map[string]spritewell.ImageList
+	Imgs, Sprites map[string]spritewell.ImageList
 }
 
 // Constants/enums for the output style.
@@ -78,6 +78,7 @@ func NewContext() *Context {
 
 	// Initiailize image map(s)
 	c.Sprites = make(map[string]spritewell.ImageList)
+	c.Imgs = make(map[string]spritewell.ImageList)
 	return &c
 }
 

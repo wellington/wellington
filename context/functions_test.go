@@ -45,6 +45,7 @@ func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, UnionSass
 	var usv UnionSassValue
 	ctx := Context{
 		Sprites:      make(map[string]spritewell.ImageList),
+		Imgs:         make(map[string]spritewell.ImageList),
 		OutputStyle:  NESTED_STYLE,
 		IncludePaths: make([]string, 0),
 		BuildDir:     "test/build",
