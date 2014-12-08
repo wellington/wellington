@@ -119,7 +119,7 @@ func TestProcessSassError(t *testing.T) {
 		t.Error(err)
 	}
 
-	e := `error in C function inline-image: format: .svg not supported
+	e := `ERROR: error in C function inline-image: format: .svg not supported
 Backtrace:
 	stdin:3100, in function inline-image
 	stdin:3100, in mixin printCSSImg

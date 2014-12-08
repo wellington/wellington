@@ -97,7 +97,7 @@ func TestFuncSpriteMap(t *testing.T) {
 		t.Error(err)
 	}
 
-	if e := "test/build/img/testimg-8121ae.png"; e != path {
+	if e := "testimg-8121ae.png"; e != path {
 		t.Errorf("got: %s wanted: %s", path, e)
 	}
 }
@@ -148,8 +148,8 @@ height: $aritymap;
 		t.Error(err)
 	}
 	exp := `div {
-  width: test/build/img/testimg-8121ae.png;
-  height: test/build/img/testimg-8121ae.png; }
+  width: testimg-8121ae.png;
+  height: testimg-8121ae.png; }
 `
 
 	if exp != out.String() {
