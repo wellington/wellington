@@ -13,7 +13,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	. "github.com/drewwells/sprite_sass/token"
+	. "github.com/wellington/wellington/token"
 )
 
 const EOF rune = 0x04

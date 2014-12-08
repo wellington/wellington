@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	. "github.com/drewwells/sprite_sass/token"
+	. "github.com/wellington/wellington/token"
 )
 
 func printItems(items []Item) {

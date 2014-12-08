@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	. "github.com/drewwells/spritewell"
+	. "github.com/wellington/spritewell"
 )
 
 func cleanUpSprites(sprites map[string]ImageList) {

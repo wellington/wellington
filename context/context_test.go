@@ -13,7 +13,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/drewwells/spritewell"
+	"github.com/wellington/spritewell"
 )
 
 func cleanUpSprites(sprites map[string]spritewell.ImageList) {

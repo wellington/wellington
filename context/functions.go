@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"strconv"
 
-	sw "github.com/drewwells/spritewell"
+	sw "github.com/wellington/spritewell"
 )
 
 func init() {

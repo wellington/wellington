@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"sort"
 
-	. "github.com/drewwells/sprite_sass/lexer"
-	. "github.com/drewwells/sprite_sass/token"
-	. "github.com/drewwells/spritewell"
+	. "github.com/wellington/spritewell"
+	. "github.com/wellington/wellington/lexer"
+	. "github.com/wellington/wellington/token"
 )
 
 /* Example sprite-map output:

@@ -16,7 +16,7 @@ import (
 	"path/filepath"
 	"reflect"
 
-	"github.com/drewwells/spritewell"
+	"github.com/wellington/spritewell"
 
 	"unsafe"
 )

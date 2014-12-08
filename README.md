@@ -34,11 +34,11 @@ out the repo or building [libsass](https://github.com/sass/libsass) via the  ins
 
 ```
 # This will fail if you don't have libsass installed, that's OK.
-go get -u github.com/drewwells/sprite_sass/sprite
-cd $GOPATH/drewwells/sprite_sass
+go get -u github.com/wellington/wellington/sprite
+cd $GOPATH/wellington/wellington
 make deps
 # Attempt install again
-go get -u github.com/drewwells/sprite_sass/sprite
+go get -u github.com/wellington/wellington/sprite
 ```
 
 Test out if the installation worked

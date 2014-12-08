@@ -13,10 +13,10 @@ import (
 	"runtime/pprof"
 	"strings"
 
-	"github.com/drewwells/sprite_sass/context"
-	"github.com/drewwells/spritewell"
+	"github.com/wellington/spritewell"
+	"github.com/wellington/wellington/context"
 
-	sprite "github.com/drewwells/sprite_sass"
+	sprite "github.com/wellington/wellington"
 )
 
 const version = `v0.2.1`

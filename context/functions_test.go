@@ -5,7 +5,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/drewwells/spritewell"
+	"github.com/wellington/spritewell"
 )
 
 func wrapCallback(sc SassCallback, ch chan UnionSassValue) SassCallback {
