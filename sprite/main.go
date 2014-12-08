@@ -109,8 +109,12 @@ func main() {
 			log.Println(err)
 		}
 	}
-	sharedSprites := make(map[string]spritewell.ImageList, 100)
-	sharedImgs := make(map[string]spritewell.ImageList, 100)
+
+	SpriteCache := spritewell.SafeImageMap{
+		M: make(map[string]spritewell.ImageList, 100)}
+	ImageCache := spritewell.SafeImageMap{
+		M: make(map[string]spritewell.ImageList, 100)}
+
 	for _, f := range flag.Args() {
 		// Remove partials
 		if strings.HasPrefix(filepath.Base(f), "_") {
@@ -137,8 +141,8 @@ func main() {
 
 		ctx := context.Context{
 			// TODO: Most of these fields are no longer used
-			Sprites:     sharedSprites,
-			Imgs:        sharedImgs,
+			Sprites:     SpriteCache,
+			Imgs:        ImageCache,
 			OutputStyle: style,
 			ImageDir:    Dir,
 			// Assumption that output is a file

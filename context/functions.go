@@ -66,15 +66,19 @@ func ImageHeight(ctx *Context, usv UnionSassValue) UnionSassValue {
 		GenImgDir: ctx.GenImgDir,
 	}
 	if glob == "" {
-		if hit, ok := ctx.Imgs[name]; ok {
+		if hit, ok := ctx.Imgs.M[name]; ok {
 			imgs = hit
 		} else {
 			imgs.Decode(name)
 			imgs.Combine()
-			ctx.Imgs[name] = imgs
+			ctx.Imgs.Lock()
+			ctx.Imgs.M[name] = imgs
+			ctx.Imgs.Unlock()
 		}
 	} else {
-		imgs = ctx.Sprites[glob]
+		ctx.Sprites.Lock()
+		imgs = ctx.Sprites.M[glob]
+		ctx.Sprites.Unlock()
 	}
 	height := imgs.SImageHeight(name)
 	Hheight := SassNumber{
@@ -118,10 +122,19 @@ func ImageWidth(ctx *Context, usv UnionSassValue) UnionSassValue {
 		GenImgDir: ctx.GenImgDir,
 	}
 	if glob == "" {
-		imgs.Decode(name)
-		imgs.Combine()
+		if hit, ok := ctx.Imgs.M[name]; ok {
+			imgs = hit
+		} else {
+			imgs.Decode(name)
+			imgs.Combine()
+			ctx.Imgs.Lock()
+			ctx.Imgs.M[name] = imgs
+			ctx.Imgs.Unlock()
+		}
 	} else {
-		imgs = ctx.Sprites[glob]
+		ctx.Sprites.Lock()
+		imgs = ctx.Sprites.M[glob]
+		ctx.Sprites.Unlock()
 	}
 	v := imgs.SImageWidth(name)
 	vv := SassNumber{
@@ -209,7 +222,9 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 	}
 
 	res, err := Marshal(gpath)
-	ctx.Sprites[gpath] = imgs
+	ctx.Sprites.Lock()
+	ctx.Sprites.M[gpath] = imgs
+	ctx.Sprites.Unlock()
 	if err != nil {
 		log.Fatal(err)
 	}

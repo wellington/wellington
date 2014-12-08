@@ -37,16 +37,14 @@ func testSprite(ctx *Context) {
 
 func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, UnionSassValue, error) {
 	var usv UnionSassValue
-	ctx := Context{
-		Sprites:      make(map[string]spritewell.ImageList),
-		Imgs:         make(map[string]spritewell.ImageList),
-		OutputStyle:  NESTED_STYLE,
-		IncludePaths: make([]string, 0),
-		BuildDir:     "test/build",
-		ImageDir:     "test/img",
-		GenImgDir:    "test/build/img",
-		Out:          "",
-	}
+	ctx := *NewContext()
+	ctx.OutputStyle = NESTED_STYLE
+	ctx.IncludePaths = make([]string, 0)
+	ctx.BuildDir = "test/build"
+	ctx.ImageDir = "test/img"
+	ctx.GenImgDir = "test/build/img"
+	ctx.Out = ""
+
 	testSprite(&ctx)
 	cc := make(chan UnionSassValue, len(cookies))
 	// If callbacks were made, add them to the context
