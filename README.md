@@ -1,5 +1,4 @@
-[![wercker status](https://app.wercker.com/status/0e2b532c6e35225334fdeeac0cbb7831/m/master "wercker status")](https://app.wercker.com/project/bykey/0e2b532c6e35225334fdeeac0cbb7831)
-[![Coverage Status](https://coveralls.io/repos/drewwells/sprite_sass/badge.png?branch=master)](https://coveralls.io/r/drewwells/sprite_sass?branch=master)
+[![wercker status](https://app.wercker.com/status/873d0c7929b8b1e8bc37bcc16829fb5f/m/master "wercker status")](https://app.wercker.com/project/bykey/873d0c7929b8b1e8bc37bcc16829fb5f) [![Coverage Status](https://img.shields.io/coveralls/wellington/wellington.svg)](https://coveralls.io/r/wellington/wellington?branch=master)
 
 sprite-sass
 ===========
