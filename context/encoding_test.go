@@ -193,7 +193,7 @@ func TestMarshalInterfaceListToMultiVariablewList(t *testing.T) {
 		t.Errorf("got: %t wanted: %t", b, br)
 	}
 	if !reflect.DeepEqual(sl, slr) {
-		t.Errorf("got: %t wanted: %t", sl, slr)
+		t.Errorf("got: %s wanted: %s", sl, slr)
 	}
 }
 
