@@ -76,9 +76,9 @@ func ImageHeight(ctx *Context, usv UnionSassValue) UnionSassValue {
 			ctx.Imgs.Unlock()
 		}
 	} else {
-		ctx.Sprites.Lock()
+		ctx.Sprites.RLock()
 		imgs = ctx.Sprites.M[glob]
-		ctx.Sprites.Unlock()
+		ctx.Sprites.RUnlock()
 	}
 	height := imgs.SImageHeight(name)
 	Hheight := SassNumber{
@@ -132,9 +132,9 @@ func ImageWidth(ctx *Context, usv UnionSassValue) UnionSassValue {
 			ctx.Imgs.Unlock()
 		}
 	} else {
-		ctx.Sprites.Lock()
+		ctx.Sprites.RLock()
 		imgs = ctx.Sprites.M[glob]
-		ctx.Sprites.Unlock()
+		ctx.Sprites.RUnlock()
 	}
 	v := imgs.SImageWidth(name)
 	vv := SassNumber{
