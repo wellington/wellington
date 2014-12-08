@@ -109,8 +109,8 @@ func main() {
 			log.Println(err)
 		}
 	}
-	sharedSprites := make(map[string]spritewell.ImageList)
-	sharedImgs := make(map[string]spritewell.ImageList)
+	sharedSprites := make(map[string]spritewell.ImageList, 100)
+	sharedImgs := make(map[string]spritewell.ImageList, 100)
 	for _, f := range flag.Args() {
 		// Remove partials
 		if strings.HasPrefix(filepath.Base(f), "_") {
