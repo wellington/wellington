@@ -12,7 +12,7 @@ import (
 
 func init() {
 
-	RegisterHandler("sprite-map($glob,$position:0px,$spacing:5px)", SpriteMap)
+	RegisterHandler("sprite-map($glob, $spacing: 0px)", SpriteMap)
 	RegisterHandler("sprite-file($map, $name)", SpriteFile)
 	RegisterHandler("image-url($name)", ImageURL)
 	RegisterHandler("image-height($path)", ImageHeight)
@@ -193,8 +193,7 @@ func SpriteFile(ctx *Context, usv UnionSassValue) UnionSassValue {
 func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 	var glob string
 	var spacing float64
-	var position float64
-	err := Unmarshal(usv, &glob, &spacing, &position)
+	err := Unmarshal(usv, &glob, &spacing)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -203,6 +202,7 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 		BuildDir:  ctx.BuildDir,
 		GenImgDir: ctx.GenImgDir,
 	}
+	imgs.Padding = int(spacing)
 	if cglob, err := strconv.Unquote(glob); err == nil {
 		glob = cglob
 	}
