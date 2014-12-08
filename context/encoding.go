@@ -227,5 +227,5 @@ func makevalue(v interface{}) (UnionSassValue, error) {
 func throwMisMatchTypeError(arg UnionSassValue, expectedType string) error {
 	var intf interface{}
 	unmarshal(arg, &intf)
-	return fmt.Errorf("SassValue type mismatch.  Sassvalue is type \"%s\" and has value \"%s\" but expected %s", reflect.TypeOf(intf), intf, expectedType)
+	return fmt.Errorf("Sassvalue is type %s and has value %s but expected %s", reflect.TypeOf(intf), intf, expectedType)
 }

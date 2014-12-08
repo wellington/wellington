@@ -346,9 +346,9 @@ func TestNullUnionSassValue(t *testing.T) {
 	var usv UnionSassValue
 	var inf interface{}
 	err := Unmarshal(usv, &inf)
-
-	if err.Error() != "I can't work with this. arg UnionSassValue must not be nil. - Unmarshaller" {
-		t.Errorf("got: %s wanted 'I can't work with this. arg UnionSassValue must not be nil. - Unmarshaller'", err)
+	e := "I can't work with this. arg UnionSassValue must not be nil. - Unmarshaller"
+	if err.Error() != e {
+		t.Errorf("got: %s wanted: %s", err, e)
 	}
 }
 
@@ -359,7 +359,8 @@ func TestWrongUnmarshalToFloatType(t *testing.T) {
 	sm := testMarshal(t, s)
 	err := Unmarshal(sm, &ie)
 
-	if err.Error() != "SassValue type mismatch.  Sassvalue is type \"string\" and has value \"Taylor Swift\" but expected float64" {
-		t.Errorf("Unmarshal mismatch error not thrown. Got %s, wanted \"SassValue type mismatch.  Sassvalue is type \"string\" and has value \"Taylor Swift\" but expected float64\"", err)
+	e := "Sassvalue is type string and has value Taylor Swift but expected float64"
+	if err.Error() != e {
+		t.Errorf("got: %s wanted: %s", err, e)
 	}
 }
