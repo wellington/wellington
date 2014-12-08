@@ -202,7 +202,6 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 		ImageDir:  ctx.ImageDir,
 		BuildDir:  ctx.BuildDir,
 		GenImgDir: ctx.GenImgDir,
-		Vertical:  true,
 	}
 	if cglob, err := strconv.Unquote(glob); err == nil {
 		glob = cglob

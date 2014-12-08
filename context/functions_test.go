@@ -22,7 +22,6 @@ func testSprite(ctx *Context) {
 		ImageDir:  ctx.ImageDir,
 		BuildDir:  ctx.BuildDir,
 		GenImgDir: ctx.GenImgDir,
-		Vertical:  true,
 	}
 	glob := "*.png"
 	err := imgs.Decode(glob)
