@@ -20,7 +20,6 @@ build:
         name: go get
         code: |
           cd $WERCKER_SOURCE_DIR
-          go get -u github.com/drewwells/spritewell
           go get -v -t ./...
     # Build the project
     - script:
