@@ -35,9 +35,9 @@ func testSprite(ctx *Context) {
 	}
 }
 
-func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, UnionSassValue, error) {
+func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (*Context, UnionSassValue, error) {
 	var usv UnionSassValue
-	ctx := *NewContext()
+	ctx := NewContext()
 	ctx.OutputStyle = NESTED_STYLE
 	ctx.IncludePaths = make([]string, 0)
 	ctx.BuildDir = "test/build"
@@ -45,7 +45,7 @@ func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, UnionSass
 	ctx.GenImgDir = "test/build/img"
 	ctx.Out = ""
 
-	testSprite(&ctx)
+	testSprite(ctx)
 	cc := make(chan UnionSassValue, len(cookies))
 	// If callbacks were made, add them to the context
 	// and create channels for communicating with them.
@@ -55,7 +55,7 @@ func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, UnionSass
 			cs[i] = Cookie{
 				c.sign,
 				wrapCallback(c.fn, cc),
-				&ctx,
+				ctx,
 			}
 		}
 		usv = <-cc

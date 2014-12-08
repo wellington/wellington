@@ -106,7 +106,7 @@ func main() {
 
 		var pout bytes.Buffer
 		ctx := context.Context{}
-		err := startParser(ctx, in, &pout, "")
+		err := startParser(&ctx, in, &pout, "")
 		if err != nil {
 			log.Println(err)
 		}
@@ -184,7 +184,7 @@ func main() {
 		}
 
 		var pout bytes.Buffer
-		err = startParser(ctx, fRead, &pout, filepath.Dir(Input))
+		err = startParser(&ctx, fRead, &pout, filepath.Dir(Input))
 		if err != nil {
 			log.Println(err)
 			continue
@@ -197,7 +197,7 @@ func main() {
 	}
 }
 
-func startParser(ctx context.Context, in io.Reader, out io.Writer, pkgdir string) error {
+func startParser(ctx *context.Context, in io.Reader, out io.Writer, pkgdir string) error {
 	// Run the sprite_sass parser prior to passing to libsass
 	parser := sprite.Parser{
 		ImageDir:  ctx.ImageDir,
