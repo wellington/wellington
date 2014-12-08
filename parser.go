@@ -225,60 +225,60 @@ func (p *Parser) LookupFile(pos int) string {
 // 	return pos, nestPos
 // }
 
-func (p *Parser) Parse(items []Item) []byte {
-	var (
-		out []byte
-		eoc int
-	)
-	_ = eoc
-	if len(items) == 0 {
-		return []byte("")
-	}
-	j := 1
-	item := items[0]
-	switch item.Type {
-	case VAR:
-		if items[1].Value != ":" {
-			log.Fatal(": expected after variable declaration")
-		}
-		for j < len(items) && items[j].Type != SEMIC {
-			j++
-		}
-		if items[2].Type != CMDVAR {
-			// Hackery for empty sass maps
-			val := string(p.Parse(items[2:j]))
-			// TODO: $var: $anothervar doesnt work
-			// setting other things like $var: darken(#123, 10%)
-			if val != "()" && val != "" {
-				// fmt.Println("SETTING", item, val)
-				p.Vars[item.String()] = val
-			}
-		} else if items[2].Value == "sprite-map" {
-			// Special parsing of sprite-maps
-			imgs := ImageList{
-				ImageDir:  p.ImageDir,
-				BuildDir:  p.BuildDir,
-				GenImgDir: p.GenImgDir,
-				Vertical:  true,
-			}
-			name := fmt.Sprintf("%s", items[0])
-			glob := fmt.Sprintf("%s", items[4])
-			imgs.Decode(glob)
-			imgs.Combine()
-			p.Sprites[name] = imgs
-			//TODO: Generate filename
-			p.Mark(items[2].Pos,
-				items[j].Pos+len(items[j].Value), imgs.Map(name))
-			_, err := imgs.Export()
-			if err != nil {
-				log.Printf("Failed to save sprite: %s", name)
-				log.Println(err)
-			}
-		}
-	}
+// func (p *Parser) Parse(items []Item) []byte {
+// 	var (
+// 		out []byte
+// 		eoc int
+// 	)
+// 	_ = eoc
+// 	if len(items) == 0 {
+// 		return []byte("")
+// 	}
+// 	j := 1
+// 	item := items[0]
+// 	switch item.Type {
+// 	case VAR:
+// 		if items[1].Value != ":" {
+// 			log.Fatal(": expected after variable declaration")
+// 		}
+// 		for j < len(items) && items[j].Type != SEMIC {
+// 			j++
+// 		}
+// 		if items[2].Type != CMDVAR {
+// 			// Hackery for empty sass maps
+// 			val := string(p.Parse(items[2:j]))
+// 			// TODO: $var: $anothervar doesnt work
+// 			// setting other things like $var: darken(#123, 10%)
+// 			if val != "()" && val != "" {
+// 				// fmt.Println("SETTING", item, val)
+// 				p.Vars[item.String()] = val
+// 			}
+// 		} else if items[2].Value == "sprite-map" {
+// 			fmt.Println("hi")
+// 			// Special parsing of sprite-maps
+// 			imgs := ImageList{
+// 				ImageDir:  p.ImageDir,
+// 				BuildDir:  p.BuildDir,
+// 				GenImgDir: p.GenImgDir,
+// 			}
+// 			name := fmt.Sprintf("%s", items[0])
+// 			glob := fmt.Sprintf("%s", items[4])
+// 			imgs.Decode(glob)
+// 			imgs.Combine()
+// 			p.Sprites[name] = imgs
+// 			//TODO: Generate filename
+// 			//p.Mark(items[2].Pos,
+// 			//	items[j].Pos+len(items[j].Value), imgs.Map(name))
+// 			_, err := imgs.Export()
+// 			if err != nil {
+// 				log.Printf("Failed to save sprite: %s", name)
+// 				log.Println(err)
+// 			}
+// 		}
+// 	}
 
-	return append(out, p.Parse(items[j:])...)
-}
+// 	return append(out, p.Parse(items[j:])...)
+// }
 
 // Import recursively resolves all imports.  It lexes the input
 // adding the tokens to the Parser object.
