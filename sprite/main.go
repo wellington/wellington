@@ -116,7 +116,7 @@ func main() {
 		if strings.HasPrefix(filepath.Base(f), "_") {
 			continue
 		}
-		log.Println("Open:", f)
+		// log.Println("Open:", f)
 
 		// If no imagedir specified, assume relative to the input file
 		if Dir == "" {
@@ -153,6 +153,7 @@ func main() {
 				strings.Split(Includes, ",")...)
 		}
 		fRead, err := os.Open(f)
+		defer fRead.Close()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -164,10 +165,11 @@ func main() {
 			}
 
 			out, err = os.Create(fout)
+			defer out.Close()
 			if err != nil {
 				log.Fatalf("Failed to create file: %s", f)
 			}
-			log.Println("Created:", fout)
+			// log.Println("Created:", fout)
 		}
 
 		var pout bytes.Buffer
