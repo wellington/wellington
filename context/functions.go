@@ -207,11 +207,27 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 	if cglob, err := strconv.Unquote(glob); err == nil {
 		glob = cglob
 	}
+
+	key := glob + strconv.FormatInt(int64(spacing), 10)
+	ctx.Sprites.RLock()
+	if hit, ok := ctx.Sprites.M[key]; ok {
+		ctx.Sprites.RUnlock()
+		gpath := hit.OutFile
+		res, err := Marshal(gpath)
+		if err != nil {
+			fmt.Println("hang?")
+			log.Fatal(err)
+		}
+		return res
+	} else {
+		ctx.Sprites.RUnlock()
+	}
 	err = imgs.Decode(glob)
 	if err != nil {
 		log.Fatal(err)
 	}
 	gpath, err := imgs.Combine()
+	_ = gpath
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -221,9 +237,9 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 		log.Fatal(err)
 	}
 
-	res, err := Marshal(gpath)
+	res, err := Marshal(key)
 	ctx.Sprites.Lock()
-	ctx.Sprites.M[gpath] = imgs
+	ctx.Sprites.M[key] = imgs
 	ctx.Sprites.Unlock()
 	if err != nil {
 		log.Fatal(err)
