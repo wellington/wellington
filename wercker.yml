@@ -25,8 +25,8 @@ build:
     - script:
         name: goxc build & package
         code: |
-          cd $WERCKER_SOURCE_DIR/sprite
-          goxc -tasks='xc archive' -bc 'linux' -arch 'amd64' -d $WERCKER_OUTPUT_DIR -n sprite
+          cd $WERCKER_SOURCE_DIR/wt
+          goxc -tasks='xc archive' -bc 'linux' -arch 'amd64' -d $WERCKER_OUTPUT_DIR -n wt
     - script:
         name: go test
         code: |
@@ -61,7 +61,7 @@ deploy:
         name: get version
         code: |
           # create binary
-          export RELEASE_TAG=$(./snapshot/linux_amd64/sprite -version)
+          export RELEASE_TAG=$(./snapshot/linux_amd64/wt -version)
           echo $RELEASE_TAG
     - wercker/github-create-release:
         token: $GITHUB_TOKEN
@@ -70,5 +70,5 @@ deploy:
         #draft: true
     - wercker/github-upload-asset:
         token: $GITHUB_TOKEN
-        file: snapshot/sprite_linux_amd64.tar.gz
+        file: snapshot/wt_linux_amd64.tar.gz
         #filename: sprite
