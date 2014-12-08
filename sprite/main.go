@@ -85,6 +85,13 @@ func main() {
 		return
 	}
 
+	if Gen != "" {
+		err := os.MkdirAll(Gen, 0755)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	style, ok := context.Style[Style]
 
 	if !ok {
