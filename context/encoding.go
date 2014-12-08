@@ -46,6 +46,9 @@ func unmarshal(arg UnionSassValue, v interface{}) error {
 		case bool(C.sass_value_is_list(arg)):
 			k = reflect.Slice
 			t = reflect.SliceOf(t)
+		case bool(C.sass_value_is_error(arg)):
+			// This should get implemented as type error
+			k = reflect.String
 		}
 	}
 
@@ -63,7 +66,7 @@ func unmarshal(arg UnionSassValue, v interface{}) error {
 			return throwMisMatchTypeError(arg, "float64")
 		}
 	case reflect.String:
-		if C.sass_value_is_string(arg) {
+		if C.sass_value_is_string(arg) || C.sass_value_is_error(arg) {
 			c := C.sass_string_get_value(arg)
 			gc := C.GoString(c)
 			//drop quotes

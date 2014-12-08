@@ -60,6 +60,19 @@ func TestUnmarshalStringValue(t *testing.T) {
 	}
 }
 
+func TestUnmarshalError(t *testing.T) {
+	e := "error message"
+	obj := Error(fmt.Errorf("%s", e))
+	var s string
+	err := Unmarshal(obj, &s)
+	if err != nil {
+		t.Error(err)
+	}
+	if e != s {
+		t.Errorf("got: %s wanted: %s", s, e)
+	}
+}
+
 func TestUnmarshalComplex(t *testing.T) {
 	// Only interfaces supported for lists, is this ok?
 	e := []string{"ex1", "ex2"}
