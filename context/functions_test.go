@@ -29,30 +29,23 @@ func testSprite(ctx *Context) {
 	if err != nil {
 		panic(err)
 	}
-	err = imgs.Combine()
+	_, err = imgs.Combine()
 	if err != nil {
 		panic(err)
 	}
-	err = imgs.OutputPath()
-
-	if err != nil {
-		panic(err)
-	}
-	ctx.Sprites[glob] = imgs
 }
 
-func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, UnionSassValue, error) {
+func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (*Context, UnionSassValue, error) {
 	var usv UnionSassValue
-	ctx := Context{
-		Sprites:      make(map[string]spritewell.ImageList),
-		OutputStyle:  NESTED_STYLE,
-		IncludePaths: make([]string, 0),
-		BuildDir:     "test/build",
-		ImageDir:     "test/img",
-		GenImgDir:    "test/build/img",
-		Out:          "",
-	}
-	testSprite(&ctx)
+	ctx := NewContext()
+	ctx.OutputStyle = NESTED_STYLE
+	ctx.IncludePaths = make([]string, 0)
+	ctx.BuildDir = "test/build"
+	ctx.ImageDir = "test/img"
+	ctx.GenImgDir = "test/build/img"
+	ctx.Out = ""
+
+	testSprite(ctx)
 	cc := make(chan UnionSassValue, len(cookies))
 	// If callbacks were made, add them to the context
 	// and create channels for communicating with them.
@@ -62,7 +55,7 @@ func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, UnionSass
 			cs[i] = Cookie{
 				c.sign,
 				wrapCallback(c.fn, cc),
-				&ctx,
+				ctx,
 			}
 		}
 		usv = <-cc
@@ -102,9 +95,35 @@ func TestFuncSpriteMap(t *testing.T) {
 		t.Error(err)
 	}
 
-	if e := "test/build/img/testimg-8121ae.png"; e != path {
+	if e := "*.png5"; e != path {
 		t.Errorf("got: %s wanted: %s", path, e)
 	}
+}
+
+func TestFuncSpriteFile(t *testing.T) {
+	ctx := NewContext()
+	ctx.BuildDir = "test/build"
+	ctx.GenImgDir = "test/build/img"
+	ctx.ImageDir = "test/img"
+
+	// Add real arguments when sass lists can be [un]marshalled
+	lst := []interface{}{"*.png", "139"}
+	usv := testMarshal(t, lst)
+	usv = SpriteFile(ctx, usv)
+	var glob, path string
+	err := Unmarshal(usv, &glob, &path)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if e := "*.png"; e != glob {
+		t.Errorf("got: %s wanted: %s", e, glob)
+	}
+
+	if e := "139"; e != path {
+		t.Errorf("got: %s wanted: %s", e, path)
+	}
+
 }
 
 func TestCompileSpriteMap(t *testing.T) {
@@ -127,8 +146,8 @@ height: $aritymap;
 		t.Error(err)
 	}
 	exp := `div {
-  width: test/build/img/testimg-8121ae.png;
-  height: test/build/img/testimg-8121ae.png; }
+  width: *.png0;
+  height: *.png1; }
 `
 
 	if exp != out.String() {
@@ -136,27 +155,8 @@ height: $aritymap;
 	}
 }
 
-func TestFuncSpriteFile(t *testing.T) {
-	in := bytes.NewBufferString(`
-$map: sprite-map("*.png"); // One argument
-div {
-  background: sprite-file($map, "139");
-}`)
-	var out bytes.Buffer
-	setupCtx(in, &out)
-
-	e := `div {
-  background: 139.png; }
-`
-	if e != out.String() {
-		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
-	}
-}
-
 func TestFuncImageHeight(t *testing.T) {
-	in := bytes.NewBufferString(`
-$map: sprite-map("*.png",0,0);
-div {
+	in := bytes.NewBufferString(`div {
     height: image-height("139");
 }`)
 	var out bytes.Buffer
@@ -175,8 +175,7 @@ div {
 }
 
 func TestRegImageWidth(t *testing.T) {
-	in := bytes.NewBufferString(`
-div {
+	in := bytes.NewBufferString(`div {
     height: image-width("139");
 }`)
 	var out bytes.Buffer
@@ -186,6 +185,42 @@ div {
 	}
 	e := `div {
   height: 96px; }
+`
+	if e != out.String() {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
+	}
+}
+
+func TestRegSpriteImageHeight(t *testing.T) {
+	in := bytes.NewBufferString(`$map: sprite-map("*.png");
+div {
+  height: image-height(sprite-file($map,"139"));
+}`)
+	var out bytes.Buffer
+	_, _, err := setupCtx(in, &out)
+	if err != nil {
+		t.Error(err)
+	}
+	e := `div {
+  height: 139px; }
+`
+	if e != out.String() {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
+	}
+}
+
+func TestRegSpriteImageWidth(t *testing.T) {
+	in := bytes.NewBufferString(`$map: sprite-map("*.png");
+div {
+  width: image-width(sprite-file($map,"139"));
+}`)
+	var out bytes.Buffer
+	_, _, err := setupCtx(in, &out)
+	if err != nil {
+		t.Error(err)
+	}
+	e := `div {
+  width: 96px; }
 `
 	if e != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)

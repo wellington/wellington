@@ -29,8 +29,7 @@ func (ctx *Context) ProcessSassError(bs []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
-	return string(bs), nil
+	return "ERROR: " + ctx.Errors.Message, nil
 }
 
 func (ctx *Context) Error() string {

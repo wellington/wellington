@@ -48,7 +48,7 @@ var rerandom *regexp.Regexp
 
 func init() {
 	// Setup build directory
-	os.MkdirAll("test/build", 0755)
+	os.MkdirAll("test/build/img", 0755)
 	rerandom = regexp.MustCompile(`-\w{6}(?:\.(png|jpg))`)
 
 }

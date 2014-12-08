@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"reflect"
 	"strconv"
 
 	sw "github.com/drewwells/spritewell"
@@ -38,18 +39,47 @@ func ImageURL(ctx *Context, csv UnionSassValue) UnionSassValue {
 
 func ImageHeight(ctx *Context, usv UnionSassValue) UnionSassValue {
 	var (
+		glob string
 		name string
 	)
 	err := Unmarshal(usv, &name)
+	// Check for sprite-file override first
 	if err != nil {
-		fmt.Println(err)
+		var inf interface{}
+		var infs []interface{}
+		// Can't unmarshal to []interface{}, so unmarshal to
+		// interface{} then reflect it into a []interface{}
+		err = Unmarshal(usv, &inf)
+		k := reflect.ValueOf(&infs).Elem()
+		k.Set(reflect.ValueOf(inf))
+
+		if err != nil {
+			log.Fatal(err)
+			return Error(err)
+		} else {
+			glob = infs[0].(string)
+			name = infs[1].(string)
+		}
 	}
 	imgs := sw.ImageList{
 		ImageDir:  ctx.ImageDir,
 		GenImgDir: ctx.GenImgDir,
 	}
-	imgs.Decode(name)
-	imgs.Combine()
+	if glob == "" {
+		if hit, ok := ctx.Imgs.M[name]; ok {
+			imgs = hit
+		} else {
+			imgs.Decode(name)
+			imgs.Combine()
+			ctx.Imgs.Lock()
+			ctx.Imgs.M[name] = imgs
+			ctx.Imgs.Unlock()
+		}
+	} else {
+		ctx.Sprites.RLock()
+		imgs = ctx.Sprites.M[glob]
+		ctx.Sprites.RUnlock()
+	}
 	height := imgs.SImageHeight(name)
 	Hheight := SassNumber{
 		value: float64(height),
@@ -62,20 +92,50 @@ func ImageHeight(ctx *Context, usv UnionSassValue) UnionSassValue {
 	return res
 }
 
+// ImageWidth takes a file path (or sprite glob) and returns the
+// height in pixels of the image being referenced.
 func ImageWidth(ctx *Context, usv UnionSassValue) UnionSassValue {
 	var (
-		name string
+		glob, name string
 	)
 	err := Unmarshal(usv, &name)
+	// Check for sprite-file override first
 	if err != nil {
-		fmt.Println(err)
+		var inf interface{}
+		var infs []interface{}
+		// Can't unmarshal to []interface{}, so unmarshal to
+		// interface{} then reflect it into a []interface{}
+		err = Unmarshal(usv, &inf)
+		k := reflect.ValueOf(&infs).Elem()
+		k.Set(reflect.ValueOf(inf))
+
+		if err != nil {
+			log.Fatal(err)
+			return Error(err)
+		} else {
+			glob = infs[0].(string)
+			name = infs[1].(string)
+		}
 	}
 	imgs := sw.ImageList{
 		ImageDir:  ctx.ImageDir,
 		GenImgDir: ctx.GenImgDir,
 	}
-	imgs.Decode(name)
-	imgs.Combine()
+	if glob == "" {
+		if hit, ok := ctx.Imgs.M[name]; ok {
+			imgs = hit
+		} else {
+			imgs.Decode(name)
+			imgs.Combine()
+			ctx.Imgs.Lock()
+			ctx.Imgs.M[name] = imgs
+			ctx.Imgs.Unlock()
+		}
+	} else {
+		ctx.Sprites.RLock()
+		imgs = ctx.Sprites.M[glob]
+		ctx.Sprites.RUnlock()
+	}
 	v := imgs.SImageWidth(name)
 	vv := SassNumber{
 		value: float64(v),
@@ -104,7 +164,7 @@ func InlineImage(ctx *Context, usv UnionSassValue) UnionSassValue {
 	if err != nil {
 		return Error(err)
 	}
-	err = imgs.Combine()
+	_, err = imgs.Combine()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -116,17 +176,15 @@ func InlineImage(ctx *Context, usv UnionSassValue) UnionSassValue {
 	return res
 }
 
+// SpriteFile proxies the sprite glob and image name through.
 func SpriteFile(ctx *Context, usv UnionSassValue) UnionSassValue {
 	var glob, name string
 	err := Unmarshal(usv, &glob, &name)
 	if err != nil {
 		panic(err)
 	}
-	sprite := ctx.Sprites[glob].File(name)
-	res, err := Marshal(sprite)
-	if err != nil {
-		panic(err)
-	}
+	infs := []interface{}{glob, name}
+	res, err := Marshal(infs)
 	return res
 }
 
@@ -149,17 +207,40 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 	if cglob, err := strconv.Unquote(glob); err == nil {
 		glob = cglob
 	}
+
+	key := glob + strconv.FormatInt(int64(spacing), 10)
+	ctx.Sprites.RLock()
+	if hit, ok := ctx.Sprites.M[key]; ok {
+		ctx.Sprites.RUnlock()
+		gpath := hit.OutFile
+		res, err := Marshal(gpath)
+		if err != nil {
+			fmt.Println("hang?")
+			log.Fatal(err)
+		}
+		return res
+	} else {
+		ctx.Sprites.RUnlock()
+	}
 	err = imgs.Decode(glob)
 	if err != nil {
 		log.Fatal(err)
 	}
-	imgs.Combine()
-	gpath, err := imgs.Export()
+	gpath, err := imgs.Combine()
+	_ = gpath
 	if err != nil {
 		log.Fatal(err)
 	}
-	res, err := Marshal(gpath)
-	ctx.Sprites[gpath] = imgs
+
+	_, err = imgs.Export()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	res, err := Marshal(key)
+	ctx.Sprites.Lock()
+	ctx.Sprites.M[key] = imgs
+	ctx.Sprites.Unlock()
 	if err != nil {
 		log.Fatal(err)
 	}

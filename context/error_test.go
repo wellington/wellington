@@ -105,6 +105,30 @@ func TestErrorImport(t *testing.T) {
 
 }
 
+func TestProcessSassError(t *testing.T) {
+	in := []byte(`{
+  "status": 1,
+  "file": "stdin",
+  "line": 3100,
+  "column": 20,
+  "message": "error in C function inline-image: format: .svg not supported\nBacktrace:\n\tstdin:3100, in function inline-image\n\tstdin:3100, in mixin printCSSImg\n\tstdin:3117"
+}`)
+	ctx := Context{}
+	bs, err := ctx.ProcessSassError(in)
+	if err != nil {
+		t.Error(err)
+	}
+
+	e := `ERROR: error in C function inline-image: format: .svg not supported
+Backtrace:
+	stdin:3100, in function inline-image
+	stdin:3100, in mixin printCSSImg
+	stdin:3117`
+	if e != bs {
+		t.Errorf("got:\n%s\nwanted:\n%s", bs, e)
+	}
+}
+
 func TestErrorWarn(t *testing.T) {
 	// Disabled while new warn integration is built
 	// in := bytes.NewBufferString(`

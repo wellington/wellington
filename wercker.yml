@@ -21,7 +21,6 @@ build:
         code: |
           cd $WERCKER_SOURCE_DIR
           go get -v -t ./...
-
     # Build the project
     - script:
         name: goxc build & package

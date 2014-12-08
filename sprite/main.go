@@ -85,6 +85,13 @@ func main() {
 		return
 	}
 
+	if Gen != "" {
+		err := os.MkdirAll(Gen, 0755)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	style, ok := context.Style[Style]
 
 	if !ok {
@@ -99,7 +106,7 @@ func main() {
 
 		var pout bytes.Buffer
 		ctx := context.Context{}
-		err := startParser(ctx, in, &pout, "")
+		err := startParser(&ctx, in, &pout, "")
 		if err != nil {
 			log.Println(err)
 		}
@@ -110,12 +117,17 @@ func main() {
 		}
 	}
 
+	SpriteCache := spritewell.SafeImageMap{
+		M: make(map[string]spritewell.ImageList, 100)}
+	ImageCache := spritewell.SafeImageMap{
+		M: make(map[string]spritewell.ImageList, 100)}
+
 	for _, f := range flag.Args() {
 		// Remove partials
 		if strings.HasPrefix(filepath.Base(f), "_") {
 			continue
 		}
-		log.Println("Open:", f)
+		// log.Println("Open:", f)
 
 		// If no imagedir specified, assume relative to the input file
 		if Dir == "" {
@@ -136,7 +148,8 @@ func main() {
 
 		ctx := context.Context{
 			// TODO: Most of these fields are no longer used
-			Sprites:     make(map[string]spritewell.ImageList),
+			Sprites:     SpriteCache,
+			Imgs:        ImageCache,
 			OutputStyle: style,
 			ImageDir:    Dir,
 			// Assumption that output is a file
@@ -151,6 +164,7 @@ func main() {
 				strings.Split(Includes, ",")...)
 		}
 		fRead, err := os.Open(f)
+		defer fRead.Close()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -162,14 +176,15 @@ func main() {
 			}
 
 			out, err = os.Create(fout)
+			defer out.Close()
 			if err != nil {
 				log.Fatalf("Failed to create file: %s", f)
 			}
-			log.Println("Created:", fout)
+			// log.Println("Created:", fout)
 		}
 
 		var pout bytes.Buffer
-		err = startParser(ctx, fRead, &pout, filepath.Dir(Input))
+		err = startParser(&ctx, fRead, &pout, filepath.Dir(Input))
 		if err != nil {
 			log.Println(err)
 			continue
@@ -182,7 +197,7 @@ func main() {
 	}
 }
 
-func startParser(ctx context.Context, in io.Reader, out io.Writer, pkgdir string) error {
+func startParser(ctx *context.Context, in io.Reader, out io.Writer, pkgdir string) error {
 	// Run the sprite_sass parser prior to passing to libsass
 	parser := sprite.Parser{
 		ImageDir:  ctx.ImageDir,
