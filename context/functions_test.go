@@ -3,6 +3,8 @@ package context
 import (
 	"bytes"
 	"io"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/wellington/spritewell"
@@ -102,7 +104,7 @@ func TestFuncSpriteMap(t *testing.T) {
 	ctx.ImageDir = "test/img"
 
 	// Add real arguments when sass lists can be [un]marshalled
-	lst := []interface{}{"*.png", float64(5), float64(0)}
+	lst := []interface{}{"*.png", float64(5)}
 	usv := testMarshal(t, lst)
 	usv = SpriteMap(ctx, usv)
 	var path string
@@ -144,7 +146,7 @@ func TestFuncSpriteFile(t *testing.T) {
 
 func TestCompileSpriteMap(t *testing.T) {
 	in := bytes.NewBufferString(`
-$aritymap: sprite-map("*.png",1,2); // Optional arguments
+$aritymap: sprite-map("*.png",0px); // Optional arguments
 $map: sprite-map("*.png"); // One argument
 div {
 width: $map;
@@ -162,12 +164,47 @@ height: $aritymap;
 		t.Error(err)
 	}
 	exp := `div {
-  width: *.png0;
-  height: *.png1; }
+  width: testimg-8121ae.png;
+  height: *.png0; }
 `
 
 	if exp != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), exp)
+	}
+}
+
+func TestCompileSpritePaddingMap(t *testing.T) {
+	in := bytes.NewBufferString(`$map: sprite-map("dual/*.png",10px);
+div {
+  content: $map;
+}`)
+
+	ctx := NewContext()
+
+	ctx.ImageDir = "test/img"
+	ctx.BuildDir = "test/build"
+	ctx.GenImgDir = "test/build/img"
+
+	var out bytes.Buffer
+	err := ctx.Compile(in, &out)
+	if err != nil {
+		t.Error(err)
+	}
+	exp := `div {
+  content: dual/*.png10; }
+`
+
+	if exp != out.String() {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), exp)
+	}
+
+	esz := int64(28160)
+	f, err := os.Stat(filepath.Join(ctx.GenImgDir, "testimgdual-ab7eb7.png"))
+
+	if os.IsNotExist(err) {
+		t.Error(err)
+	} else if f.Size() != esz {
+		t.Errorf("got: %d wanted: %d", f.Size(), esz)
 	}
 }
 

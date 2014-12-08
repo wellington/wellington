@@ -195,7 +195,7 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 	var spacing float64
 	err := Unmarshal(usv, &glob, &spacing)
 	if err != nil {
-		log.Fatal(err)
+		return Error(err)
 	}
 	imgs := sw.ImageList{
 		ImageDir:  ctx.ImageDir,
