@@ -29,16 +29,10 @@ func testSprite(ctx *Context) {
 	if err != nil {
 		panic(err)
 	}
-	err = imgs.Combine()
+	_, err = imgs.Combine()
 	if err != nil {
 		panic(err)
 	}
-	err = imgs.OutputPath()
-
-	if err != nil {
-		panic(err)
-	}
-	ctx.Sprites[glob] = imgs
 }
 
 func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (Context, UnionSassValue, error) {

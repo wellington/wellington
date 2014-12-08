@@ -151,7 +151,7 @@ func InlineImage(ctx *Context, usv UnionSassValue) UnionSassValue {
 	if err != nil {
 		return Error(err)
 	}
-	err = imgs.Combine()
+	_, err = imgs.Combine()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -198,11 +198,16 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 	if err != nil {
 		log.Fatal(err)
 	}
-	imgs.Combine()
-	gpath, err := imgs.Export()
+	gpath, err := imgs.Combine()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	_, err = imgs.Export()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	res, err := Marshal(gpath)
 	ctx.Sprites[gpath] = imgs
 	if err != nil {
