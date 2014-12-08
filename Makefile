@@ -7,8 +7,10 @@ echo:
 home:
 	go run sprite/main.go -gen ~/work/rmn/www/gui/build/im -b ~/work/rmn/www/gui/build/css/ -p ~/work/rmn/www/gui/sass -d ~/work/rmn/www/gui/im/sass ~/work/rmn/www/gui/sass/_pages/home.scss
 profile:
-	go run sprite/main.go --cpuprofile=sprite.prof -gen ~/work/rmn/www/gui/build/im -b ~/work/rmn/www/gui/build/css/ -p ~/work/rmn/www/gui/sass -d ~/work/rmn/www/gui/im/sass ~/work/rmn/www/gui/**/*.scss
-	go tool pprof $(which sprite) sprite.prof
+	go install github.com/drewwells/sprite_sass/sprite
+	sprite --cpuprofile=sprite.prof -gen ~/work/rmn/www/gui/build/im -b ~/work/rmn/www/gui/build/css/ -p ~/work/rmn/www/gui/sass -d ~/work/rmn/www/gui/im/sass ~/work/rmn/www/gui/**/*.scss
+	go tool pprof --png $(GOPATH)/bin/sprite sprite.prof > profile.png
+	open profile.png
 deps:
 	scripts/getdeps.sh
 headers:
