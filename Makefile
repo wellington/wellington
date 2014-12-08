@@ -5,23 +5,23 @@ echo:
 	echo $(current_dir)
 
 install:
-	go install github.com/wellington/wellington/sprite
+	go install github.com/wellington/wellington/wt
 home:
-	go run sprite/main.go -gen ~/work/rmn/www/gui/build/im -b ~/work/rmn/www/gui/build/css/ -p ~/work/rmn/www/gui/sass -d ~/work/rmn/www/gui/im/sass ~/work/rmn/www/gui/sass/_pages/home.scss
+	go run wpt/main.go -gen ~/work/rmn/www/gui/build/im -b ~/work/rmn/www/gui/build/css/ -p ~/work/rmn/www/gui/sass -d ~/work/rmn/www/gui/im/sass ~/work/rmn/www/gui/sass/_pages/home.scss
 profile: install
-	sprite --cpuprofile=sprite.prof -gen ~/work/rmn/www/gui/build/im -b ~/work/rmn/www/gui/build/css/ -p ~/work/rmn/www/gui/sass -d ~/work/rmn/www/gui/im/sass ~/work/rmn/www/gui/**/*.scss
-	go tool pprof --png $(GOPATH)/bin/sprite sprite.prof > profile.png
+	wt --cpuprofile=wt.prof -gen ~/work/rmn/www/gui/build/im -b ~/work/rmn/www/gui/build/css/ -p ~/work/rmn/www/gui/sass -d ~/work/rmn/www/gui/im/sass ~/work/rmn/www/gui/**/*.scss
+	go tool pprof --png $(GOPATH)/bin/wt wt.prof > profile.png
 	open profile.png
 deps:
 	scripts/getdeps.sh
 headers:
 	scripts/getheaders.sh
 build:
-	docker build -t sprite .
+	docker build -t wellington .
 docker:
-	docker run -it -v $(rmnpath):/rmn -v $(current_dir):/usr/src/myapp sprite bash
+	docker run -it -v $(rmnpath):/rmn -v $(current_dir):/usr/src/myapp wellington bash
 dockerprofile:
-	docker run -it -v $(rmnpath):/rmn -v $(current_dir):/usr/src/myapp sprite make dockerexec
+	docker run -it -v $(rmnpath):/rmn -v $(current_dir):/usr/src/myapp wellington make dockerexec
 dockerexec:
 	go run sprite/main.go -gen /rmn/www/gui/build/im  --cpuprofile=sprite.prof -b /rmn/www/gui/build/css/ -p /rmn/www/gui/sass -d /rmn/www/gui/im/sass /rmn/www/gui/**/*.scss
 	go tool pprof --pdf /usr/bin/sprite sprite.prof > profile.pdf
@@ -30,5 +30,5 @@ test:
 compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
 swift: install
-	time sprite -gen ~/work/rmn/www/gui/build/im -b ~/work/rmn/www/gui/build/css/ -p ~/work/rmn/www/gui/sass -d ~/work/rmn/www/gui/im/sass ~/work/rmn/www/gui/**/*.scss
+	time wt -gen ~/work/rmn/www/gui/build/im -b ~/work/rmn/www/gui/build/css/ -p ~/work/rmn/www/gui/sass -d ~/work/rmn/www/gui/im/sass ~/work/rmn/www/gui/**/*.scss
 time: compass swift

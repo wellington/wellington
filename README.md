@@ -1,9 +1,9 @@
 [![wercker status](https://app.wercker.com/status/873d0c7929b8b1e8bc37bcc16829fb5f/m/master "wercker status")](https://app.wercker.com/project/bykey/873d0c7929b8b1e8bc37bcc16829fb5f) [![Coverage Status](https://img.shields.io/coveralls/wellington/wellington.svg)](https://coveralls.io/r/wellington/wellington?branch=master)
 
-sprite-sass
+Wellington
 ===========
 
-Sprite_sass adds the missing pieces to SASS, spriting and image manipulation.  This tool is designed to work directly from sass, so you don't need to learn an entire new DSL just add a few new commands to get toolbox.
+Wellington adds the missing pieces to SASS, spriting and image manipulation.  This tool is designed to work directly from sass, so you don't need to learn an entire new DSL just add a few new commands to get toolbox.
 
 ```
 $images: sprite-map("sprites/*.png");
@@ -20,7 +20,7 @@ div {
 }
 ```
 ### Why?
-Sprite_sass adds file awareness to the sass language.  It has been written in Go for portability, modularity, and speed.  There are no dependencies on Ruby.  The binary includes everything you need to run sprite_sass.  Sprite_sass uses libsass under the covers for processing the output CSS.
+Wellington adds file awareness to the sass language.  It has been written in Go for portability, modularity, and speed.  There are no dependencies on Ruby.  The binary includes everything you need to run sprite_sass.  Sprite_sass uses libsass under the covers for processing the output CSS.
 
 #### Installation
 Check out the releases for compiled binaries
@@ -33,16 +33,16 @@ out the repo or building [libsass](https://github.com/sass/libsass) via the  ins
 
 ```
 # This will fail if you don't have libsass installed, that's OK.
-go get -u github.com/wellington/wellington/sprite
+go get -u github.com/wellington/wellington/wt
 cd $GOPATH/wellington/wellington
 make deps
 # Attempt install again
-go get -u github.com/wellington/wellington/sprite
+go get -u github.com/wellington/wellington/wt
 ```
 
 Test out if the installation worked
 ```
-sprite
+wt
 ```
 
 ### List of Available Commands
@@ -60,11 +60,26 @@ sprite
 
 ### Development
 
-Testing on linux (via docker)
+Get the code
 
-```
-#only needed once
-docker build -t sprite .
-#start the container and run all tests in it
-docker run -it -v $(pwd):/gopath/src/app sprite go test ./...
-```
+	go get github.com/wellington/wellington
+
+You may want to cd `$GOPATH/wellington/wellington` and set the origin to your fork.
+
+	git remote rm origin
+	git remote add origin git@github.com:username/wellington.git
+
+Testing
+
+    make test
+
+Profiling
+
+	make profile
+
+Docker Container
+
+	make build
+	make docker #launch a container
+
+Please use pull requests for contributing code.  Wercker will automatically test and lint your contributions.  Thanks for helping!
