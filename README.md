@@ -49,14 +49,14 @@ wt
 ### List of Available Commands
 |Command Example|Description|
 |-------------------------------------------------------------------|-------------------------------------------------|
-|$images: *sprite-map*("glob/pattern");|Creates a reference to your sprites|
-|$map: *sprite-file*($images,"file");|Returns a map for use with image-[width|height]|
-|height: *image-height*($images,"file");|Inserts the height of the sprite|
-|width: *image-width*($images,"file");|Inserts the width of the sprite|
-|background: *sprite*($images,"file");|Finds the requested file in the sprite sheet, extension is optional|
+|$images: *sprite-map*("glob/pattern", $spacing: 10px);|Creates a reference to your sprites|
+|$map: *sprite-file*($spritemap,"file");|Returns encoded data only useful for passing to image-height, image-width|
+|height: *image-height*("image.png");|Inserts the height of the sprite|
+|width: *image-width*("image.png");|Inserts the width of the sprite|
 |@include *sprite-dimensions*($images,"file");|Creates height/width css for the container size|
 |background-image: inline-image($images,"justone");|Base64 encoded data uri of the requested image|
-|background: *image-url*("nopixel.png");|Creates a relative path to your image directory|
+|background: *image-url*("nopixel.png");|Returns a relative path to an image in the image directory|
+|font-url: *font-url*("arial.eot");|Returns a relative path to a file in the font directory|
 
 
 ### Development
