@@ -1,6 +1,7 @@
 .PHONY: test
 current_dir = $(shell pwd)
 rmnpath = "/Users/drew/work/rmn"
+FILES := $(shell find $(rmnpath)/www/gui/sass -name "*.scss")
 echo:
 	echo $(current_dir)
 
@@ -9,7 +10,7 @@ install:
 home:
 	go run wpt/main.go -gen ~/work/rmn/www/gui/build/im -b ~/work/rmn/www/gui/build/css/ -p ~/work/rmn/www/gui/sass -d ~/work/rmn/www/gui/im/sass ~/work/rmn/www/gui/sass/_pages/home.scss
 profile: install
-	wt --cpuprofile=wt.prof -gen ~/work/rmn/www/gui/build/im -b ~/work/rmn/www/gui/build/css/ -p ~/work/rmn/www/gui/sass -d ~/work/rmn/www/gui/im/sass ~/work/rmn/www/gui/**/*.scss
+	wt --cpuprofile=wt.prof -gen ~/work/rmn/www/gui/build/im -b ~/work/rmn/www/gui/build/css/ -p ~/work/rmn/www/gui/sass -d ~/work/rmn/www/gui/im/sass $(FILES)
 	go tool pprof --png $(GOPATH)/bin/wt wt.prof > profile.png
 	open profile.png
 deps:
@@ -30,5 +31,5 @@ test:
 compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
 swift: install
-	time wt -gen ~/work/rmn/www/gui/build/im -b ~/work/rmn/www/gui/build/css/ -p ~/work/rmn/www/gui/sass -d ~/work/rmn/www/gui/im/sass ~/work/rmn/www/gui/**/*.scss
+	time wt -gen ~/work/rmn/www/gui/build/im -b ~/work/rmn/www/gui/build/css/ -p ~/work/rmn/www/gui/sass -d ~/work/rmn/www/gui/im/sass $(FILES)
 time: compass swift
