@@ -1,6 +1,9 @@
 package context
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 type lError struct {
 	Pos     int
@@ -29,7 +32,10 @@ func (ctx *Context) ProcessSassError(bs []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return "ERROR: " + ctx.Errors.Message, nil
+
+	errors := ctx.Errors
+	return fmt.Sprintf("ERROR: %s\n    in: %s:%d",
+		errors.Message, errors.File, errors.Line), nil
 }
 
 func (ctx *Context) Error() string {

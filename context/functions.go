@@ -223,12 +223,12 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 	}
 	err = imgs.Decode(glob)
 	if err != nil {
-		log.Fatal(err)
+		return Error(err)
 	}
 	gpath, err := imgs.Combine()
 	_ = gpath
 	if err != nil {
-		log.Fatal(err)
+		return Error(err)
 	}
 
 	_, err = imgs.Export()

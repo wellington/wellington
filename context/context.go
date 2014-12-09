@@ -11,6 +11,7 @@ import "C"
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"path/filepath"
@@ -184,15 +185,15 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	io.WriteString(out, cout)
 
 	ctx.Status = int(C.sass_context_get_error_status(cc))
-	errJson := C.sass_context_get_error_json(cc)
-	errS, err := ctx.ProcessSassError([]byte(C.GoString(errJson)))
+	errJSON := C.sass_context_get_error_json(cc)
+	errS, err := ctx.ProcessSassError([]byte(C.GoString(errJSON)))
 
 	if err != nil {
 		return err
 	}
 
 	if errS != "" {
-		return errors.New(errS)
+		return fmt.Errorf(errS)
 	}
 
 	return nil
