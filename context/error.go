@@ -34,8 +34,9 @@ func (ctx *Context) ProcessSassError(bs []byte) (string, error) {
 	}
 
 	errors := ctx.Errors
-	return fmt.Sprintf("ERROR: %s\n    in: %s:%d",
-		errors.Message, errors.File, errors.Line), nil
+
+	return fmt.Sprintf("Error > %s:%d\n%s",
+		errors.File, errors.Line, errors.Message), nil
 }
 
 func (ctx *Context) Error() string {
