@@ -35,13 +35,13 @@ func unmarshal(arg UnionSassValue, v interface{}) error {
 		case bool(C.sass_value_is_null(arg)):
 			f.Set(reflect.ValueOf("<nil>"))
 			return nil
-		case bool(C.sass_value_is_number(arg)):
+		case bool(C.sass_value_is_number(arg)) && noSassNumberUnit(arg):
 			k = reflect.Float64
 		case bool(C.sass_value_is_string(arg)):
 			k = reflect.String
 		case bool(C.sass_value_is_boolean(arg)):
 			k = reflect.Bool
-		case bool(C.sass_value_is_color(arg)):
+		case bool(C.sass_value_is_color(arg)) || (bool(C.sass_value_is_number(arg)) && !noSassNumberUnit(arg)):
 			k = reflect.Struct
 		case bool(C.sass_value_is_list(arg)):
 			k = reflect.Slice
@@ -107,9 +107,13 @@ func unmarshal(arg UnionSassValue, v interface{}) error {
 			}
 			f.Set(reflect.ValueOf(col))
 		} else if C.sass_value_is_number(arg) {
+			u, err := getSassNumberUnit(arg)
+			if err != nil {
+				return err
+			}
 			sn := SassNumber{
 				value: float64(C.sass_number_get_value(arg)),
-				unit:  C.GoString(C.sass_number_get_unit(arg)),
+				unit:  u,
 			}
 			f.Set(reflect.ValueOf(sn))
 
@@ -173,6 +177,25 @@ func getKind(v interface{}) reflect.Kind {
 	return f.Kind()
 }
 
+func noSassNumberUnit(arg UnionSassValue) bool {
+	return C.GoString(C.sass_number_get_unit(arg)) == "" || C.GoString(C.sass_number_get_unit(arg)) == "none"
+}
+
+func getSassNumberUnit(arg UnionSassValue) (string, error) {
+	u := C.GoString(C.sass_number_get_unit(arg))
+	err := error(nil)
+
+	if u == "" || u == "none" {
+		err = fmt.Errorf("SassNumber has no units.")
+	}
+
+	if _, ok := sassUnitConversions[u]; !ok {
+		err = fmt.Errorf("SassNumber units %s are unsupported", u)
+	}
+
+	return u, err
+}
+
 func Marshal(v interface{}) (UnionSassValue, error) {
 	return makevalue(v)
 }
@@ -227,5 +250,5 @@ func makevalue(v interface{}) (UnionSassValue, error) {
 func throwMisMatchTypeError(arg UnionSassValue, expectedType string) error {
 	var intf interface{}
 	unmarshal(arg, &intf)
-	return fmt.Errorf("Sassvalue is type %s and has value %s but expected %s", reflect.TypeOf(intf), intf, expectedType)
+	return fmt.Errorf("Sassvalue is type %s and has value %v but expected %s", reflect.TypeOf(intf), intf, expectedType)
 }

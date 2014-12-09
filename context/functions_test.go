@@ -89,7 +89,7 @@ func TestFuncImageURL(t *testing.T) {
 		t.Error(merr)
 	}
 
-	e := "Sassvalue is type float64 and has value %!s(float64=1) but expected slice"
+	e := "Sassvalue is type float64 and has value 1 but expected slice"
 
 	if e != s {
 		t.Errorf("got:\n%s\nwanted:\n%s", s, e)
@@ -104,7 +104,7 @@ func TestFuncSpriteMap(t *testing.T) {
 	ctx.ImageDir = "test/img"
 
 	// Add real arguments when sass lists can be [un]marshalled
-	lst := []interface{}{"*.png", float64(5)}
+	lst := []interface{}{"*.png", SassNumber{5, "px"}}
 	usv := testMarshal(t, lst)
 	usv = SpriteMap(ctx, usv)
 	var path string

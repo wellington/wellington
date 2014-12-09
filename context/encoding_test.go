@@ -117,6 +117,17 @@ func TestMarshalNumber(t *testing.T) {
 	}
 }
 
+func TestMarshalInvalidUnitSassNumber(t *testing.T) {
+	num := SassNumber{45, "em"}
+	var num2 SassNumber
+	x := testMarshal(t, num)
+	error := Unmarshal(x, &num2)
+
+	if error.Error() != "SassNumber units em are unsupported" {
+		t.Errorf("got: %s wanted: %s", error.Error(), "SassNumber units em are unsupported")
+	}
+}
+
 func TestMarshalList(t *testing.T) {
 	lst1 := []float64{1, 2, 3, 4}
 	var lst2 []float64
