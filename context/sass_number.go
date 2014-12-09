@@ -6,8 +6,8 @@ import (
 )
 
 type SassNumber struct {
-	value float64
-	unit  string
+	Value float64
+	Unit  string
 }
 
 var sassUnitConversions = map[string]map[string]float64{
@@ -148,46 +148,46 @@ var sassUnitTypes = map[string]string{
 
 func (sn SassNumber) Add(sn2 SassNumber) SassNumber {
 	sn1Value, sn2Value := getConvertedUnits(sn, sn2)
-	return SassNumber{value: sn1Value + sn2Value, unit: sn.unit}
+	return SassNumber{Value: sn1Value + sn2Value, Unit: sn.Unit}
 }
 
 func (sn SassNumber) Subtract(sn2 SassNumber) SassNumber {
 	sn1Value, sn2Value := getConvertedUnits(sn, sn2)
-	return SassNumber{value: sn1Value - sn2Value, unit: sn.unit}
+	return SassNumber{Value: sn1Value - sn2Value, Unit: sn.Unit}
 }
 
 func (sn SassNumber) Multiply(sn2 SassNumber) SassNumber {
 	sn1Value, sn2Value := getConvertedUnits(sn, sn2)
-	return SassNumber{value: sn1Value * sn2Value, unit: sn.unit}
+	return SassNumber{Value: sn1Value * sn2Value, Unit: sn.Unit}
 }
 
 func (sn SassNumber) Divide(sn2 SassNumber) SassNumber {
 	sn1Value, sn2Value := getConvertedUnits(sn, sn2)
-	return SassNumber{value: sn1Value / sn2Value, unit: sn.unit}
+	return SassNumber{Value: sn1Value / sn2Value, Unit: sn.Unit}
 }
 
 func getConvertedUnits(sn1 SassNumber, sn2 SassNumber) (float64, float64) {
 	var sn2Value float64
-	if sn2.unit != sn1.unit {
+	if sn2.Unit != sn1.Unit {
 		sn2Value = convertUnits(sn2, sn1)
 	} else {
-		sn2Value = sn2.value
+		sn2Value = sn2.Value
 	}
 
-	return sn1.value, sn2Value
+	return sn1.Value, sn2Value
 }
 
 func convertUnits(from SassNumber, to SassNumber) float64 {
-	return sassUnitConversions[from.unit][to.unit] * from.value
+	return sassUnitConversions[from.Unit][to.Unit] * from.Value
 }
 
 func safeConvert(from SassNumber, to SassNumber) error {
-	if _, ok := sassUnitConversions[from.unit][to.unit]; !ok {
-		return fmt.Errorf("Can not convert from %s to %s", from.unit, to.unit)
+	if _, ok := sassUnitConversions[from.Unit][to.Unit]; !ok {
+		return fmt.Errorf("Can not convert from %s to %s", from.Unit, to.Unit)
 	}
 
-	if sassUnitTypes[from.unit] != sassUnitTypes[to.unit] {
-		return fmt.Errorf("Can not convert sass units between angles and distances: %s, %s", from.unit, to.unit)
+	if sassUnitTypes[from.Unit] != sassUnitTypes[to.Unit] {
+		return fmt.Errorf("Can not convert sass units between angles and distances: %s, %s", from.Unit, to.Unit)
 	}
 
 	return nil

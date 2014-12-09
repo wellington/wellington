@@ -102,8 +102,8 @@ func unmarshal(arg UnionSassValue, v interface{}) error {
 				return err
 			}
 			sn := SassNumber{
-				value: float64(C.sass_number_get_value(arg)),
-				unit:  u,
+				Value: float64(C.sass_number_get_value(arg)),
+				Unit:  u,
 			}
 			f.Set(reflect.ValueOf(sn))
 
@@ -204,7 +204,7 @@ func makevalue(v interface{}) (UnionSassValue, error) {
 	case reflect.Struct: //only SassNumber and color.RGBA are supported
 		if reflect.TypeOf(v).String() == "context.SassNumber" {
 			var sn = v.(SassNumber)
-			return C.sass_make_number(C.double(sn.value), C.CString(sn.unit)), err
+			return C.sass_make_number(C.double(sn.Value), C.CString(sn.Unit)), err
 		} else if reflect.TypeOf(v).String() == "color.RGBA" {
 			var sc = v.(color.RGBA)
 			return C.sass_make_color(C.double(sc.R), C.double(sc.G), C.double(sc.B), C.double(sc.A)), err

@@ -44,7 +44,7 @@ func TestUnmarshalNumber(t *testing.T) {
 	if err == nil {
 		t.Error("No error thrown for invalid type")
 	}
-	if e := fmt.Sprintf("SassNumber units %s are unsupported", d.unit); e != err.Error() {
+	if e := fmt.Sprintf("SassNumber units %s are unsupported", d.Unit); e != err.Error() {
 		t.Errorf("got:\n%s\nwanted:\n%s\n", err.Error(), e)
 	}
 
@@ -225,8 +225,8 @@ func TestMarshalInterfaceListSingleVariable(t *testing.T) {
 
 func TestMarshalSassNumber(t *testing.T) {
 	sn := SassNumber{
-		value: float64(3.5),
-		unit:  "px",
+		Value: float64(3.5),
+		Unit:  "px",
 	}
 	var sne = SassNumber{}
 

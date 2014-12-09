@@ -14,10 +14,10 @@ func TestSassNumberAddDifferentUnits(t *testing.T) {
 	res := sn1.Add(sn2)
 
 	expectedValue := 50 + ((96.0 / 2.54) * 15)
-	if res.unit != sn1.unit {
-		t.Errorf("SassNumber Add result units are: %s, wanted %s", res.unit, sn1.unit)
-	} else if !compareFloats(res.value, expectedValue) {
-		t.Errorf("SassNumber Add result value expected: %f, got %f", expectedValue, res.value)
+	if res.Unit != sn1.Unit {
+		t.Errorf("SassNumber Add result Units are: %s, wanted %s", res.Unit, sn1.Unit)
+	} else if !compareFloats(res.Value, expectedValue) {
+		t.Errorf("SassNumber Add result Value expected: %f, got %f", expectedValue, res.Value)
 	}
 }
 
@@ -28,10 +28,10 @@ func TestSassNumberAddSameUnits(t *testing.T) {
 	res := sn1.Add(sn2)
 
 	expectedValue := 80.0 + 25.0
-	if res.unit != sn1.unit {
-		t.Errorf("SassNumber Add result units are: %s, wanted %s", res.unit, sn1.unit)
-	} else if !compareFloats(res.value, expectedValue) {
-		t.Errorf("SassNumber Add result value expected: %f, got %f", expectedValue, res.value)
+	if res.Unit != sn1.Unit {
+		t.Errorf("SassNumber Add result Units are: %s, wanted %s", res.Unit, sn1.Unit)
+	} else if !compareFloats(res.Value, expectedValue) {
+		t.Errorf("SassNumber Add result Value expected: %f, got %f", expectedValue, res.Value)
 	}
 }
 
@@ -42,10 +42,10 @@ func TestSassNumberSubstractDifferentUnits(t *testing.T) {
 	res := sn1.Subtract(sn2)
 
 	expectedValue := 60 - ((40.0 / 36.0) * 25.0)
-	if res.unit != sn1.unit {
-		t.Errorf("SassNumber Subtract result units are: %s, wanted %s", res.unit, sn1.unit)
-	} else if !compareFloats(res.value, expectedValue) {
-		t.Errorf("SassNumber Subtract result value expected: %f, got %f", expectedValue, res.value)
+	if res.Unit != sn1.Unit {
+		t.Errorf("SassNumber Subtract result Units are: %s, wanted %s", res.Unit, sn1.Unit)
+	} else if !compareFloats(res.Value, expectedValue) {
+		t.Errorf("SassNumber Subtract result Value expected: %f, got %f", expectedValue, res.Value)
 	}
 }
 
@@ -56,10 +56,10 @@ func TestSassNumberSubtractSameUnits(t *testing.T) {
 	res := sn1.Subtract(sn2)
 
 	expectedValue := 80.0 - 25.0
-	if res.unit != sn1.unit {
-		t.Errorf("SassNumber Subtract result units are: %s, wanted %s", res.unit, sn1.unit)
-	} else if !compareFloats(res.value, expectedValue) {
-		t.Errorf("SassNumber Subtract result value expected: %f, got %f", expectedValue, res.value)
+	if res.Unit != sn1.Unit {
+		t.Errorf("SassNumber Subtract result Units are: %s, wanted %s", res.Unit, sn1.Unit)
+	} else if !compareFloats(res.Value, expectedValue) {
+		t.Errorf("SassNumber Subtract result Value expected: %f, got %f", expectedValue, res.Value)
 	}
 }
 
@@ -70,10 +70,10 @@ func TestSassNumberMultiplyDifferentUnits(t *testing.T) {
 	res := sn1.Multiply(sn2)
 
 	expectedValue := 15 * ((25.4 / 72.0) * 5)
-	if res.unit != sn1.unit {
-		t.Errorf("SassNumber Multiply result units are: %s, wanted %s", res.unit, sn1.unit)
-	} else if !compareFloats(res.value, expectedValue) {
-		t.Errorf("SassNumber Multiply result value expected: %f, got %f", expectedValue, res.value)
+	if res.Unit != sn1.Unit {
+		t.Errorf("SassNumber Multiply result Units are: %s, wanted %s", res.Unit, sn1.Unit)
+	} else if !compareFloats(res.Value, expectedValue) {
+		t.Errorf("SassNumber Multiply result Value expected: %f, got %f", expectedValue, res.Value)
 	}
 }
 
@@ -84,10 +84,10 @@ func TestSassNumberMultiplySameUnits(t *testing.T) {
 	res := sn1.Multiply(sn2)
 
 	expectedValue := .4 * .7
-	if res.unit != sn1.unit {
-		t.Errorf("SassNumber add result units are: %s, wanted %s", res.unit, sn1.unit)
-	} else if !compareFloats(res.value, expectedValue) {
-		t.Errorf("SassNumber Add result value expected: %f, got %f", expectedValue, res.value)
+	if res.Unit != sn1.Unit {
+		t.Errorf("SassNumber add result Units are: %s, wanted %s", res.Unit, sn1.Unit)
+	} else if !compareFloats(res.Value, expectedValue) {
+		t.Errorf("SassNumber Add result Value expected: %f, got %f", expectedValue, res.Value)
 	}
 }
 
@@ -98,10 +98,10 @@ func TestSassNumberDivideDifferentUnits(t *testing.T) {
 	res := sn1.Divide(sn2)
 
 	expectedValue := 5 / ((1.0 / 96.0) * 15)
-	if res.unit != sn1.unit {
-		t.Errorf("SassNumber Divide result units are: %s, wanted %s", res.unit, sn1.unit)
-	} else if !compareFloats(res.value, expectedValue) {
-		t.Errorf("SassNumber Divide result value expected: %f, got %f", expectedValue, res.value)
+	if res.Unit != sn1.Unit {
+		t.Errorf("SassNumber Divide result Units are: %s, wanted %s", res.Unit, sn1.Unit)
+	} else if !compareFloats(res.Value, expectedValue) {
+		t.Errorf("SassNumber Divide result Value expected: %f, got %f", expectedValue, res.Value)
 	}
 }
 
@@ -112,10 +112,10 @@ func TestSassNumberDivideSameUnits(t *testing.T) {
 	res := sn1.Divide(sn2)
 
 	expectedValue := 80.0 / 25.0
-	if res.unit != sn1.unit {
-		t.Errorf("SassNumber Divide result units are: %s, wanted %s", res.unit, sn1.unit)
-	} else if !compareFloats(res.value, expectedValue) {
-		t.Errorf("SassNumber Divide result value expected: %f, got %f", expectedValue, res.value)
+	if res.Unit != sn1.Unit {
+		t.Errorf("SassNumber Divide result Units are: %s, wanted %s", res.Unit, sn1.Unit)
+	} else if !compareFloats(res.Value, expectedValue) {
+		t.Errorf("SassNumber Divide result Value expected: %f, got %f", expectedValue, res.Value)
 	}
 }
 
@@ -127,9 +127,9 @@ func TestUnknownUnit(t *testing.T) {
 	_, err := sn1.Divide(sn2)
 
 	if err == nil {
-		t.Errorf("Wanted: %s but did not get an error", fmt.Sprintf("Can not convert from %s to %s", sn2.unit, sn1.unit))
-	} else if err.Error() != fmt.Sprintf("Can not convert from %s to %s", sn2.unit, sn1.unit) {
-		t.Errorf("Wanted: %s got: %s", fmt.Sprintf("Can not convert from %s to %s", sn2.unit, sn1.unit), err.Error())
+		t.Errorf("Wanted: %s but did not get an error", fmt.Sprintf("Can not convert from %s to %s", sn2.Unit, sn1.Unit))
+	} else if err.Error() != fmt.Sprintf("Can not convert from %s to %s", sn2.Unit, sn1.Unit) {
+		t.Errorf("Wanted: %s got: %s", fmt.Sprintf("Can not convert from %s to %s", sn2.Unit, sn1.Unit), err.Error())
 	}
 }
 
@@ -140,9 +140,9 @@ func TestDistanceToAngleConversion(t *testing.T) {
 	_, err := sn1.Divide(sn2)
 
 	if err == nil {
-		t.Errorf("Wanted: %s but did not get an error", fmt.Sprintf("Can not convert sass units between angles and distances: %s, %s", sn2.unit, sn1.unit))
-	} else if err.Error() != fmt.Sprintf("Can not convert sass units between angles and distances: %s, %s", sn2.unit, sn1.unit) {
-		t.Errorf("Wanted: %s got: %s", fmt.Sprintf("Can not convert sass units between angles and distances: %s, %s", sn2.unit, sn1.unit), err.Error())
+		t.Errorf("Wanted: %s but did not get an error", fmt.Sprintf("Can not convert sass Units between angles and distances: %s, %s", sn2.Unit, sn1.Unit))
+	} else if err.Error() != fmt.Sprintf("Can not convert sass Units between angles and distances: %s, %s", sn2.Unit, sn1.Unit) {
+		t.Errorf("Wanted: %s got: %s", fmt.Sprintf("Can not convert sass Units between angles and distances: %s, %s", sn2.Unit, sn1.Unit), err.Error())
 	}
 }
 */
@@ -158,10 +158,10 @@ func TestChainedOperation(t *testing.T) {
 
 	expectedValue := (((5.0 + ((1.0 / 96.0) * 15)) - ((1.0 / 96.0) * 55)) * ((1.0 / 25.4) * 75)) / ((1.0 / 72.0) * 25)
 
-	if res.unit != sn1.unit {
-		t.Errorf("SassNumber Divide result units are: %s, wanted %s", res.unit, sn1.unit)
-	} else if !compareFloats(res.value, expectedValue) {
-		t.Errorf("SassNumber chained operation result value expected: %f, got %f", expectedValue, res.value)
+	if res.Unit != sn1.Unit {
+		t.Errorf("SassNumber Divide result Units are: %s, wanted %s", res.Unit, sn1.Unit)
+	} else if !compareFloats(res.Value, expectedValue) {
+		t.Errorf("SassNumber chained operation result Value expected: %f, got %f", expectedValue, res.Value)
 	}
 }
 

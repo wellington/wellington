@@ -82,8 +82,8 @@ func ImageHeight(ctx *Context, usv UnionSassValue) UnionSassValue {
 	}
 	height := imgs.SImageHeight(name)
 	Hheight := SassNumber{
-		value: float64(height),
-		unit:  "px",
+		Value: float64(height),
+		Unit:  "px",
 	}
 	res, err := Marshal(Hheight)
 	if err != nil {
@@ -138,8 +138,8 @@ func ImageWidth(ctx *Context, usv UnionSassValue) UnionSassValue {
 	}
 	v := imgs.SImageWidth(name)
 	vv := SassNumber{
-		value: float64(v),
-		unit:  "px",
+		Value: float64(v),
+		Unit:  "px",
 	}
 	res, err := Marshal(vv)
 	if err != nil {
@@ -202,12 +202,12 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 		BuildDir:  ctx.BuildDir,
 		GenImgDir: ctx.GenImgDir,
 	}
-	imgs.Padding = int(spacing.value)
+	imgs.Padding = int(spacing.Value)
 	if cglob, err := strconv.Unquote(glob); err == nil {
 		glob = cglob
 	}
 
-	key := glob + strconv.FormatInt(int64(spacing.value), 10)
+	key := glob + strconv.FormatInt(int64(spacing.Value), 10)
 	ctx.Sprites.RLock()
 	if hit, ok := ctx.Sprites.M[key]; ok {
 		ctx.Sprites.RUnlock()
