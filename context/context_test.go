@@ -134,7 +134,7 @@ div {
 
 func TestContextCustomSimpleTypes(t *testing.T) {
 	in := bytes.NewBufferString(`div {
-  background: foo(null, 3, asdf, false, #005500);
+  background: foo(null, 3px, asdf, false, #005500);
 }`)
 
 	//var out bytes.Buffer
@@ -148,7 +148,7 @@ func TestContextCustomSimpleTypes(t *testing.T) {
 			// Send the interface fn arguments to the ch channel
 
 			var n interface{}
-			var num float64
+			var num SassNumber
 			var s string
 			var b bool
 			var col = color.RGBA{}
@@ -167,7 +167,7 @@ func TestContextCustomSimpleTypes(t *testing.T) {
 
 	e := []interface{}{
 		"<nil>",
-		3.0,
+		SassNumber{3.0, "px"},
 		"asdf",
 		false,
 		color.RGBA{R: 0x0, G: 0x55, B: 0x0, A: 0x1},
@@ -180,7 +180,7 @@ func TestContextCustomSimpleTypes(t *testing.T) {
 
 func TestContextCustomComplexTypes(t *testing.T) {
 	in := bytes.NewBufferString(`div {
-	     background: foo((a,b,1,#003300));
+	     background: foo((a,b,1mm,#003300));
 	   }`)
 
 	var out bytes.Buffer
@@ -206,7 +206,7 @@ func TestContextCustomComplexTypes(t *testing.T) {
 	e := []interface{}{
 		"a",
 		"b",
-		float64(1),
+		SassNumber{1, "mm"},
 		color.RGBA{R: 0x0, G: 0x33, B: 0x0, A: 0x1},
 	}
 	args := <-ch
@@ -218,7 +218,7 @@ func TestContextCustomComplexTypes(t *testing.T) {
 func TestContextCustomArity(t *testing.T) {
 	in := bytes.NewBufferString(`div {
   color: red(blue);
-  background: foo(1, 2);
+  background: foo(1pt, 2cm);
 }`)
 
 	var out bytes.Buffer

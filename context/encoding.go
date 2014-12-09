@@ -35,13 +35,11 @@ func unmarshal(arg UnionSassValue, v interface{}) error {
 		case bool(C.sass_value_is_null(arg)):
 			f.Set(reflect.ValueOf("<nil>"))
 			return nil
-		case bool(C.sass_value_is_number(arg)) && noSassNumberUnit(arg):
-			k = reflect.Float64
 		case bool(C.sass_value_is_string(arg)):
 			k = reflect.String
 		case bool(C.sass_value_is_boolean(arg)):
 			k = reflect.Bool
-		case bool(C.sass_value_is_color(arg)) || (bool(C.sass_value_is_number(arg)) && !noSassNumberUnit(arg)):
+		case bool(C.sass_value_is_color(arg)) || (bool(C.sass_value_is_number(arg))):
 			k = reflect.Struct
 		case bool(C.sass_value_is_list(arg)):
 			k = reflect.Slice
@@ -57,14 +55,6 @@ func unmarshal(arg UnionSassValue, v interface{}) error {
 		return errors.New("Unsupported SassValue")
 	case reflect.Invalid:
 		return errors.New("Invalid SASS Value - Taylor Swift")
-	case reflect.Float64:
-		if C.sass_value_is_number(arg) {
-			i := C.sass_number_get_value(arg)
-			vv := float64(i)
-			f.Set(reflect.ValueOf(vv))
-		} else {
-			return throwMisMatchTypeError(arg, "float64")
-		}
 	case reflect.String:
 		if C.sass_value_is_string(arg) || C.sass_value_is_error(arg) {
 			c := C.sass_string_get_value(arg)
@@ -207,17 +197,6 @@ func makevalue(v interface{}) (UnionSassValue, error) {
 	switch f.Kind() {
 	default:
 		return C.sass_make_null(), err
-	case reflect.Float32, reflect.Float64:
-		switch f.Kind() {
-		default:
-			return C.sass_make_number(C.double(0), C.CString("none")), err
-		case reflect.Float32:
-			return C.sass_make_number(C.double(v.(float32)), C.CString("none")), err
-		case reflect.Float64:
-			return C.sass_make_number(C.double(v.(float64)), C.CString("none")), err
-		}
-	case reflect.Int:
-		return C.sass_make_number(C.double(v.(int)), C.CString("none")), err
 	case reflect.Bool:
 		return C.sass_make_boolean(C.bool(v.(bool))), err
 	case reflect.String:

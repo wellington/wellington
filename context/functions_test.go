@@ -80,7 +80,7 @@ func TestFuncImageURL(t *testing.T) {
 	}
 
 	// Test sending invalid date to imageURL
-	usv = testMarshal(t, float64(1))
+	usv = testMarshal(t, SassNumber{1, "px"})
 	_ = usv
 	errusv := ImageURL(&ctx, usv)
 	var s string
@@ -89,7 +89,7 @@ func TestFuncImageURL(t *testing.T) {
 		t.Error(merr)
 	}
 
-	e := "Sassvalue is type float64 and has value 1 but expected slice"
+	e := "Sassvalue is type context.SassNumber and has value {1 px} but expected slice"
 
 	if e != s {
 		t.Errorf("got:\n%s\nwanted:\n%s", s, e)

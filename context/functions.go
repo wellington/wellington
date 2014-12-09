@@ -192,7 +192,7 @@ func SpriteFile(ctx *Context, usv UnionSassValue) UnionSassValue {
 // parameters.
 func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 	var glob string
-	var spacing float64
+	var spacing SassNumber
 	err := Unmarshal(usv, &glob, &spacing)
 	if err != nil {
 		return Error(err)
@@ -202,12 +202,12 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 		BuildDir:  ctx.BuildDir,
 		GenImgDir: ctx.GenImgDir,
 	}
-	imgs.Padding = int(spacing)
+	imgs.Padding = int(spacing.value)
 	if cglob, err := strconv.Unquote(glob); err == nil {
 		glob = cglob
 	}
 
-	key := glob + strconv.FormatInt(int64(spacing), 10)
+	key := glob + strconv.FormatInt(int64(spacing.value), 10)
 	ctx.Sprites.RLock()
 	if hit, ok := ctx.Sprites.M[key]; ok {
 		ctx.Sprites.RUnlock()
