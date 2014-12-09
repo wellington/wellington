@@ -2,6 +2,7 @@ package context
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -43,6 +44,7 @@ func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (*Context, UnionSas
 	ctx.IncludePaths = make([]string, 0)
 	ctx.BuildDir = "test/build"
 	ctx.ImageDir = "test/img"
+	ctx.FontDir = "test/font"
 	ctx.GenImgDir = "test/build/img"
 	ctx.Out = ""
 
@@ -314,4 +316,17 @@ div {
 	if e != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
 	}
+}
+
+func ExampleFontURL() {
+	in := bytes.NewBufferString(`@font-face { src: font-url("arial"); }`)
+
+	_, _, err := setupCtx(in, os.Stdout)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// Output:
+	// @font-face {
+	//   src: url("../font/arial"); }
 }

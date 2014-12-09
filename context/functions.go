@@ -18,6 +18,7 @@ func init() {
 	RegisterHandler("image-height($path)", ImageHeight)
 	RegisterHandler("image-width($path)", ImageWidth)
 	RegisterHandler("inline-image($path)", InlineImage)
+	RegisterHandler("font-url($path)", FontURL)
 }
 
 // ImageURL handles calls to resolve a local image from the
@@ -244,4 +245,25 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 		log.Fatal(err)
 	}
 	return res
+}
+
+// SpriteFile proxies the sprite glob and image name through.
+func FontURL(ctx *Context, usv UnionSassValue) UnionSassValue {
+
+	var (
+		path string
+	)
+	err := Unmarshal(usv, &path)
+
+	rel, err := filepath.Rel(ctx.BuildDir, ctx.FontDir)
+
+	if err != nil {
+		return Error(err)
+	}
+
+	csv, err := Marshal(fmt.Sprintf(`url("%s")`, filepath.Join(rel, path)))
+	if err != nil {
+		return Error(err)
+	}
+	return csv
 }

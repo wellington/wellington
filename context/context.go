@@ -34,15 +34,20 @@ type Cookie struct {
 // exposes libsass options that are available.
 type Context struct {
 	//Parser                        Parser
-	OutputStyle                   int
-	Precision                     int
-	Comments                      bool
-	IncludePaths                  []string
-	BuildDir, ImageDir, GenImgDir string
-	In, Src, Out, Map, MainFile   string
-	Status                        int
-	errorString                   string
-	errors                        lErrors
+	OutputStyle  int
+	Precision    int
+	Comments     bool
+	IncludePaths []string
+
+	// Input directories
+	FontDir, ImageDir string
+	// Output/build directories
+	BuildDir, GenImgDir string
+
+	In, Src, Out, Map, MainFile string
+	Status                      int
+	errorString                 string
+	errors                      lErrors
 
 	in     io.Reader
 	out    io.Writer

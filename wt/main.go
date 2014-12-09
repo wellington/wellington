@@ -22,28 +22,34 @@ import (
 const version = `v0.3.0`
 
 var (
-	Dir, Gen, Input, Includes string
-	MainFile, Style           string
-	Comments                  bool
-	cpuprofile                string
-	Help, ShowVersion         bool
-	BuildDir                  string
+	Font, Dir, Gen, Input, Includes string
+	MainFile, Style                 string
+	Comments                        bool
+	cpuprofile                      string
+	Help, ShowVersion               bool
+	BuildDir                        string
 )
 
 func init() {
-	flag.StringVar(&BuildDir, "b", "", "Build Directory")
-	flag.StringVar(&Includes, "p", "", "SASS import path")
+	flag.BoolVar(&ShowVersion, "version", false, "Show the app version")
+
 	flag.BoolVar(&Help, "help", false, "this help")
 	flag.BoolVar(&Help, "h", false, "this help")
+
+	flag.StringVar(&BuildDir, "b", "", "Build Directory")
+	flag.StringVar(&Gen, "gen", ".", "Directory for generated images")
+
+	flag.StringVar(&Includes, "p", "", "SASS import path")
 	flag.StringVar(&Dir, "dir", "", "Image directory")
 	flag.StringVar(&Dir, "d", "", "Image directory")
-	flag.StringVar(&Gen, "gen", ".", "Directory for generated images")
+	flag.StringVar(&Font, "font", "", "Font Directory")
+
 	flag.StringVar(&Style, "style", "nested", "CSS nested style")
 	flag.StringVar(&Style, "s", "nested", "CSS nested style")
 	flag.BoolVar(&Comments, "comment", true, "Turn on source comments")
 	flag.BoolVar(&Comments, "c", true, "Turn on source comments")
+
 	flag.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
-	flag.BoolVar(&ShowVersion, "version", false, "Show the app version")
 }
 
 func main() {
@@ -152,6 +158,7 @@ func main() {
 			Imgs:        ImageCache,
 			OutputStyle: style,
 			ImageDir:    Dir,
+			FontDir:     Font,
 			// Assumption that output is a file
 			BuildDir:     BuildDir,
 			GenImgDir:    Gen,
