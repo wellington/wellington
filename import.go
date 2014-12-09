@@ -16,7 +16,7 @@ func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 	path, _ := filepath.Abs(fmt.Sprintf("%s/%s.scss", dir, file))
 	pwd := filepath.Dir(path)
 	// Sass put _ in front of imported files
-	fpath := pwd + "/_" + filepath.Base(path)
+	fpath := filepath.Join(pwd, "/_"+filepath.Base(path))
 	contents, err := ioutil.ReadFile(fpath)
 	if err == nil {
 		return pwd, string(contents), nil
@@ -27,11 +27,19 @@ func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 		for _, lib := range p.Includes {
 			path, _ := filepath.Abs(lib + "/" + file)
 			pwd := filepath.Dir(path)
-			fpath = pwd + "/_" + filepath.Base(path) + ".scss"
+			fpath = filepath.Join(pwd, "/_"+filepath.Base(path)+".scss")
 			contents, err := ioutil.ReadFile(fpath)
 			baseerr += fpath + "\n"
 			if err == nil {
 				return pwd, string(contents), nil
+			} else {
+				// Attempt invalid name lookup (no _)
+				fpath = filepath.Join(pwd, "/"+filepath.Base(path)+".scss")
+				contents, err = ioutil.ReadFile(fpath)
+				baseerr += fpath + "\n"
+				if err == nil {
+					return pwd, string(contents), nil
+				}
 			}
 		}
 	}
