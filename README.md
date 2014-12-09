@@ -1,4 +1,5 @@
-[![wercker status](https://app.wercker.com/status/873d0c7929b8b1e8bc37bcc16829fb5f/m/master "wercker status")](https://app.wercker.com/project/bykey/873d0c7929b8b1e8bc37bcc16829fb5f) [![Coverage Status](https://img.shields.io/coveralls/wellington/wellington.svg)](https://coveralls.io/r/wellington/wellington?branch=master)
+[![wercker status](https://app.wercker.com/status/873d0c7929b8b1e8bc37bcc16829fb5f/m/master "wercker status")](https://app.wercker.com/project/bykey/873d0c7929b8b1e8bc37bcc16829fb5f)
+[![Coverage Status](https://coveralls.io/repos/wellington/wellington/badge.png)](https://coveralls.io/r/wellington/wellington)
 
 Wellington
 ===========
