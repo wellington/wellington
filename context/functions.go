@@ -2,7 +2,6 @@ package context
 
 import (
 	"fmt"
-	"log"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -55,7 +54,6 @@ func ImageHeight(ctx *Context, usv UnionSassValue) UnionSassValue {
 		k.Set(reflect.ValueOf(inf))
 
 		if err != nil {
-			log.Fatal(err)
 			return Error(err)
 		} else {
 			glob = infs[0].(string)
@@ -111,7 +109,6 @@ func ImageWidth(ctx *Context, usv UnionSassValue) UnionSassValue {
 		k.Set(reflect.ValueOf(inf))
 
 		if err != nil {
-			log.Fatal(err)
 			return Error(err)
 		} else {
 			glob = infs[0].(string)
@@ -159,9 +156,10 @@ func InlineImage(ctx *Context, usv UnionSassValue) UnionSassValue {
 	}
 
 	if !sw.CanDecode(filepath.Ext(name)) {
-		s := fmt.Sprintf("filetype %s is not supported", filepath.Ext(name))
+		s := fmt.Sprintf("inline-image: %s filetype %s is not supported",
+			name, filepath.Ext(name))
+		fmt.Println(s)
 		// TODO: Replace with warning
-		log.Println(s)
 		res, _ := Marshal(s)
 		return res
 	}
@@ -242,7 +240,7 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 
 	_, err = imgs.Export()
 	if err != nil {
-		log.Fatal(err)
+		return Error(err)
 	}
 
 	res, err := Marshal(key)
@@ -250,7 +248,7 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 	ctx.Sprites.M[key] = imgs
 	ctx.Sprites.Unlock()
 	if err != nil {
-		log.Fatal(err)
+		return Error(err)
 	}
 	return res
 }
@@ -271,8 +269,8 @@ func FontURL(ctx *Context, usv UnionSassValue) UnionSassValue {
 
 	// Enter warning
 	if ctx.FontDir == "." {
-		s := "font path not provided"
-		log.Println(s)
+		s := "font-url: font path not set"
+		fmt.Println(s)
 		res, _ := Marshal(s)
 		return res
 	}
