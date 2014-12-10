@@ -319,7 +319,12 @@ div {
 }
 
 func ExampleFontURL() {
-	in := bytes.NewBufferString(`@font-face { src: font-url("arial"); }`)
+	in := bytes.NewBufferString(`
+$path: font-url("arial.eot", true);
+@font-face {
+  src: font-url("arial.eot");
+  src: url("#{$path}");
+}`)
 
 	_, _, err := setupCtx(in, os.Stdout)
 	if err != nil {
@@ -328,5 +333,6 @@ func ExampleFontURL() {
 
 	// Output:
 	// @font-face {
-	//   src: url("../font/arial"); }
+	//   src: url("../font/arial.eot");
+	//   src: url("../font/arial.eot"); }
 }
