@@ -1,6 +1,6 @@
 #!/bin/bash
 
-HASH=$(cat libsass/.lib_version)
+HASH=$(cat .libsass_version)
 
 [ -d libsass ] || mkdir libsass
 if [ -f libsass/"libsass.$HASH.tar.gz" ];

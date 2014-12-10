@@ -8,7 +8,7 @@ build:
         name: Populate cache
         code: |
           if test -d "$WERCKER_CACHE_DIR/sprite_path"; then rsync -avz "$WERCKER_CACHE_DIR/sprite_path/" "$GOPATH"; fi
-          export LIB_VER=$(cat libsass/.lib_version)
+          export LIB_VER=$(cat .libsass_version)
           if test -d "$WERCKER_CACHE_DIR/libsass_$LIB_VER"; then rsync -avz "$WERCKER_CACHE_DIR/libsass_$LIB_VER/" "libsass/"; fi
     - script:
         name: build libsass
