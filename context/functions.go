@@ -157,6 +157,15 @@ func InlineImage(ctx *Context, usv UnionSassValue) UnionSassValue {
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	if !sw.CanDecode(filepath.Ext(name)) {
+		s := fmt.Sprintf("filetype %s is not supported", filepath.Ext(name))
+		// TODO: Replace with warning
+		log.Println(s)
+		res, _ := Marshal(s)
+		return res
+	}
+
 	imgs := sw.ImageList{
 		ImageDir:  ctx.ImageDir,
 		GenImgDir: ctx.GenImgDir,
