@@ -19,8 +19,9 @@ type Cookie struct {
 	Ctx  *Context
 }
 
-// GoBridge is exported to C for providing a Go function reference that can
-// be executed by C.
+// GoBridge is exported to C for linking libsass to Go.  This function adheres
+// to the interface provided by libsass.
+//
 //export GoBridge
 func GoBridge(cargs UnionSassValue, ptr unsafe.Pointer) UnionSassValue {
 	// Recover the Cookie struct passed in
