@@ -261,6 +261,14 @@ func FontURL(ctx *Context, usv UnionSassValue) UnionSassValue {
 		return Error(err)
 	}
 
+	// Enter warning
+	if ctx.FontDir == "." {
+		s := "font path not provided"
+		log.Println(s)
+		res, _ := Marshal(s)
+		return res
+	}
+
 	rel, err := filepath.Rel(ctx.BuildDir, ctx.FontDir)
 
 	if err != nil {

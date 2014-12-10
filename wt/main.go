@@ -42,7 +42,7 @@ func init() {
 	flag.StringVar(&Includes, "p", "", "SASS import path")
 	flag.StringVar(&Dir, "dir", "", "Image directory")
 	flag.StringVar(&Dir, "d", "", "Image directory")
-	flag.StringVar(&Font, "font", "", "Font Directory")
+	flag.StringVar(&Font, "font", ".", "Font Directory")
 
 	flag.StringVar(&Style, "style", "nested", "CSS nested style")
 	flag.StringVar(&Style, "s", "nested", "CSS nested style")
