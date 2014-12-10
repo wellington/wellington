@@ -224,8 +224,7 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 		gpath := hit.OutFile
 		res, err := Marshal(gpath)
 		if err != nil {
-			fmt.Println("hang?")
-			log.Fatal(err)
+			return Error(err)
 		}
 		return res
 	} else {
