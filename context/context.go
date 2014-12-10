@@ -3,9 +3,9 @@ package context
 // #include <stdlib.h>
 // #include "sass_context.h"
 //
-// extern union Sass_Value* goBridge( union Sass_Value* s_args, void* cookie);
+// extern union Sass_Value* GoBridge( union Sass_Value* s_args, void* cookie);
 // union Sass_Value* CallSassFunction( union Sass_Value* s_args, void* cookie ) {
-//     return goBridge(s_args, cookie);
+//     return GoBridge(s_args, cookie);
 // }
 import "C"
 
@@ -21,14 +21,6 @@ import (
 
 	"unsafe"
 )
-
-// Cookie is used for passing context information to libsass.  Cookie is
-// passed to custom handlers when libsass executes them through the go bridge.
-type Cookie struct {
-	sign string
-	fn   SassCallback
-	ctx  *Context
-}
 
 // Context handles the interactions with libsass.  Context
 // exposes libsass options that are available.
@@ -116,7 +108,7 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 	}
 	for i, h := range ctx.Cookies {
 		cookies[i+len(handlers)] = Cookie{
-			h.sign, h.fn, ctx,
+			h.Sign, h.Fn, ctx,
 		}
 	}
 	ctx.Cookies = cookies
@@ -132,14 +124,14 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 	}
 	gofns := *(*[]C.Sass_C_Function_Callback)(unsafe.Pointer(&hdr))
 	for i, v := range ctx.Cookies {
-		signatures[i] = ctx.Cookies[i].sign
+		signatures[i] = ctx.Cookies[i].Sign
 		_ = v
 		cg := C.CString(signatures[i])
 		_ = cg
 
 		fn := C.sass_make_function(
 			// sass signature
-			C.CString(v.sign),
+			C.CString(v.Sign),
 			// C bridge
 			C.Sass_C_Function(C.CallSassFunction),
 			// Only pass reference to global array, so

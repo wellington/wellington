@@ -56,8 +56,8 @@ func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (*Context, UnionSas
 		cs := make([]Cookie, len(cookies))
 		for i, c := range cookies {
 			cs[i] = Cookie{
-				c.sign,
-				wrapCallback(c.fn, cc),
+				c.Sign,
+				wrapCallback(c.Fn, cc),
 				ctx,
 			}
 		}
