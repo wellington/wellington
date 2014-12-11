@@ -26,6 +26,7 @@ build:
         name: goxc build & package
         code: |
           cd $WERCKER_SOURCE_DIR/wt
+          rm -rf $WERCKER_OUTPUT_DIR/snapshot
           goxc -tasks='xc archive' -bc 'linux' -arch 'amd64' -d $WERCKER_OUTPUT_DIR -n wt
     - script:
         name: go test
