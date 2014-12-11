@@ -207,10 +207,9 @@ func main() {
 func startParser(ctx *context.Context, in io.Reader, out io.Writer, pkgdir string) error {
 	// Run the sprite_sass parser prior to passing to libsass
 	parser := sprite.Parser{
-		ImageDir:  ctx.ImageDir,
-		Includes:  ctx.IncludePaths,
-		BuildDir:  ctx.BuildDir,
-		GenImgDir: ctx.GenImgDir,
+		ImageDir: ctx.ImageDir,
+		Includes: ctx.IncludePaths,
+		BuildDir: ctx.BuildDir,
 	}
 	// Save reference to parser in context
 	bs, err := parser.Start(in, pkgdir)
