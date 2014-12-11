@@ -148,11 +148,13 @@ func TestFuncSpriteFile(t *testing.T) {
 
 func TestCompileSpriteMap(t *testing.T) {
 	in := bytes.NewBufferString(`
-$aritymap: sprite-map("*.png",0px); // Optional arguments
+$aritymap: sprite-map("*.png", 0px); // Optional arguments
 $map: sprite-map("*.png"); // One argument
+$paddedmap: sprite-map("*.png", 1px); // One argument
 div {
 width: $map;
 height: $aritymap;
+line-height: $paddedmap;
 }`)
 
 	ctx := NewContext()
@@ -166,8 +168,9 @@ height: $aritymap;
 		t.Error(err)
 	}
 	exp := `div {
-  width: testimg-8121ae.png;
-  height: *.png0; }
+  width: *.png0;
+  height: *.png0;
+  line-height: *.png1; }
 `
 
 	if exp != out.String() {
@@ -335,4 +338,30 @@ $path: font-url("arial.eot", true);
 	// @font-face {
 	//   src: url("../font/arial.eot");
 	//   src: url("../font/arial.eot"); }
+}
+
+func ExampleSprite() {
+	in := bytes.NewBufferString(`
+$map: sprite-map("dual/*.png", 10px); // One argument
+div {
+  background: sprite($map, "140");
+}`)
+
+	ctx := NewContext()
+
+	ctx.BuildDir = "test/build"
+	ctx.GenImgDir = "test/build/img"
+	ctx.ImageDir = "test/img"
+	var out bytes.Buffer
+	err := ctx.Compile(in, &out)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	io.Copy(os.Stdout, &out)
+
+	// Output:
+	// div {
+	//   background: url("img/testimgdual-ab7eb7.png") -0px -149px; }
+
 }

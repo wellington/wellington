@@ -224,6 +224,11 @@ func Sprite(ctx *Context, usv UnionSassValue) UnionSassValue {
 	if err != nil {
 		return Error(err)
 	}
+
+	if imgs.Lookup(name) == -1 {
+		return Error(fmt.Errorf("image %s not found\n"+
+			"   try one of these: %v", name, imgs.Paths))
+	}
 	// This is an odd name for what it does
 	pos := imgs.GetPack(imgs.Lookup(name))
 	relPath, err := filepath.Rel(ctx.BuildDir,
@@ -259,6 +264,8 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 	}
 
 	key := glob + strconv.FormatInt(int64(spacing.Value), 10)
+	// TODO: benchmark a single write lock against this
+	// read lock then write lock
 	ctx.Sprites.RLock()
 	if _, ok := ctx.Sprites.M[key]; ok {
 		ctx.Sprites.RUnlock()
@@ -267,9 +274,9 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 			return Error(err)
 		}
 		return res
-	} else {
-		ctx.Sprites.RUnlock()
 	}
+	ctx.Sprites.RUnlock()
+
 	err = imgs.Decode(glob)
 	if err != nil {
 		return Error(err)
