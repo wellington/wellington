@@ -11,7 +11,8 @@ func TestImportPath(t *testing.T) {
 	p := NewParser()
 	dir, file := "test/sass", "var"
 	contents, _ := ioutil.ReadFile("test/sass/_var.scss")
-	path, res, err := p.ImportPath(dir, file)
+	partialMap := NewPartialMap()
+	path, res, err := p.ImportPath(dir, file, "var", partialMap)
 
 	if err != nil {
 		t.Errorf("Error accessing file: %s", file)
@@ -31,7 +32,7 @@ func TestImportPath(t *testing.T) {
 	// Is this how it should work?
 	// Or should dir be appended to Includes
 	dir, file = "test/sass", "var"
-	path, res, err = p.ImportPath(dir, file)
+	path, res, err = p.ImportPath(dir, file, "var", partialMap)
 
 	if err != nil {
 		t.Errorf("Error accessing file: %s", file)
@@ -47,7 +48,8 @@ func TestImportPath(t *testing.T) {
 func TestMissingImport(t *testing.T) {
 	p := NewParser()
 	dir, file := "test", "notafile"
-	_, res, err := p.ImportPath(dir, file)
+	var partialMap SafePartialMap
+	_, res, err := p.ImportPath(dir, file, "var", &partialMap)
 	if res != "" {
 		t.Errorf("Result from import on missing file: %s", file)
 	}
