@@ -11,7 +11,11 @@ type unsupportedStruct struct {
 	value float64
 }
 
-func testMarshal(t *testing.T, v interface{}) UnionSassValue {
+type TestError interface {
+	Error(...interface{})
+}
+
+func testMarshal(t TestError, v interface{}) UnionSassValue {
 	res, err := Marshal(v)
 	if err != nil {
 		t.Error(err)
