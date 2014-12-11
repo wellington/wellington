@@ -272,5 +272,17 @@ func ExampleContext_Compile() {
 }
 
 func BenchmarkContextCompile(b *testing.B) {
-	// TBD
+	bits := []byte(`div { color: #005500; }`)
+	big := []byte(`div { color: #005500; }          `)
+	ctx := NewContext()
+	out := bytes.NewBuffer(big)
+
+	for i := 0; i < b.N; i++ {
+		in := bytes.NewBuffer(bits)
+		out.Reset()
+		err := ctx.Compile(in, out)
+		if err != nil {
+			b.Error(err)
+		}
+	}
 }

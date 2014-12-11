@@ -365,3 +365,21 @@ div {
 	//   background: url("img/testimgdual-ab7eb7.png") -0px -149px; }
 
 }
+
+func BenchmarkSprite(b *testing.B) {
+	ctx := NewContext()
+	ctx.BuildDir = "test/build"
+	ctx.GenImgDir = "test/build/img"
+	ctx.ImageDir = "test/img"
+	// Add real arguments when sass lists can be [un]marshalled
+	lst := []interface{}{"*.png", SassNumber{5, "px"}}
+	usv := testMarshal(b, lst)
+
+	for i := 0; i < b.N; i++ {
+		usv = SpriteMap(ctx, usv)
+	}
+	// Debug if needed
+	// var s string
+	// Unmarshal(usv, &s)
+	// fmt.Println(s)
+}

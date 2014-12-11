@@ -7,6 +7,8 @@ echo:
 	echo $(current_dir)
 install:
 	go install github.com/wellington/wellington/wt
+bench:
+	go test ./... -bench=.
 home:
 	go run wt/main.go -font $(guipath)/font-face -gen $(guipath)/build/im -b $(guipath)/build/css/ -p $(guipath)/sass -d $(guipath)/im/sass $(guipath)/sass/_pages/home.scss
 profile: install
