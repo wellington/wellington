@@ -3,7 +3,6 @@ box: drewwells/drunken-golang@0.1.0
 build:
   steps:
     - setup-go-workspace
-
     - script:
         name: Populate cache
         code: |
@@ -14,20 +13,12 @@ build:
         name: build libsass
         code: |
           make deps
-
     # Get dependencies
     - script:
         name: go get
         code: |
           cd $WERCKER_SOURCE_DIR
           go get -v -t ./...
-    # Build the project
-    - script:
-        name: goxc build & package
-        code: |
-          cd $WERCKER_SOURCE_DIR/wt
-          rm -rf $WERCKER_OUTPUT_DIR/snapshot
-          goxc -tasks='xc archive' -bc 'linux' -arch 'amd64' -d $WERCKER_OUTPUT_DIR -n wt
     - script:
         name: go test
         code: |
@@ -44,13 +35,18 @@ build:
           scripts/goclean.sh
           Git_BRANCH=$WERCKER_GIT_BRANCH goveralls -coverprofile=profile.cov -service=wercker.com -repotoken $COVERALLS_TOKEN
     - script:
-        name: Package deployment
-
-    - script:
         name: Store cache
         code: |
           rsync -avz --exclude ".hg/" --exclude "sprite_sass/" --exclude ".git/" "$GOPATH/" "$WERCKER_CACHE_DIR/sprite_path"
           rsync -avz "$WERCKER_SOURCE_DIR/libsass/" "$WERCKER_CACHE_DIR/libsass_$LIB_VER/"
+    # Build the project
+    - script:
+        name: goxc build & package
+        code: |
+          cd $WERCKER_SOURCE_DIR/wt
+          cat main.go
+          rm -rf $WERCKER_OUTPUT_DIR/snapshot
+          goxc -tasks='xc archive' -bc 'linux' -arch 'amd64' -d $WERCKER_OUTPUT_DIR -n wt
   after-steps:
     - hipchat-notify@1.0.5:
         token: $HIPCHAT_TOKEN
