@@ -114,7 +114,7 @@ func TestProcessSassError(t *testing.T) {
   "message": "error in C function inline-image: format: .svg not supported\nBacktrace:\n\tstdin:3100, in function inline-image\n\tstdin:3100, in mixin printCSSImg\n\tstdin:3117"
 }`)
 	ctx := Context{}
-	bs, err := ctx.ProcessSassError(in)
+	err := ctx.ProcessSassError(in)
 	if err != nil {
 		t.Error(err)
 	}
@@ -125,8 +125,8 @@ Backtrace:
 	stdin:3100, in function inline-image
 	stdin:3100, in mixin printCSSImg
 	stdin:3117`
-	if e != bs {
-		t.Errorf("got:\n%s\nwanted:\n%s", bs, e)
+	if e != ctx.Error() {
+		t.Errorf("got:\n%s\nwanted:\n%s", ctx.Error(), e)
 	}
 }
 
@@ -142,7 +142,7 @@ func TestErrorWarn(t *testing.T) {
 
 func TestErrorInvalid(t *testing.T) {
 	ctx := Context{}
-	_, err := ctx.ProcessSassError([]byte("/a"))
+	err := ctx.ProcessSassError([]byte("/a"))
 
 	if len(err.Error()) == 0 {
 		t.Error("No error thrown on invalid sass json package")

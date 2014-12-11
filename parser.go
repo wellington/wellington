@@ -33,6 +33,13 @@ $sprites: map_merge($sprites,(140: (
   )));
 */
 
+var weAreNeverGettingBackTogether = []byte(`
+@mixin sprite-dimensions($map, $name) {
+  $file: sprite-file($map, $name);
+  height: image-height($file);
+  width: image-width($file);
+}`)
+
 func init() {
 	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
 }
@@ -115,13 +122,6 @@ func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	//   p.Rel(), "\n"))
 
 	// Code that we will never support, ever
-	weAreNeverGettingBackTogether := []byte(`
-@mixin sprite-dimensions($map, $name) {
-  $file: sprite-file($map, $name);
-  height: image-height($file);
-  width: image-width($file);
-}
-`)
 
 	return append(weAreNeverGettingBackTogether, p.Output...), nil
 }
@@ -134,14 +134,20 @@ func (p *Parser) Rel() string {
 // LookupFile translates line positions into line number
 // and file it belongs to
 func (p *Parser) LookupFile(pos int) string {
-	pos = pos - 1
+	// Adjust for shift from preamble
+	shift := bytes.Count(weAreNeverGettingBackTogether, []byte{'\n'})
 	for i, n := range p.LineKeys {
 		if n > pos {
 			if i == 0 {
 				return fmt.Sprintf("%s:%d", p.MainFile, pos+1)
 			}
 			hit := p.LineKeys[i-1]
-			return fmt.Sprintf("%s:%d", p.Line[hit], pos-p.LineKeys[i-1])
+			filename := p.Line[hit]
+			// Catch for mainimport errors
+			if filename == "string" {
+				filename = p.MainFile
+			}
+			return fmt.Sprintf("%s:%d", filename, pos-p.LineKeys[i-1]-shift)
 		}
 	}
 	return "mainfile?" + p.MainFile

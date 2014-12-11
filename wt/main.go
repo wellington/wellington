@@ -112,7 +112,7 @@ func main() {
 
 		var pout bytes.Buffer
 		ctx := context.Context{}
-		err := startParser(&ctx, in, &pout, "")
+		_, err := startParser(&ctx, in, &pout, "")
 		if err != nil {
 			log.Println(err)
 		}
@@ -191,7 +191,7 @@ func main() {
 		}
 
 		var pout bytes.Buffer
-		err = startParser(&ctx, fRead, &pout, filepath.Dir(Input))
+		par, err := startParser(&ctx, fRead, &pout, filepath.Dir(Input))
 		if err != nil {
 			log.Println(err)
 			continue
@@ -199,24 +199,27 @@ func main() {
 		err = ctx.Compile(&pout, out)
 
 		if err != nil {
-			log.Printf("Error encountered in: %s\n", f)
+			n := ctx.ErrorLine()
+			fs := par.LookupFile(n)
+			log.Printf("Error encountered in: %s\n", fs)
 			log.Println(err)
 		}
 	}
 }
 
-func startParser(ctx *context.Context, in io.Reader, out io.Writer, pkgdir string) error {
+func startParser(ctx *context.Context, in io.Reader, out io.Writer, pkgdir string) (*sprite.Parser, error) {
 	// Run the sprite_sass parser prior to passing to libsass
-	parser := sprite.Parser{
+	parser := &sprite.Parser{
 		ImageDir: ctx.ImageDir,
 		Includes: ctx.IncludePaths,
 		BuildDir: ctx.BuildDir,
+		MainFile: ctx.MainFile,
 	}
 	// Save reference to parser in context
 	bs, err := parser.Start(in, pkgdir)
 	if err != nil {
-		return err
+		return parser, err
 	}
 	out.Write(bs)
-	return err
+	return parser, err
 }

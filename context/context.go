@@ -154,6 +154,7 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 
 	bs, err := ioutil.ReadAll(in)
+
 	// ctx.debug = bs
 	if err != nil {
 		return err
@@ -186,14 +187,15 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 
 	ctx.Status = int(C.sass_context_get_error_status(cc))
 	errJSON := C.sass_context_get_error_json(cc)
-	errS, err := ctx.ProcessSassError([]byte(C.GoString(errJSON)))
+	err = ctx.ProcessSassError([]byte(C.GoString(errJSON)))
 
 	if err != nil {
 		return err
 	}
 
-	if errS != "" {
-		return fmt.Errorf(errS)
+	if ctx.Error() != "" {
+		// TODO: this is weird, make something more idiomatic
+		return fmt.Errorf(ctx.Error())
 	}
 
 	return nil
