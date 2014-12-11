@@ -19,7 +19,7 @@ import (
 	sprite "github.com/wellington/wellington"
 )
 
-const version = `v0.3.0`
+const version = `v0.4.0`
 
 var (
 	Font, Dir, Gen, Input, Includes string
