@@ -50,6 +50,8 @@ type Context struct {
 
 	// Used for callbacks to retrieve sprite information, etc.
 	Imgs, Sprites spritewell.SafeImageMap
+	// Special variable for debugging bad parsing
+	// debug []byte
 }
 
 // Constants/enums for the output style.
@@ -152,6 +154,7 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 
 	bs, err := ioutil.ReadAll(in)
+	// ctx.debug = bs
 	if err != nil {
 		return err
 	}

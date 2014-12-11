@@ -18,6 +18,7 @@ func init() {
 	RegisterHandler("image-width($path)", ImageWidth)
 	RegisterHandler("inline-image($path)", InlineImage)
 	RegisterHandler("font-url($path, $raw: false)", FontURL)
+	RegisterHandler("sprite($map, $name, $offsetX: 0px, $offsetY: 0px)", Sprite)
 }
 
 // ImageURL handles calls to resolve a local image from the
@@ -189,14 +190,56 @@ func SpriteFile(ctx *Context, usv UnionSassValue) UnionSassValue {
 	var glob, name string
 	err := Unmarshal(usv, &glob, &name)
 	if err != nil {
-		panic(err)
+		return Error(err)
 	}
 	infs := []interface{}{glob, name}
 	res, err := Marshal(infs)
 	return res
 }
 
-// SpriteMap generates a sprite from the passed glob and sprite
+// Sprite returns the source and background position for an image in the
+// spritesheet.
+func Sprite(ctx *Context, usv UnionSassValue) UnionSassValue {
+	var glob, name string
+	var offsetX, offsetY SassNumber
+	_, _ = offsetX, offsetY // TODO: ignore these for now
+	err := Unmarshal(usv, &glob, &name, &offsetX, &offsetY)
+	if err != nil {
+		return Error(err)
+	}
+	ctx.Sprites.RLock()
+	defer ctx.Sprites.RUnlock()
+	imgs, ok := ctx.Sprites.M[glob]
+	if !ok {
+		keys := make([]string, 0, len(ctx.Sprites.M))
+		for i := range ctx.Sprites.M {
+			keys = append(keys, i)
+		}
+
+		return Error(fmt.Errorf(
+			"Variable not found matching glob: %s sprite:%s", glob, name))
+	}
+
+	path, err := imgs.OutputPath()
+	if err != nil {
+		return Error(err)
+	}
+	// This is an odd name for what it does
+	pos := imgs.GetPack(imgs.Lookup(name))
+	relPath, err := filepath.Rel(ctx.BuildDir,
+		filepath.Join(ctx.GenImgDir, path))
+	if err != nil {
+		return Error(err)
+	}
+	str, err := Marshal(fmt.Sprintf(`url("%s") -%dpx -%dpx`,
+		relPath, pos.X, pos.Y))
+	if err != nil {
+		return Error(err)
+	}
+	return str
+}
+
+// SpriteMap returns a sprite from the passed glob and sprite
 // parameters.
 func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 	var glob string
@@ -217,10 +260,9 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 
 	key := glob + strconv.FormatInt(int64(spacing.Value), 10)
 	ctx.Sprites.RLock()
-	if hit, ok := ctx.Sprites.M[key]; ok {
+	if _, ok := ctx.Sprites.M[key]; ok {
 		ctx.Sprites.RUnlock()
-		gpath := hit.OutFile
-		res, err := Marshal(gpath)
+		res, err := Marshal(key)
 		if err != nil {
 			return Error(err)
 		}
@@ -250,6 +292,7 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 	if err != nil {
 		return Error(err)
 	}
+
 	return res
 }
 

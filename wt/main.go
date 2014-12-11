@@ -160,7 +160,7 @@ func main() {
 			ImageDir:    Dir,
 			FontDir:     Font,
 			// Assumption that output is a file
-			BuildDir:     BuildDir,
+			BuildDir:     filepath.Dir(fout),
 			GenImgDir:    Gen,
 			MainFile:     f,
 			Comments:     Comments,
