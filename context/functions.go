@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"strings"
 
 	sw "github.com/wellington/spritewell"
 )
@@ -205,7 +206,12 @@ func Sprite(ctx *Context, usv UnionSassValue) UnionSassValue {
 	_, _ = offsetX, offsetY // TODO: ignore these for now
 	err := Unmarshal(usv, &glob, &name, &offsetX, &offsetY)
 	if err != nil {
-		return Error(err)
+		if strings.Contains(err.Error(), "unsupported") {
+			return Error(fmt.Errorf(
+				"Please specify unit for offset ie. (2px)"))
+		} else {
+			return Error(err)
+		}
 	}
 	ctx.Sprites.RLock()
 	defer ctx.Sprites.RUnlock()

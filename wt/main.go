@@ -199,6 +199,7 @@ func main() {
 		err = ctx.Compile(&pout, out)
 
 		if err != nil {
+			log.Printf("Error encountered in: %s\n", f)
 			log.Println(err)
 		}
 	}
