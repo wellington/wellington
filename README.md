@@ -56,8 +56,8 @@ wt
 |@include *sprite-dimensions*($images,"file");|Creates height/width css for the container size|
 |background-image: inline-image($images,"justone");|Base64 encoded data uri of the requested image|
 |background: *image-url*("nopixel.png");|Returns a relative path to an image in the image directory|
-|font-url: *font-url*("arial.eot");|Returns a relative path to a file in the font directory|
-
+|font-url: *font-url*("arial.eot", $raw);|Returns a relative path to a file in the font directory, optionally do not wrap in url()|
+|*sprite*($map,"file")|Returns the path and background position of an image for use with background:|
 
 ### Development
 
