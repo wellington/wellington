@@ -28,8 +28,7 @@ func init() {
 
 func TestParserRelative(t *testing.T) {
 	p := Parser{
-		StaticDir: "test",
-		BuildDir:  "test/build",
+		BuildDir: "test/build",
 	}
 	f, err := ioutil.ReadFile("sass/_sprite.scss")
 	if err != nil {
@@ -46,7 +45,7 @@ div {
 }`, spritePreamble)
 	bs, _ := p.Start(in, "test")
 	out := string(bs)
-	defer cleanUpSprites(p.Sprites)
+
 	if out != e {
 		t.Skipf("Mismatch expected:\n%s\nwas:\n%s", e, out)
 	}
@@ -55,9 +54,8 @@ div {
 
 func TestParserImporter(t *testing.T) {
 	p := Parser{
-		StaticDir: "test",
-		BuildDir:  "test/build",
-		Includes:  []string{"test/sass"},
+		BuildDir: "test/build",
+		Includes: []string{"test/sass"},
 	}
 
 	bs, err := p.Start(fileReader("test/sass/import.scss"), "test/")
@@ -65,8 +63,6 @@ func TestParserImporter(t *testing.T) {
 		log.Fatal(err)
 	}
 	output := string(bs)
-
-	defer cleanUpSprites(p.Sprites)
 
 	file, _ := ioutil.ReadFile("test/expected/import.parser")
 	e := string(file)
@@ -107,7 +103,7 @@ $view_sprite: (); $view_sprite: map_merge($view_sprite,(139: (width: 96, height:
 `
 	bs, _ := p.Start(in, "")
 	out := string(bs)
-	defer cleanUpSprites(p.Sprites)
+
 	if out != e {
 		t.Skipf("Mismatch expected:\n%s\nwas:\n%s", e, out)
 	}
@@ -157,9 +153,7 @@ p.#{$name} {
 
 func TestParseImage(t *testing.T) {
 	p := Parser{
-		StaticDir: "test",
-		GenImgDir: "test/build/img",
-		BuildDir:  "test/build",
+		BuildDir: "test/build",
 	}
 	in := bytes.NewBufferString(`$sprites: sprite-map("img/*.png");
 $sfile: sprite-file($sprites, 139);
@@ -170,7 +164,6 @@ div {
 }`)
 	bs, _ := p.Start(in, "")
 	out := string(bs)
-	defer cleanUpSprites(p.Sprites)
 
 	if e := `$rel: "..";
 $sprites: (); $sprites: map_merge($sprites,(139: (width: 96, height: 139, x: 0, y: 0, url: 'img/img-554064.png'))); $sprites: map_merge($sprites,(140: (width: 96, height: 140, x: 0, y: 139, url: 'img/img-554064.png')));
@@ -187,9 +180,7 @@ div {
 func TestParseImageUrl(t *testing.T) {
 
 	p := Parser{
-		StaticDir: "test",
-		GenImgDir: "test/build/img",
-		BuildDir:  "test/build",
+		BuildDir: "test/build",
 	}
 	in := bytes.NewBufferString(`background: image-url('test/140.png');`)
 	bs, _ := p.Start(in, "")

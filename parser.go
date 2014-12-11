@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"sort"
 
-	. "github.com/wellington/spritewell"
 	. "github.com/wellington/wellington/lexer"
 	. "github.com/wellington/wellington/token"
 )
@@ -48,17 +47,14 @@ type Parser struct {
 	Chop                 []Replace
 	Pwd, Input, MainFile string
 	SassDir, BuildDir,
-	GenImgDir string
-	StaticDir           string
-	ProjDir             string
-	ImageDir            string
-	Includes            []string
-	Items               []Item
-	Output              []byte
-	Line                map[int]string
-	LineKeys            []int
-	InlineImgs, Sprites map[string]ImageList
-	Vars                map[string]string
+
+	ProjDir string
+	ImageDir string
+	Includes []string
+	Items    []Item
+	Output   []byte
+	Line     map[int]string
+	LineKeys []int
 }
 
 func NewParser() *Parser {
@@ -71,9 +67,6 @@ func NewParser() *Parser {
 // Parser creates a map of all variables and sprites
 // (created via sprite-map calls).
 func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
-	p.Vars = make(map[string]string)
-	p.Sprites = make(map[string]ImageList)
-	p.InlineImgs = make(map[string]ImageList)
 	p.Line = make(map[int]string)
 
 	// Setup paths
@@ -85,15 +78,6 @@ func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	}
 	if p.SassDir == "" {
 		p.SassDir = pkgdir
-	}
-	if p.StaticDir == "" {
-		p.StaticDir = pkgdir
-	}
-	if p.ImageDir == "" {
-		p.ImageDir = p.StaticDir
-	}
-	if p.GenImgDir == "" {
-		p.GenImgDir = p.BuildDir
 	}
 	buf := bytes.NewBuffer(make([]byte, 0, bytes.MinRead))
 	buf.ReadFrom(in)
