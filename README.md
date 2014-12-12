@@ -1,5 +1,5 @@
 [![wercker status](https://app.wercker.com/status/873d0c7929b8b1e8bc37bcc16829fb5f/m/master "wercker status")](https://app.wercker.com/project/bykey/873d0c7929b8b1e8bc37bcc16829fb5f)
-[![Coverage Status](https://coveralls.io/repos/wellington/wellington/badge.png)](https://coveralls.io/r/wellington/wellington)
+[![Coverage Status](https://coveralls.io/repos/wellington/wellington/badge.png?branch=HEAD)](https://coveralls.io/r/wellington/wellington?branch=HEAD)
 
 Wellington
 ===========
@@ -24,6 +24,13 @@ div {
 Wellington adds file awareness to the sass language.  It has been written in Go for portability, modularity, and speed.  There are no dependencies on Ruby.  The binary includes everything you need to run sprite_sass.  Sprite_sass uses libsass under the covers for processing the output CSS.
 
 #### Installation
+Wellington can be installed via brew
+
+	brew update
+	brew install --HEAD libsass
+	brew tap drewwells/wt
+	brew install wellington
+
 Check out the releases for compiled binaries
 
 #### Building from source

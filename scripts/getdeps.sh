@@ -18,7 +18,13 @@ fi
 touch /usr/local/lib/libsass.a
 if [ -w '/usr/local/lib/libsass.a' ];
 then
-	cd libsass; make install
+	cd libsass
+	autoreconf -fvi
+	./configure --disable-silent-rules --disable-dependency-tracking
+	make install
 else
-	cd libsass; sudo make install
+	cd libsass
+	autoreconf -fvi
+	./configure --disable-silent-rules --disable-dependency-tracking
+	sudo make install
 fi
