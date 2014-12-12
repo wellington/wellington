@@ -84,3 +84,7 @@ Docker Container
 	make docker #launch a container
 
 Please use pull requests for contributing code.  Wercker will automatically test and lint your contributions.  Thanks for helping!
+
+### License
+
+Wellington is licensed under MIT.
