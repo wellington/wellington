@@ -44,11 +44,15 @@ func init() {
 	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
 }
 
+// Replace holds token values for replacing source input with parsed input.
+// DEPRECATED
 type Replace struct {
 	Start, End int
 	Value      []byte
 }
 
+// Parser represents a parser engine that returns parsed and imported code
+// from the input useful for doing text manipulation before passing to libsass.
 type Parser struct {
 	Idx, shift           int
 	Chop                 []Replace
@@ -64,14 +68,15 @@ type Parser struct {
 	LineKeys []int
 }
 
+// NewParser returns a pointer to a Parser object.
 func NewParser() *Parser {
 	return &Parser{}
 }
 
-// Parser reads the tokens from the lexer and performs
+// Start reads the tokens from the lexer and performs
 // conversions and/or substitutions for sprite*() calls.
 //
-// Parser creates a map of all variables and sprites
+// Start creates a map of all variables and sprites
 // (created via sprite-map calls).
 func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	p.Line = make(map[int]string)
@@ -127,6 +132,7 @@ func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	return append(weAreNeverGettingBackTogether, p.Output...), nil
 }
 
+// Rel builds relative image paths, not compatible with sprites.
 func (p *Parser) Rel() string {
 	rel, _ := filepath.Rel(p.BuildDir, p.ImageDir)
 	return filepath.Clean(rel)
@@ -279,7 +285,7 @@ func (p *Parser) LookupFile(position int) string {
 // 	return append(out, p.Parse(items[j:])...)
 // }
 
-// Import recursively resolves all imports.  It lexes the input
+// GetItems recursively resolves all imports.  It lexes the input
 // adding the tokens to the Parser object.
 // TODO: Convert this to byte slice in/out
 func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {

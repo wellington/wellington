@@ -15,12 +15,14 @@ type lErrors struct {
 	Pos    int
 }
 
+// SassError represents an error object returned from Sass.  SassError
+// stores useful information for bubbling up libsass errors.
 type SassError struct {
 	Status, Line, Column int
 	File, Message        string
 }
 
-// Error reads the original libsass error and creates helpful debuggin
+// ProcessSassError reads the original libsass error and creates helpful debuggin
 // information for debuggin that error.
 func (ctx *Context) ProcessSassError(bs []byte) error {
 
@@ -43,7 +45,7 @@ func (ctx *Context) error() string {
 	return ctx.errorString
 }
 
-// LineNumber attempts to resolve the file associated with
+// ErrorLine attempts to resolve the file associated with
 // a stdin:#
 func (ctx *Context) ErrorLine() int {
 	var n int

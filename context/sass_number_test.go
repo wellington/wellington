@@ -168,7 +168,6 @@ func TestChainedOperation(t *testing.T) {
 func compareFloats(f1 float64, f2 float64) bool {
 	if math.Abs(f1-f2) < tolerance {
 		return true
-	} else {
-		return false
 	}
+	return false
 }

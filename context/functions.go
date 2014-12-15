@@ -39,6 +39,8 @@ func ImageURL(ctx *Context, csv UnionSassValue) UnionSassValue {
 	return res
 }
 
+// ImageHeight takes a file path (or sprite glob) and returns the
+// height in pixels of the image being referenced.
 func ImageHeight(ctx *Context, usv UnionSassValue) UnionSassValue {
 	var (
 		glob string
@@ -57,10 +59,9 @@ func ImageHeight(ctx *Context, usv UnionSassValue) UnionSassValue {
 
 		if err != nil {
 			return Error(err)
-		} else {
-			glob = infs[0].(string)
-			name = infs[1].(string)
 		}
+		glob = infs[0].(string)
+		name = infs[1].(string)
 	}
 	imgs := sw.ImageList{
 		ImageDir:  ctx.ImageDir,
@@ -94,7 +95,7 @@ func ImageHeight(ctx *Context, usv UnionSassValue) UnionSassValue {
 }
 
 // ImageWidth takes a file path (or sprite glob) and returns the
-// height in pixels of the image being referenced.
+// width in pixels of the image being referenced.
 func ImageWidth(ctx *Context, usv UnionSassValue) UnionSassValue {
 	var (
 		glob, name string
@@ -112,10 +113,9 @@ func ImageWidth(ctx *Context, usv UnionSassValue) UnionSassValue {
 
 		if err != nil {
 			return Error(err)
-		} else {
-			glob = infs[0].(string)
-			name = infs[1].(string)
 		}
+		glob = infs[0].(string)
+		name = infs[1].(string)
 	}
 	imgs := sw.ImageList{
 		ImageDir:  ctx.ImageDir,
@@ -210,9 +210,8 @@ func Sprite(ctx *Context, usv UnionSassValue) UnionSassValue {
 		if strings.Contains(err.Error(), "unsupported") {
 			return Error(fmt.Errorf(
 				"Please specify unit for offset ie. (2px)"))
-		} else {
-			return Error(err)
 		}
+		return Error(err)
 	}
 	ctx.Sprites.RLock()
 	defer ctx.Sprites.RUnlock()
