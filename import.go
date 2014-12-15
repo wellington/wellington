@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func (p *Parser) ImportPath(dir, file string, mainfile string, partialMap *SafePartialMap) (string, string, error) {
+func (p *Parser) ImportPath(dir, file string, partialMap *SafePartialMap) (string, string, error) {
 	// fmt.Println("Importing: " + file)
 	baseerr := ""
 	//Load and retrieve all tokens from imported file
@@ -19,7 +19,7 @@ func (p *Parser) ImportPath(dir, file string, mainfile string, partialMap *SafeP
 	fpath := filepath.Join(pwd, "/_"+filepath.Base(path))
 	contents, err := ioutil.ReadFile(fpath)
 	if err == nil {
-		partialMap.AddRelation(mainfile, fpath)
+		partialMap.AddRelation(p.MainFile, fpath)
 		return pwd, string(contents), nil
 	}
 	baseerr += fpath + "\n"
@@ -32,7 +32,7 @@ func (p *Parser) ImportPath(dir, file string, mainfile string, partialMap *SafeP
 			contents, err := ioutil.ReadFile(fpath)
 			baseerr += fpath + "\n"
 			if err == nil {
-				partialMap.AddRelation(mainfile, fpath)
+				partialMap.AddRelation(p.MainFile, fpath)
 				return pwd, string(contents), nil
 			} else {
 				// Attempt invalid name lookup (no _)
@@ -40,7 +40,7 @@ func (p *Parser) ImportPath(dir, file string, mainfile string, partialMap *SafeP
 				contents, err = ioutil.ReadFile(fpath)
 				baseerr += fpath + "\n"
 				if err == nil {
-					partialMap.AddRelation(mainfile, fpath)
+					partialMap.AddRelation(p.MainFile, fpath)
 					return pwd, string(contents), nil
 				}
 			}

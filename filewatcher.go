@@ -11,8 +11,11 @@ import (
 	"gopkg.in/fsnotify.v1"
 )
 
+//Sets the default size of the slice holding the top level files for a sass partial in SafePartialMap.M
 const maxTopLevel int = 20
 
+//This holds universal arguments for a build that the parser uses during the initial build and the filewatcher
+//passes back to the parser on any file changes.
 type BuildArgs struct {
 	Imgs, Sprites spritewell.SafeImageMap
 	Dir           string
@@ -24,13 +27,21 @@ type BuildArgs struct {
 	Comments      bool
 }
 
-type sassWatcher struct {
+//This object holds all data needed to kick off a build of the css when a file changes.
+//FileWatcher is the object that triggers builds when a file changes.
+//PartialMap contains a mapping of partials to top level files.
+//TopLevelFileDirectories contains all directories that have top level files.
+//GlobalBuildArgs contains build args that apply to all sass files.
+type SassWatcher struct {
 	FileWatcher             *fsnotify.Watcher
 	PartialMap              *SafePartialMap
 	TopLevelFileDirectories *[]string
 	GlobalBuildArgs         *BuildArgs
 }
 
+//This is a thread safe map of partial sass files to top level files.
+//The file watcher will detect changes in a partial and kick off builds for all
+//top level files that contain that partial.
 type SafePartialMap struct {
 	sync.RWMutex
 	M map[string][]string
@@ -62,21 +73,19 @@ func FileWatch(partialMap *SafePartialMap, globalBuildArgs *BuildArgs, topLevelF
 	}
 
 	defer fswatcher.Close()
-	sassFileWatcher := sassWatcher{fswatcher, partialMap, topLevelFileDirectories, globalBuildArgs}
+	sassFileWatcher := SassWatcher{fswatcher, partialMap, topLevelFileDirectories, globalBuildArgs}
 	sassFileWatcher.watchFiles()
 	sassFileWatcher.startWatching()
 
 }
 
-func (sassFileWatcher *sassWatcher) startWatching() {
+func (sassFileWatcher *SassWatcher) startWatching() {
 	done := make(chan bool)
 	go func() {
 		for {
 			select {
 			case event := <-(*sassFileWatcher.FileWatcher).Events:
-				//fmt.Println("event:", event)
 				if event.Op&fsnotify.Write == fsnotify.Write {
-					//fmt.Println("modified file:", event.Name)
 					sassFileWatcher.rebuildTopLevelSassFiles(event.Name)
 				}
 			case err := <-(*sassFileWatcher.FileWatcher).Errors:
@@ -87,23 +96,20 @@ func (sassFileWatcher *sassWatcher) startWatching() {
 	<-done
 }
 
-func (sassFileWatcher *sassWatcher) rebuildTopLevelSassFiles(eventFileName string) {
+func (sassFileWatcher *SassWatcher) rebuildTopLevelSassFiles(eventFileName string) {
 	if strings.HasPrefix(filepath.Base(eventFileName), "_") { //Partial sass file was modified.  Rebuild all top level files that contain it.
 		for k := range sassFileWatcher.PartialMap.M[eventFileName] {
-			//fmt.Println("Should rebuild:", sassFileWatcher.PartialMap.M[eventFileName][k])
 			LoadAndBuild(sassFileWatcher.PartialMap.M[eventFileName][k], sassFileWatcher.GlobalBuildArgs, sassFileWatcher.PartialMap, sassFileWatcher.TopLevelFileDirectories)
 		}
 	} else { //Top leve file was modified.  Rebuild it.
-		//fmt.Println("Should rebuild:", eventFileName)
 		LoadAndBuild(eventFileName, sassFileWatcher.GlobalBuildArgs, sassFileWatcher.PartialMap, sassFileWatcher.TopLevelFileDirectories)
 	}
 }
 
-func (sassFileWatcher *sassWatcher) watchFiles() {
+func (sassFileWatcher *SassWatcher) watchFiles() {
 	//Watch the dirs of all sass partials
 	for k := range sassFileWatcher.PartialMap.M {
 		sassFileWatcher.Watch(filepath.Dir(k))
-		//fmt.Println(k)
 	}
 
 	//Watch the dirs of all top level files
@@ -112,7 +118,7 @@ func (sassFileWatcher *sassWatcher) watchFiles() {
 	}
 }
 
-func (sassFileWatcher *sassWatcher) Watch(fpath string) {
+func (sassFileWatcher *SassWatcher) Watch(fpath string) {
 	if len(fpath) > 0 {
 		if err := (*sassFileWatcher.FileWatcher).Add(fpath); nil != err {
 			log.Fatalln(err)

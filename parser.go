@@ -63,12 +63,13 @@ type Parser struct {
 	SassDir, BuildDir,
 
 	ProjDir string
-	ImageDir string
-	Includes []string
-	Items    []Item
-	Output   []byte
-	Line     map[int]string
-	LineKeys []int
+	ImageDir   string
+	Includes   []string
+	Items      []Item
+	Output     []byte
+	Line       map[int]string
+	LineKeys   []int
+	PartialMap *SafePartialMap
 }
 
 // NewParser returns a pointer to a Parser object.
@@ -81,7 +82,7 @@ func NewParser() *Parser {
 //
 // Start creates a map of all variables and sprites
 // (created via sprite-map calls).
-func (p *Parser) Start(in io.Reader, pkgdir string, partialMap *SafePartialMap) ([]byte, error) {
+func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	p.Line = make(map[int]string)
 
 	// Setup paths
@@ -99,7 +100,7 @@ func (p *Parser) Start(in io.Reader, pkgdir string, partialMap *SafePartialMap) 
 
 	// This pass resolves all the imports, but positions will
 	// be off due to @import calls
-	items, input, err := p.GetItems(pkgdir, p.MainFile, string(buf.Bytes()), partialMap)
+	items, input, err := p.GetItems(pkgdir, p.MainFile, string(buf.Bytes()))
 	if err != nil {
 		return []byte(""), err
 	}
@@ -291,7 +292,7 @@ func (p *Parser) LookupFile(position int) string {
 // GetItems recursively resolves all imports.  It lexes the input
 // adding the tokens to the Parser object.
 // TODO: Convert this to byte slice in/out
-func (p *Parser) GetItems(pwd, filename, input string, partialMap *SafePartialMap) ([]Item, string, error) {
+func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 
 	var (
 		status    []Item
@@ -342,7 +343,7 @@ func (p *Parser) GetItems(pwd, filename, input string, partialMap *SafePartialMa
 					}
 				}
 				p.Line[lineCount] = filename
-				pwd, contents, err := p.ImportPath(pwd, filename, p.MainFile, partialMap)
+				pwd, contents, err := p.ImportPath(pwd, filename, p.PartialMap)
 
 				if err != nil {
 					return nil, "", err
@@ -359,8 +360,7 @@ func (p *Parser) GetItems(pwd, filename, input string, partialMap *SafePartialMa
 				moreTokens, moreOutput, err := p.GetItems(
 					pwd,
 					filename,
-					contents,
-					partialMap)
+					contents)
 				// If importing was successful, each token must be moved
 				// forward by the position of the @import call that made
 				// it available.
@@ -391,7 +391,7 @@ func (p *Parser) GetItems(pwd, filename, input string, partialMap *SafePartialMa
 
 }
 
-func LoadAndBuild(sassFile string, globalBuildArgs *BuildArgs, partialMap *SafePartialMap, topLevelFilePaths *[]string) {
+func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, topLevelFilePaths *[]string) {
 	var Input string
 	// Remove partials
 	if strings.HasPrefix(filepath.Base(sassFile), "_") {
@@ -401,38 +401,38 @@ func LoadAndBuild(sassFile string, globalBuildArgs *BuildArgs, partialMap *SafeP
 	//Add directly of top level file
 	*topLevelFilePaths = append(*topLevelFilePaths, filepath.Dir(sassFile))
 	// If no imagedir specified, assume relative to the input file
-	if globalBuildArgs.Dir == "" {
-		globalBuildArgs.Dir = filepath.Dir(sassFile)
+	if gba.Dir == "" {
+		gba.Dir = filepath.Dir(sassFile)
 	}
 	var (
 		out  io.WriteCloser
 		fout string
 	)
-	if globalBuildArgs.BuildDir != "" {
+	if gba.BuildDir != "" {
 		// Build output file based off build directory and input filename
-		rel, _ := filepath.Rel(globalBuildArgs.Includes, filepath.Dir(sassFile))
+		rel, _ := filepath.Rel(gba.Includes, filepath.Dir(sassFile))
 		filename := strings.Replace(filepath.Base(sassFile), ".scss", ".css", 1)
-		fout = filepath.Join(globalBuildArgs.BuildDir, rel, filename)
+		fout = filepath.Join(gba.BuildDir, rel, filename)
 	} else {
 		out = os.Stdout
 	}
 	ctx := context.Context{
 		// TODO: Most of these fields are no longer used
-		Sprites:     globalBuildArgs.Sprites,
-		Imgs:        globalBuildArgs.Imgs,
-		OutputStyle: globalBuildArgs.Style,
-		ImageDir:    globalBuildArgs.Dir,
-		FontDir:     globalBuildArgs.Font,
+		Sprites:     gba.Sprites,
+		Imgs:        gba.Imgs,
+		OutputStyle: gba.Style,
+		ImageDir:    gba.Dir,
+		FontDir:     gba.Font,
 		// Assumption that output is a file
 		BuildDir:     filepath.Dir(fout),
-		GenImgDir:    globalBuildArgs.Gen,
+		GenImgDir:    gba.Gen,
 		MainFile:     sassFile,
-		Comments:     globalBuildArgs.Comments,
+		Comments:     gba.Comments,
 		IncludePaths: []string{filepath.Dir(sassFile)},
 	}
-	if globalBuildArgs.Includes != "" {
+	if gba.Includes != "" {
 		ctx.IncludePaths = append(ctx.IncludePaths,
-			strings.Split(globalBuildArgs.Includes, ",")...)
+			strings.Split(gba.Includes, ",")...)
 	}
 	fRead, err := os.Open(sassFile)
 	defer fRead.Close()
@@ -474,13 +474,14 @@ func LoadAndBuild(sassFile string, globalBuildArgs *BuildArgs, partialMap *SafeP
 func StartParser(ctx *context.Context, in io.Reader, out io.Writer, pkgdir string, partialMap *SafePartialMap) (*Parser, error) {
 	// Run the sprite_sass parser prior to passing to libsass
 	parser := &Parser{
-		ImageDir: ctx.ImageDir,
-		Includes: ctx.IncludePaths,
-		BuildDir: ctx.BuildDir,
-		MainFile: ctx.MainFile,
+		ImageDir:   ctx.ImageDir,
+		Includes:   ctx.IncludePaths,
+		BuildDir:   ctx.BuildDir,
+		MainFile:   ctx.MainFile,
+		PartialMap: partialMap,
 	}
 	// Save reference to parser in context
-	bs, err := parser.Start(in, pkgdir, partialMap)
+	bs, err := parser.Start(in, pkgdir)
 	if err != nil {
 		return parser, err
 	}
