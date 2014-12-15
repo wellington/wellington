@@ -194,7 +194,7 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 		return err
 	}
 
-	if ctx.Error() != "" {
+	if ctx.error() != "" {
 		lines := bytes.Split(bs, []byte("\n"))
 		var out string
 		for i := -7; i < 7; i++ {
@@ -202,8 +202,9 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 				out += fmt.Sprintf("%s\n", string(lines[i+ctx.Errors.Line]))
 			}
 		}
+
 		// TODO: this is weird, make something more idiomatic
-		return fmt.Errorf(ctx.Error() + "\n" + out)
+		return fmt.Errorf(ctx.error() + "\n" + out)
 	}
 
 	return nil

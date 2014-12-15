@@ -39,7 +39,7 @@ func (ctx *Context) ProcessSassError(bs []byte) error {
 	return nil
 }
 
-func (ctx *Context) Error() string {
+func (ctx *Context) error() string {
 	return ctx.errorString
 }
 
@@ -47,6 +47,6 @@ func (ctx *Context) Error() string {
 // a stdin:#
 func (ctx *Context) ErrorLine() int {
 	var n int
-	fmt.Sscanf(ctx.Error(), "Error > stdin:%d", &n)
+	fmt.Sscanf(ctx.error(), "Error > stdin:%d", &n)
 	return n
 }

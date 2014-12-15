@@ -32,8 +32,8 @@ func TestErrorBasic(t *testing.T) {
 		t.Errorf("wanted:\n%s\ngot:\n%s", e.message, ctx.Errors.Message)
 	}
 
-	if ctx.errorString != ctx.Error() {
-		t.Errorf("wanted: %s got: %s", ctx.errorString, ctx.Error())
+	if ctx.errorString != ctx.error() {
+		t.Errorf("wanted: %s got: %s", ctx.errorString, ctx.error())
 	}
 }
 
@@ -125,8 +125,8 @@ Backtrace:
 	stdin:3100, in function inline-image
 	stdin:3100, in mixin printCSSImg
 	stdin:3117`
-	if e != ctx.Error() {
-		t.Errorf("got:\n%s\nwanted:\n%s", ctx.Error(), e)
+	if e != ctx.error() {
+		t.Errorf("got:\n%s\nwanted:\n%s", err.Error(), e)
 	}
 }
 
@@ -153,7 +153,7 @@ func TestErrorLine(t *testing.T) {
 	ctx := Context{}
 	ctx.errorString = "Error > stdin:1000"
 	if e := 1000; e != ctx.ErrorLine() {
-		t.Error("got: %d wanted: %d", ctx.ErrorLine(), e)
+		t.Errorf("got: %d wanted: %d", ctx.ErrorLine(), e)
 	}
 
 }

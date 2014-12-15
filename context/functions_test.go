@@ -321,6 +321,60 @@ div {
 	}
 }
 
+func TestRegInlineImageFail(t *testing.T) {
+	var f *os.File
+	old := os.Stdout
+	os.Stdout = f
+	defer func() { os.Stdout = old }()
+	in := bytes.NewBufferString(`
+div {
+    background: inline-image("image.svg");
+}`)
+	var out bytes.Buffer
+	_, _, err := setupCtx(in, &out)
+	if err != nil {
+		t.Error(err)
+	}
+	e := `div {
+  background: inline-image: image.svg filetype .svg is not supported; }
+`
+	if e != out.String() {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
+	}
+}
+
+func TestFontURLFail(t *testing.T) {
+	r, w, _ := os.Pipe()
+	old := os.Stdout
+	defer func() { os.Stdout = old }()
+	os.Stdout = w
+	in := bytes.NewBufferString(`@font-face {
+  src: font-url("arial.eot");
+}`)
+	var out bytes.Buffer
+	ctx := Context{}
+	err := ctx.Compile(in, &out)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	outC := make(chan string)
+	go func(r *os.File) {
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		outC <- buf.String()
+	}(r)
+
+	w.Close()
+	stdout := <-outC
+
+	if e := "font-url: font path not set\n"; e != stdout {
+		t.Errorf("got:\n%s\nwanted:\n%s\n", stdout, e)
+	}
+
+}
+
 func ExampleFontURL() {
 	in := bytes.NewBufferString(`
 $path: font-url("arial.eot", true);
@@ -363,6 +417,38 @@ div {
 	// Output:
 	// div {
 	//   background: url("img/testimgdual-ab7eb7.png") -0px -149px; }
+
+}
+
+func TestSprite(t *testing.T) {
+	in := bytes.NewBufferString(`
+$map: sprite-map("dual/*.png", 10px);
+div {
+  background: sprite($map, "140", 0, 0);
+}`)
+
+	ctx := NewContext()
+
+	ctx.BuildDir = "test/build"
+	ctx.GenImgDir = "test/build/img"
+	ctx.ImageDir = "test/img"
+	var out bytes.Buffer
+	err := ctx.Compile(in, &out)
+
+	e := `Error > stdin:4
+error in C function sprite: Please specify unit for offset ie. (2px)
+Backtrace:
+	stdin:4, in function ` + "`sprite`" + `
+	stdin:4
+
+$map: sprite-map("dual/*.png", 10px);
+div {
+  background: sprite($map, "140", 0, 0);
+}
+`
+	if e != err.Error() {
+		t.Errorf("got:\n~%s~\nwanted:\n~%s~\n", err.Error(), e)
+	}
 
 }
 

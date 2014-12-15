@@ -148,6 +148,7 @@ func ImageWidth(ctx *Context, usv UnionSassValue) UnionSassValue {
 	return res
 }
 
+// InlineImage returns a base64 encoded png from the input image
 func InlineImage(ctx *Context, usv UnionSassValue) UnionSassValue {
 	var (
 		name string
@@ -309,7 +310,7 @@ func SpriteMap(ctx *Context, usv UnionSassValue) UnionSassValue {
 	return res
 }
 
-// SpriteFile proxies the sprite glob and image name through.
+// FontURL builds a relative path to the requested font file from the built CSS.
 func FontURL(ctx *Context, usv UnionSassValue) UnionSassValue {
 
 	var (
@@ -324,7 +325,7 @@ func FontURL(ctx *Context, usv UnionSassValue) UnionSassValue {
 	}
 
 	// Enter warning
-	if ctx.FontDir == "." {
+	if ctx.FontDir == "." || ctx.FontDir == "" {
 		s := "font-url: font path not set"
 		fmt.Println(s)
 		res, _ := Marshal(s)
