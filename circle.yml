@@ -1,0 +1,9 @@
+machine:
+  environment:
+    PKG_CONFIG_PATH: "$HOME/lib/pkgconfig/"
+  pre:
+    - export LIBSASS_VERSION=$(cat .libsass_version)
+    - mkdir libsass
+    - cd libsass && curl -k -L "https://github.com/sass/libsass/archive/$LIBSASS_VERSION.tar.gz" -o libsass.tar.gz
+    - pwd
+    - cd libsass && tar -xvf libsass.tar.gz --strip 1 && autoreconf -fvi && ./configure --disable-shared --prefix=$HOME --disable-silent-rules --disable-dependency-tracking && make install
