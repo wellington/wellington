@@ -345,7 +345,7 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 				// Set position to token after
 				// FIXME: Hack to delete newline, hopefully this doesn't break stuff
 				// then readd it to the linecount
-				pos = item.Pos + len(item.Value) + 1
+				pos = item.Pos + len(item.Value)
 				moreTokens, moreOutput, err := p.GetItems(
 					pwd,
 					filename,
