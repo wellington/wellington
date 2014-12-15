@@ -1,11 +1,23 @@
 machine:
   environment:
     PKG_CONFIG_PATH: "$HOME/lib/pkgconfig/"
+    LIBSASS_VERSION: $(cat $HOME/$CIRCLE_PROJECT_REPONAME/.libsass_version)
   pre:
-    - export LIBSASS_VERSION=$(cat .libsass_version)
+    - cat $HOME/$CIRCLE_PROJECT_REPONAME/.libsass_version
+    - echo "export LIBSASS_VERSION=$(cat $HOME/$CIRCLE_PROJECT_REPONAME/.libsass_version)" >> ~/.circlerc
     - mkdir libsass
-    - cd libsass && curl -k -L "https://github.com/sass/libsass/archive/$LIBSASS_VERSION.tar.gz" -o libsass.tar.gz
-    - pwd
+    - cd libsass && curl -k -L https://github.com/sass/libsass/archive/$LIBSASS_VERSION.tar.gz -o libsass.tar.gz
     - cd libsass && tar -xvf libsass.tar.gz --strip 1 && autoreconf -fvi
     - cd libsass && ./configure --disable-shared --prefix=$HOME --disable-silent-rules --disable-dependency-tracking
     - cd libsass && make install
+    - rm -rf $HOME/.go_workspace/src/github.com/wellington/wellington
+    - mkdir -p $HOME/.go_workspace/src/github.com/wellington
+    - ln -s $HOME/$CIRCLE_PROJECT_REPONAME $HOME/.go_workspace/src/github.com/wellington/wellington
+test:
+  override:
+    - go get -u github.com/wellington/spritewell
+    - go get github.com/axw/gocov/gocov
+    - go get github.com/mattn/goveralls
+    - go get golang.org/x/tools/cmd/goimports
+    - go get github.com/golang/lint/golint
+    - scripts/goclean.sh
