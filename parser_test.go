@@ -28,10 +28,10 @@ func init() {
 
 func TestParserRelative(t *testing.T) {
 	p := Parser{
-		BuildDir: "test/build",
-		MainFile: "sprite.css",
+		BuildDir:   "test/build",
+		MainFile:   "sprite.css",
+		PartialMap: NewPartialMap(),
 	}
-	partialMap := NewPartialMap()
 	f, err := ioutil.ReadFile("sass/_sprite.scss")
 	if err != nil {
 		log.Fatal(err)
@@ -45,7 +45,7 @@ func TestParserRelative(t *testing.T) {
 div {
   background: image-url('img/139.png');
 }`, spritePreamble)
-	bs, _ := p.Start(in, "test", partialMap)
+	bs, _ := p.Start(in, "test")
 	out := string(bs)
 
 	if out != e {
@@ -56,14 +56,13 @@ div {
 
 func TestParserImporter(t *testing.T) {
 	p := Parser{
-		BuildDir: "test/build",
-		Includes: []string{"test/sass"},
-		MainFile: "import.css",
+		BuildDir:   "test/build",
+		Includes:   []string{"test/sass"},
+		MainFile:   "import.css",
+		PartialMap: NewPartialMap(),
 	}
 
-	partialMap := NewPartialMap()
-
-	bs, err := p.Start(fileReader("test/sass/import.scss"), "test/", partialMap)
+	bs, err := p.Start(fileReader("test/sass/import.scss"), "test/")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -94,8 +93,7 @@ func TestParserImporter(t *testing.T) {
 }
 
 func TestParseSpriteArgs(t *testing.T) {
-	p := Parser{}
-	var partialMap *SafePartialMap
+	p := Parser{PartialMap: NewPartialMap()}
 	in := bytes.NewBufferString(`$view_sprite: sprite-map("test/*.png",
   $normal-spacing: 2px,
   $normal-hover-spacing: 2px,
@@ -107,7 +105,7 @@ func TestParseSpriteArgs(t *testing.T) {
 $view_sprite: (); $view_sprite: map_merge($view_sprite,(139: (width: 96, height: 139, x: 0, y: 0, url: 'test-d01d06.png'))); $view_sprite: map_merge($view_sprite,(140: (width: 96, height: 140, x: 0, y: 139, url: 'test-d01d06.png'))); $view_sprite: map_merge($view_sprite,(pixel: (width: 1, height: 1, x: 0, y: 279, url: 'test-d01d06.png')));
   @include sprite-dimensions($view_sprite,140);
 `
-	bs, _ := p.Start(in, "", partialMap)
+	bs, _ := p.Start(in, "")
 	out := string(bs)
 
 	if out != e {
@@ -116,17 +114,16 @@ $view_sprite: (); $view_sprite: map_merge($view_sprite,(139: (width: 96, height:
 }
 
 func TestParseInt(t *testing.T) {
-	p := Parser{}
+	p := Parser{PartialMap: NewPartialMap()}
 	var (
 		e, res string
 	)
-	var partialMap *SafePartialMap
 	r := bytes.NewBufferString(`p {
   $font-size: 12px;
   $line-height: 30px;
   font: #{$font-size}/#{$line-height};
 }`)
-	bs, _ := p.Start(r, "", partialMap)
+	bs, _ := p.Start(r, "")
 	res = string(bs)
 
 	e = `$rel: ".";
@@ -138,13 +135,13 @@ p {
 	if e != res {
 		t.Skipf("Mismatch expected:\n%s\nwas:\n%s", e, res)
 	}
-	p = Parser{}
+	p = Parser{PartialMap: NewPartialMap()}
 	r = bytes.NewBufferString(`$name: foo;
 $attr: border;
 p.#{$name} {
   #{$attr}-color: blue;
 }`)
-	bs, _ = p.Start(r, "", partialMap)
+	bs, _ = p.Start(r, "")
 	res = string(bs)
 
 	e = `$rel: ".";
@@ -160,10 +157,10 @@ p.#{$name} {
 
 func TestParseImage(t *testing.T) {
 	p := Parser{
-		BuildDir: "test/build",
-		MainFile: "test",
+		BuildDir:   "test/build",
+		MainFile:   "test",
+		PartialMap: NewPartialMap(),
 	}
-	var partialMap *SafePartialMap
 	in := bytes.NewBufferString(`$sprites: sprite-map("img/*.png");
 $sfile: sprite-file($sprites, 139);
 div {
@@ -171,7 +168,7 @@ div {
     width: image-width(test/139.png);
     url: sprite-file($sprites, 139);
 }`)
-	bs, _ := p.Start(in, "", partialMap)
+	bs, _ := p.Start(in, "")
 	out := string(bs)
 
 	if e := `$rel: "..";
@@ -189,12 +186,12 @@ div {
 func TestParseImageUrl(t *testing.T) {
 
 	p := Parser{
-		BuildDir: "test/build",
-		MainFile: "test",
+		BuildDir:   "test/build",
+		MainFile:   "test",
+		PartialMap: NewPartialMap(),
 	}
-	var partialMap *SafePartialMap
 	in := bytes.NewBufferString(`background: image-url('test/140.png');`)
-	bs, _ := p.Start(in, "", partialMap)
+	bs, _ := p.Start(in, "")
 	out := string(bs)
 
 	if e := `$rel: "..";
