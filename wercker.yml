@@ -33,7 +33,7 @@ build:
           go get golang.org/x/tools/cmd/goimports
           go get github.com/golang/lint/golint
           scripts/goclean.sh
-          Git_BRANCH=$WERCKER_GIT_BRANCH goveralls -coverprofile=profile.cov -service=wercker.com -repotoken $COVERALLS_TOKEN
+          GIT_BRANCH=$WERCKER_GIT_BRANCH goveralls -coverprofile=profile.cov -service=wercker.com -repotoken $COVERALLS_TOKEN
     - script:
         name: Store cache
         code: |
