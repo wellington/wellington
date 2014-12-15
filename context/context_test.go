@@ -232,11 +232,56 @@ func TestContextCustomArity(t *testing.T) {
 	}
 	err := ctx.Compile(in, &out)
 	if err == nil {
-		t.Skip("No error thrown for incorrect arity")
+		t.Error("No error thrown for incorrect arity")
 	}
 
 	if e := "function foo only takes 0 arguments; given 2"; e != ctx.Errors.Message {
-		t.Skipf("wanted:\n%s\ngot:\n%s\n", e, ctx.Errors.Message)
+		t.Errorf("wanted:\n%s\ngot:\n%s\n", e, ctx.Errors.Message)
+	}
+	e := `Error > stdin:3
+function foo only takes 0 arguments; given 2
+div {
+  color: red(blue);
+  background: foo(1pt, 2cm);
+}
+`
+	if e != err.Error() {
+		t.Errorf("wanted:\n%s\ngot:\n%s\n", e, err)
+	}
+
+}
+
+func TestLibsassError(t *testing.T) {
+	in := bytes.NewBufferString(`div {
+  color: red(blue, purple);
+}`)
+
+	var out bytes.Buffer
+	ctx := Context{}
+	if ctx.Cookies == nil {
+		ctx.Cookies = make([]Cookie, 1)
+	}
+
+	ctx.Cookies[0] = Cookie{
+		"foo()", SampleCB, &ctx,
+	}
+	err := ctx.Compile(in, &out)
+
+	if err == nil {
+		t.Error("No error thrown for incorrect arity")
+	}
+
+	if e := "function red only takes 1 arguments; given 2"; e != ctx.Errors.Message {
+		t.Errorf("wanted:\n%s\ngot:\n%s\n", e, ctx.Errors.Message)
+	}
+	e := `Error > stdin:2
+function red only takes 1 arguments; given 2
+div {
+  color: red(blue, purple);
+}
+`
+	if e != err.Error() {
+		t.Errorf("wanted:\n%s\ngot:\n%s\n", e, err)
 	}
 }
 

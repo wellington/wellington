@@ -10,6 +10,7 @@ package context
 import "C"
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -194,8 +195,15 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	}
 
 	if ctx.Error() != "" {
+		lines := bytes.Split(bs, []byte("\n"))
+		var out string
+		for i := -7; i < 7; i++ {
+			if i+ctx.Errors.Line >= 0 && i+ctx.Errors.Line < len(lines) {
+				out += fmt.Sprintf("%s\n", string(lines[i+ctx.Errors.Line]))
+			}
+		}
 		// TODO: this is weird, make something more idiomatic
-		return fmt.Errorf(ctx.Error())
+		return fmt.Errorf(ctx.Error() + "\n" + out)
 	}
 
 	return nil
