@@ -33,12 +33,12 @@ $sprites: map_merge($sprites,(140: (
   )));
 */
 
-var weAreNeverGettingBackTogether = []byte(`
-@mixin sprite-dimensions($map, $name) {
+var weAreNeverGettingBackTogether = []byte(`@mixin sprite-dimensions($map, $name) {
   $file: sprite-file($map, $name);
   height: image-height($file);
   width: image-width($file);
-}`)
+}
+`)
 
 func init() {
 	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
@@ -99,8 +99,9 @@ func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 		p.LineKeys = append(p.LineKeys, i)
 	}
 	sort.Ints(p.LineKeys)
+	// Try removing this and see if it works
 	// This call will have valid token positions
-	items, input, err = p.GetItems(pkgdir, p.MainFile, input)
+	// items, input, err = p.GetItems(pkgdir, p.MainFile, input)
 
 	p.Input = input
 	p.Items = items
@@ -133,12 +134,19 @@ func (p *Parser) Rel() string {
 
 // LookupFile translates line positions into line number
 // and file it belongs to
-func (p *Parser) LookupFile(pos int) string {
+func (p *Parser) LookupFile(position int) string {
+	// Shift to 0 index
+	pos := position - 1
 	// Adjust for shift from preamble
 	shift := bytes.Count(weAreNeverGettingBackTogether, []byte{'\n'})
+	pos = pos - shift
+	if pos < 0 {
+		return "mixin"
+	}
 	for i, n := range p.LineKeys {
 		if n > pos {
 			if i == 0 {
+				// Return 1 index line numbers
 				return fmt.Sprintf("%s:%d", p.MainFile, pos+1)
 			}
 			hit := p.LineKeys[i-1]
@@ -147,10 +155,11 @@ func (p *Parser) LookupFile(pos int) string {
 			if filename == "string" {
 				filename = p.MainFile
 			}
-			return fmt.Sprintf("%s:%d", filename, pos-p.LineKeys[i-1]-shift)
+			return fmt.Sprintf("%s:%d", filename, pos-hit+1)
 		}
 	}
-	return "mainfile?" + p.MainFile
+	// Either this is invalid or on the top level include, assume top level include
+	return fmt.Sprintf("%s:%d", p.MainFile, pos-p.LineKeys[len(p.LineKeys)-1]+1)
 }
 
 // Find Paren that matches the current (
@@ -299,6 +308,9 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 		}
 		switch item.Type {
 		case ItemEOF:
+			if filename == p.MainFile {
+				p.Line[lineCount+bytes.Count([]byte(input[pos:]), []byte("\n"))] = filename
+			}
 			output = append(output, input[pos:]...)
 			return status, string(output), nil
 		case IMPORT:
@@ -312,6 +324,8 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 		default:
 			if importing {
 				lastname = filename
+				// Found import, mark parent's current position
+				p.Line[lineCount] = filename
 				filename = fmt.Sprintf("%s", *item)
 				for _, nl := range output {
 					if nl == '\n' {
@@ -325,10 +339,12 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 				}
 				//Eat the semicolon
 				item := lex.Next()
-				pos = item.Pos + len(item.Value)
 				if item.Type != SEMIC {
 					log.Println("@import statement must be followed by ;", filename)
 				}
+				// Set position to token after
+				// Hack to delete newline, hopefully this doesn't break stuff
+				pos = item.Pos + len(item.Value) + 1
 
 				moreTokens, moreOutput, err := p.GetItems(
 					pwd,
@@ -350,7 +366,7 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 					}
 				}
 				filename = lastname
-				p.Line[lineCount+1] = filename
+
 				output = append(output, moreOutput...)
 				status = append(status, moreTokens...)
 				importing = false
@@ -361,4 +377,5 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 			}
 		}
 	}
+
 }

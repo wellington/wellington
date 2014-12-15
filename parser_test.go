@@ -192,3 +192,51 @@ background: image-url('test/140.png');`; e != out {
 	}
 	log.SetOutput(os.Stdout)
 }
+
+func TestParseLookupFile(t *testing.T) {
+
+	p := Parser{
+		BuildDir: "test/build",
+		Includes: []string{"test/sass"},
+	}
+	in := bytes.NewBufferString(`div {
+  background: image-url('test/140.png');
+}
+p {
+  line-height: 2em;
+  height: 1px;
+}`)
+	bs, err := p.Start(in, "")
+	if err != nil {
+		t.Error(err)
+	}
+	tmap := [...]string{
+		3:  "mixin", // Injected mixin, perhaps we need a better name than top level file
+		4:  "mixin",
+		5:  "mixin",
+		6:  "string:1",
+		7:  "string:2",
+		8:  "string:3",
+		9:  "string:4",
+		10: "string:5",
+		11: "string:6",
+	}
+
+	for i := range tmap {
+		if tmap[i] == "" {
+			continue
+		}
+		if s := p.LookupFile(i); s != tmap[i] {
+			t.Errorf("%2d got: %s wanted: %s", i, s, tmap[i])
+		}
+	}
+
+	if t.Failed() {
+
+		lineArr := bytes.Split(bs, []byte("\n"))
+		for i := range lineArr {
+			fmt.Println(i+1, ":", string(lineArr[i]))
+		}
+	}
+
+}
