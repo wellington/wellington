@@ -147,7 +147,7 @@ func (p *Parser) LookupFile(position int) string {
 		if n > pos {
 			if i == 0 {
 				// Return 1 index line numbers
-				return fmt.Sprintf("%s:%d", p.MainFile, pos+1)
+				return fmt.Sprintf("%s:%d", p.Line[i], pos+1)
 			}
 			hit := p.LineKeys[i-1]
 			filename := p.Line[hit]
@@ -158,7 +158,7 @@ func (p *Parser) LookupFile(position int) string {
 			return fmt.Sprintf("%s:%d", filename, pos-hit+1)
 		}
 	}
-	// Either this is invalid or on the top level include, assume top level include
+	// Either this is invalid or outside of all imports, assume it's valid
 	return fmt.Sprintf("%s:%d", p.MainFile, pos-p.LineKeys[len(p.LineKeys)-1]+1)
 }
 
@@ -343,9 +343,9 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 					log.Println("@import statement must be followed by ;", filename)
 				}
 				// Set position to token after
-				// Hack to delete newline, hopefully this doesn't break stuff
+				// FIXME: Hack to delete newline, hopefully this doesn't break stuff
+				// then readd it to the linecount
 				pos = item.Pos + len(item.Value) + 1
-
 				moreTokens, moreOutput, err := p.GetItems(
 					pwd,
 					filename,

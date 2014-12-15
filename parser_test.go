@@ -230,13 +230,68 @@ p {
 			t.Errorf("%2d got: %s wanted: %s", i, s, tmap[i])
 		}
 	}
-
 	if t.Failed() {
-
+		fmt.Printf("% #v\n", p.Line)
 		lineArr := bytes.Split(bs, []byte("\n"))
 		for i := range lineArr {
-			fmt.Println(i+1, ":", string(lineArr[i]))
+			fmt.Printf("%2d: %2d: %s\n", i+1-5, i+1, string(lineArr[i]))
 		}
 	}
 
+}
+
+func TestParseLookupImport(t *testing.T) {
+	p := Parser{
+		BuildDir: "test/build",
+		Includes: []string{"test/sass"},
+	}
+	in := bytes.NewBufferString(`@import "file";
+p {
+  line-height: 2em;
+  height: 1px;
+}`)
+	bs, err := p.Start(in, "")
+	if err != nil {
+		t.Error(err)
+	}
+	tmap := [...]string{
+		3: "mixin", // Injected mixin, perhaps we need a better name than top level file
+		4: "mixin",
+		5: "mixin",
+		6: "file:1",
+		7: "file:2",
+		8: "file:3",
+	}
+
+	for i := range tmap {
+		if tmap[i] == "" {
+			continue
+		}
+		if s := p.LookupFile(i); s != tmap[i] {
+			t.Errorf("%2d got: %s wanted: %s", i, s, tmap[i])
+		}
+	}
+
+	smap := [...]string{
+		9:  "string:2",
+		10: "string:3",
+		11: "string:4",
+		12: "string:5",
+	}
+
+	for i := range smap {
+		if smap[i] == "" {
+			continue
+		}
+		if s := p.LookupFile(i); s != smap[i] {
+			t.Skipf("%2d got: %s wanted: %s", i, s, smap[i])
+		}
+	}
+	if t.Failed() {
+		fmt.Printf("% #v\n", p.Line)
+		lineArr := bytes.Split(bs, []byte("\n"))
+		for i := range lineArr {
+			fmt.Printf("%2d: %2d: %s\n", i+1-5, i+1, string(lineArr[i]))
+		}
+	}
 }
