@@ -148,3 +148,12 @@ func TestErrorInvalid(t *testing.T) {
 		t.Error("No error thrown on invalid sass json package")
 	}
 }
+
+func TestErrorLine(t *testing.T) {
+	ctx := Context{}
+	ctx.errorString = "Error > stdin:1000"
+	if e := 1000; e != ctx.ErrorLine() {
+		t.Error("got: %d wanted: %d", ctx.ErrorLine(), e)
+	}
+
+}
