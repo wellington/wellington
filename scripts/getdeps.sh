@@ -28,3 +28,5 @@ else
 	./configure --disable-silent-rules --disable-dependency-tracking --enable-static
 	sudo make install
 fi
+#delete shared libraries if found
+rm /usr/local/lib/libsass.so
