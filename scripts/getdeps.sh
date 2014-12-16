@@ -1,7 +1,7 @@
 #!/bin/bash
 
 HASH=$(cat .libsass_version)
-
+export LIBSASS_VERSION=HASH
 [ -d libsass ] || mkdir libsass
 if [ -f libsass/"libsass.$HASH.tar.gz" ];
 then

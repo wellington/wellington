@@ -3,12 +3,12 @@ box: drewwells/drunken-golang@0.1.0
 build:
   steps:
     - setup-go-workspace
-    - script:
-        name: Populate cache
-        code: |
-          if test -d "$WERCKER_CACHE_DIR/sprite_path"; then rsync -avz "$WERCKER_CACHE_DIR/sprite_path/" "$GOPATH"; fi
-          export LIB_VER=$(cat .libsass_version)
-          if test -d "$WERCKER_CACHE_DIR/libsass_$LIB_VER"; then rsync -avz "$WERCKER_CACHE_DIR/libsass_$LIB_VER/" "libsass/"; fi
+    # - script:
+    #     name: Populate cache
+    #     code: |
+    #       if test -d "$WERCKER_CACHE_DIR/sprite_path"; then rsync -avz "$WERCKER_CACHE_DIR/sprite_path/" "$GOPATH"; fi
+    #       export LIB_VER=$(cat .libsass_version)
+    #       if test -d "$WERCKER_CACHE_DIR/libsass_$LIB_VER"; then rsync -avz "$WERCKER_CACHE_DIR/libsass_$LIB_VER/" "libsass/"; fi
     - script:
         name: build libsass
         code: |
@@ -17,6 +17,8 @@ build:
     - script:
         name: go get
         code: |
+          echo $PKG_CONFIG_PATH
+          find $PKG_CONFIG_PATH
           cd $WERCKER_SOURCE_DIR
           go get -v -t ./...
     - script:
@@ -48,10 +50,10 @@ build:
           rm -rf $WERCKER_OUTPUT_DIR/snapshot
           goxc -tasks='xc archive' -bc 'linux' -arch 'amd64' -d $WERCKER_OUTPUT_DIR -n wt
   after-steps:
-    - hipchat-notify@1.0.5:
-        token: $HIPCHAT_TOKEN
-        room-id: 550303
-        from-name: Wellington
+    # - hipchat-notify@1.0.5:
+    #     token: $HIPCHAT_TOKEN
+    #     room-id: 550303
+    #     from-name: Wellington
 deploy:
   steps:
     - script:
