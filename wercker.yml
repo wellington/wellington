@@ -21,6 +21,8 @@ build:
           echo $PKG_CONFIG_PATH
           find $PKG_CONFIG_PATH
           cd $WERCKER_SOURCE_DIR
+          echo $GOPATH
+          find $GOPATH/src/github.com/wellington/wellington
           go get -v -t ./...
     - script:
         name: go test
