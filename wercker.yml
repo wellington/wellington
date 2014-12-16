@@ -18,7 +18,7 @@ build:
         name: go get
         code: |
           export PKG_CONFIG_PATH=$WERCKER_SOURCE_DIR/libsass/support
-          go get -u -d -f github.com/wellington/spritewell
+          go get -u -d github.com/wellington/spritewell
           cd $WERCKER_SOURCE_DIR
           go get -v -t ./...
     - script:
