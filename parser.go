@@ -74,7 +74,7 @@ type Parser struct {
 
 // NewParser returns a pointer to a Parser object.
 func NewParser() *Parser {
-	return &Parser{}
+	return &Parser{PartialMap: NewPartialMap()}
 }
 
 // Start reads the tokens from the lexer and performs
@@ -343,7 +343,7 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 					}
 				}
 				p.Line[lineCount] = filename
-				pwd, contents, err := p.ImportPath(pwd, filename, p.PartialMap)
+				pwd, contents, err := p.ImportPath(pwd, filename)
 
 				if err != nil {
 					return nil, "", err
@@ -391,7 +391,7 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 
 }
 
-func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, topLevelFilePaths *[]string) {
+func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, topLevelFilePaths []string) {
 	var Input string
 	// Remove partials
 	if strings.HasPrefix(filepath.Base(sassFile), "_") {
@@ -399,7 +399,7 @@ func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, t
 	}
 	// log.Println("Open:", f)
 	//Add directly of top level file
-	*topLevelFilePaths = append(*topLevelFilePaths, filepath.Dir(sassFile))
+	topLevelFilePaths = append(topLevelFilePaths, filepath.Dir(sassFile))
 	// If no imagedir specified, assume relative to the input file
 	if gba.Dir == "" {
 		gba.Dir = filepath.Dir(sassFile)
