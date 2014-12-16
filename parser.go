@@ -392,6 +392,7 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 }
 
 func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, topLevelFilePaths []string) {
+
 	var Input string
 	// Remove partials
 	if strings.HasPrefix(filepath.Base(sassFile), "_") {
@@ -468,6 +469,8 @@ func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, t
 		fs := par.LookupFile(n)
 		log.Printf("Error encountered in: %s\n", fs)
 		log.Println(err)
+	} else {
+		fmt.Printf("Rebuilt: %s\n", sassFile)
 	}
 }
 
