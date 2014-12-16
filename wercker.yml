@@ -19,9 +19,9 @@ build:
         code: |
           rm -rf $GOPATH/src/github.com/wellington/*
           ln -s $WERCKER_SOURCE_DIR $GOPATH/src/github.com/wellington/wellington
+          cd $WERCKER_SOURCE_DIR
           go get -u github.com/wellington/spritewell
           export PKG_CONFIG_PATH=$WERCKER_SOURCE_DIR/libsass/support
-          cd $WERCKER_SOURCE_DIR
           go get -v -t ./...
     - script:
         name: go test
