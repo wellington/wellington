@@ -39,7 +39,7 @@ build:
     - script:
         name: Store cache
         code: |
-          rsync -avz --exclude "wellington/" "$GOPATH/" "$WERCKER_CACHE_DIR/sprite_path"
+          rsync -avz --exclude "pkg/" --exclude "wellington/" "$GOPATH/" "$WERCKER_CACHE_DIR/sprite_path"
           rsync -avz "$WERCKER_SOURCE_DIR/libsass/" "$WERCKER_CACHE_DIR/libsass_$LIBSASS_VERSION/"
     # Build the project
     - script:
