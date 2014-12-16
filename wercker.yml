@@ -17,12 +17,13 @@ build:
     - script:
         name: go get
         code: |
+          rm -rf $GOPATH/src/github.com/wellington/wellington
+          ln -s $WORKER_SOURCE_DIR $GOPATH/src/github.com/wellington/wellington
+          go get -u github.com/wellington/spritewell
           export PKG_CONFIG_PATH=$WERCKER_SOURCE_DIR/libsass/support
           echo $PKG_CONFIG_PATH
           find $PKG_CONFIG_PATH
           cd $WERCKER_SOURCE_DIR
-          echo $GOPATH
-          find $GOPATH/src/github.com/wellington/wellington
           go get -v -t ./...
     - script:
         name: go test
