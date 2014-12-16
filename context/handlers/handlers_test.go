@@ -1,4 +1,4 @@
-package context
+package handlers
 
 import (
 	"bytes"
@@ -9,17 +9,18 @@ import (
 	"testing"
 
 	"github.com/wellington/spritewell"
+	cx "github.com/wellington/wellington/context"
 )
 
-func wrapCallback(sc SassCallback, ch chan UnionSassValue) SassCallback {
-	return func(c *Context, usv UnionSassValue) UnionSassValue {
+func wrapCallback(sc cx.SassCallback, ch chan cx.UnionSassValue) cx.SassCallback {
+	return func(c *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 		usv = sc(c, usv)
 		ch <- usv
 		return usv
 	}
 }
 
-func testSprite(ctx *Context) {
+func testSprite(ctx *cx.Context) {
 	// Generate test sprite
 	imgs := spritewell.ImageList{
 		ImageDir:  ctx.ImageDir,
@@ -37,25 +38,25 @@ func testSprite(ctx *Context) {
 	}
 }
 
-func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (*Context, UnionSassValue, error) {
-	var usv UnionSassValue
-	ctx := NewContext()
-	ctx.OutputStyle = NESTED_STYLE
+func setupCtx(r io.Reader, out io.Writer, cookies ...cx.Cookie) (*cx.Context, cx.UnionSassValue, error) {
+	var usv cx.UnionSassValue
+	ctx := cx.NewContext()
+	ctx.OutputStyle = cx.NESTED_STYLE
 	ctx.IncludePaths = make([]string, 0)
-	ctx.BuildDir = "test/build"
-	ctx.ImageDir = "test/img"
-	ctx.FontDir = "test/font"
-	ctx.GenImgDir = "test/build/img"
+	ctx.BuildDir = "../test/build"
+	ctx.ImageDir = "../test/img"
+	ctx.FontDir = "../test/font"
+	ctx.GenImgDir = "../test/build/img"
 	ctx.Out = ""
 
 	testSprite(ctx)
-	cc := make(chan UnionSassValue, len(cookies))
+	cc := make(chan cx.UnionSassValue, len(cookies))
 	// If callbacks were made, add them to the context
 	// and create channels for communicating with them.
 	if len(cookies) > 0 {
-		cs := make([]Cookie, len(cookies))
+		cs := make([]cx.Cookie, len(cookies))
 		for i, c := range cookies {
-			cs[i] = Cookie{
+			cs[i] = cx.Cookie{
 				c.Sign,
 				wrapCallback(c.Fn, cc),
 				ctx,
@@ -68,25 +69,25 @@ func setupCtx(r io.Reader, out io.Writer, cookies ...Cookie) (*Context, UnionSas
 }
 
 func TestFuncImageURL(t *testing.T) {
-	ctx := Context{
+	ctx := cx.Context{
 		BuildDir: "test/build",
 		ImageDir: "test/img",
 	}
 
-	usv := testMarshal(t, []string{"image.png"})
+	usv, _ := cx.Marshal([]string{"image.png"})
 	usv = ImageURL(&ctx, usv)
 	var path string
-	Unmarshal(usv, &path)
+	cx.Unmarshal(usv, &path)
 	if e := "url('../img/image.png')"; e != path {
 		t.Errorf("got: %s wanted: %s", path, e)
 	}
 
 	// Test sending invalid date to imageURL
-	usv = testMarshal(t, SassNumber{1, "px"})
+	usv, _ = cx.Marshal(cx.SassNumber{Value: 1, Unit: "px"})
 	_ = usv
 	errusv := ImageURL(&ctx, usv)
 	var s string
-	merr := Unmarshal(errusv, &s)
+	merr := cx.Unmarshal(errusv, &s)
 	if merr != nil {
 		t.Error(merr)
 	}
@@ -100,17 +101,17 @@ func TestFuncImageURL(t *testing.T) {
 }
 
 func TestFuncSpriteMap(t *testing.T) {
-	ctx := NewContext()
-	ctx.BuildDir = "test/build"
-	ctx.GenImgDir = "test/build/img"
-	ctx.ImageDir = "test/img"
+	ctx := cx.NewContext()
+	ctx.BuildDir = "../test/build"
+	ctx.GenImgDir = "../test/build/img"
+	ctx.ImageDir = "../test/img"
 
 	// Add real arguments when sass lists can be [un]marshalled
-	lst := []interface{}{"*.png", SassNumber{5, "px"}}
-	usv := testMarshal(t, lst)
+	lst := []interface{}{"*.png", cx.SassNumber{Value: 5, Unit: "px"}}
+	usv, _ := cx.Marshal(lst)
 	usv = SpriteMap(ctx, usv)
 	var path string
-	err := Unmarshal(usv, &path)
+	err := cx.Unmarshal(usv, &path)
 	if err != nil {
 		t.Error(err)
 	}
@@ -121,17 +122,17 @@ func TestFuncSpriteMap(t *testing.T) {
 }
 
 func TestFuncSpriteFile(t *testing.T) {
-	ctx := NewContext()
-	ctx.BuildDir = "test/build"
-	ctx.GenImgDir = "test/build/img"
-	ctx.ImageDir = "test/img"
+	ctx := cx.NewContext()
+	ctx.BuildDir = "../test/build"
+	ctx.GenImgDir = "../test/build/img"
+	ctx.ImageDir = "../test/img"
 
 	// Add real arguments when sass lists can be [un]marshalled
 	lst := []interface{}{"*.png", "139"}
-	usv := testMarshal(t, lst)
+	usv, _ := cx.Marshal(lst)
 	usv = SpriteFile(ctx, usv)
 	var glob, path string
-	err := Unmarshal(usv, &glob, &path)
+	err := cx.Unmarshal(usv, &glob, &path)
 	if err != nil {
 		t.Error(err)
 	}
@@ -157,11 +158,11 @@ height: $aritymap;
 line-height: $paddedmap;
 }`)
 
-	ctx := NewContext()
+	ctx := cx.NewContext()
 
-	ctx.BuildDir = "test/build"
-	ctx.GenImgDir = "test/build/img"
-	ctx.ImageDir = "test/img"
+	ctx.BuildDir = "../test/build"
+	ctx.GenImgDir = "../test/build/img"
+	ctx.ImageDir = "../test/img"
 	var out bytes.Buffer
 	err := ctx.Compile(in, &out)
 	if err != nil {
@@ -184,11 +185,11 @@ div {
   content: $map;
 }`)
 
-	ctx := NewContext()
+	ctx := cx.NewContext()
 
-	ctx.ImageDir = "test/img"
-	ctx.BuildDir = "test/build"
-	ctx.GenImgDir = "test/build/img"
+	ctx.ImageDir = "../test/img"
+	ctx.BuildDir = "../test/build"
+	ctx.GenImgDir = "../test/build/img"
 
 	var out bytes.Buffer
 	err := ctx.Compile(in, &out)
@@ -352,7 +353,7 @@ func TestFontURLFail(t *testing.T) {
   src: font-url("arial.eot");
 }`)
 	var out bytes.Buffer
-	ctx := Context{}
+	ctx := cx.Context{}
 	err := ctx.Compile(in, &out)
 
 	if err != nil {
@@ -401,11 +402,11 @@ div {
   background: sprite($map, "140");
 }`)
 
-	ctx := NewContext()
+	ctx := cx.NewContext()
 
-	ctx.BuildDir = "test/build"
-	ctx.GenImgDir = "test/build/img"
-	ctx.ImageDir = "test/img"
+	ctx.BuildDir = "../test/build"
+	ctx.GenImgDir = "../test/build/img"
+	ctx.ImageDir = "../test/img"
 	var out bytes.Buffer
 	err := ctx.Compile(in, &out)
 	if err != nil {
@@ -416,7 +417,7 @@ div {
 
 	// Output:
 	// div {
-	//   background: url("img/testimgdual-ab7eb7.png") -0px -149px; }
+	//   background: url("img/img-b798ab.png") -0px -149px; }
 
 }
 
@@ -427,11 +428,11 @@ div {
   background: sprite($map, "140", 0, 0);
 }`)
 
-	ctx := NewContext()
+	ctx := cx.NewContext()
 
-	ctx.BuildDir = "test/build"
-	ctx.GenImgDir = "test/build/img"
-	ctx.ImageDir = "test/img"
+	ctx.BuildDir = "../test/build"
+	ctx.GenImgDir = "../test/build/img"
+	ctx.ImageDir = "../test/img"
 	var out bytes.Buffer
 	err := ctx.Compile(in, &out)
 
@@ -453,13 +454,13 @@ div {
 }
 
 func BenchmarkSprite(b *testing.B) {
-	ctx := NewContext()
-	ctx.BuildDir = "test/build"
-	ctx.GenImgDir = "test/build/img"
-	ctx.ImageDir = "test/img"
+	ctx := cx.NewContext()
+	ctx.BuildDir = "../test/build"
+	ctx.GenImgDir = "../test/build/img"
+	ctx.ImageDir = "../test/img"
 	// Add real arguments when sass lists can be [un]marshalled
-	lst := []interface{}{"*.png", SassNumber{5, "px"}}
-	usv := testMarshal(b, lst)
+	lst := []interface{}{"*.png", cx.SassNumber{Value: 5, Unit: "px"}}
+	usv, _ := cx.Marshal(lst)
 
 	for i := 0; i < b.N; i++ {
 		usv = SpriteMap(ctx, usv)

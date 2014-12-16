@@ -14,9 +14,9 @@ import (
 	"strings"
 
 	"github.com/wellington/spritewell"
-	"github.com/wellington/wellington/context"
-
 	sprite "github.com/wellington/wellington"
+	"github.com/wellington/wellington/context"
+	_ "github.com/wellington/wellington/context/handlers"
 )
 
 const version = `v0.4.0`
@@ -199,6 +199,7 @@ func main() {
 		err = ctx.Compile(&pout, out)
 
 		if err != nil {
+			log.Println(ctx.MainFile)
 			n := ctx.ErrorLine()
 			fs := par.LookupFile(n)
 			log.Printf("Error encountered in: %s\n", fs)
