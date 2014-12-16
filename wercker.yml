@@ -19,7 +19,7 @@ build:
         code: |
           rm -rf $GOPATH/src/github.com/wellington/*
           cd $WERCKER_SOURCE_DIR
-          ln -s . $GOPATH/src/github.com/wellington/wellington
+          rsync -avz . $GOPATH/src/github.com/wellington/wellington
           go get -u github.com/wellington/spritewell
           export PKG_CONFIG_PATH=$WERCKER_SOURCE_DIR/libsass/support
           go get -v -t ./...
