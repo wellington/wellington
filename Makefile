@@ -36,4 +36,6 @@ compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
 swift: install
 	time wt -gen $(guipath)/build/im -font $(guipath)/font-face -b $(guipath)/build/css/ -p $(guipath)/sass -d $(guipath)/im/sass $(FILES)
+watch:
+	go run wt/main.go --watch -gen $(guipath)/build/im -font $(guipath)/font-face -b $(guipath)/build/css/ -p $(guipath)/sass -d $(guipath)/im/sass $(FILES)
 time: compass swift
