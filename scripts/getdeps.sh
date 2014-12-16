@@ -20,11 +20,11 @@ if [ -w '/usr/local/lib/libsass.a' ];
 then
 	cd libsass
 	autoreconf -fvi
-	./configure --disable-silent-rules --disable-dependency-tracking
+	./configure --disable-silent-rules --disable-dependency-tracking --enable-static
 	make install
 else
 	cd libsass
 	autoreconf -fvi
-	./configure --disable-silent-rules --disable-dependency-tracking
+	./configure --disable-silent-rules --disable-dependency-tracking --enable-static
 	sudo make install
 fi

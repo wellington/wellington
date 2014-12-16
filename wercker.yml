@@ -6,9 +6,9 @@ build:
     - script:
         name: Populate cache
         code: |
-    #       if test -d "$WERCKER_CACHE_DIR/sprite_path"; then rsync -avz "$WERCKER_CACHE_DIR/sprite_path/" "$GOPATH"; fi
-    #       export LIB_VER=$(cat .libsass_version)
-    #       if test -d "$WERCKER_CACHE_DIR/libsass_$LIB_VER"; then rsync -avz "$WERCKER_CACHE_DIR/libsass_$LIB_VER/" "libsass/"; fi
+           if test -d "$WERCKER_CACHE_DIR/sprite_path"; then rsync -avz "$WERCKER_CACHE_DIR/sprite_path/" "$GOPATH"; fi
+           export LIBSASS_VERSION=$(cat .libsass_version)
+           if test -d "$WERCKER_CACHE_DIR/libsass_$LIBSASS_VERSION"; then rsync -avz "$WERCKER_CACHE_DIR/libsass_$LIBSASS_VERSION/" "libsass/"; fi
     - script:
         name: build libsass
         code: |
@@ -41,7 +41,7 @@ build:
         name: Store cache
         code: |
           rsync -avz --exclude ".hg/" --exclude "sprite_sass/" --exclude ".git/" "$GOPATH/" "$WERCKER_CACHE_DIR/sprite_path"
-          rsync -avz "$WERCKER_SOURCE_DIR/libsass/" "$WERCKER_CACHE_DIR/libsass_$LIB_VER/"
+          rsync -avz "$WERCKER_SOURCE_DIR/libsass/" "$WERCKER_CACHE_DIR/libsass_$LIBSASS_VERSION/"
     # Build the project
     - script:
         name: goxc build & package
