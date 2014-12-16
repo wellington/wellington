@@ -57,9 +57,9 @@ func setupCtx(r io.Reader, out io.Writer, cookies ...cx.Cookie) (*cx.Context, cx
 		cs := make([]cx.Cookie, len(cookies))
 		for i, c := range cookies {
 			cs[i] = cx.Cookie{
-				c.Sign,
-				wrapCallback(c.Fn, cc),
-				ctx,
+				Sign: c.Sign,
+				Fn:   wrapCallback(c.Fn, cc),
+				Ctx:  ctx,
 			}
 		}
 		usv = <-cc
