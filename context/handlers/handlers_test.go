@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/wellington/spritewell"
@@ -203,18 +202,8 @@ div {
 	exp := `div {
   content: dual/*.png10; }
 `
-
 	if exp != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), exp)
-	}
-
-	esz := int64(28160)
-	f, err := os.Stat(filepath.Join(ctx.GenImgDir, "testimgdual-ab7eb7.png"))
-
-	if os.IsNotExist(err) {
-		t.Error(err)
-	} else if f.Size() != esz {
-		t.Errorf("got: %d wanted: %d", f.Size(), esz)
 	}
 }
 
