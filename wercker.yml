@@ -17,10 +17,6 @@ build:
     - script:
         name: go get
         code: |
-          rm -rf $GOPATH/src/github.com/wellington/*
-          cd $WERCKER_SOURCE_DIR
-          rsync -avz . $GOPATH/src/github.com/wellington/wellington
-          go get -u github.com/wellington/spritewell
           export PKG_CONFIG_PATH=$WERCKER_SOURCE_DIR/libsass/support
           go get -v -t ./...
     - script:
@@ -41,7 +37,7 @@ build:
     - script:
         name: Store cache
         code: |
-          rsync -avz --exclude ".hg/" --exclude "sprite_sass/" --exclude ".git/" "$GOPATH/" "$WERCKER_CACHE_DIR/sprite_path"
+          rsync -avz --exclude "wellington/" "$GOPATH/" "$WERCKER_CACHE_DIR/sprite_path"
           rsync -avz "$WERCKER_SOURCE_DIR/libsass/" "$WERCKER_CACHE_DIR/libsass_$LIBSASS_VERSION/"
     # Build the project
     - script:
