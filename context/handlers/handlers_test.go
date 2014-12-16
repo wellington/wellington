@@ -12,6 +12,10 @@ import (
 	cx "github.com/wellington/wellington/context"
 )
 
+func init() {
+	os.MkdirAll("../test/build/img", 0777)
+}
+
 func wrapCallback(sc cx.SassCallback, ch chan cx.UnionSassValue) cx.SassCallback {
 	return func(c *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 		usv = sc(c, usv)
