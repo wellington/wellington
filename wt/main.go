@@ -147,10 +147,10 @@ func main() {
 	}
 
 	for _, f := range flag.Args() {
-		wt.LoadAndBuild(f, &globalBuildArgs, partialMap, &topLevelFilePaths)
+		wt.LoadAndBuild(f, &globalBuildArgs, partialMap, topLevelFilePaths)
 	}
 	if Watch {
 		//fmt.Println(PartialMap.M["/Users/dslininger/Projects/RetailMeNot/www/gui/sass/bourbon/css3/_hyphens.scss"])
-		wt.FileWatch(partialMap, &globalBuildArgs, &topLevelFilePaths)
+		wt.FileWatch(partialMap, &globalBuildArgs, topLevelFilePaths)
 	}
 }
