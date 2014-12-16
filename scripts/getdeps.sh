@@ -22,11 +22,13 @@ then
 	autoreconf -fvi
 	./configure --disable-silent-rules --disable-dependency-tracking --enable-static
 	make install
+	#delete shared libraries if found
+	rm /usr/local/lib/libsass.so
 else
 	cd libsass
 	autoreconf -fvi
 	./configure --disable-silent-rules --disable-dependency-tracking --enable-static
 	sudo make install
+	#delete shared libraries if found
+	sudo rm /usr/local/lib/libsass.so
 fi
-#delete shared libraries if found
-rm /usr/local/lib/libsass.so
