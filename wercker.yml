@@ -1,5 +1,5 @@
 # Werker config
-box: drewwells/drunken-golang@0.1.0
+box: drewwells/drunken-golang@0.1.1
 build:
   steps:
     - setup-go-workspace
