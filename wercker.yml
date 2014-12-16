@@ -3,9 +3,9 @@ box: drewwells/drunken-golang@0.1.0
 build:
   steps:
     - setup-go-workspace
-    # - script:
-    #     name: Populate cache
-    #     code: |
+    - script:
+        name: Populate cache
+        code: |
     #       if test -d "$WERCKER_CACHE_DIR/sprite_path"; then rsync -avz "$WERCKER_CACHE_DIR/sprite_path/" "$GOPATH"; fi
     #       export LIB_VER=$(cat .libsass_version)
     #       if test -d "$WERCKER_CACHE_DIR/libsass_$LIB_VER"; then rsync -avz "$WERCKER_CACHE_DIR/libsass_$LIB_VER/" "libsass/"; fi
