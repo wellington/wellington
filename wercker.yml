@@ -49,7 +49,7 @@ build:
           cat main.go
           rm -rf $WERCKER_OUTPUT_DIR/snapshot
           goxc -tasks='xc archive' -bc 'linux' -arch 'amd64' -d $WERCKER_OUTPUT_DIR -n wt
-  after-steps:
+  # after-steps:
     # - hipchat-notify@1.0.5:
     #     token: $HIPCHAT_TOKEN
     #     room-id: 550303
