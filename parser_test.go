@@ -249,10 +249,10 @@ p {
 }
 
 func TestParseLookupImport(t *testing.T) {
-	p := Parser{
-		BuildDir: "test/build",
-		Includes: []string{"test/sass"},
-	}
+	p := NewParser()
+	p.BuildDir = "test/build"
+	p.Includes = []string{"test/sass"}
+
 	in := bytes.NewBufferString(`@import "file";
 p {
   line-height: 2em;
