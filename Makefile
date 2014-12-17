@@ -3,7 +3,7 @@ current_dir = $(shell pwd)
 rmnpath = $(RMN_BASE_PATH)
 guipath = $(rmnpath)/www/gui
 
-FILES := $(shell find $(rmnpath)/www/gui/sass -name "*.scss")
+FILES := $(shell find $(rmnpath)/www/gui/sass -name "[^_]*\.scss")
 echo:
 	echo $(current_dir)
 install:
