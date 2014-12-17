@@ -1,4 +1,4 @@
-package sprite_sass
+package wellington
 
 import (
 	"fmt"
