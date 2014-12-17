@@ -11,30 +11,10 @@ import (
 	"strings"
 
 	"github.com/wellington/wellington/context"
+	// TODO: Remove dot imports
 	. "github.com/wellington/wellington/lexer"
 	. "github.com/wellington/wellington/token"
 )
-
-/* Example sprite-map output:
-$sprites: ($rel: "");
-
-$sprites: map_merge($sprites, (
-  139: (
-    width: 139,
-    height: 89,
-    x: 0,
-    y: 20,
-    url: './image.png'
-  )));
-
-$sprites: map_merge($sprites,(140: (
-    width: 140,
-    height: 89,
-    x: 0,
-    y: 20,
-    url: './image.png'
-  )));
-*/
 
 var weAreNeverGettingBackTogether = []byte(`@mixin sprite-dimensions($map, $name) {
   $file: sprite-file($map, $name);
@@ -82,6 +62,7 @@ func NewParser() *Parser {
 //
 // Start creates a map of all variables and sprites
 // (created via sprite-map calls).
+// TODO: Remove pkgdir, it can be put on Parser
 func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	p.Line = make(map[int]string)
 
@@ -364,7 +345,7 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 				// If importing was successful, each token must be moved
 				// forward by the position of the @import call that made
 				// it available.
-				for i, _ := range moreTokens {
+				for i := range moreTokens {
 					moreTokens[i].Pos += last.Pos
 				}
 
@@ -472,6 +453,11 @@ func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) {
 	}
 }
 
+// StartParser accepts build arguments
+// TODO: Remove pkgdir, can be referenced from context
+// TODO: Should this be called StartParser or NewParser?
+// TODO: Should this function create the partialMap or is this
+// the right way to inject one?
 func StartParser(ctx *context.Context, in io.Reader, out io.Writer, pkgdir string, partialMap *SafePartialMap) (*Parser, error) {
 	// Run the sprite_sass parser prior to passing to libsass
 	parser := &Parser{

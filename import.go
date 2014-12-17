@@ -9,6 +9,18 @@ import (
 	"strings"
 )
 
+// ImportPath accepts a directory and file path to find partials for importing.
+// Returning a new pwd and string of the file contents.
+// File can contain a directory and should be evaluated if
+// successfully found.
+// Dir is used to provide relative context to the importee.  If no file is found
+// pwd is echoed back.
+//
+// Paths are looked up in the following order:
+// {includepath}/_file.scss
+// {includepath}/file.scss
+// {Dir{dir+file}}/_{Base{file}}
+// {Dir{dir+file}}/{Base{file}}
 func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 	// fmt.Println("Importing: " + file)
 	baseerr := ""
@@ -34,15 +46,14 @@ func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 			if err == nil {
 				p.PartialMap.AddRelation(p.MainFile, fpath)
 				return pwd, string(contents), nil
-			} else {
-				// Attempt invalid name lookup (no _)
-				fpath = filepath.Join(pwd, "/"+filepath.Base(path)+".scss")
-				contents, err = ioutil.ReadFile(fpath)
-				baseerr += fpath + "\n"
-				if err == nil {
-					p.PartialMap.AddRelation(p.MainFile, fpath)
-					return pwd, string(contents), nil
-				}
+			}
+			// Attempt invalid name lookup (no _)
+			fpath = filepath.Join(pwd, "/"+filepath.Base(path)+".scss")
+			contents, err = ioutil.ReadFile(fpath)
+			baseerr += fpath + "\n"
+			if err == nil {
+				p.PartialMap.AddRelation(p.MainFile, fpath)
+				return pwd, string(contents), nil
 			}
 		}
 	}
