@@ -391,16 +391,14 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 
 }
 
-func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, topLevelFilePaths []string) {
+func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) {
 
 	var Input string
 	// Remove partials
 	if strings.HasPrefix(filepath.Base(sassFile), "_") {
 		return
 	}
-	// log.Println("Open:", f)
-	//Add directly of top level file
-	topLevelFilePaths = append(topLevelFilePaths, filepath.Dir(sassFile))
+
 	// If no imagedir specified, assume relative to the input file
 	if gba.Dir == "" {
 		gba.Dir = filepath.Dir(sassFile)
