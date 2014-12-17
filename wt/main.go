@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime/pprof"
 	"strings"
 
@@ -146,9 +147,11 @@ func main() {
 		Comments: Comments,
 	}
 
-	for _, f := range flag.Args() {
-		wt.LoadAndBuild(f, &globalBuildArgs, partialMap, topLevelFilePaths)
+	for i, f := range flag.Args() {
+		topLevelFilePaths[i] = filepath.Dir(f)
+		wt.LoadAndBuild(f, &globalBuildArgs, partialMap)
 	}
+
 	if Watch {
 		//fmt.Println(PartialMap.M["/Users/dslininger/Projects/RetailMeNot/www/gui/sass/bourbon/css3/_hyphens.scss"])
 		wt.FileWatch(partialMap, &globalBuildArgs, topLevelFilePaths)

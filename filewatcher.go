@@ -104,10 +104,10 @@ func (sassFileWatcher *SW) startWatching() {
 func (sassFileWatcher *SW) rebuildTopLevelSassFiles(eventFileName string) {
 	if strings.HasPrefix(filepath.Base(eventFileName), "_") { //Partial sass file was modified.  Rebuild all top level files that contain it.
 		for k := range sassFileWatcher.PartialMap.M[eventFileName] {
-			LoadAndBuild(sassFileWatcher.PartialMap.M[eventFileName][k], sassFileWatcher.GlobalBuildArgs, sassFileWatcher.PartialMap, sassFileWatcher.TopLevelFileDirectories)
+			LoadAndBuild(sassFileWatcher.PartialMap.M[eventFileName][k], sassFileWatcher.GlobalBuildArgs, sassFileWatcher.PartialMap)
 		}
 	} else { //Top leve file was modified.  Rebuild it.
-		LoadAndBuild(eventFileName, sassFileWatcher.GlobalBuildArgs, sassFileWatcher.PartialMap, sassFileWatcher.TopLevelFileDirectories)
+		LoadAndBuild(eventFileName, sassFileWatcher.GlobalBuildArgs, sassFileWatcher.PartialMap)
 	}
 }
 
