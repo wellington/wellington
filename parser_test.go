@@ -1,4 +1,4 @@
-package sprite_sass
+package wellington
 
 import (
 	"bytes"
@@ -28,7 +28,9 @@ func init() {
 
 func TestParserRelative(t *testing.T) {
 	p := Parser{
-		BuildDir: "test/build",
+		BuildDir:   "test/build",
+		MainFile:   "sprite.css",
+		PartialMap: NewPartialMap(),
 	}
 	f, err := ioutil.ReadFile("sass/_sprite.scss")
 	if err != nil {
@@ -54,8 +56,10 @@ div {
 
 func TestParserImporter(t *testing.T) {
 	p := Parser{
-		BuildDir: "test/build",
-		Includes: []string{"test/sass"},
+		BuildDir:   "test/build",
+		Includes:   []string{"test/sass"},
+		MainFile:   "import.css",
+		PartialMap: NewPartialMap(),
 	}
 
 	bs, err := p.Start(fileReader("test/sass/import.scss"), "test/")
@@ -89,7 +93,7 @@ func TestParserImporter(t *testing.T) {
 }
 
 func TestParseSpriteArgs(t *testing.T) {
-	p := Parser{}
+	p := Parser{PartialMap: NewPartialMap()}
 	in := bytes.NewBufferString(`$view_sprite: sprite-map("test/*.png",
   $normal-spacing: 2px,
   $normal-hover-spacing: 2px,
@@ -110,7 +114,7 @@ $view_sprite: (); $view_sprite: map_merge($view_sprite,(139: (width: 96, height:
 }
 
 func TestParseInt(t *testing.T) {
-	p := Parser{}
+	p := Parser{PartialMap: NewPartialMap()}
 	var (
 		e, res string
 	)
@@ -131,7 +135,7 @@ p {
 	if e != res {
 		t.Skipf("Mismatch expected:\n%s\nwas:\n%s", e, res)
 	}
-	p = Parser{}
+	p = Parser{PartialMap: NewPartialMap()}
 	r = bytes.NewBufferString(`$name: foo;
 $attr: border;
 p.#{$name} {
@@ -153,7 +157,9 @@ p.#{$name} {
 
 func TestParseImage(t *testing.T) {
 	p := Parser{
-		BuildDir: "test/build",
+		BuildDir:   "test/build",
+		MainFile:   "test",
+		PartialMap: NewPartialMap(),
 	}
 	in := bytes.NewBufferString(`$sprites: sprite-map("img/*.png");
 $sfile: sprite-file($sprites, 139);
@@ -180,7 +186,9 @@ div {
 func TestParseImageUrl(t *testing.T) {
 
 	p := Parser{
-		BuildDir: "test/build",
+		BuildDir:   "test/build",
+		MainFile:   "test",
+		PartialMap: NewPartialMap(),
 	}
 	in := bytes.NewBufferString(`background: image-url('test/140.png');`)
 	bs, _ := p.Start(in, "")
@@ -241,10 +249,10 @@ p {
 }
 
 func TestParseLookupImport(t *testing.T) {
-	p := Parser{
-		BuildDir: "test/build",
-		Includes: []string{"test/sass"},
-	}
+	p := NewParser()
+	p.BuildDir = "test/build"
+	p.Includes = []string{"test/sass"}
+
 	in := bytes.NewBufferString(`@import "file";
 p {
   line-height: 2em;

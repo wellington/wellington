@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -14,20 +13,21 @@ import (
 	"strings"
 
 	"github.com/wellington/spritewell"
-	sprite "github.com/wellington/wellington"
 	"github.com/wellington/wellington/context"
+
+	wt "github.com/wellington/wellington"
 	_ "github.com/wellington/wellington/context/handlers"
 )
 
 const version = `v0.4.0`
 
 var (
-	Font, Dir, Gen, Input, Includes string
-	MainFile, Style                 string
-	Comments                        bool
-	cpuprofile                      string
-	Help, ShowVersion               bool
-	BuildDir                        string
+	Font, Dir, Gen, Includes string
+	MainFile, Style          string
+	Comments, Watch          bool
+	cpuprofile               string
+	Help, ShowVersion        bool
+	BuildDir                 string
 )
 
 func init() {
@@ -48,6 +48,9 @@ func init() {
 	flag.StringVar(&Style, "s", "nested", "CSS nested style")
 	flag.BoolVar(&Comments, "comment", true, "Turn on source comments")
 	flag.BoolVar(&Comments, "c", true, "Turn on source comments")
+
+	flag.BoolVar(&Watch, "watch", false, "File watcher that will rebuild css on file changes")
+	flag.BoolVar(&Watch, "w", false, "File watcher that will rebuild css on file changes")
 
 	flag.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
 }
@@ -104,6 +107,8 @@ func main() {
 		style = context.NESTED_STYLE
 	}
 
+	partialMap := wt.NewPartialMap()
+
 	if len(flag.Args()) == 0 {
 		// Read from stdin
 		log.Print("Reading from stdin, -h for help")
@@ -112,7 +117,8 @@ func main() {
 
 		var pout bytes.Buffer
 		ctx := context.Context{}
-		_, err := startParser(&ctx, in, &pout, "")
+
+		_, err := wt.StartParser(&ctx, in, &pout, "", partialMap)
 		if err != nil {
 			log.Println(err)
 		}
@@ -127,100 +133,27 @@ func main() {
 		M: make(map[string]spritewell.ImageList, 100)}
 	ImageCache := spritewell.SafeImageMap{
 		M: make(map[string]spritewell.ImageList, 100)}
+	topLevelFilePaths := make([]string, len(flag.Args()))
 
-	for _, f := range flag.Args() {
-		// Remove partials
-		if strings.HasPrefix(filepath.Base(f), "_") {
-			continue
-		}
-		// log.Println("Open:", f)
-
-		// If no imagedir specified, assume relative to the input file
-		if Dir == "" {
-			Dir = filepath.Dir(f)
-		}
-		var (
-			out  io.WriteCloser
-			fout string
-		)
-		if BuildDir != "" {
-			// Build output file based off build directory and input filename
-			rel, _ := filepath.Rel(Includes, filepath.Dir(f))
-			filename := strings.Replace(filepath.Base(f), ".scss", ".css", 1)
-			fout = filepath.Join(BuildDir, rel, filename)
-		} else {
-			out = os.Stdout
-		}
-
-		ctx := context.Context{
-			// TODO: Most of these fields are no longer used
-			Sprites:     SpriteCache,
-			Imgs:        ImageCache,
-			OutputStyle: style,
-			ImageDir:    Dir,
-			FontDir:     Font,
-			// Assumption that output is a file
-			BuildDir:     filepath.Dir(fout),
-			GenImgDir:    Gen,
-			MainFile:     f,
-			Comments:     Comments,
-			IncludePaths: []string{filepath.Dir(f)},
-		}
-		if Includes != "" {
-			ctx.IncludePaths = append(ctx.IncludePaths,
-				strings.Split(Includes, ",")...)
-		}
-		fRead, err := os.Open(f)
-		defer fRead.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-		if fout != "" {
-			dir := filepath.Dir(fout)
-			err := os.MkdirAll(dir, 0755)
-			if err != nil {
-				log.Fatalf("Failed to create directory: %s", dir)
-			}
-
-			out, err = os.Create(fout)
-			defer out.Close()
-			if err != nil {
-				log.Fatalf("Failed to create file: %s", f)
-			}
-			// log.Println("Created:", fout)
-		}
-
-		var pout bytes.Buffer
-		par, err := startParser(&ctx, fRead, &pout, filepath.Dir(Input))
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		err = ctx.Compile(&pout, out)
-
-		if err != nil {
-			log.Println(ctx.MainFile)
-			n := ctx.ErrorLine()
-			fs := par.LookupFile(n)
-			log.Printf("Error encountered in: %s\n", fs)
-			log.Println(err)
-		}
+	globalBuildArgs := wt.BuildArgs{
+		Imgs:     ImageCache,
+		Sprites:  SpriteCache,
+		Dir:      Dir,
+		BuildDir: BuildDir,
+		Includes: Includes,
+		Font:     Font,
+		Style:    style,
+		Gen:      Gen,
+		Comments: Comments,
 	}
-}
 
-func startParser(ctx *context.Context, in io.Reader, out io.Writer, pkgdir string) (*sprite.Parser, error) {
-	// Run the sprite_sass parser prior to passing to libsass
-	parser := &sprite.Parser{
-		ImageDir: ctx.ImageDir,
-		Includes: ctx.IncludePaths,
-		BuildDir: ctx.BuildDir,
-		MainFile: ctx.MainFile,
+	for i, f := range flag.Args() {
+		topLevelFilePaths[i] = filepath.Dir(f)
+		wt.LoadAndBuild(f, &globalBuildArgs, partialMap)
 	}
-	// Save reference to parser in context
-	bs, err := parser.Start(in, pkgdir)
-	if err != nil {
-		return parser, err
+
+	if Watch {
+		//fmt.Println(PartialMap.M["/Users/dslininger/Projects/RetailMeNot/www/gui/sass/bourbon/css3/_hyphens.scss"])
+		wt.FileWatch(partialMap, &globalBuildArgs, topLevelFilePaths)
 	}
-	out.Write(bs)
-	return parser, err
 }

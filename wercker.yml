@@ -1,5 +1,5 @@
 # Werker config
-box: drewwells/drunken-golang@0.1.0
+box: drewwells/drunken-golang@0.1.1
 build:
   steps:
     - setup-go-workspace
@@ -18,8 +18,7 @@ build:
         name: go get
         code: |
           export PKG_CONFIG_PATH=$WERCKER_SOURCE_DIR/libsass/support
-          echo $PKG_CONFIG_PATH
-          find $PKG_CONFIG_PATH
+          go get -u -d github.com/wellington/spritewell
           cd $WERCKER_SOURCE_DIR
           go get -v -t ./...
     - script:
@@ -40,7 +39,7 @@ build:
     - script:
         name: Store cache
         code: |
-          rsync -avz --exclude ".hg/" --exclude "sprite_sass/" --exclude ".git/" "$GOPATH/" "$WERCKER_CACHE_DIR/sprite_path"
+          rsync -avz --exclude "pkg/" --exclude "wellington/" "$GOPATH/" "$WERCKER_CACHE_DIR/sprite_path"
           rsync -avz "$WERCKER_SOURCE_DIR/libsass/" "$WERCKER_CACHE_DIR/libsass_$LIBSASS_VERSION/"
     # Build the project
     - script:
