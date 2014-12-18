@@ -332,7 +332,8 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 				//Eat the semicolon
 				item := lex.Next()
 				if item.Type != SEMIC {
-					log.Println("@import statement must be followed by ;", filename)
+					log.Printf("@import in %s:%d must be followed by ;\n", filename, lineCount)
+					log.Printf("        ~~~> @import %s", filename)
 				}
 				// Set position to token after
 				// FIXME: Hack to delete newline, hopefully this doesn't break stuff
