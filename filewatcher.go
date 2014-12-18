@@ -42,6 +42,18 @@ type Watcher struct {
 	BArgs       *BuildArgs
 }
 
+func NewWatcher() *Watcher {
+	var fswatcher *fsnotify.Watcher
+	fswatcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return &Watcher{
+		FileWatcher: fswatcher,
+	}
+}
+
 // SafePartialMap is a thread safe map of partial sass files to top
 // level files. The file watcher will detect changes in a partial and
 // kick off builds for all top level files that contain that partial.
@@ -70,22 +82,15 @@ func (p *SafePartialMap) AddRelation(mainfile string, subfile string) {
 	p.Unlock()
 }
 
-// FileWatch is the main entry point into filewatcher and sets up the
+// Watch is the main entry point into filewatcher and sets up the
 // SW object that begins monitoring for file changes and triggering
 // top level sass rebuilds.
-func FileWatch(p *SafePartialMap, bargs *BuildArgs, dirs []string) {
-	var fswatcher *fsnotify.Watcher
-	fswatcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatal(err)
+func (w *Watcher) Watch() {
+	if w.PartialMap == nil {
+		w.PartialMap = NewPartialMap()
 	}
-
-	defer fswatcher.Close()
-	w := Watcher{
-		FileWatcher: fswatcher,
-		PartialMap:  p,
-		Dirs:        dirs,
-		BArgs:       bargs,
+	if len(w.Dirs) == 0 {
+		log.Fatal("No directories to watch")
 	}
 	w.watchFiles()
 	w.startWatching()

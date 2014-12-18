@@ -109,8 +109,6 @@ func main() {
 		style = context.NESTED_STYLE
 	}
 
-	partialMap := wt.NewPartialMap()
-
 	if len(flag.Args()) == 0 {
 		// Read from stdin
 		log.Print("Reading from stdin, -h for help")
@@ -120,7 +118,7 @@ func main() {
 		var pout bytes.Buffer
 		ctx := context.Context{}
 
-		_, err := wt.StartParser(&ctx, in, &pout, "", partialMap)
+		_, err := wt.StartParser(&ctx, in, &pout, "", wt.NewPartialMap())
 		if err != nil {
 			log.Println(err)
 		}
@@ -135,9 +133,9 @@ func main() {
 		M: make(map[string]spritewell.ImageList, 100)}
 	ImageCache := spritewell.SafeImageMap{
 		M: make(map[string]spritewell.ImageList, 100)}
-	topLevelFilePaths := make([]string, len(flag.Args()))
+	sassPaths := make([]string, len(flag.Args()))
 
-	globalBuildArgs := wt.BuildArgs{
+	bArgs := &wt.BuildArgs{
 		Imgs:     ImageCache,
 		Sprites:  SpriteCache,
 		Dir:      Dir,
@@ -149,14 +147,19 @@ func main() {
 		Comments: Comments,
 	}
 
+	pMap := wt.NewPartialMap()
 	for i, f := range flag.Args() {
-		topLevelFilePaths[i] = filepath.Dir(f)
-		wt.LoadAndBuild(f, &globalBuildArgs, partialMap)
+		sassPaths[i] = filepath.Dir(f)
+		wt.LoadAndBuild(f, bArgs, pMap)
 	}
 
 	if Watch {
-		//fmt.Println(PartialMap.M["/Users/dslininger/Projects/RetailMeNot/www/gui/sass/bourbon/css3/_hyphens.scss"])
-		wt.FileWatch(partialMap, &globalBuildArgs, topLevelFilePaths)
+		w := wt.NewWatcher()
+		w.PartialMap = pMap
+		w.Dirs = sassPaths
+		w.BArgs = bArgs
+		w.Watch()
+
 		fmt.Println("File watcher started use `ctrl+d` to exit")
 		in := bufio.NewReader(os.Stdin)
 		for {
