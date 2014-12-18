@@ -7,6 +7,7 @@ FILES := $(shell find $(rmnpath)/www/gui/sass -name "[^_]*\.scss")
 echo:
 	echo $(current_dir)
 install:
+	go get -u github.com/wellington/spritewell
 	go install github.com/wellington/wellington/wt
 bench:
 	go test ./... -bench=.
