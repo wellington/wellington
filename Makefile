@@ -7,7 +7,7 @@ FILES := $(shell find $(rmnpath)/www/gui/sass -name "[^_]*\.scss")
 echo:
 	echo $(current_dir)
 install:
-	go get -u github.com/wellington/spritewell
+	go get -u -f github.com/wellington/spritewell
 	go install github.com/wellington/wellington/wt
 bench:
 	go test ./... -bench=.
@@ -39,6 +39,6 @@ compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
 swift: install
 	time wt -gen $(guipath)/build/im -font $(guipath)/font-face -b $(guipath)/build/css/ -p $(guipath)/sass -d $(guipath)/im/sass $(FILES)
-watch:
-	go run wt/main.go --watch -gen $(guipath)/build/im -font $(guipath)/font-face -b $(guipath)/build/css/ -p $(guipath)/sass -d $(guipath)/im/sass $(FILES)
+watch: install
+	wt --watch -gen $(guipath)/build/im -font $(guipath)/font-face -b $(guipath)/build/css/ -p $(guipath)/sass -d $(guipath)/im/sass $(FILES)
 time: compass swift
