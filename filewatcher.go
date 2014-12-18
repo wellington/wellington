@@ -89,22 +89,25 @@ func FileWatch(p *SafePartialMap, bargs *BuildArgs, dirs []string) {
 	}
 	w.watchFiles()
 	w.startWatching()
-
 }
 
 func (w *Watcher) startWatching() {
-	for {
-		select {
-		default:
-			// only called when w.FileWatcher.Events is set to nil.
-		case event := <-w.FileWatcher.Events:
-			if event.Op&fsnotify.Write == fsnotify.Write {
-				w.rebuild(event.Name)
+	go func() {
+		for {
+			select {
+			default:
+				// only called when w.FileWatcher.Events is set to nil.
+			case event := <-w.FileWatcher.Events:
+				if event.Op&fsnotify.Write == fsnotify.Write {
+					w.rebuild(event.Name)
+				}
+			case err := <-w.FileWatcher.Errors:
+				if err != nil {
+					fmt.Println("error:", err)
+				}
 			}
-		case err := <-w.FileWatcher.Errors:
-			fmt.Println("error:", err)
 		}
-	}
+	}()
 }
 
 // rebuild is notified about sass file updates and looks
@@ -117,12 +120,13 @@ func (w *Watcher) rebuild(eventFileName string) {
 		LoadAndBuild(eventFileName, w.BArgs, w.PartialMap)
 	}
 	w.PartialMap.RLock()
-	t := w.PartialMap.M[eventFileName]
+	go func(paths []string) {
+		for i := range paths {
+			// TODO: do this in a new goroutine
+			LoadAndBuild(paths[i], w.BArgs, w.PartialMap)
+		}
+	}(w.PartialMap.M[eventFileName])
 	w.PartialMap.RUnlock()
-	for _, sassPath := range t {
-		// TODO: do this in a new goroutine
-		LoadAndBuild(sassPath, w.BArgs, w.PartialMap)
-	}
 }
 
 func (w *Watcher) watchFiles() {

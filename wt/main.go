@@ -3,9 +3,11 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -155,5 +157,16 @@ func main() {
 	if Watch {
 		//fmt.Println(PartialMap.M["/Users/dslininger/Projects/RetailMeNot/www/gui/sass/bourbon/css3/_hyphens.scss"])
 		wt.FileWatch(partialMap, &globalBuildArgs, topLevelFilePaths)
+		fmt.Println("File watcher started use `ctrl+d` to exit")
+		in := bufio.NewReader(os.Stdin)
+		for {
+			_, err := in.ReadString(' ')
+			if err != nil {
+				if err == io.EOF {
+					os.Exit(0)
+				}
+				fmt.Println("error", err)
+			}
+		}
 	}
 }
