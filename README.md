@@ -11,6 +11,7 @@ $images: sprite-map("sprites/*.png");
 div {
 	@include sprite-dimensions($images, "cat");
 	background: sprite($images, "cat");
+}
 ```
 // Generates
 ```
