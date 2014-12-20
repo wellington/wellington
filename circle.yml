@@ -4,13 +4,16 @@ machine:
     LIBSASS_VERSION: $(cat $HOME/$CIRCLE_PROJECT_REPONAME/.libsass_version)
     PROJECT_ROOT: $HOME/.go_workspace/src/github.com/wellington/wellington
 dependencies:
+  cache_directories:
+    - "$HOME/lib"    # relative to the build directory
+    - "$HOME/include" # relative to the user's home directory
   pre:
     - go get -u -d github.com/wellington/spritewell
     - go get github.com/axw/gocov/gocov
     - go get github.com/mattn/goveralls
     - go get golang.org/x/tools/cmd/goimports
     - go get github.com/golang/lint/golint
-    - cat $HOME/$CIRCLE_PROJECT_REPONAME/.libsass_version
+    - echo $LIBSASS_VERSION
     #- echo "export LIBSASS_VERSION=$(cat $HOME/$CIRCLE_PROJECT_REPONAME/.libsass_version)" >> ~/.circlerc
     - mkdir libsass
     - curl -k -L https://github.com/sass/libsass/archive/$LIBSASS_VERSION.tar.gz -o libsass.tar.gz:
