@@ -1,3 +1,4 @@
+[![Circle CI](https://circleci.com/gh/wellington/wellington/tree/master.svg?style=svg)](https://circleci.com/gh/wellington/wellington/tree/master)
 [![wercker status](https://app.wercker.com/status/873d0c7929b8b1e8bc37bcc16829fb5f/m/master "wercker status")](https://app.wercker.com/project/bykey/873d0c7929b8b1e8bc37bcc16829fb5f)
 [![Coverage Status](https://coveralls.io/repos/wellington/wellington/badge.png?branch=master)](https://coveralls.io/r/wellington/wellington?branch=master)
 
