@@ -58,7 +58,7 @@ wt
 
 ### List of Available Commands
 |Command Example|Description|
-|-------------------------------------------------------------------|-------------------------------------------------|
+|---------------------------------------------------------------------|-------------------------------------------------|
 |$images: *sprite-map*("glob/pattern", $spacing: 10px);|Creates a reference to your sprites|
 |$map: *sprite-file*($spritemap,"file");|Returns encoded data only useful for passing to image-height, image-width|
 |height: *image-height*("image.png");|Inserts the height of the sprite|
@@ -67,7 +67,7 @@ wt
 |background-image: inline-image($images,"justone");|Base64 encoded data uri of the requested image|
 |background: *image-url*("nopixel.png");|Returns a relative path to an image in the image directory|
 |font-url: *font-url*("arial.eot", $raw);|Returns a relative path to a file in the font directory, optionally do not wrap in url()|
-|*sprite*($map,"file")|Returns the path and background position of an image for use with background:|
+|background:*sprite*($map,"file")|Returns the path and background position of an image for use with background:|
 
 ### Development
 
