@@ -241,14 +241,12 @@ func Sprite(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 	}
 	// This is an odd name for what it does
 	pos := imgs.GetPack(imgs.Lookup(name))
-	relPath, err := filepath.Rel(ctx.BuildDir,
-		filepath.Join(ctx.GenImgDir, path))
 
 	if err != nil {
 		return cx.Error(err)
 	}
 	str, err := cx.Marshal(fmt.Sprintf(`url("%s") -%dpx -%dpx`,
-		relPath, pos.X, pos.Y))
+		path, pos.X, pos.Y))
 	if err != nil {
 		return cx.Error(err)
 	}

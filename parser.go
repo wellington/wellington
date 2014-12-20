@@ -1,37 +1,20 @@
-package sprite_sass
+package wellington
 
 import (
 	"bytes"
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
+	"github.com/wellington/wellington/context"
+	// TODO: Remove dot imports
 	. "github.com/wellington/wellington/lexer"
 	. "github.com/wellington/wellington/token"
 )
-
-/* Example sprite-map output:
-$sprites: ($rel: "");
-
-$sprites: map_merge($sprites, (
-  139: (
-    width: 139,
-    height: 89,
-    x: 0,
-    y: 20,
-    url: './image.png'
-  )));
-
-$sprites: map_merge($sprites,(140: (
-    width: 140,
-    height: 89,
-    x: 0,
-    y: 20,
-    url: './image.png'
-  )));
-*/
 
 var weAreNeverGettingBackTogether = []byte(`@mixin sprite-dimensions($map, $name) {
   $file: sprite-file($map, $name);
@@ -60,17 +43,18 @@ type Parser struct {
 	SassDir, BuildDir,
 
 	ProjDir string
-	ImageDir string
-	Includes []string
-	Items    []Item
-	Output   []byte
-	Line     map[int]string
-	LineKeys []int
+	ImageDir   string
+	Includes   []string
+	Items      []Item
+	Output     []byte
+	Line       map[int]string
+	LineKeys   []int
+	PartialMap *SafePartialMap
 }
 
 // NewParser returns a pointer to a Parser object.
 func NewParser() *Parser {
-	return &Parser{}
+	return &Parser{PartialMap: NewPartialMap()}
 }
 
 // Start reads the tokens from the lexer and performs
@@ -78,6 +62,7 @@ func NewParser() *Parser {
 //
 // Start creates a map of all variables and sprites
 // (created via sprite-map calls).
+// TODO: Remove pkgdir, it can be put on Parser
 func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	p.Line = make(map[int]string)
 
@@ -340,13 +325,15 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 				}
 				p.Line[lineCount] = filename
 				pwd, contents, err := p.ImportPath(pwd, filename)
+
 				if err != nil {
 					return nil, "", err
 				}
 				//Eat the semicolon
 				item := lex.Next()
 				if item.Type != SEMIC {
-					log.Println("@import statement must be followed by ;", filename)
+					log.Printf("@import in %s:%d must be followed by ;\n", filename, lineCount)
+					log.Printf("        ~~~> @import %s", filename)
 				}
 				// Set position to token after
 				// FIXME: Hack to delete newline, hopefully this doesn't break stuff
@@ -359,7 +346,7 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 				// If importing was successful, each token must be moved
 				// forward by the position of the @import call that made
 				// it available.
-				for i, _ := range moreTokens {
+				for i := range moreTokens {
 					moreTokens[i].Pos += last.Pos
 				}
 
@@ -384,4 +371,108 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 		}
 	}
 
+}
+
+func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) {
+
+	var Input string
+	// Remove partials
+	if strings.HasPrefix(filepath.Base(sassFile), "_") {
+		return
+	}
+
+	// If no imagedir specified, assume relative to the input file
+	if gba.Dir == "" {
+		gba.Dir = filepath.Dir(sassFile)
+	}
+	var (
+		out  io.WriteCloser
+		fout string
+	)
+	if gba.BuildDir != "" {
+		// Build output file based off build directory and input filename
+		rel, _ := filepath.Rel(gba.Includes, filepath.Dir(sassFile))
+		filename := strings.Replace(filepath.Base(sassFile), ".scss", ".css", 1)
+		fout = filepath.Join(gba.BuildDir, rel, filename)
+	} else {
+		out = os.Stdout
+	}
+	ctx := context.Context{
+		// TODO: Most of these fields are no longer used
+		Sprites:     gba.Sprites,
+		Imgs:        gba.Imgs,
+		OutputStyle: gba.Style,
+		ImageDir:    gba.Dir,
+		FontDir:     gba.Font,
+		// Assumption that output is a file
+		BuildDir:     filepath.Dir(fout),
+		GenImgDir:    gba.Gen,
+		MainFile:     sassFile,
+		Comments:     gba.Comments,
+		IncludePaths: []string{filepath.Dir(sassFile)},
+	}
+	if gba.Includes != "" {
+		ctx.IncludePaths = append(ctx.IncludePaths,
+			strings.Split(gba.Includes, ",")...)
+	}
+	fRead, err := os.Open(sassFile)
+	defer fRead.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if fout != "" {
+		dir := filepath.Dir(fout)
+		err := os.MkdirAll(dir, 0755)
+		if err != nil {
+			log.Fatalf("Failed to create directory: %s", dir)
+		}
+
+		out, err = os.Create(fout)
+		defer out.Close()
+		if err != nil {
+			log.Fatalf("Failed to create file: %s", sassFile)
+		}
+		// log.Println("Created:", fout)
+	}
+
+	var pout bytes.Buffer
+	par, err := StartParser(&ctx, fRead, &pout, filepath.Dir(Input), partialMap)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	err = ctx.Compile(&pout, out)
+
+	if err != nil {
+		log.Println(ctx.MainFile)
+		n := ctx.ErrorLine()
+		fs := par.LookupFile(n)
+		log.Printf("Error encountered in: %s\n", fs)
+		log.Println(err)
+	} else {
+		fmt.Printf("Rebuilt: %s\n", sassFile)
+	}
+}
+
+// StartParser accepts build arguments
+// TODO: Remove pkgdir, can be referenced from context
+// TODO: Should this be called StartParser or NewParser?
+// TODO: Should this function create the partialMap or is this
+// the right way to inject one?
+func StartParser(ctx *context.Context, in io.Reader, out io.Writer, pkgdir string, partialMap *SafePartialMap) (*Parser, error) {
+	// Run the sprite_sass parser prior to passing to libsass
+	parser := &Parser{
+		ImageDir:   ctx.ImageDir,
+		Includes:   ctx.IncludePaths,
+		BuildDir:   ctx.BuildDir,
+		MainFile:   ctx.MainFile,
+		PartialMap: partialMap,
+	}
+	// Save reference to parser in context
+	bs, err := parser.Start(in, pkgdir)
+	if err != nil {
+		return parser, err
+	}
+	out.Write(bs)
+	return parser, err
 }

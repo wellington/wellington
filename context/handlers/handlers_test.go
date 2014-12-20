@@ -410,7 +410,7 @@ div {
 
 	// Output:
 	// div {
-	//   background: url("img/img-b798ab.png") -0px -149px; }
+	//   background: url("img/b798ab.png") -0px -149px; }
 
 }
 

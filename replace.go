@@ -1,4 +1,4 @@
-package sprite_sass
+package wellington
 
 // Replace iterates through the list of substrings to
 // cut or replace, adjusting for shift of the output
