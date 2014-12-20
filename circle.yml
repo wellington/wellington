@@ -3,7 +3,13 @@ machine:
     PKG_CONFIG_PATH: "$HOME/lib/pkgconfig/"
     LIBSASS_VERSION: $(cat $HOME/$CIRCLE_PROJECT_REPONAME/.libsass_version)
     PROJECT_ROOT: $HOME/.go_workspace/src/github.com/wellington/wellington
-  post:
+dependencies:
+  pre:
+    - go get -u -d github.com/wellington/spritewell
+    - go get github.com/axw/gocov/gocov
+    - go get github.com/mattn/goveralls
+    - go get golang.org/x/tools/cmd/goimports
+    - go get github.com/golang/lint/golint
     - cat $HOME/$CIRCLE_PROJECT_REPONAME/.libsass_version
     - echo "export LIBSASS_VERSION=$(cat $HOME/$CIRCLE_PROJECT_REPONAME/.libsass_version)" >> ~/.circlerc
     - mkdir libsass
@@ -19,13 +25,6 @@ machine:
     - mkdir -p $HOME/.go_workspace/src/github.com/wellington
     - mv $HOME/$CIRCLE_PROJECT_REPONAME $PROJECT_ROOT
     - ln -s $PROJECT_ROOT $HOME/$CIRCLE_PROJECT_REPONAME
-dependencies:
-  pre:
-    - go get -u -d github.com/wellington/spritewell
-    - go get github.com/axw/gocov/gocov
-    - go get github.com/mattn/goveralls
-    - go get golang.org/x/tools/cmd/goimports
-    - go get github.com/golang/lint/golint
   override:
     - echo $PROJECT_ROOT/hello
     - goxc -tasks='xc archive' -bc 'linux' -arch 'amd64' -d $CIRCLE_ARTIFACTS -n wt:
