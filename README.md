@@ -9,16 +9,17 @@ Wellington adds the missing pieces to SASS, spriting and image manipulation.  Th
 ```
 $images: sprite-map("sprites/*.png");
 div {
-	@include sprite-dimensions($images, "cat");
-	background: sprite($images, "cat");
+  width: image-width(sprite-file($images, "cat"));
+  height: image-height(sprite-file($images, "cat"));
+  background: sprite($images, "cat");
 }
 ```
 // Generates
 ```
 div {
-	width: 140px;
-	height: 79px;
-	background: url("genimg/sprites-wehqi.png");
+  width: 140px;
+  height: 79px;
+  background: url("genimg/sprites-wehqi.png");
 }
 ```
 ### Why?
