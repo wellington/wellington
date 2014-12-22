@@ -131,7 +131,7 @@ func main() {
 
 			err = ctx.Compile(&pout, w)
 			if err != nil {
-				log.Fatal(err)
+				io.WriteString(w, err.Error())
 			}
 		})
 		err := http.ListenAndServe(":12345", nil)
