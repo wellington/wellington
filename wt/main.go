@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime/pprof"
@@ -28,7 +29,7 @@ var (
 	MainFile, Style          string
 	Comments, Watch          bool
 	cpuprofile               string
-	Help, ShowVersion        bool
+	Http, Help, ShowVersion  bool
 	BuildDir                 string
 )
 
@@ -51,6 +52,7 @@ func init() {
 	flag.BoolVar(&Comments, "comment", true, "Turn on source comments")
 	flag.BoolVar(&Comments, "c", true, "Turn on source comments")
 
+	flag.BoolVar(&Http, "http", false, "Listen for http connections")
 	flag.BoolVar(&Watch, "watch", false, "File watcher that will rebuild css on file changes")
 	flag.BoolVar(&Watch, "w", false, "File watcher that will rebuild css on file changes")
 
@@ -109,7 +111,33 @@ func main() {
 		style = context.NESTED_STYLE
 	}
 
+	if Http {
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			var pout bytes.Buffer
+			ctx := context.NewContext()
+
+			_, err := wt.StartParser(ctx, r.Body, &pout, "",
+				wt.NewPartialMap())
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			err = ctx.Compile(&pout, w)
+			if err != nil {
+				log.Fatal(err)
+			}
+		})
+		err := http.ListenAndServe(":12345", nil)
+
+		if err != nil {
+			log.Fatal("ListenAndServe: ", err)
+		}
+
+		return
+	}
+
 	if len(flag.Args()) == 0 {
+
 		// Read from stdin
 		log.Print("Reading from stdin, -h for help")
 		out := os.Stdout
