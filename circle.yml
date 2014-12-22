@@ -8,7 +8,7 @@ dependencies:
     - "$HOME/lib"    # relative to the build directory
     - "$HOME/include" # relative to the user's home directory
   pre:
-    - go get -u -d github.com/wellington/spritewell
+    - go get -f -u -d github.com/wellington/spritewell
     - go get github.com/axw/gocov/gocov
     - go get github.com/mattn/goveralls
     - go get golang.org/x/tools/cmd/goimports
