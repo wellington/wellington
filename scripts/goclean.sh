@@ -12,7 +12,7 @@ set -e
 
 # Automatic checks
 test -z "$(gofmt -l -w .     | tee /dev/stderr)"
-test -z "$(goimports -l -w . | tee /dev/stderr)"
+#test -z "$(goimports -l -w . | tee /dev/stderr)"
 #test -z "$(golint .          | tee /dev/stderr)"
 go vet ./...
 go test -race ./...
@@ -22,7 +22,7 @@ go test -race ./...
 echo "mode: count" > profile.cov
 
 # Standard go tooling behavior is to ignore dirs with leading underscors
-for dir in $(find . -maxdepth 10 -not -path './.git*' -not -path '*/_*' -type d);
+for dir in $(find -L . -maxdepth 10 -not -path './.git*' -not -path '*/_*' -type d);
 do
 if ls $dir/*.go &> /dev/null; then
 	echo $dir
