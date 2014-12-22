@@ -7,7 +7,8 @@ FILES := $(shell find $(rmnpath)/www/gui/sass -name "[^_]*\.scss")
 echo:
 	echo $(current_dir)
 install:
-	go get -u -f github.com/wellington/spritewell
+	go get -f -u -d github.com/wellington/spritewell
+	go get -f -u -d gopkg.in/fsnotify.v1
 	go install github.com/wellington/wellington/wt
 bench:
 	go test ./... -bench=.
@@ -28,11 +29,6 @@ build:
 	docker build -t wellington .
 docker:
 	docker run -it -v $(rmnpath):/rmn -v $(current_dir):/usr/src/myapp wellington bash
-dockerprofile:
-	docker run -it -v $(rmnpath):/rmn -v $(current_dir):/usr/src/myapp wellington make dockerexec
-dockerexec:
-	go run sprite/main.go -gen /rmn/www/gui/build/im -font /rmn/www/gui/font-face  --cpuprofile=sprite.prof -b /rmn/www/gui/build/css/ -p /rmn/www/gui/sass -d /rmn/www/gui/im/sass /rmn/www/gui/**/*.scss
-	go tool pprof --pdf /usr/bin/sprite sprite.prof > profile.pdf
 test:
 	scripts/goclean.sh
 compass:
