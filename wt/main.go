@@ -121,6 +121,13 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
+			// Set headers
+			if origin := r.Header.Get("Origin"); origin != "" {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+			}
+			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
 
 			err = ctx.Compile(&pout, w)
 			if err != nil {
