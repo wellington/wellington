@@ -1,5 +1,4 @@
 [![Circle CI](https://circleci.com/gh/wellington/wellington/tree/master.svg?style=svg)](https://circleci.com/gh/wellington/wellington/tree/master)
-[![wercker status](https://app.wercker.com/status/873d0c7929b8b1e8bc37bcc16829fb5f/m/master "wercker status")](https://app.wercker.com/project/bykey/873d0c7929b8b1e8bc37bcc16829fb5f)
 [![Coverage Status](https://coveralls.io/repos/wellington/wellington/badge.png?branch=master)](https://coveralls.io/r/wellington/wellington?branch=master)
 
 Wellington
@@ -40,7 +39,7 @@ Check out the releases for compiled binaries
 Install Go and add $GOPATH/bin to your $PATH. [Detailed instructions](https://golang.org/doc/install)
 
 You must have libsass installed to build this project.  Do so by checking
-out the repo or building [libsass](https://github.com/sass/libsass) via the  instruction in the repo.
+out the repo or building [libsass](https://github.com/sass/libsass/wiki/Building-on-Mac-OS-X) via the  instruction in the repo.
 
 ```
 # This will fail if you don't have libsass installed, that's OK.
