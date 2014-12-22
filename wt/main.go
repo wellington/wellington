@@ -116,11 +116,6 @@ func main() {
 			var pout bytes.Buffer
 			ctx := context.NewContext()
 
-			_, err := wt.StartParser(ctx, r.Body, &pout, "",
-				wt.NewPartialMap())
-			if err != nil {
-				log.Fatal(err)
-			}
 			// Set headers
 			if origin := r.Header.Get("Origin"); origin != "" {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
@@ -128,6 +123,12 @@ func main() {
 			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
+			_, err := wt.StartParser(ctx, r.Body, &pout, "",
+				wt.NewPartialMap())
+			if err != nil {
+				io.WriteString(w, err.Error())
+				return
+			}
 
 			err = ctx.Compile(&pout, w)
 			if err != nil {
