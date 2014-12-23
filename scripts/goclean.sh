@@ -25,7 +25,6 @@ echo "mode: count" > profile.cov
 for dir in $(find -L . -maxdepth 10 -not -path './.git*' -not -path '*/_*' -type d);
 do
 if ls $dir/*.go &> /dev/null; then
-	echo $dir
 	go test -covermode=count -coverprofile=$dir/profile.tmp $dir
     if [ -f $dir/profile.tmp ]
     then
