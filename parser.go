@@ -12,8 +12,8 @@ import (
 
 	"github.com/wellington/wellington/context"
 	// TODO: Remove dot imports
-	. "github.com/wellington/wellington/lexer"
-	. "github.com/wellington/wellington/token"
+	"github.com/wellington/wellington/lexer"
+	"github.com/wellington/wellington/token"
 )
 
 var weAreNeverGettingBackTogether = []byte(`@mixin sprite-dimensions($map, $name) {
@@ -45,7 +45,7 @@ type Parser struct {
 	ProjDir string
 	ImageDir   string
 	Includes   []string
-	Items      []Item
+	Items      []lexer.Item
 	Output     []byte
 	Line       map[int]string
 	LineKeys   []int
@@ -150,19 +150,19 @@ func (p *Parser) LookupFile(position int) string {
 // GetItems recursively resolves all imports.  It lexes the input
 // adding the tokens to the Parser object.
 // TODO: Convert this to byte slice in/out
-func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
+func (p *Parser) GetItems(pwd, filename, input string) ([]lexer.Item, string, error) {
 
 	var (
-		status    []Item
+		status    []lexer.Item
 		importing bool
 		output    []byte
 		pos       int
-		last      *Item
+		last      *lexer.Item
 		lastname  string
 		lineCount int
 	)
 
-	lex := New(func(lex *Lexer) StateFn {
+	lex := lexer.New(func(lex *lexer.Lexer) lexer.StateFn {
 		return lex.Action()
 	}, input)
 
@@ -175,17 +175,17 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 				fmt.Errorf("Error: %v (pos %d)", err, item.Pos)
 		}
 		switch item.Type {
-		case ItemEOF:
+		case token.ItemEOF:
 			if filename == p.MainFile {
 				p.Line[lineCount+bytes.Count([]byte(input[pos:]), []byte("\n"))] = filename
 			}
 			output = append(output, input[pos:]...)
 			return status, string(output), nil
-		case IMPORT:
+		case token.IMPORT:
 			output = append(output, input[pos:item.Pos]...)
 			last = item
 			importing = true
-		case INCLUDE, CMT:
+		case token.INCLUDE, token.CMT:
 			output = append(output, input[pos:item.Pos]...)
 			pos = item.Pos
 			status = append(status, *item)
@@ -208,7 +208,7 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 				}
 				//Eat the semicolon
 				item := lex.Next()
-				if item.Type != SEMIC {
+				if item.Type != token.SEMIC {
 					log.Printf("@import in %s:%d must be followed by ;\n", filename, lineCount)
 					log.Printf("        ~~~> @import %s", filename)
 				}
@@ -250,6 +250,8 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 
 }
 
+// LoadAndBuild kicks off parser and compiling
+// TODO: make this function testable
 func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) error {
 
 	var Input string

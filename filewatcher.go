@@ -42,6 +42,7 @@ type Watcher struct {
 	BArgs       *BuildArgs
 }
 
+// NewWatcher returns a new watcher pointer
 func NewWatcher() *Watcher {
 	var fswatcher *fsnotify.Watcher
 	fswatcher, err := fsnotify.NewWatcher()

@@ -2,6 +2,8 @@ package context
 
 import "math"
 
+// SassNumber represents numbers with units
+// coming from libsass
 type SassNumber struct {
 	Value float64
 	Unit  string
@@ -143,21 +145,26 @@ var sassUnitTypes = map[string]string{
 	"turn": "angle",
 }
 
+// Add sums the two numbers in the first numbers units
 func (sn SassNumber) Add(sn2 SassNumber) SassNumber {
 	sn1Value, sn2Value := getConvertedUnits(sn, sn2)
 	return SassNumber{Value: sn1Value + sn2Value, Unit: sn.Unit}
 }
 
+// Subtract minuses the two numbers in the first numbers units
 func (sn SassNumber) Subtract(sn2 SassNumber) SassNumber {
 	sn1Value, sn2Value := getConvertedUnits(sn, sn2)
 	return SassNumber{Value: sn1Value - sn2Value, Unit: sn.Unit}
 }
 
+// Multiply takes the multiplication of the two numbers
+// in the first numbers units
 func (sn SassNumber) Multiply(sn2 SassNumber) SassNumber {
 	sn1Value, sn2Value := getConvertedUnits(sn, sn2)
 	return SassNumber{Value: sn1Value * sn2Value, Unit: sn.Unit}
 }
 
+// Divide takes the quotient of the two numbers in the first unit
 func (sn SassNumber) Divide(sn2 SassNumber) SassNumber {
 	sn1Value, sn2Value := getConvertedUnits(sn, sn2)
 	return SassNumber{Value: sn1Value / sn2Value, Unit: sn.Unit}
