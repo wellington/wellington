@@ -163,7 +163,10 @@ func (w *Watcher) rebuild(eventFileName string) error {
 	go func(paths []string) {
 		for i := range paths {
 			// TODO: do this in a new goroutine
-			LoadAndBuild(paths[i], w.BArgs, w.PartialMap)
+			err := LoadAndBuild(paths[i], w.BArgs, w.PartialMap)
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	}(w.PartialMap.M[eventFileName])
 	w.PartialMap.RUnlock()

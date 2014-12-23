@@ -186,7 +186,10 @@ func main() {
 	pMap := wt.NewPartialMap()
 	for i, f := range flag.Args() {
 		sassPaths[i] = filepath.Dir(f)
-		wt.LoadAndBuild(f, bArgs, pMap)
+		err := wt.LoadAndBuild(f, bArgs, pMap)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 
 	if Watch {
