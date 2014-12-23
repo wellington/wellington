@@ -85,16 +85,43 @@ func (p *SafePartialMap) AddRelation(mainfile string, subfile string) {
 // Watch is the main entry point into filewatcher and sets up the
 // SW object that begins monitoring for file changes and triggering
 // top level sass rebuilds.
-func (w *Watcher) Watch() {
+func (w *Watcher) Watch() error {
 	if w.PartialMap == nil {
 		w.PartialMap = NewPartialMap()
 	}
 	if len(w.Dirs) == 0 {
-		log.Fatal("No directories to watch")
+		return fmt.Errorf("No directories to watch")
 	}
-	w.watchFiles()
+	err := w.watchFiles()
+	if err != nil {
+		return err
+	}
 	w.startWatching()
+	return nil
 }
+
+func (w *Watcher) watchFiles() error {
+	//Watch the dirs of all sass partials
+	w.PartialMap.RLock()
+	for k := range w.PartialMap.M {
+		err := w.watch(filepath.Dir(k))
+		if err != nil {
+			return err
+		}
+	}
+	w.PartialMap.RUnlock()
+
+	//Watch the dirs of all top level files
+	for k := range w.Dirs {
+		err := w.watch(w.Dirs[k])
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+var watcherChan chan (string)
 
 func (w *Watcher) startWatching() {
 	go func() {
@@ -103,6 +130,10 @@ func (w *Watcher) startWatching() {
 			default:
 				// only called when w.FileWatcher.Events is set to nil.
 			case event := <-w.FileWatcher.Events:
+				if watcherChan != nil {
+					watcherChan <- event.Name
+					return
+				}
 				if event.Op&fsnotify.Write == fsnotify.Write {
 					w.rebuild(event.Name)
 				}
@@ -134,26 +165,13 @@ func (w *Watcher) rebuild(eventFileName string) {
 	w.PartialMap.RUnlock()
 }
 
-func (w *Watcher) watchFiles() {
-	//Watch the dirs of all sass partials
-	w.PartialMap.RLock()
-	for k := range w.PartialMap.M {
-		w.watch(filepath.Dir(k))
-	}
-	w.PartialMap.RUnlock()
-
-	//Watch the dirs of all top level files
-	for k := range w.Dirs {
-		w.watch(w.Dirs[k])
-	}
-}
-
-func (w *Watcher) watch(fpath string) {
+func (w *Watcher) watch(fpath string) error {
 	if len(fpath) > 0 {
 		if err := w.FileWatcher.Add(fpath); nil != err {
-			log.Fatalln(err)
+			return err
 		}
 	}
+	return nil
 }
 
 func appendUnique(slice []string, s string) []string {
