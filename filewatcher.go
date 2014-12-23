@@ -150,10 +150,13 @@ func (w *Watcher) startWatching() {
 // for the file in the partial map.  It also checks
 // for whether the file is a non-partial, no _ at beginning,
 // and requests the file be rebuilt directly.
-func (w *Watcher) rebuild(eventFileName string) {
+func (w *Watcher) rebuild(eventFileName string) error {
 	// Top level file modified, rebuild it directly
 	if !strings.HasPrefix(filepath.Base(eventFileName), "_") {
-		LoadAndBuild(eventFileName, w.BArgs, w.PartialMap)
+		err := LoadAndBuild(eventFileName, w.BArgs, w.PartialMap)
+		if err != nil {
+			return err
+		}
 	}
 	w.PartialMap.RLock()
 	go func(paths []string) {
@@ -163,6 +166,7 @@ func (w *Watcher) rebuild(eventFileName string) {
 		}
 	}(w.PartialMap.M[eventFileName])
 	w.PartialMap.RUnlock()
+	return nil
 }
 
 func (w *Watcher) watch(fpath string) error {

@@ -373,12 +373,16 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]Item, string, error) {
 
 }
 
-func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) {
+func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) error {
 
 	var Input string
 	// Remove partials
 	if strings.HasPrefix(filepath.Base(sassFile), "_") {
-		return
+		return nil
+	}
+
+	if gba == nil {
+		return fmt.Errorf("build args are nil")
 	}
 
 	// If no imagedir specified, assume relative to the input file
@@ -418,19 +422,19 @@ func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) {
 	fRead, err := os.Open(sassFile)
 	defer fRead.Close()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	if fout != "" {
 		dir := filepath.Dir(fout)
 		err := os.MkdirAll(dir, 0755)
 		if err != nil {
-			log.Fatalf("Failed to create directory: %s", dir)
+			return fmt.Errorf("Failed to create directory: %s", dir)
 		}
 
 		out, err = os.Create(fout)
 		defer out.Close()
 		if err != nil {
-			log.Fatalf("Failed to create file: %s", sassFile)
+			return fmt.Errorf("Failed to create file: %s", sassFile)
 		}
 		// log.Println("Created:", fout)
 	}
@@ -438,8 +442,7 @@ func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) {
 	var pout bytes.Buffer
 	par, err := StartParser(&ctx, fRead, &pout, filepath.Dir(Input), partialMap)
 	if err != nil {
-		log.Println(err)
-		return
+		return err
 	}
 	err = ctx.Compile(&pout, out)
 
@@ -448,10 +451,10 @@ func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) {
 		n := ctx.ErrorLine()
 		fs := par.LookupFile(n)
 		log.Printf("Error encountered in: %s\n", fs)
-		log.Println(err)
-	} else {
-		fmt.Printf("Rebuilt: %s\n", sassFile)
+		return err
 	}
+	fmt.Printf("Rebuilt: %s\n", sassFile)
+	return nil
 }
 
 // StartParser accepts build arguments

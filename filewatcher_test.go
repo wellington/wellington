@@ -90,3 +90,12 @@ func TestWatch(t *testing.T) {
 	f.Sync()
 
 }
+
+func TestRebuild(t *testing.T) {
+	w := NewWatcher()
+	err := w.rebuild("file/event")
+
+	if e := fmt.Sprintf("build args are nil"); e != err.Error() {
+		t.Errorf("wanted: %s\ngot: %s", e, err)
+	}
+}
