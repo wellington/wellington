@@ -408,6 +408,36 @@ $path: font-url($raw: true, $path: "arial.eot");
 
 }
 
+func TestSpriteFail(t *testing.T) {
+	in := bytes.NewBufferString(`
+$map: sprite-map("dual/*.png");
+div {
+  background: sprite("nomap", "140");
+}`)
+	var out bytes.Buffer
+	_, _, err := setupCtx(in, &out)
+	if err == nil {
+		t.Error("no error thrown for invalid map")
+	}
+	_ = out
+
+	e := `Error > stdin:4
+error in C function sprite: Variable not found matching glob: nomap sprite:140
+Backtrace:
+	stdin:4, in function ` + "`sprite`" + `
+	stdin:4
+
+$map: sprite-map("dual/*.png");
+div {
+  background: sprite("nomap", "140");
+}
+`
+
+	if e != err.Error() {
+		t.Errorf("got:\n~%s~\nwanted:\n~%s~", err.Error(), e)
+	}
+}
+
 func ExampleSprite() {
 	in := bytes.NewBufferString(`
 $map: sprite-map("dual/*.png", 10px); // One argument

@@ -158,7 +158,7 @@ func InlineImage(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 	)
 	err := cx.Unmarshal(usv, &name)
 	if err != nil {
-		fmt.Println(err)
+		return cx.Error(err)
 	}
 
 	if !sw.CanDecode(filepath.Ext(name)) {
@@ -186,7 +186,7 @@ func InlineImage(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 	str := imgs.Inline()
 	res, err := cx.Marshal(str)
 	if err != nil {
-		fmt.Println(err)
+		return cx.Error(err)
 	}
 	return res
 }
