@@ -1,9 +1,6 @@
 package context
 
-import (
-	"fmt"
-	"math"
-)
+import "math"
 
 type SassNumber struct {
 	Value float64
@@ -179,16 +176,4 @@ func getConvertedUnits(sn1 SassNumber, sn2 SassNumber) (float64, float64) {
 
 func convertUnits(from SassNumber, to SassNumber) float64 {
 	return sassUnitConversions[from.Unit][to.Unit] * from.Value
-}
-
-func safeConvert(from SassNumber, to SassNumber) error {
-	if _, ok := sassUnitConversions[from.Unit][to.Unit]; !ok {
-		return fmt.Errorf("Can not convert from %s to %s", from.Unit, to.Unit)
-	}
-
-	if sassUnitTypes[from.Unit] != sassUnitTypes[to.Unit] {
-		return fmt.Errorf("Can not convert sass units between angles and distances: %s, %s", from.Unit, to.Unit)
-	}
-
-	return nil
 }

@@ -20,3 +20,15 @@ func TestSampleCB(t *testing.T) {
 		t.Errorf("wanted: %t got: %t", e, b)
 	}
 }
+
+func TestRegisterHandler(t *testing.T) {
+	l := len(handlers)
+	RegisterHandler("foo",
+		func(c *Context, csv UnionSassValue) UnionSassValue {
+			u, _ := Marshal(false)
+			return u
+		})
+	if e := l + 1; len(handlers) != e {
+		t.Errorf("got: %d wanted: %d", len(handlers), e)
+	}
+}
