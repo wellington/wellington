@@ -8,7 +8,10 @@ package context
 // #cgo LDFLAGS: -lsass -lstdc++ -lm
 // #include "sass_context.h"
 import "C"
-import "unsafe"
+import (
+	"log"
+	"unsafe"
+)
 
 // Cookie is used for passing context information to libsass.  Cookie is
 // passed to custom handlers when libsass executes them through the go bridge.
@@ -50,9 +53,28 @@ func Error(err error) UnionSassValue {
 	return C.sass_make_error(C.CString(err.Error()))
 }
 
+// Warn takes a string and causes a warning in libsass
+func Warn(s string) UnionSassValue {
+	return C.sass_make_error(C.CString("@warn" + s + ";"))
+}
+
 // RegisterHandler sets the passed signature and callback to the
 // handlers array.
 func RegisterHandler(sign string,
 	callback func(ctx *Context, csv UnionSassValue) UnionSassValue) {
 	handlers = append(handlers, handler{sign, callback})
+}
+
+// WarnHandler captures Sass warnings and redirects to stdout
+func WarnHandler(ctx *Context, csv UnionSassValue) UnionSassValue {
+	var s string
+	Unmarshal(csv, &s)
+	log.Println("WARNING: " + s)
+
+	r, _ := Marshal("")
+	return r
+}
+
+func init() {
+	RegisterHandler("@warn", WarnHandler)
 }
