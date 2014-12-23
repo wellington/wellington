@@ -117,12 +117,6 @@ func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	return append(weAreNeverGettingBackTogether, p.Output...), nil
 }
 
-// Rel builds relative image paths, not compatible with sprites.
-func (p *Parser) Rel() string {
-	rel, _ := filepath.Rel(p.BuildDir, p.ImageDir)
-	return filepath.Clean(rel)
-}
-
 // LookupFile translates line positions into line number
 // and file it belongs to
 func (p *Parser) LookupFile(position int) string {
