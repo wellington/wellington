@@ -13,5 +13,6 @@ RUN go get -d -v ./...
 RUN ln -s /usr/src/myapp /go/src/github.com/wellington/wellington
 RUN make install
 EXPOSE 12345
+VOLUME "/data"
 
 CMD []
