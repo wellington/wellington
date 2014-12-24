@@ -4,9 +4,9 @@
 Wellington
 ===========
 
-### [Try the Demo!](http://codepen.io/drewwells/details/KwggLx/)
+Wellington adds the missing piece to SASS, file awareness.  Wellington can create relative paths to your assets and sprites from images in the image directory.  This tool is designed to work directly from sass, no need learning a new language or messing with separate spriting tools!
 
-Wellington adds the missing pieces to SASS, spriting and image manipulation.  This tool is designed to work directly from sass, so you don't need to learn an entire new DSL just add a few new commands to get toolbox.
+### [Try the Demo!](http://codepen.io/drewwells/details/KwggLx/)
 
 ```
 $images: sprite-map("sprites/*.png");
@@ -26,7 +26,10 @@ div {
 ```
 
 ### Why?
-Wellington adds file awareness to the sass language.  It has been written in Go for portability, modularity, and speed.  There are no dependencies on Ruby.  The binary includes everything you need to run sprite_sass.  Sprite_sass uses libsass under the covers for processing the output CSS.
+
+Sass makes CSS more awesome, Wellington makes Sass awesomer. Wellington extends your Sass to do things not supported in Sass.  Wellington can manage your web project rather than just your Sass files.  With Wellington, spriting and asset paths are now available to you directly in your Sass code.  Check out the [demo](http://codepen.io/drewwells/details/KwggLx/) or see the [examples](#examples).
+
+Wellington has been written in Go for portability, modularity, and speed.  There are no dependencies on Ruby.  The binary includes everything you need to run sprite_sass.  Sprite_sass uses libsass under the covers for processing the output CSS.
 
 #### Installation
 Wellington can be installed via brew
