@@ -29,7 +29,6 @@ Wellington adds file awareness to the sass language.  It has been written in Go 
 Wellington can be installed via brew
 
 	brew update
-	brew install --HEAD libsass
 	brew tap drewwells/wt
 	brew install wellington
 
