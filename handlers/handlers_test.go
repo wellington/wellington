@@ -183,7 +183,7 @@ line-height: $paddedmap;
 }
 
 func TestCompileSpritePaddingMap(t *testing.T) {
-	in := bytes.NewBufferString(`$map: sprite-map("dual/*.png",10px);
+	in := bytes.NewBufferString(`$map: sprite-map("*.png",10px);
 div {
   content: $map;
 }`)
@@ -200,7 +200,7 @@ div {
 		t.Error(err)
 	}
 	exp := `div {
-  content: dual/*.png10; }
+  content: *.png10; }
 `
 	if exp != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), exp)
@@ -322,7 +322,7 @@ func TestRegInlineImageFail(t *testing.T) {
 	defer func() { os.Stdout = old }()
 	in := bytes.NewBufferString(`
 div {
-    background: inline-image("image.svg");
+    background: inline-image("image.tiff");
 }`)
 	var out bytes.Buffer
 	_, _, err := setupCtx(in, &out)
@@ -330,7 +330,7 @@ div {
 		t.Error(err)
 	}
 	e := `div {
-  background: inline-image: image.svg filetype .svg is not supported; }
+  background: inline-image: image.tiff filetype .tiff is not supported; }
 `
 	if e != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
@@ -410,7 +410,7 @@ $path: font-url($raw: true, $path: "arial.eot");
 
 func TestSpriteFail(t *testing.T) {
 	in := bytes.NewBufferString(`
-$map: sprite-map("dual/*.png");
+$map: sprite-map("*.png");
 div {
   background: sprite("nomap", "140");
 }`)
@@ -427,7 +427,7 @@ Backtrace:
 	stdin:4, in function ` + "`sprite`" + `
 	stdin:4
 
-$map: sprite-map("dual/*.png");
+$map: sprite-map("*.png");
 div {
   background: sprite("nomap", "140");
 }
@@ -440,7 +440,7 @@ div {
 
 func ExampleSprite() {
 	in := bytes.NewBufferString(`
-$map: sprite-map("dual/*.png", 10px); // One argument
+$map: sprite-map("*.png", 10px); // One argument
 div {
   background: sprite($map, "140");
 }`)
@@ -466,7 +466,7 @@ div {
 
 func TestSprite(t *testing.T) {
 	in := bytes.NewBufferString(`
-$map: sprite-map("dual/*.png", 10px);
+$map: sprite-map("*.png", 10px);
 div {
   background: sprite($map, "140", 0, 0);
 }`)
@@ -485,7 +485,7 @@ Backtrace:
 	stdin:4, in function ` + "`sprite`" + `
 	stdin:4
 
-$map: sprite-map("dual/*.png", 10px);
+$map: sprite-map("*.png", 10px);
 div {
   background: sprite($map, "140", 0, 0);
 }
@@ -498,9 +498,9 @@ div {
 
 func BenchmarkSprite(b *testing.B) {
 	ctx := cx.NewContext()
-	ctx.BuildDir = "../test/build"
-	ctx.GenImgDir = "../test/build/img"
-	ctx.ImageDir = "../test/img"
+	ctx.BuildDir = "context/test/build"
+	ctx.GenImgDir = "context/test/build/img"
+	ctx.ImageDir = "context/test/img"
 	// Add real arguments when sass lists can be [un]marshalled
 	lst := []interface{}{"*.png", cx.SassNumber{Value: 5, Unit: "px"}}
 	usv, _ := cx.Marshal(lst)

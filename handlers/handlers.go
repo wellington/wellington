@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"io/ioutil"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -18,7 +19,7 @@ func init() {
 	cx.RegisterHandler("image-url($name)", ImageURL)
 	cx.RegisterHandler("image-height($path)", ImageHeight)
 	cx.RegisterHandler("image-width($path)", ImageWidth)
-	cx.RegisterHandler("inline-image($path)", InlineImage)
+	cx.RegisterHandler("inline-image($path, $base64: false)", InlineImage)
 	cx.RegisterHandler("font-url($path, $raw: false)", FontURL)
 	cx.RegisterHandler("sprite($map, $name, $offsetX: 0px, $offsetY: 0px)", Sprite)
 }
@@ -154,14 +155,33 @@ func ImageWidth(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 // InlineImage returns a base64 encoded png from the input image
 func InlineImage(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 	var (
-		name string
+		name    string
+		encoded bool
 	)
-	err := cx.Unmarshal(usv, &name)
+	err := cx.Unmarshal(usv, &name, &encoded)
 	if err != nil {
 		return cx.Error(err)
 	}
 
 	if !sw.CanDecode(filepath.Ext(name)) {
+		// Special fallthrough for svg
+		if filepath.Ext(name) == ".svg" {
+			fin, err := ioutil.ReadFile(name)
+			if err != nil {
+				return cx.Error(err)
+			}
+			var out []byte
+			if encoded {
+				out = sw.InlineSVGBase64(fin)
+			} else {
+				out = sw.InlineSVG(fin)
+			}
+			res, err := cx.Marshal(string(out))
+			if err != nil {
+				return cx.Error(err)
+			}
+			return res
+		}
 		s := fmt.Sprintf("inline-image: %s filetype %s is not supported",
 			name, filepath.Ext(name))
 		fmt.Println(s)

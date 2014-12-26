@@ -19,7 +19,7 @@ import (
 	"github.com/wellington/wellington/context"
 
 	wt "github.com/wellington/wellington"
-	_ "github.com/wellington/wellington/context/handlers"
+	_ "github.com/wellington/wellington/handlers"
 )
 
 const version = `v0.4.0`
