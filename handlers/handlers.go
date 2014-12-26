@@ -19,7 +19,7 @@ func init() {
 	cx.RegisterHandler("image-url($name)", ImageURL)
 	cx.RegisterHandler("image-height($path)", ImageHeight)
 	cx.RegisterHandler("image-width($path)", ImageWidth)
-	cx.RegisterHandler("inline-image($path, $base64: false)", InlineImage)
+	cx.RegisterHandler("inline-image($path, $encode: false)", InlineImage)
 	cx.RegisterHandler("font-url($path, $raw: false)", FontURL)
 	cx.RegisterHandler("sprite($map, $name, $offsetX: 0px, $offsetY: 0px)", Sprite)
 }
@@ -166,7 +166,7 @@ func InlineImage(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 	if !sw.CanDecode(filepath.Ext(name)) {
 		// Special fallthrough for svg
 		if filepath.Ext(name) == ".svg" {
-			fin, err := ioutil.ReadFile(name)
+			fin, err := ioutil.ReadFile(filepath.Join(ctx.ImageDir, name))
 			if err != nil {
 				return cx.Error(err)
 			}

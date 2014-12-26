@@ -496,6 +496,43 @@ div {
 
 }
 
+func TestInlineSVG(t *testing.T) {
+	var in, out bytes.Buffer
+	in.WriteString(`div {
+  background-image: inline-image("hexane.svg");
+}`)
+	_, _, err := setupCtx(&in, &out)
+	if err != nil {
+		t.Error(err)
+	}
+
+	e := `div {
+  background-image: url("data:image/svg+xml;utf8,%3C%3Fxml%20version=%221.0%22%20encoding=%22UTF-8%22%20standalone=%22no%22%3F%3E%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20version=%221.0%22%20width=%22480%22%20height=%22543.03003%22%20viewBox=%220%200%20257.002%20297.5%22%20xml:space=%22preserve%22%3E%3Cg%20transform=%22matrix%280.8526811,0,0,0.8526811,18.930632,21.913299%29%22%3E%3Cpolygon%20points=%228.003,218.496%200,222.998%200,74.497%208.003,78.999%208.003,218.496%20%22/%3E%3Cpolygon%20points=%22128.501,287.998%20128.501,297.5%200,222.998%208.003,218.496%20128.501,287.998%20%22%20/%3E%3Cpolygon%20points=%22249.004,218.496%20257.002,222.998%20128.501,297.5%20128.501,287.998%20249.004,218.496%20%22%20/%3E%3Cpolygon%20points=%22249.004,78.999%20257.002,74.497%20257.002,222.998%20249.004,218.496%20249.004,78.999%20%22%20/%3E%3Cpolygon%20points=%22128.501,9.497%20128.501,0%20257.002,74.497%20249.004,78.999%20128.501,9.497%20%22%20/%3E%3Cpolygon%20points=%228.003,78.999%200,74.497%20128.501,0%20128.501,9.497%208.003,78.999%20%22%20/%3E%3C/g%3E%3C/svg%3E"); }
+`
+
+	if out.String() != e {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
+	}
+
+	in.Reset()
+	out.Reset()
+	in.WriteString(`div {
+  background-image: inline-image("hexane.svg", $encode: true);
+}`)
+	_, _, err = setupCtx(&in, &out)
+	if err != nil {
+		t.Error(err)
+	}
+
+	e = `div {
+  background-image: url("data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+DQo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmVyc2lvbj0iMS4wIiB3aWR0aD0iNDgwIiBoZWlnaHQ9IjU0My4wMzAwMyIgdmlld0JveD0iMCAwIDI1Ny4wMDIgMjk3LjUiIHhtbDpzcGFjZT0icHJlc2VydmUiPg0KPGcgdHJhbnNmb3JtPSJtYXRyaXgoMC44NTI2ODExLDAsMCwwLjg1MjY4MTEsMTguOTMwNjMyLDIxLjkxMzI5OSkiPg0KPHBvbHlnb24gcG9pbnRzPSI4LjAwMywyMTguNDk2IDAsMjIyLjk5OCAwLDc0LjQ5NyA4LjAwMyw3OC45OTkgOC4wMDMsMjE4LjQ5NiAiLz4NCjxwb2x5Z29uIHBvaW50cz0iMTI4LjUwMSwyODcuOTk4IDEyOC41MDEsMjk3LjUgMCwyMjIuOTk4IDguMDAzLDIxOC40OTYgMTI4LjUwMSwyODcuOTk4ICIgLz4NCjxwb2x5Z29uIHBvaW50cz0iMjQ5LjAwNCwyMTguNDk2IDI1Ny4wMDIsMjIyLjk5OCAxMjguNTAxLDI5Ny41IDEyOC41MDEsMjg3Ljk5OCAyNDkuMDA0LDIxOC40OTYgIiAvPg0KPHBvbHlnb24gcG9pbnRzPSIyNDkuMDA0LDc4Ljk5OSAyNTcuMDAyLDc0LjQ5NyAyNTcuMDAyLDIyMi45OTggMjQ5LjAwNCwyMTguNDk2IDI0OS4wMDQsNzguOTk5ICIgLz4NCjxwb2x5Z29uIHBvaW50cz0iMTI4LjUwMSw5LjQ5NyAxMjguNTAxLDAgMjU3LjAwMiw3NC40OTcgMjQ5LjAwNCw3OC45OTkgMTI4LjUwMSw5LjQ5NyAiIC8+DQo8cG9seWdvbiBwb2ludHM9IjguMDAzLDc4Ljk5OSAwLDc0LjQ5NyAxMjguNTAxLDAgMTI4LjUwMSw5LjQ5NyA4LjAwMyw3OC45OTkgIiAvPg0KPC9nPg0KPC9zdmc+DQo=")"; }
+`
+
+	if out.String() != e {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
+	}
+}
+
 func BenchmarkSprite(b *testing.B) {
 	ctx := cx.NewContext()
 	ctx.BuildDir = "context/test/build"
