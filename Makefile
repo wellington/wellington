@@ -26,9 +26,11 @@ deps:
 headers:
 	scripts/getheaders.sh
 build:
-	docker build -t wellington .
+	docker build -t drewwells/wellington .
+push: build
+	docker push drewwells/wellington
 docker:
-	docker run -it -v $(rmnpath):/rmn -v $(current_dir):/usr/src/myapp wellington bash
+	docker run -it -v $(rmnpath):/rmn -v $(current_dir):/usr/src/myapp drewwells/wellington bash
 test:
 	scripts/goclean.sh
 compass:
