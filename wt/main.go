@@ -110,22 +110,32 @@ func main() {
 		style = context.NESTED_STYLE
 	}
 
-	bArgs := wt.NewBuildArgs()
+	gba := wt.NewBuildArgs()
 
-	bArgs.Dir = Dir
-	bArgs.BuildDir = BuildDir
-	bArgs.Includes = Includes
-	bArgs.Font = Font
-	bArgs.Style = style
-	bArgs.Gen = Gen
-	bArgs.Comments = Comments
+	gba.Dir = Dir
+	gba.BuildDir = BuildDir
+	gba.Includes = Includes
+	gba.Font = Font
+	gba.Style = style
+	gba.Gen = Gen
+	gba.Comments = Comments
 
 	pMap := wt.NewPartialMap()
+	// FIXME: Copy pasta with LoadAndBuild
+	ctx := &context.Context{
+		Sprites:     gba.Sprites,
+		Imgs:        gba.Imgs,
+		OutputStyle: gba.Style,
+		ImageDir:    gba.Dir,
+		FontDir:     gba.Font,
+
+		GenImgDir: gba.Gen,
+		Comments:  gba.Comments,
+	}
 
 	if Http {
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			var pout bytes.Buffer
-			ctx := &context.Context{}
 
 			// Set headers
 			if origin := r.Header.Get("Origin"); origin != "" {
@@ -162,9 +172,8 @@ func main() {
 		in := os.Stdin
 
 		var pout bytes.Buffer
-		ctx := context.Context{}
 
-		_, err := wt.StartParser(&ctx, in, &pout, wt.NewPartialMap())
+		_, err := wt.StartParser(ctx, in, &pout, wt.NewPartialMap())
 		if err != nil {
 			log.Println(err)
 		}
@@ -178,7 +187,7 @@ func main() {
 	sassPaths := make([]string, len(flag.Args()))
 	for i, f := range flag.Args() {
 		sassPaths[i] = filepath.Dir(f)
-		err := wt.LoadAndBuild(f, bArgs, pMap)
+		err := wt.LoadAndBuild(f, gba, pMap)
 		if err != nil {
 			log.Println(err)
 		}
@@ -188,7 +197,7 @@ func main() {
 		w := wt.NewWatcher()
 		w.PartialMap = pMap
 		w.Dirs = sassPaths
-		w.BArgs = bArgs
+		w.BArgs = gba
 		w.Watch()
 
 		fmt.Println("File watcher started use `ctrl+d` to exit")
