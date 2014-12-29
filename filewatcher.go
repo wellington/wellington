@@ -29,6 +29,18 @@ type BuildArgs struct {
 	Comments      bool
 }
 
+// NewBuildArgs creates a BuildArgs and initializes Cache maps for
+// sprites and images
+func NewBuildArgs() *BuildArgs {
+	bArgs := &BuildArgs{
+		Imgs: spritewell.SafeImageMap{
+			M: make(map[string]spritewell.ImageList, 25)},
+		Sprites: spritewell.SafeImageMap{
+			M: make(map[string]spritewell.ImageList, 25)},
+	}
+	return bArgs
+}
+
 // Watcher holds all data needed to kick off a build of the css when a
 // file changes.
 // FileWatcher is the object that triggers builds when a file changes.

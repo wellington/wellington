@@ -15,7 +15,6 @@ import (
 	"runtime/pprof"
 	"strings"
 
-	"github.com/wellington/spritewell"
 	"github.com/wellington/wellington/context"
 
 	wt "github.com/wellington/wellington"
@@ -111,31 +110,31 @@ func main() {
 		style = context.NESTED_STYLE
 	}
 
+	gba := wt.NewBuildArgs()
+
+	gba.Dir = Dir
+	gba.BuildDir = BuildDir
+	gba.Includes = Includes
+	gba.Font = Font
+	gba.Style = style
+	gba.Gen = Gen
+	gba.Comments = Comments
+
+	pMap := wt.NewPartialMap()
+	// FIXME: Copy pasta with LoadAndBuild
+	ctx := &context.Context{
+		Sprites:      gba.Sprites,
+		Imgs:         gba.Imgs,
+		OutputStyle:  gba.Style,
+		ImageDir:     gba.Dir,
+		FontDir:      gba.Font,
+		GenImgDir:    gba.Gen,
+		Comments:     gba.Comments,
+		IncludePaths: []string{Includes},
+	}
+
 	if Http {
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			var pout bytes.Buffer
-			ctx := context.NewContext()
-
-			// Set headers
-			if origin := r.Header.Get("Origin"); origin != "" {
-				w.Header().Set("Access-Control-Allow-Origin", origin)
-			}
-			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
-			w.Header().Set("Access-Control-Allow-Credentials", "true")
-			_, err := wt.StartParser(ctx, r.Body, &pout, "",
-				wt.NewPartialMap())
-			if err != nil {
-				io.WriteString(w, err.Error())
-				return
-			}
-
-			err = ctx.Compile(&pout, w)
-			if err != nil {
-				io.WriteString(w, err.Error())
-			}
-		})
-		err := http.ListenAndServe(":12345", nil)
+		err := http.ListenAndServe(":12345", httpHandler(ctx))
 
 		if err != nil {
 			log.Fatal("ListenAndServe: ", err)
@@ -147,14 +146,12 @@ func main() {
 	if len(flag.Args()) == 0 {
 
 		// Read from stdin
-		log.Print("Reading from stdin, -h for help")
+		fmt.Println("Reading from stdin, -h for help")
 		out := os.Stdout
 		in := os.Stdin
 
 		var pout bytes.Buffer
-		ctx := context.Context{}
-
-		_, err := wt.StartParser(&ctx, in, &pout, "", wt.NewPartialMap())
+		_, err := wt.StartParser(ctx, in, &pout, wt.NewPartialMap())
 		if err != nil {
 			log.Println(err)
 		}
@@ -165,28 +162,10 @@ func main() {
 		}
 	}
 
-	SpriteCache := spritewell.SafeImageMap{
-		M: make(map[string]spritewell.ImageList, 100)}
-	ImageCache := spritewell.SafeImageMap{
-		M: make(map[string]spritewell.ImageList, 100)}
 	sassPaths := make([]string, len(flag.Args()))
-
-	bArgs := &wt.BuildArgs{
-		Imgs:     ImageCache,
-		Sprites:  SpriteCache,
-		Dir:      Dir,
-		BuildDir: BuildDir,
-		Includes: Includes,
-		Font:     Font,
-		Style:    style,
-		Gen:      Gen,
-		Comments: Comments,
-	}
-
-	pMap := wt.NewPartialMap()
 	for i, f := range flag.Args() {
 		sassPaths[i] = filepath.Dir(f)
-		err := wt.LoadAndBuild(f, bArgs, pMap)
+		err := wt.LoadAndBuild(f, gba, pMap)
 		if err != nil {
 			log.Println(err)
 		}
@@ -196,7 +175,7 @@ func main() {
 		w := wt.NewWatcher()
 		w.PartialMap = pMap
 		w.Dirs = sassPaths
-		w.BArgs = bArgs
+		w.BArgs = gba
 		w.Watch()
 
 		fmt.Println("File watcher started use `ctrl+d` to exit")
@@ -211,4 +190,28 @@ func main() {
 			}
 		}
 	}
+}
+
+func httpHandler(ctx *context.Context) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var pout bytes.Buffer
+
+		// Set headers
+		if origin := r.Header.Get("Origin"); origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		_, err := wt.StartParser(ctx, r.Body, &pout, wt.NewPartialMap())
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+
+		err = ctx.Compile(&pout, w)
+		if err != nil {
+			io.WriteString(w, err.Error())
+		}
+	})
 }

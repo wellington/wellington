@@ -303,12 +303,3 @@ p {
 		}
 	}
 }
-
-func TestLoadAndBuild(t *testing.T) {
-
-	err := LoadAndBuild("test", &BuildArgs{}, NewPartialMap())
-	if err != nil {
-		t.Error(err)
-	}
-
-}

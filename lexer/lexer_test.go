@@ -20,51 +20,6 @@ func TestLexerBools(t *testing.T) {
 	}
 }
 
-func TestLexer(t *testing.T) {
-
-	lex := New(nil, "")
-	if lex != nil {
-		t.Errorf("non-nil Lexer on nil state")
-	}
-
-	fvar, _ := ioutil.ReadFile("../test/sass/_var.scss")
-
-	items, err := testParse(string(fvar))
-
-	if err != nil {
-		t.Errorf("Error parsing string")
-	}
-
-	sel := items[0].String()
-	if e := "@import"; e != sel {
-		t.Errorf("Invalid VAR parsing expected: %s, was: %s",
-			e, sel)
-	}
-
-	if e := "sprite-map"; e != items[5].String() {
-		t.Errorf("Invalid CMD parsing expected: %s, was: %s",
-			e, items[1].String())
-	}
-
-	sel = items[7].String()
-	if e := "*.png"; e != sel {
-		t.Errorf("Invalid FILE parsing expected: %s, was: %s",
-			e, sel)
-	}
-
-	T := items[7].Type
-	if e := FILE; e != T {
-		t.Errorf("Invalid FILE parsing expected: %s, was: %s",
-			e, T)
-	}
-
-	sel = items[16].String()
-	if e := "#00FF00"; e != sel {
-		t.Errorf("Invalid TEXT parsing expected: %s, was: %s",
-			e, sel)
-	}
-}
-
 func TestLexerComment(t *testing.T) {
 	in := `/* some;
 multiline comments +*-0
