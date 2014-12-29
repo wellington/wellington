@@ -278,8 +278,7 @@ func SpriteMap(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 	if err != nil {
 		return cx.Error(err)
 	}
-	gpath, err := imgs.Combine()
-	_ = gpath
+	_, err = imgs.Combine()
 	if err != nil {
 		return cx.Error(err)
 	}

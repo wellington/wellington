@@ -462,7 +462,7 @@ div {
 
 	// Output:
 	// div {
-	//   background: url("img/b798ab.png") -0px -149px; }
+	//   background: url("img/ec0dbb.png") -0px -149px; }
 
 }
 
@@ -496,6 +496,43 @@ div {
 		t.Errorf("got:\n~%s~\nwanted:\n~%s~\n", err.Error(), e)
 	}
 
+}
+
+func TestSpriteMany(t *testing.T) {
+
+	in := bytes.NewBufferString(`
+$map: sprite-map("many/*.jpg", 0px);
+div {
+  background: sprite($map, "bird");
+  background: sprite($map, "in");
+  background: sprite($map, "pencil");
+  background: sprite($map, "rss");
+  background: sprite($map, "twitt");
+}`)
+
+	ctx := cx.NewContext()
+
+	ctx.BuildDir = "../test/build"
+	ctx.GenImgDir = "../test/build/img"
+	ctx.ImageDir = "../test/img"
+	var out bytes.Buffer
+	err := ctx.Compile(in, &out)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	e := `div {
+  background: url("img/617970.png") -0px -0px;
+  background: url("img/617970.png") -0px -150px;
+  background: url("img/617970.png") -0px -300px;
+  background: url("img/617970.png") -0px -450px;
+  background: url("img/617970.png") -0px -600px; }
+`
+
+	if out.String() != e {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
+	}
 }
 
 func TestInlineSVG(t *testing.T) {
