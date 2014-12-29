@@ -3,7 +3,6 @@ package wellington
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -302,34 +301,5 @@ p {
 		for i := range lineArr {
 			fmt.Printf("%2d: %2d: %s\n", i+1-5, i+1, string(lineArr[i]))
 		}
-	}
-}
-
-func TestLoadAndBuild(t *testing.T) {
-	oo := os.Stdout
-
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-	err := LoadAndBuild("test/sass/file.scss", &BuildArgs{}, NewPartialMap())
-	if err != nil {
-		t.Error(err)
-	}
-	outC := make(chan string)
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		outC <- buf.String()
-	}()
-
-	w.Close()
-	os.Stdout = oo
-	out := <-outC
-
-	e := `div {
-  color: black; }
-Rebuilt: test/sass/file.scss
-`
-	if e != out {
-		t.Errorf("got:\n%s\nwanted:\n%s", out, e)
 	}
 }
