@@ -123,14 +123,14 @@ func main() {
 	pMap := wt.NewPartialMap()
 	// FIXME: Copy pasta with LoadAndBuild
 	ctx := &context.Context{
-		Sprites:     gba.Sprites,
-		Imgs:        gba.Imgs,
-		OutputStyle: gba.Style,
-		ImageDir:    gba.Dir,
-		FontDir:     gba.Font,
-
-		GenImgDir: gba.Gen,
-		Comments:  gba.Comments,
+		Sprites:      gba.Sprites,
+		Imgs:         gba.Imgs,
+		OutputStyle:  gba.Style,
+		ImageDir:     gba.Dir,
+		FontDir:      gba.Font,
+		GenImgDir:    gba.Gen,
+		Comments:     gba.Comments,
+		IncludePaths: []string{Includes},
 	}
 
 	if Http {
@@ -167,12 +167,11 @@ func main() {
 	if len(flag.Args()) == 0 {
 
 		// Read from stdin
-		log.Print("Reading from stdin, -h for help")
+		fmt.Println("Reading from stdin, -h for help")
 		out := os.Stdout
 		in := os.Stdin
 
 		var pout bytes.Buffer
-
 		_, err := wt.StartParser(ctx, in, &pout, wt.NewPartialMap())
 		if err != nil {
 			log.Println(err)

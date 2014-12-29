@@ -1,11 +1,7 @@
-@import "../../sass/sprite";
-$images: sprite-map("*.png");
 $red-var: red;
 $hex: #00FF00;
 div {
   background: $hex;
   $hex: #00DD00;
-  background: sprite($images, 139);
-  background: sprite($images, 140);
   font-size: 10pt;
 }
