@@ -185,13 +185,16 @@ div {
 }
 ```
 
-#### inline-image($path)
+#### inline-image($path[, $encode: false])
 
-inline-image returns a base64 encoded png from the image specified at path.
+inline-image creates a base64 encoded png. When the image is svg, it returns an inline svg that can optionally be base64 encoded.  Encoding incurs a file size penalty.
 
 ```
 div {
 	background: inline-image("path/to/image.png");
+}
+div.svg {
+	background: inline-image("path/to/image.svg", $encode: false);
 }
 ```
 
@@ -199,7 +202,10 @@ div {
 
 ```css
 div {
-	background: inline-image("path/to/image.png");
+	background: inline-image("data:image/png;base64,iVBOR...");
+}
+div.svg {
+	background: inline-image("data:image/svg+xml;utf8,%3C%3F...");
 }
 ```
 
