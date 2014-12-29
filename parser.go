@@ -77,7 +77,13 @@ func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 		p.SassDir = pkgdir
 	}
 	buf := bytes.NewBuffer(make([]byte, 0, bytes.MinRead))
-	buf.ReadFrom(in)
+	if in == nil {
+		return []byte{}, fmt.Errorf("input is empty")
+	}
+	_, err := buf.ReadFrom(in)
+	if err != nil {
+		return []byte{}, err
+	}
 
 	// This pass resolves all the imports, but positions will
 	// be off due to @import calls

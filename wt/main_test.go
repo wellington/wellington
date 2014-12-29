@@ -4,8 +4,12 @@ import (
 	"bytes"
 	"flag"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
+
+	"github.com/wellington/wellington/context"
 )
 
 func TestStdinImport(t *testing.T) {
@@ -94,7 +98,40 @@ div {
 }
 
 func TestHttp(t *testing.T) {
-	// TODO: Tests for accepting input from Http
+	ctx := context.NewContext()
+	hh := httpHandler(ctx)
+	// nil causes panic, is this a problem?
+	req, err := http.NewRequest("GET", "", nil)
+	if err != nil {
+		t.Error(err)
+	}
+	w := httptest.NewRecorder()
+	hh.ServeHTTP(w, req)
+
+	if e := 200; w.Code != e {
+		t.Errorf("got: %d wanted: %d", w.Code, e)
+	}
+
+	if e := "input is empty"; w.Body.String() != e {
+		t.Errorf("got: %s wanted: %s", w.Body.String(), e)
+	}
+
+	req, err = http.NewRequest("GET", "", bytes.NewBufferString(`div { p { color: red; } }`))
+	if err != nil {
+		t.Error(err)
+	}
+	w.Body.Reset()
+	hh.ServeHTTP(w, req)
+
+	if e := 200; w.Code != e {
+		t.Errorf("got: %d wanted: %d", w.Code, e)
+	}
+	e := `div p {
+  color: red; }
+`
+	if w.Body.String() != e {
+		t.Errorf("got: %s wanted: %s", w.Body.String(), e)
+	}
 }
 
 func TestFile(t *testing.T) {
