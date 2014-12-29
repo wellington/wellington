@@ -1,8 +1,9 @@
 package handlers
 
 import (
+	"bytes"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -155,56 +156,23 @@ func ImageWidth(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 // InlineImage returns a base64 encoded png from the input image
 func InlineImage(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 	var (
-		name    string
-		encoded bool
+		name   string
+		encode bool
 	)
-	err := cx.Unmarshal(usv, &name, &encoded)
+	err := cx.Unmarshal(usv, &name, &encode)
 	if err != nil {
 		return cx.Error(err)
 	}
 
-	if !sw.CanDecode(filepath.Ext(name)) {
-		// Special fallthrough for svg
-		if filepath.Ext(name) == ".svg" {
-			fin, err := ioutil.ReadFile(filepath.Join(ctx.ImageDir, name))
-			if err != nil {
-				return cx.Error(err)
-			}
-			var out []byte
-			if encoded {
-				out = sw.InlineSVGBase64(fin)
-			} else {
-				out = sw.InlineSVG(fin)
-			}
-			res, err := cx.Marshal(string(out))
-			if err != nil {
-				return cx.Error(err)
-			}
-			return res
-		}
-		s := fmt.Sprintf("inline-image: %s filetype %s is not supported",
-			name, filepath.Ext(name))
-		fmt.Println(s)
-		// TODO: Replace with warning
-		res, _ := cx.Marshal(s)
-		return res
-	}
-
-	imgs := sw.ImageList{
-		ImageDir:  ctx.ImageDir,
-		BuildDir:  ctx.BuildDir,
-		GenImgDir: ctx.GenImgDir,
-	}
-	err = imgs.Decode(name)
+	f, err := os.Open(filepath.Join(ctx.ImageDir, name))
 	if err != nil {
 		return cx.Error(err)
 	}
-	_, err = imgs.Combine()
-	if err != nil {
-		fmt.Println(err)
-	}
-	str := imgs.Inline()
-	res, err := cx.Marshal(str)
+
+	var buf bytes.Buffer
+
+	sw.Inline(f, &buf, encode)
+	res, err := cx.Marshal(buf.String())
 	if err != nil {
 		return cx.Error(err)
 	}

@@ -308,32 +308,10 @@ div {
 		t.Error(err)
 	}
 	e := `div {
-  background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAMAAAAoyzS7AAAAA1BMVEX/TQBcNTh/AAAAAXRSTlMz/za5cAAAAA5JREFUeJxiYgAEAAD//wAGAAP60FmuAAAAAElFTkSuQmCC'); }
+  background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAMAAAAoyzS7AAAAA1BMVEX/TQBcNTh/AAAAAXRSTlMz/za5cAAAAA5JREFUeJxiYgAEAAD//wAGAAP60FmuAAAAAElFTkSuQmCC"); }
 `
 	if e != out.String() {
-		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
-	}
-}
-
-func TestRegInlineImageFail(t *testing.T) {
-	var f *os.File
-	old := os.Stdout
-	os.Stdout = f
-	defer func() { os.Stdout = old }()
-	in := bytes.NewBufferString(`
-div {
-    background: inline-image("image.tiff");
-}`)
-	var out bytes.Buffer
-	_, _, err := setupCtx(in, &out)
-	if err != nil {
-		t.Error(err)
-	}
-	e := `div {
-  background: inline-image: image.tiff filetype .tiff is not supported; }
-`
-	if e != out.String() {
-		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
+		t.Errorf("got:\n~%s~\nwanted:\n~%s~", out.String(), e)
 	}
 }
 
@@ -525,7 +503,7 @@ func TestInlineSVG(t *testing.T) {
 	}
 
 	e = `div {
-  background-image: url("data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+DQo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmVyc2lvbj0iMS4wIiB3aWR0aD0iNDgwIiBoZWlnaHQ9IjU0My4wMzAwMyIgdmlld0JveD0iMCAwIDI1Ny4wMDIgMjk3LjUiIHhtbDpzcGFjZT0icHJlc2VydmUiPg0KPGcgdHJhbnNmb3JtPSJtYXRyaXgoMC44NTI2ODExLDAsMCwwLjg1MjY4MTEsMTguOTMwNjMyLDIxLjkxMzI5OSkiPg0KPHBvbHlnb24gcG9pbnRzPSI4LjAwMywyMTguNDk2IDAsMjIyLjk5OCAwLDc0LjQ5NyA4LjAwMyw3OC45OTkgOC4wMDMsMjE4LjQ5NiAiLz4NCjxwb2x5Z29uIHBvaW50cz0iMTI4LjUwMSwyODcuOTk4IDEyOC41MDEsMjk3LjUgMCwyMjIuOTk4IDguMDAzLDIxOC40OTYgMTI4LjUwMSwyODcuOTk4ICIgLz4NCjxwb2x5Z29uIHBvaW50cz0iMjQ5LjAwNCwyMTguNDk2IDI1Ny4wMDIsMjIyLjk5OCAxMjguNTAxLDI5Ny41IDEyOC41MDEsMjg3Ljk5OCAyNDkuMDA0LDIxOC40OTYgIiAvPg0KPHBvbHlnb24gcG9pbnRzPSIyNDkuMDA0LDc4Ljk5OSAyNTcuMDAyLDc0LjQ5NyAyNTcuMDAyLDIyMi45OTggMjQ5LjAwNCwyMTguNDk2IDI0OS4wMDQsNzguOTk5ICIgLz4NCjxwb2x5Z29uIHBvaW50cz0iMTI4LjUwMSw5LjQ5NyAxMjguNTAxLDAgMjU3LjAwMiw3NC40OTcgMjQ5LjAwNCw3OC45OTkgMTI4LjUwMSw5LjQ5NyAiIC8+DQo8cG9seWdvbiBwb2ludHM9IjguMDAzLDc4Ljk5OSAwLDc0LjQ5NyAxMjguNTAxLDAgMTI4LjUwMSw5LjQ5NyA4LjAwMyw3OC45OTkgIiAvPg0KPC9nPg0KPC9zdmc+DQo=")"; }
+  background-image: url("data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+DQo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmVyc2lvbj0iMS4wIiB3aWR0aD0iNDgwIiBoZWlnaHQ9IjU0My4wMzAwMyIgdmlld0JveD0iMCAwIDI1Ny4wMDIgMjk3LjUiIHhtbDpzcGFjZT0icHJlc2VydmUiPg0KPGcgdHJhbnNmb3JtPSJtYXRyaXgoMC44NTI2ODExLDAsMCwwLjg1MjY4MTEsMTguOTMwNjMyLDIxLjkxMzI5OSkiPg0KPHBvbHlnb24gcG9pbnRzPSI4LjAwMywyMTguNDk2IDAsMjIyLjk5OCAwLDc0LjQ5NyA4LjAwMyw3OC45OTkgOC4wMDMsMjE4LjQ5NiAiLz4NCjxwb2x5Z29uIHBvaW50cz0iMTI4LjUwMSwyODcuOTk4IDEyOC41MDEsMjk3LjUgMCwyMjIuOTk4IDguMDAzLDIxOC40OTYgMTI4LjUwMSwyODcuOTk4ICIgLz4NCjxwb2x5Z29uIHBvaW50cz0iMjQ5LjAwNCwyMTguNDk2IDI1Ny4wMDIsMjIyLjk5OCAxMjguNTAxLDI5Ny41IDEyOC41MDEsMjg3Ljk5OCAyNDkuMDA0LDIxOC40OTYgIiAvPg0KPHBvbHlnb24gcG9pbnRzPSIyNDkuMDA0LDc4Ljk5OSAyNTcuMDAyLDc0LjQ5NyAyNTcuMDAyLDIyMi45OTggMjQ5LjAwNCwyMTguNDk2IDI0OS4wMDQsNzguOTk5ICIgLz4NCjxwb2x5Z29uIHBvaW50cz0iMTI4LjUwMSw5LjQ5NyAxMjguNTAxLDAgMjU3LjAwMiw3NC40OTcgMjQ5LjAwNCw3OC45OTkgMTI4LjUwMSw5LjQ5NyAiIC8+DQo8cG9seWdvbiBwb2ludHM9IjguMDAzLDc4Ljk5OSAwLDc0LjQ5NyAxMjguNTAxLDAgMTI4LjUwMSw5LjQ5NyA4LjAwMyw3OC45OTkgIiAvPg0KPC9nPg0KPC9zdmc+"); }
 `
 
 	if out.String() != e {
