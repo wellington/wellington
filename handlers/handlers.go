@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"bytes"
 	"fmt"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -18,7 +20,7 @@ func init() {
 	cx.RegisterHandler("image-url($name)", ImageURL)
 	cx.RegisterHandler("image-height($path)", ImageHeight)
 	cx.RegisterHandler("image-width($path)", ImageWidth)
-	cx.RegisterHandler("inline-image($path)", InlineImage)
+	cx.RegisterHandler("inline-image($path, $encode: false)", InlineImage)
 	cx.RegisterHandler("font-url($path, $raw: false)", FontURL)
 	cx.RegisterHandler("sprite($map, $name, $offsetX: 0px, $offsetY: 0px)", Sprite)
 }
@@ -154,37 +156,23 @@ func ImageWidth(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 // InlineImage returns a base64 encoded png from the input image
 func InlineImage(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 	var (
-		name string
+		name   string
+		encode bool
 	)
-	err := cx.Unmarshal(usv, &name)
+	err := cx.Unmarshal(usv, &name, &encode)
 	if err != nil {
 		return cx.Error(err)
 	}
 
-	if !sw.CanDecode(filepath.Ext(name)) {
-		s := fmt.Sprintf("inline-image: %s filetype %s is not supported",
-			name, filepath.Ext(name))
-		fmt.Println(s)
-		// TODO: Replace with warning
-		res, _ := cx.Marshal(s)
-		return res
-	}
-
-	imgs := sw.ImageList{
-		ImageDir:  ctx.ImageDir,
-		BuildDir:  ctx.BuildDir,
-		GenImgDir: ctx.GenImgDir,
-	}
-	err = imgs.Decode(name)
+	f, err := os.Open(filepath.Join(ctx.ImageDir, name))
 	if err != nil {
 		return cx.Error(err)
 	}
-	_, err = imgs.Combine()
-	if err != nil {
-		fmt.Println(err)
-	}
-	str := imgs.Inline()
-	res, err := cx.Marshal(str)
+
+	var buf bytes.Buffer
+
+	sw.Inline(f, &buf, encode)
+	res, err := cx.Marshal(buf.String())
 	if err != nil {
 		return cx.Error(err)
 	}
