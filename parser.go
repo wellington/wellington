@@ -254,7 +254,6 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]lexer.Item, string, er
 // TODO: make this function testable
 func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) error {
 
-	var Input string
 	// Remove partials
 	if strings.HasPrefix(filepath.Base(sassFile), "_") {
 		return nil
@@ -281,7 +280,6 @@ func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) e
 		out = os.Stdout
 	}
 	ctx := context.Context{
-		// TODO: Most of these fields are no longer used
 		Sprites:     gba.Sprites,
 		Imgs:        gba.Imgs,
 		OutputStyle: gba.Style,
@@ -319,7 +317,7 @@ func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) e
 	}
 
 	var pout bytes.Buffer
-	par, err := StartParser(&ctx, fRead, &pout, filepath.Dir(Input), partialMap)
+	par, err := StartParser(&ctx, fRead, &pout, partialMap)
 	if err != nil {
 		return err
 	}
@@ -341,7 +339,7 @@ func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) e
 // TODO: Should this be called StartParser or NewParser?
 // TODO: Should this function create the partialMap or is this
 // the right way to inject one?
-func StartParser(ctx *context.Context, in io.Reader, out io.Writer, pkgdir string, partialMap *SafePartialMap) (*Parser, error) {
+func StartParser(ctx *context.Context, in io.Reader, out io.Writer, partialMap *SafePartialMap) (*Parser, error) {
 	// Run the sprite_sass parser prior to passing to libsass
 	parser := &Parser{
 		ImageDir:   ctx.ImageDir,
@@ -351,7 +349,7 @@ func StartParser(ctx *context.Context, in io.Reader, out io.Writer, pkgdir strin
 		PartialMap: partialMap,
 	}
 	// Save reference to parser in context
-	bs, err := parser.Start(in, pkgdir)
+	bs, err := parser.Start(in, filepath.Dir(ctx.MainFile))
 	if err != nil {
 		return parser, err
 	}

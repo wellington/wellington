@@ -79,9 +79,9 @@ func NewContext() *Context {
 
 	// Initiailize image map(s)
 	c.Sprites = spritewell.SafeImageMap{
-		M: make(map[string]spritewell.ImageList, 100)}
+		M: make(map[string]spritewell.ImageList)}
 	c.Imgs = spritewell.SafeImageMap{
-		M: make(map[string]spritewell.ImageList, 100)}
+		M: make(map[string]spritewell.ImageList)}
 
 	return &c
 }

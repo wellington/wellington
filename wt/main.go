@@ -15,7 +15,6 @@ import (
 	"runtime/pprof"
 	"strings"
 
-	"github.com/wellington/spritewell"
 	"github.com/wellington/wellington/context"
 
 	wt "github.com/wellington/wellington"
@@ -111,10 +110,22 @@ func main() {
 		style = context.NESTED_STYLE
 	}
 
+	bArgs := wt.NewBuildArgs()
+
+	bArgs.Dir = Dir
+	bArgs.BuildDir = BuildDir
+	bArgs.Includes = Includes
+	bArgs.Font = Font
+	bArgs.Style = style
+	bArgs.Gen = Gen
+	bArgs.Comments = Comments
+
+	pMap := wt.NewPartialMap()
+
 	if Http {
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			var pout bytes.Buffer
-			ctx := context.NewContext()
+			ctx := &context.Context{}
 
 			// Set headers
 			if origin := r.Header.Get("Origin"); origin != "" {
@@ -123,8 +134,7 @@ func main() {
 			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
-			_, err := wt.StartParser(ctx, r.Body, &pout, "",
-				wt.NewPartialMap())
+			_, err := wt.StartParser(ctx, r.Body, &pout, wt.NewPartialMap())
 			if err != nil {
 				io.WriteString(w, err.Error())
 				return
@@ -154,7 +164,7 @@ func main() {
 		var pout bytes.Buffer
 		ctx := context.Context{}
 
-		_, err := wt.StartParser(&ctx, in, &pout, "", wt.NewPartialMap())
+		_, err := wt.StartParser(&ctx, in, &pout, wt.NewPartialMap())
 		if err != nil {
 			log.Println(err)
 		}
@@ -165,25 +175,7 @@ func main() {
 		}
 	}
 
-	SpriteCache := spritewell.SafeImageMap{
-		M: make(map[string]spritewell.ImageList, 100)}
-	ImageCache := spritewell.SafeImageMap{
-		M: make(map[string]spritewell.ImageList, 100)}
 	sassPaths := make([]string, len(flag.Args()))
-
-	bArgs := &wt.BuildArgs{
-		Imgs:     ImageCache,
-		Sprites:  SpriteCache,
-		Dir:      Dir,
-		BuildDir: BuildDir,
-		Includes: Includes,
-		Font:     Font,
-		Style:    style,
-		Gen:      Gen,
-		Comments: Comments,
-	}
-
-	pMap := wt.NewPartialMap()
 	for i, f := range flag.Args() {
 		sassPaths[i] = filepath.Dir(f)
 		err := wt.LoadAndBuild(f, bArgs, pMap)
