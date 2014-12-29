@@ -311,8 +311,32 @@ div {
   background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAMAAAAoyzS7AAAAA1BMVEX/TQBcNTh/AAAAAXRSTlMz/za5cAAAAA5JREFUeJxiYgAEAAD//wAGAAP60FmuAAAAAElFTkSuQmCC"); }
 `
 	if e != out.String() {
-		t.Errorf("got:\n~%s~\nwanted:\n~%s~", out.String(), e)
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
 	}
+
+	in = bytes.NewBufferString(`
+div {
+    background: inline-image("pixel/nofile.png");
+}`)
+	out.Reset()
+	_, _, err = setupCtx(in, &out)
+	if err == nil {
+		t.Error("No error thrown for missing file")
+	}
+	e = `Error > stdin:3
+error in C function inline-image: open ../test/img/pixel/nofile.png: no such file or directory
+Backtrace:
+	stdin:3, in function ` + "`inline-image`" + `
+	stdin:3
+
+div {
+    background: inline-image("pixel/nofile.png");
+}
+`
+	if e != err.Error() {
+		t.Errorf("got:\n~%s~\nwanted:\n~%s~", err.Error(), e)
+	}
+
 }
 
 func TestFontURLFail(t *testing.T) {
