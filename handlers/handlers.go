@@ -156,7 +156,7 @@ func ImageWidth(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 	return res
 }
 
-func HandlerInline(name string) (io.ReadCloser, error) {
+func inlineHandler(name string) (*http.Request, error) {
 
 	u, err := url.Parse(name)
 	if err != nil || u.Scheme == "" {
@@ -167,13 +167,7 @@ func HandlerInline(name string) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp.Body, nil
+	return req, nil
 }
 
 // InlineImage returns a base64 encoded png from the input image
@@ -190,8 +184,17 @@ func InlineImage(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 
 	f, err = os.Open(filepath.Join(ctx.ImageDir, name))
 	if err != nil {
-		var uerr error
-		f, uerr = HandlerInline(name)
+		req, uerr := inlineHandler(name)
+		if uerr != nil || req == nil {
+			return cx.Error(err)
+		}
+		client := &http.Client{}
+		resp, uerr := client.Do(req)
+		if uerr != nil {
+			return cx.Error(err)
+		}
+		defer resp.Body.Close()
+
 		if uerr == nil && f != nil {
 			err = uerr
 		}

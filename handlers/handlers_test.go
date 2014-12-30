@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/wellington/spritewell"
 	cx "github.com/wellington/wellington/context"
@@ -314,6 +317,34 @@ div {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
 	}
 }
+
+func TestInlineHandler(t *testing.T) {
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "ok")
+	}
+
+	req, err := inlineHandler("http://example.com/image.png")
+	if err != nil {
+		t.Error(err)
+	}
+
+	w := httptest.NewRecorder()
+	handler(w, req)
+
+	go func() {
+		time.Sleep(1 * time.Millisecond)
+		t.Error("Timeout without returning")
+	}()
+	if e := 200; w.Code != e {
+		t.Errorf("got: %d wanted: %d", w.Code, e)
+	}
+
+	if e := "ok"; w.Body.String() != e {
+		t.Errorf("got: %s wanted: %s", w.Body.String(), e)
+	}
+}
+
 func TestInlineImageNoFile(t *testing.T) {
 	in := bytes.NewBufferString(`
 div {
