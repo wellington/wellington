@@ -24,7 +24,9 @@ WORKDIR /usr/src/app
 RUN go get -d -v ./...
 RUN ln -s /usr/src/myapp /go/src/github.com/wellington/wellington
 RUN make install
+
 EXPOSE 12345
 VOLUME "/data"
 
+WORKDIR /data
 CMD ["wt", "-p", "/data", "-d", "/data/img", "-b", "/data/build", "-http"]
