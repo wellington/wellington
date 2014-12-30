@@ -313,17 +313,18 @@ div {
 	if e != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
 	}
-
-	in = bytes.NewBufferString(`
+}
+func TestInlineImageNoFile(t *testing.T) {
+	in := bytes.NewBufferString(`
 div {
     background: inline-image("pixel/nofile.png");
 }`)
-	out.Reset()
-	_, _, err = setupCtx(in, &out)
+	var out bytes.Buffer
+	_, _, err := setupCtx(in, &out)
 	if err == nil {
 		t.Error("No error thrown for missing file")
 	}
-	e = `Error > stdin:3
+	e := `Error > stdin:3
 error in C function inline-image: open ../test/img/pixel/nofile.png: no such file or directory
 Backtrace:
 	stdin:3, in function ` + "`inline-image`" + `
