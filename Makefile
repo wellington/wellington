@@ -3,7 +3,6 @@ current_dir = $(shell pwd)
 rmnpath = $(RMN_BASE_PATH)
 guipath = $(rmnpath)/www/gui
 
-FILES := $(shell find $(rmnpath)/www/gui/sass -name "[^_]*\.scss")
 echo:
 	echo $(current_dir)
 install:
@@ -36,7 +35,7 @@ test:
 compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
 swift: install
-	time wt -gen $(guipath)/build/im -font $(guipath)/font-face -b $(guipath)/build/css/ -p $(guipath)/sass -d $(guipath)/im/sass $(FILES)
+	scripts/swift.sh
 watch: install
 	wt --watch -gen $(guipath)/build/im -font $(guipath)/font-face -b $(guipath)/build/css/ -p $(guipath)/sass -d $(guipath)/im/sass $(FILES)
 time: compass swift
