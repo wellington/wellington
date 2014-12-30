@@ -213,5 +213,6 @@ func httpHandler(ctx *context.Context) http.Handler {
 		if err != nil {
 			io.WriteString(w, err.Error())
 		}
+		ctx.Reset()
 	})
 }

@@ -45,6 +45,11 @@ func (ctx *Context) error() string {
 	return ctx.errorString
 }
 
+// Reset returns removes all error state information.
+func (ctx *Context) Reset() {
+	ctx.errorString = ""
+}
+
 // ErrorLine attempts to resolve the file associated with
 // a stdin:#
 func (ctx *Context) ErrorLine() int {
