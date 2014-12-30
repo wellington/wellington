@@ -1,10 +1,10 @@
 FROM golang:1.4rc2
 
-ENV libsass_ver 3.1.0-beta.2
-
 # install g++
 RUN apt-get update
 RUN apt-get -y install g++ pkg-config dh-autoreconf
+
+ENV libsass_ver 3.1.0-beta.2
 
 RUN curl -sSL https://github.com/sass/libsass/archive/$libsass_ver.tar.gz \
 		| tar -v -C /usr/src -xz
