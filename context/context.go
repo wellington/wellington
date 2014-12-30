@@ -154,6 +154,7 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 // Options and custom functions are applied as specified in Context.
 func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 
+	defer ctx.Reset()
 	bs, err := ioutil.ReadAll(in)
 
 	// ctx.debug = bs
