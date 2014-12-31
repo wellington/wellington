@@ -38,7 +38,9 @@ Wellington can be installed via brew
 	brew tap drewwells/wt
 	brew install wellington
 
-Check out the releases for compiled binaries
+Or, run it in docker
+
+	docker run -v $(pwd):/data -it drewwells/wellington wt proj.scss
 
 #### Building from source
 Install Go and add $GOPATH/bin to your $PATH. [Detailed instructions](https://golang.org/doc/install)
