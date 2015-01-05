@@ -16,12 +16,6 @@ else
 fi
 cd libsass
 autoreconf -fvi
-./configure --disable-shared --prefix=$HOME --disable-silent-rules --disable-dependency-tracking
+./configure --disable-shared --prefix=$(pwd) --disable-silent-rules --disable-dependency-tracking
 # Check file permissions
-touch /usr/local/lib/libsass.a
-if [ -w '/usr/local/lib/libsass.a' ];
-then
-	make install
-else
-	sudo make install
-fi
+make install
