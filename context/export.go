@@ -4,7 +4,7 @@ package context
 // defines additional C code necessary for the context<->sass_context bridge.
 // See: http://golang.org/cmd/cgo/#hdr-C_references_to_Go
 
-// #cgo pkg-config: --cflags libsass
+// #cgo pkg-config: --cflags --libs libsass
 // #cgo LDFLAGS: -lsass -lstdc++ -lm -std=c++11
 // #include "sass_context.h"
 import "C"
