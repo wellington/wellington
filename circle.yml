@@ -1,8 +1,8 @@
 machine:
   environment:
-    PKG_CONFIG_PATH: "$HOME/lib/pkgconfig/"
     LIBSASS_VERSION: $(cat $HOME/$CIRCLE_PROJECT_REPONAME/.libsass_version)
     PROJECT_ROOT: $HOME/.go_workspace/src/github.com/wellington/wellington
+    PKG_CONFIG_PATH: "$HOME/$CIRCLE_PROJECT_REPONAME/libsass/lib/pkgconfig/"
 dependencies:
   cache_directories:
     - "$HOME/lib"    # relative to the build directory
@@ -15,7 +15,6 @@ dependencies:
     - go get golang.org/x/tools/cmd/goimports
     - go get github.com/golang/lint/golint
     - echo $LIBSASS_VERSION
-    #- echo "export LIBSASS_VERSION=$(cat $HOME/$CIRCLE_PROJECT_REPONAME/.libsass_version)" >> ~/.circlerc
     - make deps
   override:
     - echo $PROJECT_ROOT/hello
