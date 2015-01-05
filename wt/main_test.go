@@ -139,7 +139,7 @@ func TestHttpError(t *testing.T) {
 	hh := httpHandler(ctx)
 	// nil causes panic, is this a problem?
 	req, err := http.NewRequest("GET", "",
-		bytes.NewBufferString(`div { p { color: red; } };`))
+		bytes.NewBufferString(`div { p { color: darken(); } };`))
 	if err != nil {
 		t.Error(err)
 	}
@@ -151,16 +151,16 @@ func TestHttpError(t *testing.T) {
 	}
 
 	e := `Error > stdin:6
-invalid top-level expression
+required parameter $color is missing in call to function darken
 @mixin sprite-dimensions($map, $name) {
   $file: sprite-file($map, $name);
   height: image-height($file);
   width: image-width($file);
 }
-div { p { color: red; } };
+div { p { color: darken(); } };
 `
 	if w.Body.String() != e {
-		t.Errorf("got: %s wanted: %s", w.Body.String(), e)
+		t.Errorf("got:\n%s\nwanted:\n%s", w.Body.String(), e)
 	}
 
 	req, err = http.NewRequest("GET", "",
