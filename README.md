@@ -265,6 +265,13 @@ You may want to cd `$GOPATH/wellington/wellington` and set the origin to your fo
 	git remote rm origin
 	git remote add origin git@github.com:username/wellington.git
 
+Dependencies
+
+    make deps
+    PKG_CONFIG_PATH=$(pwd)/libsass/lib/pkgconfig go test ./...
+    
+It's recommended to set the `PKG_CONFIG_PATH` env variable to this location or to install libsass to the current `PKG_CONFIG_PATH` location.
+
 Testing
 
     make test
