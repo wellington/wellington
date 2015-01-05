@@ -16,15 +16,7 @@ dependencies:
     - go get github.com/golang/lint/golint
     - echo $LIBSASS_VERSION
     #- echo "export LIBSASS_VERSION=$(cat $HOME/$CIRCLE_PROJECT_REPONAME/.libsass_version)" >> ~/.circlerc
-    - mkdir libsass
-    - curl -k -L https://github.com/sass/libsass/archive/$LIBSASS_VERSION.tar.gz -o libsass.tar.gz:
-        pwd: libsass
-    - tar -xvf libsass.tar.gz --strip 1 && autoreconf -fvi:
-        pwd: libsass
-    - ./configure --disable-shared --prefix=$HOME --disable-silent-rules --disable-dependency-tracking:
-        pwd: libsass
-    - make install:
-        pwd: libsass
+    - make deps
   override:
     - echo $PROJECT_ROOT/hello
 checkout:
