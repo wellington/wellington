@@ -35,8 +35,8 @@ Wellington has been written in Go for portability, modularity, and speed.  There
 Wellington can be installed via brew
 
 	brew update
-	brew tap drewwells/wt
 	brew install wellington
+	wt -h
 
 Or, run it in docker
 
