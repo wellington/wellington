@@ -37,5 +37,5 @@ compass:
 swift: install
 	scripts/swift.sh
 watch: install
-	wt --watch -gen $(guipath)/build/im -font $(guipath)/font-face -b $(guipath)/build/css/ -p $(guipath)/sass -d $(guipath)/im/sass $(FILES)
+	scripts/watch.sh
 time: compass swift
