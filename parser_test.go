@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"regexp"
-	"strings"
 	"testing"
 )
 
@@ -18,40 +17,6 @@ var spritePreamble string
 
 func init() {
 	rerandom = regexp.MustCompile(`-\w{6}(?:\.(png|jpg))`)
-
-	bs, err := ioutil.ReadFile("sass/_sprite.scss")
-	if err != nil {
-		log.Fatal(err)
-	}
-	spritePreamble = strings.TrimSuffix(string(bs), "\n")
-}
-
-func TestParserRelative(t *testing.T) {
-	p := Parser{
-		BuildDir:   "test/build",
-		MainFile:   "sprite.css",
-		PartialMap: NewPartialMap(),
-	}
-	f, err := ioutil.ReadFile("sass/_sprite.scss")
-	if err != nil {
-		log.Fatal(err)
-	}
-	in := bytes.NewBuffer(f)
-	in.WriteString(`div {
-  background: image-url('img/139.png');
-}`)
-	e := fmt.Sprintf(`$rel: "..";
-%s
-div {
-  background: image-url('img/139.png');
-}`, spritePreamble)
-	bs, _ := p.Start(in, "test")
-	out := string(bs)
-
-	if out != e {
-		t.Skipf("Mismatch expected:\n%s\nwas:\n%s", e, out)
-	}
-
 }
 
 func TestParserImporter(t *testing.T) {
