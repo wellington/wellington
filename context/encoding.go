@@ -26,9 +26,7 @@ func unmarshal(arg UnionSassValue, v interface{}) error {
 	k := f.Kind()
 	t := f.Type()
 
-	//If passed an interface allow the SassValue to dictate the resulting type
 	if k == reflect.Interface {
-
 		switch {
 		default:
 			return errors.New("Uncovertable interface value. Specify type desired.")
@@ -39,7 +37,8 @@ func unmarshal(arg UnionSassValue, v interface{}) error {
 			k = reflect.String
 		case bool(C.sass_value_is_boolean(arg)):
 			k = reflect.Bool
-		case bool(C.sass_value_is_color(arg)) || (bool(C.sass_value_is_number(arg))):
+		case bool(C.sass_value_is_color(arg)) ||
+			bool(C.sass_value_is_number(arg)):
 			k = reflect.Struct
 		case bool(C.sass_value_is_list(arg)):
 			k = reflect.Slice
