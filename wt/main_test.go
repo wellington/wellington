@@ -99,7 +99,7 @@ div {
 
 func TestHttp(t *testing.T) {
 	ctx := context.NewContext()
-	hh := httpHandler(ctx)
+	hh := http.HandlerFunc(httpHandler(ctx))
 	// nil causes panic, is this a problem?
 	req, err := http.NewRequest("GET", "", nil)
 	if err != nil {
@@ -136,7 +136,7 @@ func TestHttp(t *testing.T) {
 
 func TestHttpError(t *testing.T) {
 	ctx := context.NewContext()
-	hh := httpHandler(ctx)
+	hh := http.HandlerFunc(httpHandler(ctx))
 	// nil causes panic, is this a problem?
 	req, err := http.NewRequest("GET", "",
 		bytes.NewBufferString(`div { p { color: darken(); } };`))

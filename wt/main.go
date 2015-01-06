@@ -133,7 +133,14 @@ func main() {
 	}
 
 	if ishttp {
-		err := http.ListenAndServe(":12345", httpHandler(ctx))
+		http.Handle(Dir,
+			http.StripPrefix("/build",
+				http.FileServer(http.Dir(Dir)),
+			),
+		)
+
+		http.HandleFunc("/", httpHandler(ctx))
+		err := http.ListenAndServe(":12345", nil)
 
 		if err != nil {
 			log.Fatal("ListenAndServe: ", err)
@@ -191,8 +198,8 @@ func main() {
 	}
 }
 
-func httpHandler(ctx *context.Context) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func httpHandler(ctx *context.Context) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		var pout bytes.Buffer
 
 		// Set headers
@@ -212,5 +219,5 @@ func httpHandler(ctx *context.Context) http.Handler {
 		if err != nil {
 			io.WriteString(w, err.Error())
 		}
-	})
+	}
 }
