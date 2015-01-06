@@ -242,6 +242,18 @@ func TestMarshalSassNumber(t *testing.T) {
 	}
 }
 
+func TestMarshalError(t *testing.T) {
+	e := "error has been thrown"
+	err := fmt.Errorf(e)
+	eusv := Error(err)
+	var s string
+	Unmarshal(eusv, &s)
+
+	if s != e {
+		t.Errorf("got:\n%s\nwanted:\n%s", s, e)
+	}
+}
+
 func TestMarshalColor(t *testing.T) {
 	c := color.RGBA{
 		R: uint8(5),
