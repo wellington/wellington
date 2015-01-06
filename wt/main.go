@@ -24,36 +24,35 @@ import (
 const version = `v0.4.0`
 
 var (
-	Font, Dir, Gen, Includes string
-	MainFile, Style          string
-	Comments, Watch          bool
-	cpuprofile               string
-	Http, Help, ShowVersion  bool
-	BuildDir                 string
+	font, dir, gen, includes  string
+	mainFile, style           string
+	comments, watch           bool
+	cpuprofile, buildDir      string
+	ishttp, help, showVersion bool
 )
 
 func init() {
-	flag.BoolVar(&ShowVersion, "version", false, "Show the app version")
+	flag.BoolVar(&showVersion, "version", false, "Show the app version")
 
-	flag.BoolVar(&Help, "help", false, "this help")
-	flag.BoolVar(&Help, "h", false, "this help")
+	flag.BoolVar(&help, "help", false, "this help")
+	flag.BoolVar(&help, "h", false, "this help")
 
-	flag.StringVar(&BuildDir, "b", "", "Build Directory")
-	flag.StringVar(&Gen, "gen", ".", "Directory for generated images")
+	flag.StringVar(&buildDir, "b", "", "Build Directory")
+	flag.StringVar(&gen, "gen", ".", "Directory for generated images")
 
-	flag.StringVar(&Includes, "p", "", "SASS import path")
-	flag.StringVar(&Dir, "dir", "", "Image directory")
-	flag.StringVar(&Dir, "d", "", "Image directory")
-	flag.StringVar(&Font, "font", ".", "Font Directory")
+	flag.StringVar(&includes, "p", "", "SASS import path")
+	flag.StringVar(&dir, "dir", "", "Image directory")
+	flag.StringVar(&dir, "d", "", "Image directory")
+	flag.StringVar(&font, "font", ".", "Font Directory")
 
-	flag.StringVar(&Style, "style", "nested", "CSS nested style")
-	flag.StringVar(&Style, "s", "nested", "CSS nested style")
-	flag.BoolVar(&Comments, "comment", true, "Turn on source comments")
-	flag.BoolVar(&Comments, "c", true, "Turn on source comments")
+	flag.StringVar(&style, "style", "nested", "CSS nested style")
+	flag.StringVar(&style, "s", "nested", "CSS nested style")
+	flag.BoolVar(&comments, "comment", true, "Turn on source comments")
+	flag.BoolVar(&comments, "c", true, "Turn on source comments")
 
-	flag.BoolVar(&Http, "http", false, "Listen for http connections")
-	flag.BoolVar(&Watch, "watch", false, "File watcher that will rebuild css on file changes")
-	flag.BoolVar(&Watch, "w", false, "File watcher that will rebuild css on file changes")
+	flag.BoolVar(&ishttp, "http", false, "Listen for http connections")
+	flag.BoolVar(&watch, "watch", false, "File watcher that will rebuild css on file changes")
+	flag.BoolVar(&watch, "w", false, "File watcher that will rebuild css on file changes")
 
 	flag.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
 }
@@ -61,7 +60,7 @@ func init() {
 func main() {
 	flag.Parse()
 
-	if ShowVersion {
+	if showVersion {
 		fmt.Println(version)
 		os.Exit(0)
 	}
@@ -90,21 +89,21 @@ func main() {
 		}
 	}
 
-	if Help {
+	if help {
 		fmt.Println("Please specify input filepath.")
 		fmt.Println("\nAvailable options:")
 		flag.PrintDefaults()
 		return
 	}
 
-	if Gen != "" {
-		err := os.MkdirAll(Gen, 0755)
+	if gen != "" {
+		err := os.MkdirAll(gen, 0755)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	style, ok := context.Style[Style]
+	style, ok := context.Style[style]
 
 	if !ok {
 		style = context.NESTED_STYLE
@@ -112,13 +111,13 @@ func main() {
 
 	gba := wt.NewBuildArgs()
 
-	gba.Dir = Dir
-	gba.BuildDir = BuildDir
-	gba.Includes = Includes
-	gba.Font = Font
+	gba.Dir = dir
+	gba.BuildDir = buildDir
+	gba.Includes = includes
+	gba.Font = font
 	gba.Style = style
-	gba.Gen = Gen
-	gba.Comments = Comments
+	gba.Gen = gen
+	gba.Comments = comments
 
 	pMap := wt.NewPartialMap()
 	// FIXME: Copy pasta with LoadAndBuild
@@ -130,10 +129,10 @@ func main() {
 		FontDir:      gba.Font,
 		GenImgDir:    gba.Gen,
 		Comments:     gba.Comments,
-		IncludePaths: []string{Includes},
+		IncludePaths: []string{gba.Includes},
 	}
 
-	if Http {
+	if ishttp {
 		err := http.ListenAndServe(":12345", httpHandler(ctx))
 
 		if err != nil {
@@ -171,7 +170,7 @@ func main() {
 		}
 	}
 
-	if Watch {
+	if watch {
 		w := wt.NewWatcher()
 		w.PartialMap = pMap
 		w.Dirs = sassPaths
