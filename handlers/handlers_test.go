@@ -525,7 +525,35 @@ div {
 }
 `
 	if e != err.Error() {
-		t.Errorf("got:\n~%s~\nwanted:\n~%s~\n", err.Error(), e)
+		t.Errorf("got:\n%s\nwanted:\n%s", err.Error(), e)
+	}
+
+}
+
+func TestSpriteHTTP(t *testing.T) {
+	in := bytes.NewBufferString(`
+$map: sprite-map("*.png", 10px);
+div {
+  background: sprite($map, "140");
+}`)
+
+	ctx := cx.NewContext()
+	ctx.IncludePaths = []string{"../test"}
+	ctx.HTTPPath = "http://foo.com"
+	ctx.BuildDir = "../test/build"
+	ctx.GenImgDir = "../test/build/img"
+	ctx.ImageDir = "../test/img"
+	var out bytes.Buffer
+	err := ctx.Compile(in, &out)
+
+	if err != nil {
+		t.Error(err)
+	}
+	e := `div {
+  background: url("http://foo.com/build/img/ec0dbb.png") -0px -149px; }
+`
+	if e != out.String() {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
 	}
 
 }

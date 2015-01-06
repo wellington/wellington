@@ -29,6 +29,7 @@ var (
 	comments, watch           bool
 	cpuprofile, buildDir      string
 	ishttp, help, showVersion bool
+    httpPath                  string
 )
 
 func init() {
@@ -51,6 +52,8 @@ func init() {
 	flag.BoolVar(&comments, "c", true, "Turn on source comments")
 
 	flag.BoolVar(&ishttp, "http", false, "Listen for http connections")
+	flag.StringVar(&httpPath, "httppath", "",
+		"Only for HTTP, overrides generated sprite paths to support http")
 	flag.BoolVar(&watch, "watch", false, "File watcher that will rebuild css on file changes")
 	flag.BoolVar(&watch, "w", false, "File watcher that will rebuild css on file changes")
 
@@ -129,6 +132,7 @@ func main() {
 		FontDir:      gba.Font,
 		GenImgDir:    gba.Gen,
 		Comments:     gba.Comments,
+        HTTPPath:     httpPath,
 		IncludePaths: []string{gba.Includes},
 	}
 
