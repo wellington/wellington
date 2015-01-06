@@ -198,6 +198,7 @@ func InlineImage(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 		if uerr == nil && f != nil {
 			err = uerr
 		}
+		f = resp.Body
 	}
 
 	if err != nil {
