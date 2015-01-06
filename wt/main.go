@@ -29,7 +29,7 @@ var (
 	comments, watch           bool
 	cpuprofile, buildDir      string
 	ishttp, help, showVersion bool
-    httpPath                  string
+	httpPath                  string
 )
 
 func init() {
@@ -132,14 +132,18 @@ func main() {
 		FontDir:      gba.Font,
 		GenImgDir:    gba.Gen,
 		Comments:     gba.Comments,
-        HTTPPath:     httpPath,
+		HTTPPath:     httpPath,
 		IncludePaths: []string{gba.Includes},
 	}
 
 	if ishttp {
-		http.Handle(Dir,
+		if len(Includes) == 0 {
+			log.Fatal("Must pass a project directory to use HTTP")
+		}
+		abs, _ := filepath.Abs(Includes)
+		http.Handle(Includes,
 			http.StripPrefix("/build",
-				http.FileServer(http.Dir(Dir)),
+				http.FileServer(http.Dir(abs)),
 			),
 		)
 

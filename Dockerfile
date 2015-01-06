@@ -29,4 +29,5 @@ EXPOSE 12345
 VOLUME "/data"
 
 WORKDIR /data
-CMD ["wt", "-p", "/data", "-d", "/data/img", "-b", "/data", "-gen", "/data/build", "-http"]
+#CMD [ "sh", "-c", "echo", "$HOME" ]
+CMD [ "sh", "-c", "wt", "-httpPath", "$HOST", "-p", "/data", "-d", "/data/img", "-b", "/data", "-gen", "/data/build", "-http"]
