@@ -21,7 +21,7 @@ import (
 	_ "github.com/wellington/wellington/handlers"
 )
 
-const version = `v0.4.0`
+const version = `v0.6.0`
 
 var (
 	font, dir, gen, includes  string
