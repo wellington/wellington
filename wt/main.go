@@ -147,9 +147,9 @@ func main() {
 			),
 		)
 
+		log.Println("Web server started on :12345")
 		http.HandleFunc("/", httpHandler(ctx))
 		err := http.ListenAndServe(":12345", nil)
-
 		if err != nil {
 			log.Fatal("ListenAndServe: ", err)
 		}

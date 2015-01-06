@@ -1,4 +1,4 @@
-.PHONY: test
+.PHONY: test build
 current_dir = $(shell pwd)
 rmnpath = $(RMN_BASE_PATH)
 guipath = $(rmnpath)/www/gui
