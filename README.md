@@ -49,17 +49,12 @@ You must have libsass installed to build this project.  Do so by checking
 out the repo or building [libsass](https://github.com/sass/libsass/wiki/Building-on-Mac-OS-X) via the  instruction in the repo.
 
 ```
-# This will fail if you don't have libsass installed, that's OK.
-go get -u github.com/wellington/wellington/wt
+go get -u github.com/wellington/wellington
 cd $GOPATH/wellington/wellington
 make deps
-# Attempt install again
-go get -u github.com/wellington/wellington/wt
-```
 
-Test out if the installation worked
-```
-wt
+go get -u github.com/wellington/wellington/wt
+wt -h
 ```
 
 ## Examples
@@ -189,7 +184,7 @@ div {
 
 #### inline-image($path[, $encode: false])
 
-inline-image creates a base64 encoded png. When the image is svg, it returns an inline svg that can optionally be base64 encoded.  Encoding incurs a file size penalty.
+inline-image base64 encodes binary images (png, jpg, gif are currently supported). SVG images are by default url escaped. Optionally SVG can be base64 encoded by specifying `$encode: true`. Base64 encoding incurs a (10-30%) file size penalty.
 
 ```
 div {
