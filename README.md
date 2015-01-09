@@ -50,12 +50,14 @@ out the repo or building [libsass](https://github.com/sass/libsass/wiki/Building
 
 ```
 go get -u github.com/wellington/wellington
-cd $GOPATH/wellington/wellington
+cd $GOPATH/src/github.com/wellington/wellington
 make deps
 
-go get -u github.com/wellington/wellington/wt
+PKG_CONFIG_PATH=$(pwd)/libsass/lib/pkgconfig go get -u github.com/wellington/wellington/wt
 wt -h
 ```
+
+It's a good idea to export `PKG_CONFIG_PATH` so that pkg-config can find `libsass.pc`.
 
 ## Examples
 
@@ -163,10 +165,10 @@ div {
 image-width returns the width of the image specified by `$path`.
 
 ```
-div {
+.first {
 	width: image-width(sprite-file($spritemap, "image"));
 }
-div {
+.second {
 	width: image-width("path/to/image.png");
 }
 ```
@@ -174,10 +176,10 @@ div {
 *Output*
 
 ```css
-div {
+.first {
 	width: 50px;
 }
-div {
+.second {
 	width: 50px;
 }
 ```
@@ -187,10 +189,10 @@ div {
 inline-image base64 encodes binary images (png, jpg, gif are currently supported). SVG images are by default url escaped. Optionally SVG can be base64 encoded by specifying `$encode: true`. Base64 encoding incurs a (10-30%) file size penalty.
 
 ```
-div {
+.png {
 	background: inline-image("path/to/image.png");
 }
-div.svg {
+.svg {
 	background: inline-image("path/to/image.svg", $encode: false);
 }
 ```
@@ -198,10 +200,10 @@ div.svg {
 *Output*
 
 ```css
-div {
+.png {
 	background: inline-image("data:image/png;base64,iVBOR...");
 }
-div.svg {
+.svg {
 	background: inline-image("data:image/svg+xml;utf8,%3C%3F...");
 }
 ```
@@ -255,7 +257,7 @@ Get the code
 
 	go get github.com/wellington/wellington
 
-You may want to cd `$GOPATH/wellington/wellington` and set the origin to your fork.
+You may want to cd `$GOPATH/src/github.com/wellington/wellington` and set the origin to your fork.
 
 	git remote rm origin
 	git remote add origin git@github.com:username/wellington.git
