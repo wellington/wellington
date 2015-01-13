@@ -6,7 +6,7 @@ Wellington
 
 Wellington adds the missing piece to SASS, file awareness.  Wellington can create relative paths to your assets and sprites from images in the image directory.  This tool is designed to work directly from sass, no need learning a new language or messing with separate spriting tools!
 
-### [Try the Demo!](http://codepen.io/drewwells/details/KwggLx/)
+### [Try the Demo!](http://codepen.io/drewwells/full/KwggLx/)
 
 ```
 $images: sprite-map("sprites/*.png");
