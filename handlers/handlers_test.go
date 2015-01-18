@@ -550,7 +550,7 @@ div {
 		t.Error(err)
 	}
 	e := `div {
-  background: url("http://foo.com/build/img/ec0dbb.png") -0px -149px; }
+  background: url("http://foo.com/build/ec0dbb.png") -0px -149px; }
 `
 	if e != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
