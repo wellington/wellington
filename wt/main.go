@@ -137,11 +137,11 @@ func main() {
 	}
 
 	if ishttp {
-		if len(Includes) == 0 {
+		if len(includes) == 0 {
 			log.Fatal("Must pass a project directory to use HTTP")
 		}
-		abs, _ := filepath.Abs(Includes)
-		http.Handle(Includes,
+		abs, _ := filepath.Abs(includes)
+		http.Handle(includes,
 			http.StripPrefix("/build",
 				http.FileServer(http.Dir(abs)),
 			),
