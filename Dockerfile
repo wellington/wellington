@@ -30,4 +30,5 @@ VOLUME "/data"
 
 WORKDIR /data
 #CMD [ "sh", "-c", "echo", "$HOME" ]
-CMD [ "wt", "-http", "-p", "/data", "-d", "/data/img", "-b", "/data", "-gen", "/data/build" ]
+#CMD [ "wt", "-http", "-p", "/data", "-d", "/data/img", "-b", "/data", "-gen", "/data/build" ]
+CMD wt -http -httppath=$HOST -p /data -d /data/img -b /data/build -gen /data/build/img

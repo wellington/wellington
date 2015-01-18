@@ -7,7 +7,7 @@ if [ -f libsass/"libsass.$HASH.tar.gz" ];
 then
 	echo "Cache found $HASH"
 else
-	echo "Fetching source of https://github.com/drewwells/libsass/archive/$HASH.tar.gz"
+	echo "Fetching source of https://github.com/sass/libsass/archive/$HASH.tar.gz"
 	cd libsass
 	#make clean
 	curl -s -S -L "https://github.com/sass/libsass/archive/$HASH.tar.gz" -o "libsass.$HASH.tar.gz"

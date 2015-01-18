@@ -29,7 +29,7 @@ build:
 push: build
 	docker push drewwells/wellington
 docker:
-	docker run -it -v $(rmnpath):/rmn -v $(current_dir):/usr/src/myapp drewwells/wellington bash
+	docker run -e HOST=http://$(shell boot2docker ip):8080 -it -p 8080:12345 -v $(current_dir):/usr/src/myapp -v $(current_dir)/test:/data drewwells/wellington
 test:
 	scripts/goclean.sh
 compass:

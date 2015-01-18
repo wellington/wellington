@@ -129,6 +129,7 @@ func main() {
 		Sprites:      gba.Sprites,
 		Imgs:         gba.Imgs,
 		OutputStyle:  gba.Style,
+		BuildDir:     gba.BuildDir,
 		ImageDir:     gba.Dir,
 		FontDir:      gba.Font,
 		GenImgDir:    gba.Gen,

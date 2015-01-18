@@ -264,8 +264,7 @@ func Sprite(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 		if err != nil {
 			return cx.Error(err)
 		}
-		ctxPath, _ := filepath.Rel(ctx.IncludePaths[0], ctx.GenImgDir)
-		u.Path = filepath.Join(u.Path, ctxPath, filepath.Base(path))
+		u.Path = filepath.Join(u.Path, "build", filepath.Base(path))
 		path = u.String()
 	}
 	if err != nil {
