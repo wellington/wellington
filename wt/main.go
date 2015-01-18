@@ -39,9 +39,10 @@ func init() {
 	flag.BoolVar(&help, "h", false, "this help")
 
 	flag.StringVar(&buildDir, "b", "", "Build Directory")
-	flag.StringVar(&gen, "gen", ".", "Directory for generated images")
+	flag.StringVar(&gen, "gen", ".", "Generated images directory")
 
-	flag.StringVar(&includes, "p", "", "SASS import path")
+	flag.StringVar(&includes, "proj", "", "Project directory")
+	flag.StringVar(&includes, "p", "", "Project directory")
 	flag.StringVar(&dir, "dir", "", "Image directory")
 	flag.StringVar(&dir, "d", "", "Image directory")
 	flag.StringVar(&font, "font", ".", "Font Directory")
@@ -137,16 +138,10 @@ func main() {
 	}
 
 	if ishttp {
-		if len(includes) == 0 {
-			log.Fatal("Must pass a project directory to use HTTP")
+		if len(gba.Gen) == 0 {
+			log.Fatal("Must pass an image build directory to use HTTP")
 		}
-		abs, _ := filepath.Abs(includes)
-		http.Handle(includes,
-			http.StripPrefix("/build",
-				http.FileServer(http.Dir(abs)),
-			),
-		)
-
+		http.Handle("/build/", wt.FileHandler(gba.Gen))
 		log.Println("Web server started on :12345")
 		http.HandleFunc("/", wt.HTTPHandler(ctx))
 		err := http.ListenAndServe(":12345", nil)

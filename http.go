@@ -3,11 +3,28 @@ package wellington
 import (
 	"bytes"
 	"io"
+	"log"
 	"net/http"
+	"path/filepath"
 
 	"github.com/wellington/wellington/context"
 )
 
+// FileHandler starts a file server serving files out of the specified
+// build directory.
+func FileHandler(gen string) http.Handler {
+	abs, err := filepath.Abs(gen)
+	if err != nil {
+		log.Fatalf("Can not resolve relative path: %s", gen)
+	}
+
+	return http.StripPrefix("/build/",
+		http.FileServer(http.Dir(abs)),
+	)
+}
+
+// HTTPHandler starts a CORS enabled web server that takes as input
+// Sass and outputs CSS.
 func HTTPHandler(ctx *context.Context) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var pout bytes.Buffer
