@@ -8,15 +8,13 @@ Wellington adds spriting to the lightning fast [libsass](http://libsass.org/). N
 
 ### Speed Matters
 
-Some benchmarks
-
+Benchmarks
 ```
 # Vanilla Sass from sass-spec
 wt vanilla_css_huge.scss        0.10s user 0.01s system 98% cpu 0.120 total
 compass vanilla_css_huge.scss   0.27s user 0.04s system 98% cpu 0.315 total
 # 2.7x speedup
 ```
-
 
 ```
 # 40,000 line of code Sass project
@@ -25,10 +23,9 @@ compass   73.800s
 # 5x speedup!
 ```
 
+#### What it does
 
-#### Example
-
-file.scss
+Take a Sass file as follows:
 ```
 $images: sprite-map("sprites/*.png");
 div {
@@ -38,21 +35,22 @@ div {
 }
 ```
 
-file.css
+The following CSS file is generated
 ```
 div {
   width: 140px;
   height: 79px;
-  background: url("genimg/sprites-wehqi.png");
+  background: url("genimg/sprites-wehqi.png") 0px 0px;
 }
 ```
 #### Try before you buy
 
-Fork your own! [http://codepen.io/pen/def?fork=KwggLx](Wellington Playground)
+You can try out Wellington on Codepen, fork the [Wellington Playground](http://codepen.io/pen/def?fork=KwggLx)!
 
-Or, check out the collection of Wellington [http://codepen.io/collection/DbNZQJ/](demos)
+Check out the Wellington [collection](http://codepen.io/collection/DbNZQJ/)
 
 #### Installation
+
 Wellington can be installed via brew
 
 	brew install wellington
@@ -269,7 +267,7 @@ Install Go and add $GOPATH/bin to your $PATH. [Detailed instructions](https://go
 go get -u github.com/wellington/wellington
 cd $GOPATH/src/github.com/wellington/wellington
 #install libsass
-make deps 
+make deps
 
 PKG_CONFIG_PATH=$(pwd)/libsass/lib/pkgconfig go get -u github.com/wellington/wellington/wt
 wt -h
