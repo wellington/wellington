@@ -29,6 +29,7 @@ var (
 	comments, watch           bool
 	cpuprofile, buildDir      string
 	ishttp, help, showVersion bool
+	httpPath                  string
 )
 
 func init() {
@@ -38,9 +39,10 @@ func init() {
 	flag.BoolVar(&help, "h", false, "this help")
 
 	flag.StringVar(&buildDir, "b", "", "Build Directory")
-	flag.StringVar(&gen, "gen", ".", "Directory for generated images")
+	flag.StringVar(&gen, "gen", ".", "Generated images directory")
 
-	flag.StringVar(&includes, "p", "", "SASS import path")
+	flag.StringVar(&includes, "proj", "", "Project directory")
+	flag.StringVar(&includes, "p", "", "Project directory")
 	flag.StringVar(&dir, "dir", "", "Image directory")
 	flag.StringVar(&dir, "d", "", "Image directory")
 	flag.StringVar(&font, "font", ".", "Font Directory")
@@ -51,6 +53,8 @@ func init() {
 	flag.BoolVar(&comments, "c", true, "Turn on source comments")
 
 	flag.BoolVar(&ishttp, "http", false, "Listen for http connections")
+	flag.StringVar(&httpPath, "httppath", "",
+		"Only for HTTP, overrides generated sprite paths to support http")
 	flag.BoolVar(&watch, "watch", false, "File watcher that will rebuild css on file changes")
 	flag.BoolVar(&watch, "w", false, "File watcher that will rebuild css on file changes")
 
@@ -129,12 +133,18 @@ func main() {
 		FontDir:      gba.Font,
 		GenImgDir:    gba.Gen,
 		Comments:     gba.Comments,
+		HTTPPath:     httpPath,
 		IncludePaths: []string{gba.Includes},
 	}
 
 	if ishttp {
-		err := http.ListenAndServe(":12345", httpHandler(ctx))
-
+		if len(gba.Gen) == 0 {
+			log.Fatal("Must pass an image build directory to use HTTP")
+		}
+		http.Handle("/build/", wt.FileHandler(gba.Gen))
+		log.Println("Web server started on :12345")
+		http.HandleFunc("/", wt.HTTPHandler(ctx))
+		err := http.ListenAndServe(":12345", nil)
 		if err != nil {
 			log.Fatal("ListenAndServe: ", err)
 		}
@@ -189,28 +199,4 @@ func main() {
 			}
 		}
 	}
-}
-
-func httpHandler(ctx *context.Context) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var pout bytes.Buffer
-
-		// Set headers
-		if origin := r.Header.Get("Origin"); origin != "" {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-		}
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		_, err := wt.StartParser(ctx, r.Body, &pout, wt.NewPartialMap())
-		if err != nil {
-			io.WriteString(w, err.Error())
-			return
-		}
-
-		err = ctx.Compile(&pout, w)
-		if err != nil {
-			io.WriteString(w, err.Error())
-		}
-	})
 }

@@ -256,9 +256,18 @@ func Sprite(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 	path, err := imgs.OutputPath()
 
 	// FIXME: path directory can not be trusted, rebuild this from the context
-	ctxPath, _ := filepath.Rel(ctx.BuildDir, ctx.GenImgDir)
-	path = filepath.Join(ctxPath, filepath.Base(path))
-
+	if ctx.HTTPPath == "" {
+		ctxPath, _ := filepath.Rel(ctx.BuildDir, ctx.GenImgDir)
+		path = filepath.Join(ctxPath, filepath.Base(path))
+	} else {
+		u, err := url.Parse(ctx.HTTPPath)
+		if err != nil {
+			return cx.Error(err)
+		}
+		ctxPath, _ := filepath.Rel(ctx.IncludePaths[0], ctx.GenImgDir)
+		u.Path = filepath.Join(u.Path, ctxPath, filepath.Base(path))
+		path = u.String()
+	}
 	if err != nil {
 		return cx.Error(err)
 	}

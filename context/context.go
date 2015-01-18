@@ -36,7 +36,8 @@ type Context struct {
 	FontDir, ImageDir string
 	// Output/build directories
 	BuildDir, GenImgDir string
-
+	// HTTP supporting code
+	HTTPPath                    string
 	In, Src, Out, Map, MainFile string
 	Status                      int
 	errorString                 string
