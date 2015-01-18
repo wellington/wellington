@@ -148,7 +148,7 @@ func main() {
 		)
 
 		log.Println("Web server started on :12345")
-		http.HandleFunc("/", httpHandler(ctx))
+		http.HandleFunc("/", wt.HTTPHandler(ctx))
 		err := http.ListenAndServe(":12345", nil)
 		if err != nil {
 			log.Fatal("ListenAndServe: ", err)
@@ -202,30 +202,6 @@ func main() {
 				}
 				fmt.Println("error", err)
 			}
-		}
-	}
-}
-
-func httpHandler(ctx *context.Context) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var pout bytes.Buffer
-
-		// Set headers
-		if origin := r.Header.Get("Origin"); origin != "" {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-		}
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		_, err := wt.StartParser(ctx, r.Body, &pout, wt.NewPartialMap())
-		if err != nil {
-			io.WriteString(w, err.Error())
-			return
-		}
-
-		err = ctx.Compile(&pout, w)
-		if err != nil {
-			io.WriteString(w, err.Error())
 		}
 	}
 }
