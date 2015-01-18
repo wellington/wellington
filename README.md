@@ -47,8 +47,6 @@ div {
 }
 ```
 #### Try before you buy
-<p data-height="268" data-theme-id="0" data-slug-hash="YPpXoE" data-default-tab="result" data-user="drewwells" class='codepen'>See the Pen <a href='http://codepen.io/drewwells/pen/YPpXoE/'>Image Demo</a> by Drew Wells (<a href='http://codepen.io/drewwells'>@drewwells</a>) on <a href='http://codepen.io'>CodePen</a>.</p>
-<script async src="//assets.codepen.io/assets/embed/ei.js"></script>
 
 Fork your own! [http://codepen.io/pen/def?fork=KwggLx](Wellington Playground)
 
