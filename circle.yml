@@ -2,10 +2,11 @@ machine:
   environment:
     LIBSASS_VERSION: $(cat $HOME/$CIRCLE_PROJECT_REPONAME/.libsass_version)
     PROJECT_ROOT: $HOME/.go_workspace/src/github.com/wellington/wellington
-    PKG_CONFIG_PATH: "$HOME/$CIRCLE_PROJECT_REPONAME/libsass/lib/pkgconfig/"
+    PKG_CONFIG_PATH: "$HOME/$CIRCLE_PROJECT_REPONAME/libsass/lib/pkgconfig"
 dependencies:
   cache_directories:
-    - "$CIRCLE_PROJECT_REPONAME/libsass"    # relative to the build directory
+    - libsass    # relative to the build directory
+    - .libsass_version_${LIBSASS_VERSION}
   pre:
     - go get -f -u -d github.com/wellington/spritewell
     - go get -f -u -d gopkg.in/fsnotify.v1

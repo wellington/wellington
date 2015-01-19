@@ -2,9 +2,9 @@
 current_dir = $(shell pwd)
 rmnpath = $(RMN_BASE_PATH)
 guipath = $(rmnpath)/www/gui
+libsass_ver = $(shell cat \.libsass_version)
+VPATH = libsass
 
-echo:
-	echo $(current_dir)
 install:
 	go get -f -u -d github.com/wellington/spritewell
 	go get -f -u -d gopkg.in/fsnotify.v1
@@ -20,8 +20,14 @@ profile: install
 	wt --cpuprofile=wt.prof -gen $(guipath)/build/im -font $(guipath)/font-face -b $(guipath)/build/css/ -p $(guipath)/sass -d $(guipath)/im/sass $(FILES)
 	go tool pprof --png $(GOPATH)/bin/wt wt.prof > profile.png
 	open profile.png
-deps:
+
+.libsass_version_$(libsass_ver):
+	- rm libsass/.libsass_version_*
 	scripts/getdeps.sh
+	@touch libsass/.libsass_version_$(libsass_ver)
+
+deps: .libsass_version_$(libsass_ver)
+
 headers:
 	scripts/getheaders.sh
 build:
