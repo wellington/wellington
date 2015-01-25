@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"runtime/pprof"
 	"strings"
+	"time"
 
 	"github.com/wellington/wellington/context"
 
@@ -28,15 +29,29 @@ var (
 	mainFile, style           string
 	comments, watch           bool
 	cpuprofile, buildDir      string
+	jsDir                     string
 	ishttp, help, showVersion bool
 	httpPath                  string
+	timeB                     bool
 )
 
+/*
+   -c, --config CONFIG_FILE         Specify the location of the configuration file explicitly.
+       --app APP                    Tell compass what kind of application it is integrating with. E.g. rails
+       --fonts-dir FONTS_DIR        The directory where you keep your fonts.
+*/
 func init() {
 	flag.BoolVar(&showVersion, "version", false, "Show the app version")
 
 	flag.BoolVar(&help, "help", false, "this help")
 	flag.BoolVar(&help, "h", false, "this help")
+
+	// Interoperability args
+	flag.StringVar(&gen, "css-dir", "", "Compass Build Directory")
+	flag.StringVar(&dir, "images-dir", "", "Compass Image Directory")
+	flag.StringVar(&includes, "sass-dir", "", "Compass Sass Directory")
+	flag.StringVar(&jsDir, "javascripts-dir", "", "Compass JS Directory")
+	flag.BoolVar(&timeB, "time", false, "Retrieve timing information")
 
 	flag.StringVar(&buildDir, "b", "", "Build Directory")
 	flag.StringVar(&gen, "gen", ".", "Generated images directory")
@@ -68,6 +83,15 @@ func main() {
 		fmt.Println(version)
 		os.Exit(0)
 	}
+
+	var start time.Time
+	if timeB {
+		start = time.Now()
+	}
+	defer func() {
+		diff := time.Since(start)
+		log.Printf("Compilation took: %v\n", diff)
+	}()
 
 	// Profiling code
 	if cpuprofile != "" {
