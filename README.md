@@ -254,9 +254,9 @@ div {
 
 ### Why?
 
-For the life of Sass, there has been only one tool for doing spriting with Sass. Compass has become to the daily workflow at work, that we really couldn't venture into new tools. As the website grew, Compass and Ruby Sass started to become a real drag on build times. A typical build including transpiling Sass to CSS, RequireJS JavaScript, and minfication of CSS, JS, and images would spend half the time in Compass.
+Sass is a fantastic language. It adds a lot of power to standard CSS. If only our clients were happy with the functionality that Sass provided. For the life of Sass, there has been only one tool that attempted to extend Sass for everything that's needed to build a site. While Ruby is great for development, it does have some drawbacks. As our Sass powered website grew, Compass and Ruby Sass started to become a real drag on build times and development happiness. A typical build including transpiling Sass to CSS, RequireJS JavaScript, and minfication of CSS, JS, and images would spend half the time processing the Sass.
 
-There had to be a better way. I took a look at libsass but besides [image-url](https://github.com/sass/libsass/issues/489) there was no support for the spriting functions we loved from Compass. So I wrote Wellington to be a drop in replacement for all spriting functions found in Compass. This makes it super simple to swap out Compass with Wellington in your Sass projects.
+There had to be a better way. Libsass was starting to gain some traction, but it didn't do everything we needed. So I wrote Wellington to be a drop in replacement for the spriting functions familar to those used to Compass. This makes it super simple to swap out Compass with Wellington in your Sass projects.
 
 ### See how the sausage is made
 
