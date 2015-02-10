@@ -30,8 +30,27 @@ deps: .libsass_version_$(libsass_ver)
 
 headers:
 	scripts/getheaders.sh
-build:
-	docker build -t drewwells/wellington .
+
+clean:
+	rm -rf build/*
+
+copyout:
+	chown $(EUID):$(EGID) $(GOPATH)/bin/wt
+	cp $(GOPATH)/bin/wt /tmp
+	chown -R $(EUID):$(EGID) /build/libsass
+	mkdir -p /tmp/lib64
+	cp /usr/lib/x86_64-linux-gnu/libstd* /tmp/lib64
+	cp -R /build/libsass /tmp
+	find /tmp
+
+container-build: clean
+	docker build -t wt-build .
+	docker run -v $(PWD)/build:/tmp -e EUID=$(UID) -e EGID=$(GID) wt-build make copyout
+
+build: container-build
+	cp Dockerfile.scratch build/Dockerfile
+	cd build; docker build -t drewwells/wellington .
+
 push: build
 	docker push drewwells/wellington:latest
 docker:
