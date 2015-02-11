@@ -1,15 +1,13 @@
 FROM progrium/busybox
 
-ENV PKG_CONFIG_PATH /usr/lib/pkgconfig
-
 WORKDIR /usr/src/app
-COPY . /usr
-RUN mv /usr/wt /usr/bin/wt
+COPY lib64 /usr/lib64
+RUN ln -s /usr/lib64/libstdc++.so.6.0.20 /usr/lib64/libstdc++.so.6
+COPY wt /usr/bin/wt
 
 EXPOSE 12345
-VOLUME "/data"
 
+VOLUME "/data"
 WORKDIR /data
-#CMD [ "sh", "-c", "echo", "$HOME" ]
-#CMD [ "wt", "-http", "-p", "/data", "-d", "/data/img", "-b", "/data", "-gen", "/data/build" ]
+
 CMD wt -http -httppath=$HOST -p /data -d /data/img -b /data/build -gen /data/build/img
