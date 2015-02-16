@@ -55,8 +55,9 @@ func TestMissingImport(t *testing.T) {
 
 	rel := strings.Replace(err.Error(), os.Getenv("PWD"), "", 1)
 	if e := "Could not import: notafile\nTried:\n" +
-		"/test/_notafile.scss\n"; rel != e {
-		t.Errorf("Error message invalid expected:%s\nwas:%s", e, err.Error())
+		"./\n"; rel != e {
+		t.Errorf("Error message invalid\nexpected: %s\nwas: %s",
+			e, err.Error())
 	}
 }
 

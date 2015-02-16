@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -30,32 +29,19 @@ import (
 // {Dir{dir+file}}/{Base{file}}.scss
 // {Dir{dir+file}}/{Base{file}}.sass
 func (p *Parser) ImportPath(dir, file string) (string, string, error) {
-	// fmt.Println("Importing: " + file)
 	baseerr := ""
-	//Load and retrieve all tokens from imported file
-	/*path, _ := filepath.Abs(fmt.Sprintf("%s/%s.scss", dir, file))
-	pwd := filepath.Dir(path)
-	// Sass put _ in front of imported files
-	fpath := filepath.Join(pwd, "/_"+filepath.Base(path))
-	contents, err := readSassBytes(fpath)
-	if err == nil {
-		p.PartialMap.AddRelation(p.MainFile, fpath)
-		return pwd, string(contents), nil
-	}
-	// Try again without _, invalidish
-	fpath = filepath.Join(pwd, filepath.Base(path))
-	contents, err = readSassBytes(fpath)
-	if err == nil {
-		p.PartialMap.AddRelation(p.MainFile, fpath)
-		return pwd, string(contents), nil
-	}*/
+
 	r, fpath, err := importPath(dir, file)
 	if err == nil {
 		p.PartialMap.AddRelation(p.MainFile, fpath)
 		contents, _ := ioutil.ReadAll(r)
 		return filepath.Dir(fpath), string(contents), nil
 	}
-	baseerr += fpath + "\n"
+	rel, _ := filepath.Rel(p.SassDir, fpath)
+	if rel == "" {
+		rel = "./"
+	}
+	baseerr += rel + "\n"
 	if strings.HasSuffix(err.Error(), "no such file or directory") {
 		// Look through the import path for the file
 		for _, lib := range p.Includes {
@@ -86,8 +72,10 @@ func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 	if file == "images" {
 		return filepath.Dir(fpath), "", nil
 	}
-	return filepath.Dir(fpath), "", errors.New("Could not import: " +
-		file + "\nTried:\n" + baseerr)
+
+	baseerr += strings.Join(p.Includes, "\n")
+	return filepath.Dir(fpath), "",
+		errors.New("Could not import: " + file + "\nTried:\n" + baseerr)
 }
 
 // Attempt _{}.scss, _{}.sass, {}.scss, {}.sass paths and return
@@ -101,13 +89,12 @@ func importPath(dir, file string) (io.Reader, string, error) {
 	if r, err := readSass(fpath); err == nil {
 		return r, fpath, err
 	}
-
-	fpath = filepath.Join(pwd, "_"+base+".sass")
+	fpath = filepath.Join(pwd, base+".scss")
 	if r, err := readSass(fpath); err == nil {
 		return r, fpath, err
 	}
 
-	fpath = filepath.Join(pwd, base+".scss")
+	fpath = filepath.Join(pwd, "_"+base+".sass")
 	if r, err := readSass(fpath); err == nil {
 		return r, fpath, err
 	}
@@ -117,7 +104,7 @@ func importPath(dir, file string) (io.Reader, string, error) {
 		return r, fpath, err
 	}
 
-	return nil, "", errors.New("Unable to import path:" + dir + " " + file)
+	return nil, pwd, errors.New("Unable to import path:" + dir + " " + file)
 }
 
 func readSassBytes(path string) ([]byte, error) {
@@ -138,8 +125,8 @@ func readSass(path string) (io.Reader, error) {
 
 	var buf bytes.Buffer
 	tr := io.TeeReader(file, &buf)
-
-	fmt.Println("Sass?", IsSass(bufio.NewReader(tr)))
+	_ = tr
+	//fmt.Println("Sass?", IsSass(bufio.NewReader(tr)))
 	mr := io.MultiReader(&buf, file)
 	return mr, nil
 }
