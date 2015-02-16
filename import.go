@@ -30,7 +30,6 @@ import (
 // {Dir{dir+file}}/{Base{file}}.sass
 func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 	baseerr := ""
-
 	r, fpath, err := importPath(dir, file)
 	if err == nil {
 		p.PartialMap.AddRelation(p.MainFile, fpath)
@@ -45,22 +44,11 @@ func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 	if strings.HasSuffix(err.Error(), "no such file or directory") {
 		// Look through the import path for the file
 		for _, lib := range p.Includes {
-			path, _ := filepath.Abs(lib + "/" + file)
-			pwd := filepath.Dir(path)
-			fpath = filepath.Join(pwd, "/_"+filepath.Base(path)+".scss")
-			contents, err := readSassBytes(fpath)
-			baseerr += fpath + "\n"
+			r, pwd, err := importPath(lib, file)
 			if err == nil {
 				p.PartialMap.AddRelation(p.MainFile, fpath)
-				return pwd, string(contents), nil
-			}
-			// Attempt invalid name lookup (no _)
-			fpath = filepath.Join(pwd, "/"+filepath.Base(path)+".scss")
-			contents, err = readSassBytes(fpath)
-			baseerr += fpath + "\n"
-			if err == nil {
-				p.PartialMap.AddRelation(p.MainFile, fpath)
-				return pwd, string(contents), nil
+				bs, _ := ioutil.ReadAll(r)
+				return pwd, string(bs), nil
 			}
 		}
 	}
