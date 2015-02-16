@@ -1,7 +1,6 @@
 package wellington
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -73,7 +72,7 @@ func TestImportSass(t *testing.T) {
 
 	}
 
-	fmt.Println(res)
+	t.Error(res)
 
 	// Importer
 	//dir, file := "test/whitespace", "import"
