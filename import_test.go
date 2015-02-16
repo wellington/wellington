@@ -1,6 +1,7 @@
 package wellington
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -57,4 +58,22 @@ func TestMissingImport(t *testing.T) {
 		"/test/_notafile.scss\n"; rel != e {
 		t.Errorf("Error message invalid expected:%s\nwas:%s", e, err.Error())
 	}
+}
+
+func TestImportSass(t *testing.T) {
+	p := NewParser()
+	dir, file := "test/whitespace", "one"
+
+	_, res, err := p.ImportPath(dir, file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res != "" {
+
+	}
+
+	fmt.Println(res)
+
+	// Importer
+	//dir, file := "test/whitespace", "import"
 }
