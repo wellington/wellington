@@ -17,7 +17,7 @@ func TestPartialMap(t *testing.T) {
 		PartialMap: NewPartialMap(),
 	}
 
-	p.Start(fileReader("test/sass/import.scss"), "test/sass")
+	p.Start(fileReader("test/sass/import.scss"), "test/")
 
 	if e := 1; len(p.PartialMap.M) != e {
 		t.Errorf("got: %d, wanted: %d", len(p.PartialMap.M), e)

@@ -41,7 +41,7 @@ func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 		rel = "./"
 	}
 	baseerr += rel + "\n"
-	if strings.HasSuffix(err.Error(), "no such file or directory") {
+	if os.IsNotExist(err) {
 		// Look through the import path for the file
 		for _, lib := range p.Includes {
 			r, pwd, err := importPath(lib, file)
@@ -77,6 +77,7 @@ func importPath(dir, file string) (io.Reader, string, error) {
 	if r, err := readSass(fpath); err == nil {
 		return r, fpath, err
 	}
+
 	fpath = filepath.Join(pwd, base+".scss")
 	if r, err := readSass(fpath); err == nil {
 		return r, fpath, err
@@ -92,7 +93,7 @@ func importPath(dir, file string) (io.Reader, string, error) {
 		return r, fpath, err
 	}
 
-	return nil, pwd, errors.New("Unable to import path:" + dir + " " + file)
+	return nil, pwd, os.ErrNotExist
 }
 
 func readSassBytes(path string) ([]byte, error) {
