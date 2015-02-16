@@ -5,6 +5,7 @@ package context
 import "C"
 
 import (
+	"bytes"
 	"io"
 	"io/ioutil"
 	"os"
@@ -13,10 +14,9 @@ import (
 )
 
 // ToScss converts Sass to Scss with libsass sass2scss.h
-func ToScss(r io.Reader) string {
+func ToScss(r io.Reader, w io.Writer) error {
 	bs, _ := ioutil.ReadAll(r)
 	in := C.CString(string(bs))
-
 	defer C.free(unsafe.Pointer(in))
 
 	chars := C.sass2scss(
@@ -25,8 +25,8 @@ func ToScss(r io.Reader) string {
 		// SASS2SCSS_PRETTIFY_1 Egyptian brackets
 		C.int(1),
 	)
-
-	return C.GoString(chars)
+	_, err := io.WriteString(w, C.GoString(chars))
+	return err
 }
 
 func testToScss(t *testing.T) {
@@ -41,7 +41,11 @@ body {
   font: 100% $font-stack;
   color: $primary-color; }
 `
-	if s := ToScss(file); s != e {
-		t.Errorf("got:\n%s\nwanted:\n%s", s, e)
+
+	var bytes bytes.Buffer
+	ToScss(file, &bytes)
+
+	if bytes.String() != e {
+		t.Errorf("got:\n%s\nwanted:\n%s", bytes.String(), e)
 	}
 }

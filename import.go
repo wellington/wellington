@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/wellington/wellington/context"
 )
 
 // ImportPath accepts a directory and file path to find partials for importing.
@@ -112,17 +114,28 @@ func readSass(path string) (io.Reader, error) {
 		return nil, err
 	}
 
-	var buf bytes.Buffer
+	var (
+		buf bytes.Buffer
+	)
 	tr := io.TeeReader(file, &buf)
-	_ = tr
-	//fmt.Println("Sass?", IsSass(bufio.NewReader(tr)))
+
+	if IsSass(&tr) {
+		r, w := io.Pipe()
+		go func() {
+			context.ToScss(io.MultiReader(&buf, file), w)
+			w.Close()
+		}()
+		return r, nil
+	}
 	mr := io.MultiReader(&buf, file)
+
 	return mr, nil
 }
 
 // IsSass determines if the given reader is Sass (not Scss).
 // This is predicted by the presence of semicolons
-func IsSass(r *bufio.Reader) bool {
+func IsSass(ir *io.Reader) bool {
+	r := bufio.NewReader(*ir)
 	for {
 		line, err := r.ReadString('\n')
 		clean := strings.TrimSpace(line)

@@ -72,7 +72,17 @@ func TestImportSass(t *testing.T) {
 
 	}
 
-	t.Error(res)
+	e := `$font-stack:    Helvetica, sans-serif;
+$primary-color: #333;
+
+body {
+  font: 100% $font-stack;
+  color: $primary-color; }
+`
+
+	if e != res {
+		t.Errorf("got:\n%s\nwanted:\n%s", res, e)
+	}
 
 	// Importer
 	//dir, file := "test/whitespace", "import"
