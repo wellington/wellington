@@ -18,13 +18,13 @@ func TestImportPath(t *testing.T) {
 	}
 
 	if res != string(contents) {
-		t.Errorf("Contents did not match expected:%s\nwas:%s",
+		t.Errorf("Contents did not match expected:\n%s\nwas:\n%s",
 			string(contents), res)
 	}
 
 	rel := strings.Replace(path, os.Getenv("PWD"), "", 1)
 	if e := "/test/sass"; e != rel {
-		t.Errorf("Invalid path expected:%s\nwas:%s", e, rel)
+		t.Errorf("Invalid path expected:\n%s\nwas:\n%s", e, rel)
 	}
 
 	p.Includes = []string{"test"}
@@ -54,7 +54,43 @@ func TestMissingImport(t *testing.T) {
 
 	rel := strings.Replace(err.Error(), os.Getenv("PWD"), "", 1)
 	if e := "Could not import: notafile\nTried:\n" +
-		"/test/_notafile.scss\n"; rel != e {
-		t.Errorf("Error message invalid expected:%s\nwas:%s", e, err.Error())
+		"./\n"; rel != e {
+		t.Errorf("Error message invalid\nexpected: %s\nwas: %s",
+			e, err.Error())
 	}
+}
+
+func TestImportSass(t *testing.T) {
+	p := NewParser()
+	dir, file := "test/whitespace", "two"
+
+	_, res, err := p.ImportPath(dir, file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res != "" {
+
+	}
+
+	e := `nav {
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none; }
+
+  li {
+    display: inline-block; }
+
+  a {
+    display: block;
+    padding: 6px 12px;
+    text-decoration: none; } }
+`
+
+	if e != res {
+		t.Errorf("got:\n%s\nwanted:\n%s", res, e)
+	}
+
+	// Importer
+	//dir, file := "test/whitespace", "import"
 }

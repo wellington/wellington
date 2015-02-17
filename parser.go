@@ -2,6 +2,7 @@ package wellington
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -61,7 +62,21 @@ func NewParser() *Parser {
 // Start creates a map of all variables and sprites
 // (created via sprite-map calls).
 // TODO: Remove pkgdir, it can be put on Parser
-func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
+func (p *Parser) Start(r io.Reader, pkgdir string) ([]byte, error) {
+
+	if r == nil {
+		return []byte{}, errors.New("input is empty")
+	}
+
+	var in io.Reader
+	var err error
+
+	in, err = ToScssReader(r)
+
+	if err != nil {
+		return nil, err
+	}
+
 	p.Line = make(map[int]string)
 
 	// Setup paths
@@ -78,7 +93,7 @@ func (p *Parser) Start(in io.Reader, pkgdir string) ([]byte, error) {
 	if in == nil {
 		return []byte{}, fmt.Errorf("input is empty")
 	}
-	_, err := buf.ReadFrom(in)
+	_, err = buf.ReadFrom(in)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -210,6 +225,7 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]lexer.Item, string, er
 				if err != nil {
 					return nil, "", err
 				}
+
 				//Eat the semicolon
 				item := lex.Next()
 				if item.Type != token.SEMIC {
