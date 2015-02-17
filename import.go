@@ -125,12 +125,18 @@ func ToScssReader(r io.Reader) (io.Reader, error) {
 	tr := io.TeeReader(r, &buf)
 
 	if IsSass(&tr) {
-		pr, w := io.Pipe()
-		go func() {
-			context.ToScss(io.MultiReader(&buf, r), w)
-			w.Close()
-		}()
-		return pr, nil
+
+		//This code causes race conditions, buffer until problem resolved
+		// pr, w := io.Pipe()
+		// go func(r io.Reader, w *io.PipeWriter, buf bytes.Buffer) {
+		// 	context.ToScss(io.MultiReader(&buf, r), w)
+		// 	w.Close()
+		// }(r, w, buf)
+		// return pr, nil
+
+		var ibuf bytes.Buffer
+		context.ToScss(io.MultiReader(&buf, r), &ibuf)
+		return &ibuf, nil
 	}
 	mr := io.MultiReader(&buf, r)
 
