@@ -5,11 +5,8 @@ package context
 import "C"
 
 import (
-	"bytes"
 	"io"
 	"io/ioutil"
-	"os"
-	"testing"
 	"unsafe"
 )
 
@@ -27,21 +24,4 @@ func ToScss(r io.Reader, w io.Writer) error {
 	)
 	_, err := io.WriteString(w, C.GoString(chars))
 	return err
-}
-
-func testToScss(t *testing.T) {
-	file, err := os.Open("../test/whitespace/one.sass")
-	if err != nil {
-		t.Fatal(err)
-	}
-	e := `$font-stack:    Helvetica, sans-serif;
-$primary-color: #333;
-`
-
-	var bytes bytes.Buffer
-	ToScss(file, &bytes)
-
-	if bytes.String() != e {
-		t.Errorf("got:\n%s\nwanted:\n%s", bytes.String(), e)
-	}
 }

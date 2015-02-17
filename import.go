@@ -98,6 +98,7 @@ func importPath(dir, file string) (io.Reader, string, error) {
 	return nil, pwd, os.ErrNotExist
 }
 
+// readSassBytes converts readSass to []byte
 func readSassBytes(path string) ([]byte, error) {
 	reader, err := readSass(path)
 	if err != nil {
@@ -122,17 +123,9 @@ func ToScssReader(r io.Reader) (io.Reader, error) {
 	var (
 		buf bytes.Buffer
 	)
+
 	tr := io.TeeReader(r, &buf)
-
-	if IsSass(&tr) {
-
-		//This code causes race conditions, buffer until problem resolved
-		// pr, w := io.Pipe()
-		// go func(r io.Reader, w *io.PipeWriter, buf bytes.Buffer) {
-		// 	context.ToScss(io.MultiReader(&buf, r), w)
-		// 	w.Close()
-		// }(r, w, buf)
-		// return pr, nil
+	if IsSass(tr) {
 
 		var ibuf bytes.Buffer
 		context.ToScss(io.MultiReader(&buf, r), &ibuf)
@@ -145,23 +138,19 @@ func ToScssReader(r io.Reader) (io.Reader, error) {
 
 // IsSass determines if the given reader is Sass (not Scss).
 // This is predicted by the presence of semicolons
-func IsSass(ir *io.Reader) bool {
-	r := bufio.NewReader(*ir)
-	for {
-		line, err := r.ReadString('\n')
-		clean := strings.TrimSpace(line)
-		// Errors, empty file probably
-		if err != nil {
-			return false
-		}
-		if strings.HasSuffix(clean, "{") ||
-			strings.HasSuffix(clean, "}") {
+func IsSass(r io.Reader) bool {
+	scanner := bufio.NewScanner(r)
+
+	for scanner.Scan() {
+		text := strings.TrimSpace(scanner.Text())
+		if strings.HasSuffix(text, "{") ||
+			strings.HasSuffix(text, "}") {
 			continue
 		}
-		if strings.HasSuffix(clean, ";") {
+		if strings.HasSuffix(text, ";") {
 			return false
 		}
-		// Probably Sass, say so
-		return true
 	}
+
+	return true
 }

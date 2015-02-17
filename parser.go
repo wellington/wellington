@@ -70,18 +70,13 @@ func (p *Parser) Start(r io.Reader, pkgdir string) ([]byte, error) {
 
 	var in io.Reader
 	var err error
-	var teebuf bytes.Buffer
 
-	tr := io.TeeReader(r, &teebuf)
-	if IsSass(&tr) {
-		rr, err := ToScssReader(io.MultiReader(&teebuf, r))
-		if err != nil {
-			return nil, err
-		}
-		in = rr
-	} else {
-		in = io.MultiReader(&teebuf, r)
+	in, err = ToScssReader(r)
+
+	if err != nil {
+		return nil, err
 	}
+
 	p.Line = make(map[int]string)
 
 	// Setup paths

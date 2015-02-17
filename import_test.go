@@ -18,13 +18,13 @@ func TestImportPath(t *testing.T) {
 	}
 
 	if res != string(contents) {
-		t.Errorf("Contents did not match expected:%s\nwas:%s",
+		t.Errorf("Contents did not match expected:\n%s\nwas:\n%s",
 			string(contents), res)
 	}
 
 	rel := strings.Replace(path, os.Getenv("PWD"), "", 1)
 	if e := "/test/sass"; e != rel {
-		t.Errorf("Invalid path expected:%s\nwas:%s", e, rel)
+		t.Errorf("Invalid path expected:\n%s\nwas:\n%s", e, rel)
 	}
 
 	p.Includes = []string{"test"}
