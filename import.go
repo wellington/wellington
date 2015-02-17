@@ -113,21 +113,26 @@ func readSass(path string) (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
+	return ToScssReader(file)
+}
 
+// ToScssReader ...
+func ToScssReader(r io.Reader) (io.Reader, error) {
 	var (
 		buf bytes.Buffer
 	)
-	tr := io.TeeReader(file, &buf)
+	tr := io.TeeReader(r, &buf)
 
 	if IsSass(&tr) {
-		r, w := io.Pipe()
+		pr, w := io.Pipe()
 		go func() {
-			context.ToScss(io.MultiReader(&buf, file), w)
+			context.ToScss(io.MultiReader(&buf, r), w)
 			w.Close()
 		}()
-		return r, nil
+		return pr, nil
 	}
-	mr := io.MultiReader(&buf, file)
+	mr := io.MultiReader(&buf, r)
 
 	return mr, nil
 }

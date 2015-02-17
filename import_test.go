@@ -62,7 +62,7 @@ func TestMissingImport(t *testing.T) {
 
 func TestImportSass(t *testing.T) {
 	p := NewParser()
-	dir, file := "test/whitespace", "one"
+	dir, file := "test/whitespace", "two"
 
 	_, res, err := p.ImportPath(dir, file)
 	if err != nil {
@@ -72,12 +72,19 @@ func TestImportSass(t *testing.T) {
 
 	}
 
-	e := `$font-stack:    Helvetica, sans-serif;
-$primary-color: #333;
+	e := `nav {
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none; }
 
-body {
-  font: 100% $font-stack;
-  color: $primary-color; }
+  li {
+    display: inline-block; }
+
+  a {
+    display: block;
+    padding: 6px 12px;
+    text-decoration: none; } }
 `
 
 	if e != res {
