@@ -261,19 +261,23 @@ There had to be a better way. Libsass was starting to gain some traction, but it
 ### See how the sausage is made
 
 #### Building from source
-Install Go and add $GOPATH/bin to your $PATH. [Detailed instructions](https://golang.org/doc/install)
+Install Go and add $GOPATH/bin to your $PATH. [Detailed instructions](https://golang.org/doc/install). Wellington requires Go 1.4+.
 
 ```
 go get -u github.com/wellington/wellington
 cd $GOPATH/src/github.com/wellington/wellington
-#install libsass
-make deps
 
-PKG_CONFIG_PATH=$(pwd)/libsass/lib/pkgconfig go get -u github.com/wellington/wellington/wt
+make
+
+# You should not have wt in your path
 wt -h
 ```
 
-It's a good idea to export `PKG_CONFIG_PATH` so that pkg-config can find `libsass.pc`.
+It's a good idea to export `PKG_CONFIG_PATH` so that pkg-config can find `libsass.pc`. Otherwise, `go ...` commands will fail.
+
+```
+export PKG_CONFIG_PATH=$GOPATH/src/github.com/wellington/wellington/libsass/lib/pkgconfig
+```
 
 Set your fork as the origin.
 
@@ -289,7 +293,7 @@ Profiling
 
 	make profile
 
-Docker Container
+Build a Docker Container. The wt container is 33.6 MB in size, but builds in a much larger container 844.7 MB.
 
 	make build
 	make docker #launch a container

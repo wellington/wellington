@@ -5,10 +5,15 @@ guipath = $(rmnpath)/www/gui
 libsass_ver = $(shell cat \.libsass_version)
 VPATH = libsass
 
-install:
+ifndef PKG_CONFIG_PATH
+	PKG_CONFIG_PATH=$(current_dir)/libsass/lib/pkgconfig
+endif
+
+install: deps
 	go get -f -u -d github.com/wellington/spritewell
 	go get -f -u -d gopkg.in/fsnotify.v1
 	go install github.com/wellington/wellington/wt
+
 bench:
 	go test ./... -bench=.
 home:
