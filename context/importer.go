@@ -22,9 +22,14 @@ func testSassImport(t *testing.T) {
 	list[1] = sass_make_import_entry("http://www.example.com", strdup(remote), 0);
 	return list;*/
 	var entries []*C.struct_Sass_Import
-	entry := C.sass_make_import_entry(C.CString("a"), C.CString("a { color: red; }"), C.CString(""))
+	entry := C.sass_make_import_entry(
+		C.CString("a"),
+		C.CString("a { color: red; }"),
+		C.CString(""))
 	entries = append(entries, entry)
 	path := C.sass_import_get_path(entries[0])
+	fmt.Println(C.GoString(path))
+	path = C.sass_import_get_source(entries[0])
 	fmt.Println(C.GoString(path))
 
 	//fmt.Println(entry.)
