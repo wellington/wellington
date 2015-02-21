@@ -1,12 +1,22 @@
 package context
 
 // #include <stdlib.h>
+// #include <stdio.h>
+// #include "sass_functions.h"
 // #include "sass_context.h"
 //
 // extern union Sass_Value* GoBridge( union Sass_Value* s_args, void* cookie);
 // union Sass_Value* CallSassFunction( union Sass_Value* s_args, void* cookie ) {
 //     return GoBridge(s_args, cookie);
 // }
+//
+// struct Sass_Import** SassImporter(const char* url, const char* prev, void* cookie)
+// {
+//   printf("sass_importer\n");
+//   struct Sass_Import** list = sass_make_import_list(2);
+//   return list;
+// }
+//
 import "C"
 
 import (
@@ -50,7 +60,7 @@ type Context struct {
 	// is done with them
 	Cookies []Cookie
 
-	Imports []*ImportCallback
+	Imports []*C.struct_Sass_Import
 	// Used for callbacks to retrieve sprite information, etc.
 	Imgs, Sprites spritewell.SafeImageMap
 	// Special variable for debugging bad parsing
@@ -99,10 +109,6 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 
 	opts := C.sass_data_context_get_options(dc)
 
-	if len(ctx.Imports) > 0 {
-		C.sass_option_set_importer(opts,
-			(*C.struct_Sass_C_Import_Descriptor)(unsafe.Pointer(&ctx.Imports[0])))
-	}
 	defer func() {
 		C.free(unsafe.Pointer(imgpath))
 		// C.free(unsafe.Pointer(cc))
@@ -131,6 +137,7 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 		Data: uintptr(unsafe.Pointer(fns)),
 		Len:  length, Cap: length,
 	}
+
 	gofns := *(*[]C.Sass_C_Function_Callback)(unsafe.Pointer(&hdr))
 	for i, v := range ctx.Cookies {
 		signatures[i] = ctx.Cookies[i].Sign
@@ -183,6 +190,30 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	C.sass_data_context_set_options(dc, opts)
 	cc := C.sass_data_context_get_context(dc)
 	compiler := C.sass_make_data_compiler(dc)
+	var v interface{}
+	impCallback := C.sass_make_importer(C.Sass_C_Import_Fn(C.SassImporter),
+		unsafe.Pointer(&v))
+	C.sass_option_set_importer(opts, impCallback)
+	// if len(ctx.Imports) > 0 {
+	// 	for _, imp := range ctx.Imports {
+	// 		fmt.Printf("% #v\n", imp)
+	// 	}
+
+	// 	C.sass_option_set_importer(opts,
+	// 		(*C.struct_Sass_C_Import_Descriptor)(
+	// 			unsafe.Pointer(ctx.Imports[0])))
+
+	// 	imps := C.sass_option_get_importer(opts)
+	// 	hdr := reflect.SliceHeader{
+	// 		Data: uintptr(unsafe.Pointer(imps)),
+	// 		Len:  len(ctx.Imports), Cap: len(ctx.Imports),
+	// 	}
+
+	// 	impss := *(*[]SassImport)(unsafe.Pointer(&hdr))
+	// 	for _, imp := range impss {
+	// 		fmt.Printf(">> % #v\n", imp)
+	// 	}
+	// }
 
 	C.sass_compiler_parse(compiler)
 	C.sass_compiler_execute(compiler)
