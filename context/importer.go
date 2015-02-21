@@ -6,6 +6,7 @@ import "C"
 import (
 	"fmt"
 	"testing"
+	"unsafe"
 )
 
 // SassImport ...
@@ -21,15 +22,15 @@ func testSassImport(t *testing.T) {
 	list[0] = sass_make_import_entry("/tmp/styles.scss", strdup(local), 0);
 	list[1] = sass_make_import_entry("http://www.example.com", strdup(remote), 0);
 	return list;*/
-	var entries []*C.struct_Sass_Import
+	var entries []*SassImport
 	entry := C.sass_make_import_entry(
 		C.CString("a"),
 		C.CString("a { color: red; }"),
 		C.CString(""))
-	entries = append(entries, entry)
-	path := C.sass_import_get_path(entries[0])
+	entries = append(entries, (*SassImport)(entry))
+	path := C.sass_import_get_path((*C.struct_Sass_Import)(unsafe.Pointer(&entries[0])))
 	fmt.Println(C.GoString(path))
-	path = C.sass_import_get_source(entries[0])
+	path = C.sass_import_get_source((*C.struct_Sass_Import)(entries[0]))
 	fmt.Println(C.GoString(path))
 
 	//fmt.Println(entry.)
