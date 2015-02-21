@@ -1,10 +1,22 @@
 package context
 
 // #include <stdlib.h>
+// #include <string.h>
 // #include <stdio.h>
 // #include "sass_functions.h"
 // #include "sass_context.h"
 //
+// struct Sass_Import** SassImporter(const char* url, const char* prev, void* cookie)
+// {
+//   printf("sass_importer\n");
+//   struct Sass_Import** list = sass_make_import_list(2);
+//   const char* local = "local { color: green; }";
+//   const char* remote = "remote { color: red; }";
+//   list[0] = sass_make_import_entry("/tmp/styles.scss", strdup(local), 0);
+//   list[1] = sass_make_import_entry("http://www.example.com", strdup(remote), 0);
+//
+//   return list;
+// }
 //
 import "C"
 import (
@@ -12,6 +24,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
+	"unsafe"
 )
 
 // SassImport ...
@@ -20,7 +33,6 @@ type SassImport C.struct_Sass_Import
 // ImportCallback ...
 type ImportCallback C.Sass_C_Import_Callback
 
-// AddImport ...
 func (ctx *Context) AddImport(name string, contents string) {
 	path := C.CString(name)
 	cnts := C.CString(contents)
@@ -36,9 +48,17 @@ func (ctx *Context) AddImport(name string, contents string) {
 	ctx.Imports = append(ctx.Imports, entry)
 }
 
+func SetImporter(opts *C.struct_Sass_Options) {
+	var v interface{}
+	p := C.Sass_C_Import_Fn(C.SassImporter)
+	impCallback := C.sass_make_importer(p,
+		unsafe.Pointer(&v))
+	C.sass_option_set_importer(opts, impCallback)
+}
+
 func testSassImport(t *testing.T) {
 
-	in := bytes.NewBufferString(`@import "a";`)
+	in := bytes.NewBufferString(`@import "/tmp/styles.scss";`)
 
 	var out bytes.Buffer
 	ctx := Context{}
@@ -48,10 +68,7 @@ func testSassImport(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	src := C.sass_import_get_source((*C.struct_Sass_Import)(ctx.Imports[0]))
-	fmt.Printf("%s\n", C.GoString(src))
-
-	fmt.Println(out.String())
+	fmt.Println("out", out.String())
 
 	/*var entries []*SassImport
 	entry := C.sass_make_import_entry(

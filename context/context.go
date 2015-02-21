@@ -1,8 +1,6 @@
 package context
 
 // #include <stdlib.h>
-// #include <stdio.h>
-// #include "sass_functions.h"
 // #include "sass_context.h"
 //
 // extern union Sass_Value* GoBridge( union Sass_Value* s_args, void* cookie);
@@ -10,12 +8,6 @@ package context
 //     return GoBridge(s_args, cookie);
 // }
 //
-// struct Sass_Import** SassImporter(const char* url, const char* prev, void* cookie)
-// {
-//   printf("sass_importer\n");
-//   struct Sass_Import** list = sass_make_import_list(2);
-//   return list;
-// }
 //
 import "C"
 
@@ -157,6 +149,8 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 		gofns[i] = fn
 	}
 
+	SetImporter(opts)
+
 	C.sass_option_set_c_functions(opts, (C.Sass_C_Function_List)(unsafe.Pointer(&gofns[0])))
 	C.sass_option_set_precision(opts, prec)
 	C.sass_option_set_source_comments(opts, cmt)
@@ -184,16 +178,13 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	defer C.sass_delete_data_context(dc)
 
 	opts := ctx.Init(dc)
+
 	// TODO: Manually free options memory without throwing
 	// malloc errors
 	// defer C.free(unsafe.Pointer(opts))
 	C.sass_data_context_set_options(dc, opts)
 	cc := C.sass_data_context_get_context(dc)
 	compiler := C.sass_make_data_compiler(dc)
-	var v interface{}
-	impCallback := C.sass_make_importer(C.Sass_C_Import_Fn(C.SassImporter),
-		unsafe.Pointer(&v))
-	C.sass_option_set_importer(opts, impCallback)
 	// if len(ctx.Imports) > 0 {
 	// 	for _, imp := range ctx.Imports {
 	// 		fmt.Printf("% #v\n", imp)
