@@ -50,6 +50,7 @@ type Context struct {
 	// is done with them
 	Cookies []Cookie
 
+	Imports []*ImportCallback
 	// Used for callbacks to retrieve sprite information, etc.
 	Imgs, Sprites spritewell.SafeImageMap
 	// Special variable for debugging bad parsing
@@ -98,6 +99,10 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 
 	opts := C.sass_data_context_get_options(dc)
 
+	if len(ctx.Imports) > 0 {
+		C.sass_option_set_importer(opts,
+			(*C.struct_Sass_C_Import_Descriptor)(unsafe.Pointer(&ctx.Imports[0])))
+	}
 	defer func() {
 		C.free(unsafe.Pointer(imgpath))
 		// C.free(unsafe.Pointer(cc))
