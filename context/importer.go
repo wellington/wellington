@@ -6,23 +6,23 @@ package context
 // #include "sass_functions.h"
 // #include "sass_context.h"
 //
+// extern struct Sass_Import** ImporterBridge(const char* url, const char* prev, void* cookie);
 // struct Sass_Import** SassImporter(const char* url, const char* prev, void* cookie)
 // {
-//   printf("sass_importer\n");
-//   struct Sass_Import** list = sass_make_import_list(2);
+//   //printf("sass_importer url: %s prev: %s\n", url, prev);
+//   /*struct Sass_Import** list = sass_make_import_list(2);
 //   const char* local = "local { color: green; }";
 //   const char* remote = "remote { color: red; }";
 //   list[0] = sass_make_import_entry("/tmp/styles.scss", strdup(local), 0);
-//   list[1] = sass_make_import_entry("http://www.example.com", strdup(remote), 0);
+//   list[1] = sass_make_import_entry("http://www.example.com", strdup(remote), 0);*/
 //
-//   return list;
+//   return ImporterBridge(url, prev, cookie);
 // }
 //
 import "C"
 import (
 	"bytes"
 	"fmt"
-	"path/filepath"
 	"testing"
 	"unsafe"
 )
@@ -33,32 +33,38 @@ type SassImport C.struct_Sass_Import
 // ImportCallback ...
 type ImportCallback C.Sass_C_Import_Callback
 
-func (ctx *Context) AddImport(name string, contents string) {
-	path := C.CString(name)
-	cnts := C.CString(contents)
-	empty := C.CString("")
-	//defer C.free(unsafe.Pointer(path))
-	//defer C.free(unsafe.Pointer(cnts))
-	//defer C.free(unsafe.Pointer(empty))
-	//defer C.free(unsafe.Pointer(abss))
-	abs, _ := filepath.Abs(name)
-	abss := C.CString(abs)
-	entry := C.sass_make_import(path, abss, cnts, empty)
-	//ctx.Imports = append(ctx.Imports, (*SassImport)(entry))
-	ctx.Imports = append(ctx.Imports, entry)
+type Import struct {
+	Rel      string
+	Abs      string
+	Contents string
 }
 
-func SetImporter(opts *C.struct_Sass_Options) {
-	var v interface{}
+func (ctx *Context) AddImport(name string, contents string) {
+	ctx.Imports = append(ctx.Imports, Import{
+		Rel:      name,
+		Contents: contents,
+	})
+}
+
+func (ctx *Context) FindImport(name string) (Import, bool) {
+	for i := range ctx.Imports {
+		if ctx.Imports[i].Rel == name {
+			return ctx.Imports[i], true
+		}
+	}
+	return Import{}, false
+}
+
+func (ctx *Context) SetImporter(opts *C.struct_Sass_Options) {
 	p := C.Sass_C_Import_Fn(C.SassImporter)
 	impCallback := C.sass_make_importer(p,
-		unsafe.Pointer(&v))
+		unsafe.Pointer(ctx))
 	C.sass_option_set_importer(opts, impCallback)
 }
 
 func testSassImport(t *testing.T) {
 
-	in := bytes.NewBufferString(`@import "/tmp/styles.scss";`)
+	in := bytes.NewBufferString(`@import "a";`)
 
 	var out bytes.Buffer
 	ctx := Context{}

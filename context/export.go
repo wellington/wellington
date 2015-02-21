@@ -9,6 +9,7 @@ package context
 // #include "sass_context.h"
 import "C"
 import (
+	"fmt"
 	"log"
 	"unsafe"
 )
@@ -30,6 +31,34 @@ func GoBridge(cargs UnionSassValue, ptr unsafe.Pointer) UnionSassValue {
 	ck := *(*Cookie)(ptr)
 	usv := ck.Fn(ck.Ctx, cargs)
 	return usv
+}
+
+//export ImporterBridge
+func ImporterBridge(url *C.char, prev *C.char, ptr unsafe.Pointer) **C.struct_Sass_Import {
+	fmt.Println("You go bridge")
+	ctx := (*Context)(ptr)
+	parent := C.GoString(prev)
+	_ = parent
+	rel := C.GoString(url)
+
+	/*list := C.sass_make_import_list(1)
+	hdr := reflect.SliceHeader{
+		Data: uintptr(unsafe.Pointer(list)),
+		Len:  1, Cap: 1,
+	}
+	golist := **(**[]C.struct_Sass_Import)(unsafe.Pointer(&hdr))*/
+	list := C.sass_make_import_list(2)
+	length := 1
+	golist := (*[1 << 30]**C.struct_Sass_Import)(unsafe.Pointer(list))[:length:length]
+	fmt.Println(len(golist))
+	if ref, ok := ctx.FindImport(rel); ok {
+		conts := C.CString(ref.Contents)
+		srcmap := C.CString("")
+		ent := C.sass_make_import_entry(url, conts, srcmap)
+		golist[0] = &ent
+	}
+
+	return list
 }
 
 // CookieCb defines the callback libsass eventually executes in sprite_sass
