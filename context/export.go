@@ -9,7 +9,6 @@ package context
 // #include "sass_context.h"
 import "C"
 import (
-	"fmt"
 	"log"
 	"unsafe"
 )
@@ -33,35 +32,26 @@ func GoBridge(cargs UnionSassValue, ptr unsafe.Pointer) UnionSassValue {
 	return usv
 }
 
+// ImporterBridge is called by C to pass Importer arguments into Go land. A
+// Sass_Import is returned for libsass to resolve.
+//
 //export ImporterBridge
 func ImporterBridge(url *C.char, prev *C.char, ptr unsafe.Pointer) **C.struct_Sass_Import {
-	fmt.Println("You go bridge")
 	ctx := (*Context)(ptr)
-	parent := C.GoString(prev)
-	_ = parent
+	// parent := C.GoString(prev)
 	rel := C.GoString(url)
-
-	/*list := C.sass_make_import_list(1)
-	hdr := reflect.SliceHeader{
-		Data: uintptr(unsafe.Pointer(list)),
-		Len:  1, Cap: 1,
-	}
-	golist := **(**[]C.struct_Sass_Import)(unsafe.Pointer(&hdr))*/
-	list := C.sass_make_import_list(2)
-	length := 1
-	golist := (*[1 << 30]**C.struct_Sass_Import)(unsafe.Pointer(list))[:length:length]
-	fmt.Println(len(golist))
+	list := C.sass_make_import_list(1)
+	golist := (*[1]*C.struct_Sass_Import)(unsafe.Pointer(list))
 	if ref, ok := ctx.FindImport(rel); ok {
 		conts := C.CString(ref.Contents)
 		srcmap := C.CString("")
 		ent := C.sass_make_import_entry(url, conts, srcmap)
-		golist[0] = &ent
+		golist[0] = ent
 	}
-
 	return list
 }
 
-// CookieCb defines the callback libsass eventually executes in sprite_sass
+// SassCallback defines the callback libsass eventually executes in sprite_sass
 type SassCallback func(ctx *Context, csv UnionSassValue) UnionSassValue
 
 type handler struct {
@@ -72,6 +62,7 @@ type handler struct {
 // handlers is the list of registered sass handlers
 var handlers []handler
 
+// SampleCB example how a callback is defined
 func SampleCB(ctx *Context, usv UnionSassValue) UnionSassValue {
 	var sv []interface{}
 	Unmarshal(usv, &sv)
