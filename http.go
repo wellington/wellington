@@ -26,6 +26,7 @@ func FileHandler(gen string) http.Handler {
 	)
 }
 
+// Response is the object returned on HTTP responses from wellington
 type Response struct {
 	Contents string    `json:"contents"`
 	Start    time.Time `json:"start"`
