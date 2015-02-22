@@ -2,6 +2,8 @@ package wellington
 
 import (
 	"bytes"
+	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +12,16 @@ import (
 
 	"github.com/wellington/wellington/context"
 )
+
+func decResp(t *testing.T, r io.Reader) Response {
+	dec := json.NewDecoder(r)
+	var resp Response
+	err := dec.Decode(&resp)
+	if err != nil {
+		t.Errorf("decodeHTTPResponse: %s", err)
+	}
+	return resp
+}
 
 func TestFileHandler(t *testing.T) {
 
@@ -59,8 +71,9 @@ func TestHTTPHandler(t *testing.T) {
 		t.Errorf("got: %d wanted: %d", w.Code, e)
 	}
 
-	if e := "input is empty"; w.Body.String() != e {
-		t.Errorf("got: %s wanted: %s", w.Body.String(), e)
+	resp := decResp(t, w.Body)
+	if e := "input is empty"; resp.Error != e {
+		t.Errorf("got: %s wanted: %s", resp, e)
 	}
 
 	req, err = http.NewRequest("GET", "",
@@ -77,8 +90,9 @@ func TestHTTPHandler(t *testing.T) {
 	e := `div p {
   color: red; }
 `
-	if w.Body.String() != e {
-		t.Errorf("got: %s wanted: %s", w.Body.String(), e)
+	resp = decResp(t, w.Body)
+	if resp.Contents != e {
+		t.Errorf("got: %s wanted: %s", resp.Contents, e)
 	}
 
 	ehead := map[string][]string{
@@ -122,8 +136,10 @@ required parameter $color is missing in call to function darken
 }
 div { p { color: darken(); } };
 `
-	if w.Body.String() != e {
-		t.Errorf("got:\n%s\nwanted:\n%s", w.Body.String(), e)
+	resp := decResp(t, w.Body)
+
+	if resp.Error != e {
+		t.Errorf("got:\n%s\nwanted:\n%s", resp.Error, e)
 	}
 
 	req, err = http.NewRequest("GET", "",
@@ -140,8 +156,10 @@ div { p { color: darken(); } };
 	e = `div p {
   color: red; }
 `
-	if w.Body.String() != e {
-		t.Errorf("got:\n%s\nwanted:\n%s", w.Body.String(), e)
+	resp = decResp(t, w.Body)
+
+	if resp.Contents != e {
+		t.Errorf("got:\n%s\nwanted:\n%s", resp.Contents, e)
 	}
 
 	// Second run shouldn't have an error in it
