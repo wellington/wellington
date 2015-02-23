@@ -12,6 +12,8 @@ import (
 	"github.com/wellington/wellington/context"
 )
 
+var inputFileTypes = []string{".scss", ".sass"}
+
 // LoadAndBuild kicks off parser and compiling
 // TODO: make this function testable
 func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) error {
@@ -36,7 +38,7 @@ func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) e
 	if gba.BuildDir != "" {
 		// Build output file based off build directory and input filename
 		rel, _ := filepath.Rel(gba.Includes, filepath.Dir(sassFile))
-		filename := strings.Replace(filepath.Base(sassFile), ".scss", ".css", 1)
+		filename := updateFileOutputType(filepath.Base(sassFile))
 		fout = filepath.Join(gba.BuildDir, rel, filename)
 	} else {
 		out = os.Stdout
@@ -94,4 +96,11 @@ func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) e
 	}
 	fmt.Printf("Rebuilt: %s\n", sassFile)
 	return nil
+}
+
+func updateFileOutputType(filename string) string {
+	for _, filetype := range inputFileTypes {
+		filename = strings.Replace(filename, filetype, ".css", 1)
+	}
+	return filename
 }
