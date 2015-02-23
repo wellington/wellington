@@ -185,26 +185,6 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	C.sass_data_context_set_options(dc, opts)
 	cc := C.sass_data_context_get_context(dc)
 	compiler := C.sass_make_data_compiler(dc)
-	// if len(ctx.Imports) > 0 {
-	// 	for _, imp := range ctx.Imports {
-	// 		fmt.Printf("% #v\n", imp)
-	// 	}
-
-	// 	C.sass_option_set_importer(opts,
-	// 		(*C.struct_Sass_C_Import_Descriptor)(
-	// 			unsafe.Pointer(ctx.Imports[0])))
-
-	// 	imps := C.sass_option_get_importer(opts)
-	// 	hdr := reflect.SliceHeader{
-	// 		Data: uintptr(unsafe.Pointer(imps)),
-	// 		Len:  len(ctx.Imports), Cap: len(ctx.Imports),
-	// 	}
-
-	// 	impss := *(*[]SassImport)(unsafe.Pointer(&hdr))
-	// 	for _, imp := range impss {
-	// 		fmt.Printf(">> % #v\n", imp)
-	// 	}
-	// }
 
 	C.sass_compiler_parse(compiler)
 	C.sass_compiler_execute(compiler)
@@ -231,9 +211,8 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 				out += fmt.Sprintf("%s\n", string(lines[i+ctx.Errors.Line]))
 			}
 		}
-
 		// TODO: this is weird, make something more idiomatic
-		return fmt.Errorf(ctx.error() + "\n" + out)
+		return errors.New(ctx.error() + "\n" + out)
 	}
 
 	return nil
