@@ -4,6 +4,8 @@
 Wellington
 ===========
 
+[![Join the chat at https://gitter.im/wellington/wellington](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/wellington/wellington?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Wellington adds spriting to the lightning fast [libsass](http://libsass.org/). No need to learn a new tool, this all happens right in your Sass!
 
 ### Speed Matters
