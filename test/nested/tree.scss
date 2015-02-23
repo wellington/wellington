@@ -1,0 +1,7 @@
+@import "branch";
+div.branch {
+  @extend %branch;
+  div.leaf {
+    @extend %leaf;
+  }
+}
