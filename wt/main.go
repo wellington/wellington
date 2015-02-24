@@ -22,7 +22,7 @@ import (
 	_ "github.com/wellington/wellington/handlers"
 )
 
-const version = `v0.6.0`
+const version = `v0.7.0`
 
 var (
 	font, dir, gen, includes  string
@@ -42,6 +42,7 @@ var (
 */
 func init() {
 	flag.BoolVar(&showVersion, "version", false, "Show the app version")
+	flag.BoolVar(&showVersion, "v", false, "Show the app version")
 
 	flag.BoolVar(&help, "help", false, "this help")
 	flag.BoolVar(&help, "h", false, "this help")
