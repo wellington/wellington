@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/pprof"
+	"strconv"
 	"strings"
 	"time"
 
@@ -85,13 +86,12 @@ func main() {
 		os.Exit(0)
 	}
 
-	var start time.Time
-	if timeB {
-		start = time.Now()
-	}
+	start := time.Now()
+
 	defer func() {
-		diff := time.Since(start)
-		log.Printf("Compilation took: %v\n", diff)
+		diff := float64(time.Since(start).Nanoseconds()) / float64(time.Millisecond)
+		log.Printf("Compilation took: %sms\n",
+			strconv.FormatFloat(diff, 'f', 3, 32))
 	}()
 
 	// Profiling code
@@ -195,6 +195,7 @@ func main() {
 		if err != nil {
 			log.Println(err)
 		}
+		return
 	}
 
 	sassPaths := make([]string, len(flag.Args()))

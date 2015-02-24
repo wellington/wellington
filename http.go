@@ -56,7 +56,7 @@ func HTTPHandler(ctx *context.Context) func(w http.ResponseWriter, r *http.Reque
 			enc.Encode(Response{
 				Start: start,
 				Elapsed: strconv.FormatFloat(float64(
-					time.Since(start).Nanoseconds())/(1000*1000),
+					time.Since(start).Nanoseconds())/float64(time.Millisecond),
 					'f', 3, 32) + "ms",
 				Contents: "",
 				Error:    fmt.Sprintf("%s", err),
