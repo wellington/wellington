@@ -7,6 +7,8 @@ package context
 // union Sass_Value* CallSassFunction( union Sass_Value* s_args, void* cookie ) {
 //     return GoBridge(s_args, cookie);
 // }
+//
+//
 import "C"
 
 import (
@@ -50,6 +52,7 @@ type Context struct {
 	// is done with them
 	Cookies []Cookie
 
+	Imports []Import
 	// Used for callbacks to retrieve sprite information, etc.
 	Imgs, Sprites spritewell.SafeImageMap
 	// Special variable for debugging bad parsing
@@ -126,6 +129,7 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 		Data: uintptr(unsafe.Pointer(fns)),
 		Len:  length, Cap: length,
 	}
+
 	gofns := *(*[]C.Sass_C_Function_Callback)(unsafe.Pointer(&hdr))
 	for i, v := range ctx.Cookies {
 		signatures[i] = ctx.Cookies[i].Sign
@@ -144,6 +148,8 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 
 		gofns[i] = fn
 	}
+
+	ctx.SetImporter(opts)
 
 	C.sass_option_set_c_functions(opts, (C.Sass_C_Function_List)(unsafe.Pointer(&gofns[0])))
 	C.sass_option_set_precision(opts, prec)
@@ -172,6 +178,7 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	defer C.sass_delete_data_context(dc)
 
 	opts := ctx.Init(dc)
+
 	// TODO: Manually free options memory without throwing
 	// malloc errors
 	// defer C.free(unsafe.Pointer(opts))
@@ -204,9 +211,8 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 				out += fmt.Sprintf("%s\n", string(lines[i+ctx.Errors.Line]))
 			}
 		}
-
 		// TODO: this is weird, make something more idiomatic
-		return fmt.Errorf(ctx.error() + "\n" + out)
+		return errors.New(ctx.error() + "\n" + out)
 	}
 
 	return nil
