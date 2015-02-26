@@ -31,18 +31,19 @@ import (
 // {Dir{dir+file}}/{Base{file}}.scss
 // {Dir{dir+file}}/{Base{file}}.sass
 func (p *Parser) ImportPath(dir, file string) (string, string, error) {
-	baseerr := ""
+	var baseerr string
+	// Attempt pwd
 	r, fpath, err := importPath(dir, file)
 	if err == nil {
 		p.PartialMap.AddRelation(p.MainFile, fpath)
 		contents, _ := ioutil.ReadAll(r)
-		return filepath.Dir(fpath), string(contents), nil
+		return fpath, string(contents), nil
 	}
 	rel, _ := filepath.Rel(p.SassDir, fpath)
 	if rel == "" {
 		rel = "./"
 	}
-	baseerr += rel + "\n"
+	baseerr += rel + "\n    "
 	if os.IsNotExist(err) {
 		// Look through the import path for the file
 		for _, lib := range p.Includes {
@@ -63,36 +64,45 @@ func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 		return filepath.Dir(fpath), "", nil
 	}
 
-	baseerr += strings.Join(p.Includes, "\n")
+	baseerr += strings.Join(p.Includes, "\n    ")
 	return filepath.Dir(fpath), "",
-		errors.New("Could not import: " + file + "\nTried:\n" + baseerr)
+		errors.New("Could not import: " + file + "\nTried:\n    " + baseerr)
 }
 
 // Attempt _{}.scss, _{}.sass, {}.scss, {}.sass paths and return
 // reader if found
+// Returns the file contents, pwd, and error if any
 func importPath(dir, file string) (io.Reader, string, error) {
-	spath, _ := filepath.Abs(dir + "/" + file)
+	var errs string
+	spath, _ := filepath.Abs(filepath.Join(dir, file))
 	pwd := filepath.Dir(spath)
 	base := filepath.Base(spath)
-
 	fpath := filepath.Join(pwd, "_"+base+".scss")
 	if r, err := readSass(fpath); err == nil {
-		return r, fpath, err
+		return r, filepath.Dir(fpath), err
+	} else {
+		errs += "importPath:\n    " + err.Error()
 	}
 
 	fpath = filepath.Join(pwd, base+".scss")
 	if r, err := readSass(fpath); err == nil {
-		return r, fpath, err
+		return r, filepath.Dir(fpath), err
+	} else {
+		errs += "\n    " + err.Error()
 	}
 
 	fpath = filepath.Join(pwd, "_"+base+".sass")
 	if r, err := readSass(fpath); err == nil {
-		return r, fpath, err
+		return r, filepath.Dir(fpath), err
+	} else {
+		errs += "\n    " + err.Error()
 	}
 
 	fpath = filepath.Join(pwd, base+".sass")
 	if r, err := readSass(fpath); err == nil {
-		return r, fpath, err
+		return r, filepath.Dir(fpath), err
+	} else {
+		errs += "\n    " + err.Error()
 	}
 
 	return nil, pwd, os.ErrNotExist
