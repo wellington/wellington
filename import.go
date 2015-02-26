@@ -86,32 +86,32 @@ func importPath(dir, file string) (io.ReadCloser, string, error) {
 	pwd := filepath.Dir(spath)
 	base := filepath.Base(spath)
 	fpath := filepath.Join(pwd, "_"+base+".scss")
-	if r, err := readSass(fpath); err == nil {
+	r, err := readSass(fpath)
+	if err == nil {
 		return r, filepath.Dir(fpath), err
-	} else {
-		errs += "importPath:\n    " + err.Error()
 	}
+	errs += "importPath:\n    " + err.Error()
 
 	fpath = filepath.Join(pwd, base+".scss")
-	if r, err := readSass(fpath); err == nil {
+	r, err = readSass(fpath)
+	if err == nil {
 		return r, filepath.Dir(fpath), err
-	} else {
-		errs += "\n    " + err.Error()
 	}
+	errs += "\n    " + err.Error()
 
 	fpath = filepath.Join(pwd, "_"+base+".sass")
-	if r, err := readSass(fpath); err == nil {
+	r, err = readSass(fpath)
+	if err == nil {
 		return r, filepath.Dir(fpath), err
-	} else {
-		errs += "\n    " + err.Error()
 	}
+	errs += "\n    " + err.Error()
 
 	fpath = filepath.Join(pwd, base+".sass")
-	if r, err := readSass(fpath); err == nil {
+	r, err = readSass(fpath)
+	if err == nil {
 		return r, filepath.Dir(fpath), err
-	} else {
-		errs += "\n    " + err.Error()
 	}
+	errs += "\n    " + err.Error()
 
 	return nil, pwd, os.ErrNotExist
 }
