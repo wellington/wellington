@@ -164,7 +164,6 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	defer ctx.Reset()
 	bs, err := ioutil.ReadAll(in)
 
-	// ctx.debug = bs
 	if err != nil {
 		return err
 	}

@@ -54,7 +54,7 @@ func TestMissingImport(t *testing.T) {
 
 	rel := strings.Replace(err.Error(), os.Getenv("PWD"), "", 1)
 	if e := "Could not import: notafile\nTried:\n" +
-		"./\n"; rel != e {
+		"    ./\n    "; rel != e {
 		t.Errorf("Error message invalid\nexpected: %s\nwas: %s",
 			e, err.Error())
 	}
@@ -93,4 +93,23 @@ func TestImportSass(t *testing.T) {
 
 	// Importer
 	//dir, file := "test/whitespace", "import"
+}
+
+func TestImportPath_bigfile(t *testing.T) {
+	bs, err := ioutil.ReadFile("test/bigfile/_flex-box.scss")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := NewParser()
+	pwd, contents, err := p.ImportPath("test/bigfile", "flex-box")
+	_ = pwd
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	e := string(bs)
+
+	if contents != e {
+		t.Errorf("got:\n%s\nwanted:\n%s", contents, e)
+	}
 }

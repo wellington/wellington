@@ -14,8 +14,14 @@ import (
 	"github.com/wellington/wellington/context"
 )
 
+type nopCloser struct {
+	io.Reader
+}
+
+func (n nopCloser) Close() error { return nil }
+
 // ImportPath accepts a directory and file path to find partials for importing.
-// Returning a new pwd and string of the file contents.
+// Returns the new pwd, string of the file contents, and error.
 // File can contain a directory and should be evaluated if
 // successfully found.
 // Dir is used to provide relative context to the importee.  If no file is found
@@ -37,6 +43,7 @@ func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 	if err == nil {
 		p.PartialMap.AddRelation(p.MainFile, fpath)
 		contents, _ := ioutil.ReadAll(r)
+		defer r.Close()
 		return fpath, string(contents), nil
 	}
 	rel, _ := filepath.Rel(p.SassDir, fpath)
@@ -48,6 +55,7 @@ func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 		// Look through the import path for the file
 		for _, lib := range p.Includes {
 			r, pwd, err := importPath(lib, file)
+			defer r.Close()
 			if err == nil {
 				p.PartialMap.AddRelation(p.MainFile, fpath)
 				bs, _ := ioutil.ReadAll(r)
@@ -72,7 +80,7 @@ func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 // Attempt _{}.scss, _{}.sass, {}.scss, {}.sass paths and return
 // reader if found
 // Returns the file contents, pwd, and error if any
-func importPath(dir, file string) (io.Reader, string, error) {
+func importPath(dir, file string) (io.ReadCloser, string, error) {
 	var errs string
 	spath, _ := filepath.Abs(filepath.Join(dir, file))
 	pwd := filepath.Dir(spath)
@@ -119,17 +127,16 @@ func readSassBytes(path string) ([]byte, error) {
 
 // readSass retrives a file from path. If found, it converts Sass
 // to Scss or returns found Scss;
-func readSass(path string) (io.Reader, error) {
+func readSass(path string) (io.ReadCloser, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
 	return ToScssReader(file)
 }
 
 // ToScssReader ...
-func ToScssReader(r io.Reader) (io.Reader, error) {
+func ToScssReader(r io.Reader) (io.ReadCloser, error) {
 	var (
 		buf bytes.Buffer
 	)
@@ -139,28 +146,26 @@ func ToScssReader(r io.Reader) (io.Reader, error) {
 
 		var ibuf bytes.Buffer
 		context.ToScss(io.MultiReader(&buf, r), &ibuf)
-		return &ibuf, nil
+		return nopCloser{&ibuf}, nil
 	}
 	mr := io.MultiReader(&buf, r)
 
-	return mr, nil
+	return nopCloser{mr}, nil
 }
 
 // IsSass determines if the given reader is Sass (not Scss).
 // This is predicted by the presence of semicolons
 func IsSass(r io.Reader) bool {
 	scanner := bufio.NewScanner(r)
-
 	for scanner.Scan() {
 		text := strings.TrimSpace(scanner.Text())
 		if strings.HasSuffix(text, "{") ||
 			strings.HasSuffix(text, "}") {
-			continue
+			return false
 		}
 		if strings.HasSuffix(text, ";") {
 			return false
 		}
 	}
-
 	return true
 }
