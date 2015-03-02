@@ -87,7 +87,7 @@ div {
 
 ### Functions
 
-Don't see a function you want?  Check out [handlers](http://godoc.org/github.com/wellington/wellington/context/handlers) and submit a pull request!
+Don't see a function you want?  Check out [handlers](http://godoc.org/github.com/wellington/wellington/handlers) and submit a pull request!
 
 #### sprite-map("glob/pattern"[, $spacing: 10px])
 
