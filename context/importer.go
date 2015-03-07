@@ -15,11 +15,18 @@ package context
 //   return golist;
 // }
 //
+// size_t max_size = UINTMAX_MAX;
 import "C"
 import "unsafe"
 
 // SassImport ...
 type SassImport C.struct_Sass_Import
+
+var MaxSizeT C.size_t
+
+func init() {
+	MaxSizeT = C.max_size
+}
 
 // ImportCallback ...
 type ImportCallback C.Sass_C_Import_Callback

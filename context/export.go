@@ -1,12 +1,14 @@
 package context
 
-// The use of //export prevents being able to define any C code in the preamble of that file.  Export
+// The use of //export prevents being able to define any C code in the
+// preamble of that file.  Export
 // defines additional C code necessary for the context<->sass_context bridge.
 // See: http://golang.org/cmd/cgo/#hdr-C_references_to_Go
 
 // #cgo pkg-config: --cflags --libs libsass
 // #cgo LDFLAGS: -lsass -lstdc++ -lm -std=c++11
 // #include "sass_context.h"
+//
 import "C"
 import (
 	"log"
@@ -52,7 +54,7 @@ func ImporterBridge(url *C.char, prev *C.char, ptr unsafe.Pointer) **C.struct_Sa
 			C.CString(""))
 		errMessage := C.CString("error importing: " + rel)
 		C.sass_import_set_error(ent, errMessage,
-			C.size_t(1000), C.size_t(500))
+			MaxSizeT, MaxSizeT)
 		golist[0] = ent
 	}
 	return list
