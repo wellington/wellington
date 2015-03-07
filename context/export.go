@@ -47,6 +47,13 @@ func ImporterBridge(url *C.char, prev *C.char, ptr unsafe.Pointer) **C.struct_Sa
 		srcmap := C.CString("")
 		ent := C.sass_make_import_entry(url, conts, srcmap)
 		golist[0] = ent
+	} else {
+		ent := C.sass_make_import_entry(C.CString(""), C.CString(""),
+			C.CString(""))
+		errMessage := C.CString("error importing: " + rel)
+		C.sass_import_set_error(ent, errMessage,
+			C.size_t(1000), C.size_t(500))
+		golist[0] = ent
 	}
 	return list
 }
