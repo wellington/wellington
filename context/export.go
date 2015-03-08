@@ -43,15 +43,14 @@ func ImporterBridge(url *C.char, prev *C.char, ptr unsafe.Pointer) **C.struct_Sa
 	// parent := C.GoString(prev)
 	rel := C.GoString(url)
 	list := C.sass_make_import_list(1)
-	golist := (*[1]*C.struct_Sass_Import)(unsafe.Pointer(list))
+	golist := (*[1]*SassImport)(unsafe.Pointer(list))
 	if ref, ok := ctx.FindImport(rel); ok {
 		conts := C.CString(ref.Contents)
-		srcmap := C.CString("")
-		ent := C.sass_make_import_entry(url, conts, srcmap)
-		golist[0] = ent
+		ent := C.sass_make_import_entry(url, conts, nil)
+		golist[0] = (*SassImport)(ent)
 	} else {
 		ent := C.sass_make_import_entry(url, nil, nil)
-		golist[0] = ent
+		golist[0] = (*SassImport)(ent)
 	}
 	return list
 }
@@ -74,6 +73,7 @@ func SampleCB(ctx *Context, usv UnionSassValue) UnionSassValue {
 	return C.sass_make_boolean(false)
 }
 
+// Error takes a Go error and returns a libsass Error
 func Error(err error) UnionSassValue {
 	return C.sass_make_error(C.CString(err.Error()))
 }

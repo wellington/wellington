@@ -27,18 +27,18 @@ package context
 import "C"
 import "unsafe"
 
-// SassImport ...
+// SassImport wraps Sass_Import libsass struct
 type SassImport C.struct_Sass_Import
 
+// MaxSizeT is safer way of specifying size_t -1
 var MaxSizeT C.size_t
 
 func init() {
 	MaxSizeT = C.max_size
 }
 
-// ImportCallback ...
-type ImportCallback C.Sass_C_Import_Callback
-
+// Import contains Rel and Abs path and a string of the contents
+// representing an import.
 type Import struct {
 	Rel      string
 	Abs      string
