@@ -153,5 +153,19 @@ div.branch {
 %branch { color: brown; }`)
 	err := ctx.Compile(in, &out)
 
-	t.Error(err)
+	e := `Error > stdin:1
+file to import not found or unreadable: branch
+Current dir: ` + `
+@import "branch";
+div.branch {
+  @extend %branch;
+  div.leaf {
+    @extend %leaf;
+  }
+}
+`
+	if e != err.Error() {
+		t.Errorf("got:\n%s\nwant:\n%s", err, e)
+	}
+
 }
