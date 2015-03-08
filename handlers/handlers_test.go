@@ -345,7 +345,7 @@ func TestInlineHandler(t *testing.T) {
 	}
 }
 
-func TestInlineImageNoFile(t *testing.T) {
+func TestInlineImage_nofile(t *testing.T) {
 	in := bytes.NewBufferString(`
 div {
     background: inline-image("pixel/nofile.png");
@@ -358,15 +358,15 @@ div {
 	e := `Error > stdin:3
 error in C function inline-image: open ../test/img/pixel/nofile.png: no such file or directory
 Backtrace:
-	stdin:3, in function ` + "`inline-image`" + `
-	stdin:3
+	stdin:2, in function ` + "`inline-image`" + `
+	stdin:2
 
 div {
     background: inline-image("pixel/nofile.png");
 }
 `
 	if e != err.Error() {
-		t.Errorf("got:\n~%s~\nwanted:\n~%s~", err.Error(), e)
+		t.Errorf("got:\n%s\nwanted:\n%s", err.Error(), e)
 	}
 
 }
@@ -458,8 +458,8 @@ div {
 	e := `Error > stdin:4
 error in C function sprite: Variable not found matching glob: nomap sprite:140
 Backtrace:
-	stdin:4, in function ` + "`sprite`" + `
-	stdin:4
+	stdin:3, in function ` + "`sprite`" + `
+	stdin:3
 
 $map: sprite-map("*.png");
 div {
@@ -516,8 +516,8 @@ div {
 	e := `Error > stdin:4
 error in C function sprite: Please specify unit for offset ie. (2px)
 Backtrace:
-	stdin:4, in function ` + "`sprite`" + `
-	stdin:4
+	stdin:3, in function ` + "`sprite`" + `
+	stdin:3
 
 $map: sprite-map("*.png", 10px);
 div {
