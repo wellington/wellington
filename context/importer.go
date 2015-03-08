@@ -15,6 +15,14 @@ package context
 //   return golist;
 // }
 //
+// #ifndef UINTMAX_MAX
+// #  ifdef __UINTMAX_MAX__
+// #    define UINTMAX_MAX __UINTMAX_MAX__
+// #  else
+// #    error
+// #  endif
+// #endif
+//
 // size_t max_size = UINTMAX_MAX;
 import "C"
 import "unsafe"

@@ -24,7 +24,7 @@ func TestErrorBasic(t *testing.T) {
 		t.Error("No error returned")
 	}
 
-	e := ErrorMap{2, "no mixin named invalid-function\nBacktrace:\n\tstdin:2"}
+	e := ErrorMap{2, "no mixin named invalid-function\nBacktrace:\n\tstdin:1"}
 
 	if e.line != ctx.Errors.Line {
 		t.Errorf("wanted: %d\ngot: %d", e.line, ctx.Errors.Line)
@@ -74,9 +74,9 @@ div {
 
 	e := ErrorMap{3, "argument `$map` of `map-get($map, $key)`" + ` must be a map
 Backtrace:
-	stdin:3, in function ` + "`map-get`" + `
-	stdin:3, in function ` + "`uniqueFnName`" + `
-	stdin:6`}
+	stdin:2, in function ` + "`map-get`" + `
+	stdin:2, in function ` + "`uniqueFnName`" + `
+	stdin:5`}
 	if e.line != ctx.Errors.Line {
 		t.Errorf("wanted:\n%d\ngot:\n%d", e.line, ctx.Errors.Line)
 	}
