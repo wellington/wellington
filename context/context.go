@@ -51,12 +51,11 @@ type Context struct {
 	// Place to keep cookies, so Go doesn't garbage collect them before C
 	// is done with them
 	Cookies []Cookie
-
-	Imports []Import
+	// Imports has the list of Import files currently present
+	// in the calling context
+	Imports Imports
 	// Used for callbacks to retrieve sprite information, etc.
 	Imgs, Sprites spritewell.SafeImageMap
-	// Special variable for debugging bad parsing
-	// debug []byte
 }
 
 // Constants/enums for the output style.

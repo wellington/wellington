@@ -44,8 +44,8 @@ func ImporterBridge(url *C.char, prev *C.char, ptr unsafe.Pointer) **C.struct_Sa
 	rel := C.GoString(url)
 	list := C.sass_make_import_list(1)
 	golist := (*[1]*SassImport)(unsafe.Pointer(list))
-	if ref, ok := ctx.FindImport(rel); ok {
-		conts := C.CString(ref.Contents)
+	if body, err := ctx.Imports.Get(rel); err == nil {
+		conts := C.CString(string(body))
 		ent := C.sass_make_import_entry(url, conts, nil)
 		golist[0] = (*SassImport)(ent)
 	} else {
