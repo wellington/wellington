@@ -66,7 +66,6 @@ div.branch {
 	}
 	e := `div.branch {
   color: brown; }
-
 `
 	if e != out.String() {
 		t.Fatalf("got:\n%s\nwanted:\n%s", out.String(), e)
@@ -97,7 +96,6 @@ div.branch {
 
 div.branch {
   color: brown; }
-
 `
 	if e != out.String() {
 		t.Fatalf("got:\n%s\nwanted:\n%s", out.String(), e)
@@ -140,7 +138,7 @@ div.branch {
 }
 
 func TestSassImporter_notfound(t *testing.T) {
-	t.Skip("Skip this test for now")
+
 	in := bytes.NewBufferString(`@import "branch";
 div.branch {
   @extend %branch;
@@ -155,5 +153,19 @@ div.branch {
 %branch { color: brown; }`)
 	err := ctx.Compile(in, &out)
 
-	t.Error(err)
+	e := `Error > stdin:1
+file to import not found or unreadable: branch
+Current dir: ` + `
+@import "branch";
+div.branch {
+  @extend %branch;
+  div.leaf {
+    @extend %leaf;
+  }
+}
+`
+	if e != err.Error() {
+		t.Errorf("got:\n%s\nwant:\n%s", err, e)
+	}
+
 }

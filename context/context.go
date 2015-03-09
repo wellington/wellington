@@ -171,7 +171,6 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 		return errors.New("No input provided")
 	}
 	src := C.CString(string(bs))
-	defer C.free(unsafe.Pointer(src))
 
 	dc := C.sass_make_data_context(src)
 	defer C.sass_delete_data_context(dc)

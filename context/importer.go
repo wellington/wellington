@@ -15,15 +15,30 @@ package context
 //   return golist;
 // }
 //
+// #ifndef UINTMAX_MAX
+// #  ifdef __UINTMAX_MAX__
+// #    define UINTMAX_MAX __UINTMAX_MAX__
+// #  else
+// #    error
+// #  endif
+// #endif
+//
+// size_t max_size = UINTMAX_MAX;
 import "C"
 import "unsafe"
 
-// SassImport ...
+// SassImport wraps Sass_Import libsass struct
 type SassImport C.struct_Sass_Import
 
-// ImportCallback ...
-type ImportCallback C.Sass_C_Import_Callback
+// MaxSizeT is safer way of specifying size_t -1
+var MaxSizeT C.size_t
 
+func init() {
+	MaxSizeT = C.max_size
+}
+
+// Import contains Rel and Abs path and a string of the contents
+// representing an import.
 type Import struct {
 	Rel      string
 	Abs      string

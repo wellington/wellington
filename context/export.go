@@ -1,12 +1,14 @@
 package context
 
-// The use of //export prevents being able to define any C code in the preamble of that file.  Export
+// The use of //export prevents being able to define any C code in the
+// preamble of that file.  Export
 // defines additional C code necessary for the context<->sass_context bridge.
 // See: http://golang.org/cmd/cgo/#hdr-C_references_to_Go
 
 // #cgo pkg-config: --cflags --libs libsass
-// #cgo LDFLAGS: -lsass -lstdc++ -lm -std=c++11
+// #cgo LDFLAGS: -lsass -lstdc++ -lm -ldl -std=c++11
 // #include "sass_context.h"
+//
 import "C"
 import (
 	"log"
@@ -41,12 +43,14 @@ func ImporterBridge(url *C.char, prev *C.char, ptr unsafe.Pointer) **C.struct_Sa
 	// parent := C.GoString(prev)
 	rel := C.GoString(url)
 	list := C.sass_make_import_list(1)
-	golist := (*[1]*C.struct_Sass_Import)(unsafe.Pointer(list))
+	golist := (*[1]*SassImport)(unsafe.Pointer(list))
 	if ref, ok := ctx.FindImport(rel); ok {
 		conts := C.CString(ref.Contents)
-		srcmap := C.CString("")
-		ent := C.sass_make_import_entry(url, conts, srcmap)
-		golist[0] = ent
+		ent := C.sass_make_import_entry(url, conts, nil)
+		golist[0] = (*SassImport)(ent)
+	} else {
+		ent := C.sass_make_import_entry(url, nil, nil)
+		golist[0] = (*SassImport)(ent)
 	}
 	return list
 }
@@ -69,6 +73,7 @@ func SampleCB(ctx *Context, usv UnionSassValue) UnionSassValue {
 	return C.sass_make_boolean(false)
 }
 
+// Error takes a Go error and returns a libsass Error
 func Error(err error) UnionSassValue {
 	return C.sass_make_error(C.CString(err.Error()))
 }
