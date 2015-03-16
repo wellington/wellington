@@ -12,6 +12,7 @@ package context
 import "C"
 import (
 	"log"
+	"strings"
 	"unsafe"
 )
 
@@ -46,6 +47,10 @@ func ImporterBridge(url *C.char, prev *C.char, ptr unsafe.Pointer) **C.struct_Sa
 	golist := (*[1]*SassImport)(unsafe.Pointer(list))
 	if body, err := ctx.Imports.Get(parent, rel); err == nil {
 		conts := C.CString(string(body))
+		ent := C.sass_make_import_entry(url, conts, nil)
+		golist[0] = (*SassImport)(ent)
+	} else if strings.HasPrefix(rel, "compass") {
+		conts := C.CString("")
 		ent := C.sass_make_import_entry(url, conts, nil)
 		golist[0] = (*SassImport)(ent)
 	} else {
