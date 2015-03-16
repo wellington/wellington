@@ -162,6 +162,7 @@ func main() {
 		HTTPPath:     httpPath,
 		IncludePaths: []string{gba.Includes},
 	}
+	ctx.Imports.Init()
 
 	if ishttp {
 		if len(gba.Gen) == 0 {
