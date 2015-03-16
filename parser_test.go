@@ -188,12 +188,12 @@ p {
 		3:  "mixin", // Injected mixin, perhaps we need a better name than top level file
 		4:  "mixin",
 		5:  "mixin",
-		6:  "string:1",
-		7:  "string:2",
-		8:  "string:3",
-		9:  "string:4",
-		10: "string:5",
-		11: "string:6",
+		6:  "stdin:1",
+		7:  "stdin:2",
+		8:  "stdin:3",
+		9:  "stdin:4",
+		10: "stdin:5",
+		11: "stdin:6",
 	}
 
 	for i := range tmap {
