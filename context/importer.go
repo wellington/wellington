@@ -62,7 +62,7 @@ type Imports struct {
 }
 
 // Add registers an import in the context.Imports
-func (p *Imports) Add(path string, rc io.ReadCloser) error {
+func (p *Imports) Add(path string, rc io.Reader) error {
 	p.Lock()
 	defer p.Unlock()
 
@@ -71,7 +71,6 @@ func (p *Imports) Add(path string, rc io.ReadCloser) error {
 		return err
 	}
 	im := Import{
-		Body:  rc,
 		bytes: bs,
 		mod:   time.Now(),
 	}
