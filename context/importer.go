@@ -66,7 +66,7 @@ func (p *Imports) Init() {
 }
 
 // Add registers an import in the context.Imports
-func (p *Imports) Add(path string, bs []byte) error {
+func (p *Imports) Add(prev string, cur string, bs []byte) error {
 	p.Lock()
 	defer p.Unlock()
 
@@ -74,7 +74,11 @@ func (p *Imports) Add(path string, bs []byte) error {
 		bytes: bs,
 		mod:   time.Now(),
 	}
-	p.m[path] = im
+	// TODO: align these with libsass name "stdin"
+	if len(prev) == 0 || prev == "string" {
+		prev = "stdin"
+	}
+	p.m[prev+":"+cur] = im
 	return nil
 }
 
@@ -87,11 +91,10 @@ func (p *Imports) Del(path string) {
 }
 
 // Get retrieves import bytes by path
-func (p *Imports) Get(path string) ([]byte, error) {
+func (p *Imports) Get(prev, path string) ([]byte, error) {
 	p.RLock()
 	defer p.RUnlock()
-
-	imp, ok := p.m[path]
+	imp, ok := p.m[prev+":"+path]
 	if !ok {
 		return nil, ErrImportNotFound
 	}

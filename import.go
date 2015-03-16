@@ -21,7 +21,7 @@ type nopCloser struct {
 func (n nopCloser) Close() error { return nil }
 
 // ImportPath accepts a directory and file path to find partials for importing.
-// Returns the new pwd, string of the file contents, and error.
+// Returns the new pwd, file contents, and error.
 // File can contain a directory and should be evaluated if
 // successfully found.
 // Dir is used to provide relative context to the importee.  If no file is found
@@ -37,10 +37,16 @@ func (n nopCloser) Close() error { return nil }
 // {Dir{dir+file}}/{Base{file}}.scss
 // {Dir{dir+file}}/{Base{file}}.sass
 func (p *Parser) ImportPath(dir, file string) (string, []byte, error) {
+	s, bs, err := p.importPath(dir, file)
+
+	return s, bs, err
+}
+
+func (p *Parser) importPath(dir, file string) (string, []byte, error) {
 	var baseerr string
 	// Attempt pwd
-	r, fpath, ferr := importPath(dir, file)
-	if ferr == nil {
+	r, fpath, err := findFile(dir, file)
+	if err == nil {
 		p.PartialMap.AddRelation(p.MainFile, fpath)
 		contents, err := ioutil.ReadAll(r)
 		if err != nil {
@@ -55,10 +61,10 @@ func (p *Parser) ImportPath(dir, file string) (string, []byte, error) {
 	}
 	baseerr += rel + "\n    "
 
-	if os.IsNotExist(ferr) {
+	if os.IsNotExist(err) {
 		// Look through the import path for the file
 		for _, lib := range p.Includes {
-			r, pwd, err := importPath(lib, file)
+			r, pwd, err := findFile(lib, file)
 			if err != nil {
 				return "", nil, err
 			}
@@ -88,7 +94,7 @@ func (p *Parser) ImportPath(dir, file string) (string, []byte, error) {
 // Attempt _{}.scss, _{}.sass, {}.scss, {}.sass paths and return
 // reader if found
 // Returns the file contents, pwd, and error if any
-func importPath(dir, file string) (io.ReadCloser, string, error) {
+func findFile(dir, file string) (io.ReadCloser, string, error) {
 	var errs string
 	spath, _ := filepath.Abs(filepath.Join(dir, file))
 	pwd := filepath.Dir(spath)
