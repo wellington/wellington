@@ -26,7 +26,6 @@ import "C"
 import (
 	"errors"
 	"io"
-	"io/ioutil"
 	"sync"
 	"time"
 	"unsafe"
@@ -62,14 +61,10 @@ type Imports struct {
 }
 
 // Add registers an import in the context.Imports
-func (p *Imports) Add(path string, rc io.Reader) error {
+func (p *Imports) Add(path string, bs []byte) error {
 	p.Lock()
 	defer p.Unlock()
 
-	bs, err := ioutil.ReadAll(rc)
-	if err != nil {
-		return err
-	}
 	im := Import{
 		bytes: bs,
 		mod:   time.Now(),
