@@ -12,7 +12,7 @@ func TestSassImport_single(t *testing.T) {
 	var out bytes.Buffer
 	ctx := Context{}
 	ctx.Imports.m = make(map[string]Import)
-	ctx.Imports.Add("a", bytes.NewBufferString("a { color: blue; }"))
+	ctx.Imports.Add("a", []byte("a { color: blue; }"))
 	err := ctx.Compile(in, &out)
 	if err != nil {
 		t.Fatal(err)
@@ -33,8 +33,8 @@ func TestSassImport_multi(t *testing.T) {
 	var out bytes.Buffer
 	ctx := Context{}
 	ctx.Imports.m = make(map[string]Import)
-	ctx.Imports.Add("a", bytes.NewBufferString("a { color: blue; }"))
-	ctx.Imports.Add("b", bytes.NewBufferString("b { font-weight: bold; }"))
+	ctx.Imports.Add("a", []byte("a { color: blue; }"))
+	ctx.Imports.Add("b", []byte("b { font-weight: bold; }"))
 	err := ctx.Compile(in, &out)
 	if err != nil {
 		t.Fatal(err)
@@ -61,7 +61,7 @@ div.branch {
 	var out bytes.Buffer
 	ctx := Context{}
 	ctx.Imports.m = make(map[string]Import)
-	ctx.Imports.Add("branch", bytes.NewBufferString(`%branch { color: brown; }`))
+	ctx.Imports.Add("branch", []byte(`%branch { color: brown; }`))
 	err := ctx.Compile(in, &out)
 	if err != nil {
 		t.Fatal(err)
@@ -86,9 +86,9 @@ div.branch {
 	var out bytes.Buffer
 	ctx := Context{}
 	ctx.Imports.m = make(map[string]Import)
-	ctx.Imports.Add("branch", bytes.NewBufferString(`@import "leaf";
+	ctx.Imports.Add("branch", []byte(`@import "leaf";
 %branch { color: brown; }`))
-	ctx.Imports.Add("leaf", bytes.NewBufferString("%leaf { color: green; }"))
+	ctx.Imports.Add("leaf", []byte("%leaf { color: green; }"))
 	err := ctx.Compile(in, &out)
 	if err != nil {
 		t.Fatal(err)
@@ -152,7 +152,7 @@ div.branch {
 	var out bytes.Buffer
 	ctx := Context{}
 	ctx.Imports.m = make(map[string]Import)
-	ctx.Imports.Add("nope", bytes.NewBufferString(`@import "leaf";
+	ctx.Imports.Add("nope", []byte(`@import "leaf";
 %branch { color: brown; }`))
 	err := ctx.Compile(in, &out)
 
