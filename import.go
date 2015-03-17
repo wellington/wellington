@@ -36,7 +36,7 @@ func (n nopCloser) Close() error { return nil }
 // {Dir{dir+file}}/_{Base{file}}.sass
 // {Dir{dir+file}}/{Base{file}}.scss
 // {Dir{dir+file}}/{Base{file}}.sass
-func (p *Parser) ImportPath(dir, file string) (string, string, error) {
+func (p *Parser) ImportPath(dir, file string) (string, []byte, error) {
 	var baseerr string
 	// Attempt pwd
 	r, fpath, ferr := importPath(dir, file)
@@ -44,10 +44,10 @@ func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 		p.PartialMap.AddRelation(p.MainFile, fpath)
 		contents, err := ioutil.ReadAll(r)
 		if err != nil {
-			return "", "", err
+			return "", nil, err
 		}
 		r.Close()
-		return fpath, string(contents), nil
+		return fpath, contents, nil
 	}
 	rel, _ := filepath.Rel(p.SassDir, fpath)
 	if rel == "" {
@@ -60,28 +60,28 @@ func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 		for _, lib := range p.Includes {
 			r, pwd, err := importPath(lib, file)
 			if err != nil {
-				return "", "", err
+				return "", nil, err
 			}
 			bs, err := ioutil.ReadAll(r)
 			if err != nil {
-				return "", "", err
+				return "", nil, err
 			}
 			p.PartialMap.AddRelation(p.MainFile, fpath)
 			r.Close()
-			return pwd, string(bs), nil
+			return pwd, bs, nil
 		}
 	}
 	// Ignore failures on compass
 	re := regexp.MustCompile("compass\\/?")
 	if re.Match([]byte(file)) {
-		return filepath.Dir(fpath), "", nil //errors.New("compass")
+		return filepath.Dir(fpath), nil, nil //errors.New("compass")
 	}
 	if file == "images" {
-		return filepath.Dir(fpath), "", nil
+		return filepath.Dir(fpath), nil, nil
 	}
 
 	baseerr += strings.Join(p.Includes, "\n    ")
-	return filepath.Dir(fpath), "",
+	return filepath.Dir(fpath), nil,
 		errors.New("Could not import: " + file + "\nTried:\n    " + baseerr)
 }
 

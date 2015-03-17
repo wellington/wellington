@@ -1,6 +1,7 @@
 package wellington
 
 import (
+	"bytes"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -18,9 +19,9 @@ func TestImport_path(t *testing.T) {
 		t.Errorf("Error accessing file: %s", file)
 	}
 
-	if res != string(contents) {
+	if !bytes.Equal(res, contents) {
 		t.Errorf("Contents did not match expected:\n%s\nwas:\n%s",
-			string(contents), res)
+			string(contents), string(res))
 	}
 
 	rel := strings.Replace(path, os.Getenv("PWD"), "", 1)
@@ -39,9 +40,9 @@ func TestImport_path(t *testing.T) {
 		t.Error(err)
 	}
 
-	if res != string(contents) {
+	if !bytes.Equal(res, contents) {
 		t.Errorf("Contents did not match expected:%s\nwas:%s",
-			string(contents), res)
+			string(contents), string(res))
 	}
 }
 
@@ -60,7 +61,7 @@ func TestImport_missing(t *testing.T) {
 	p.SassDir = filepath.Join(os.Getenv("PWD"), "test")
 	dir, file := "test", "notafile"
 	_, res, err := p.ImportPath(dir, file)
-	if res != "" {
+	if res != nil {
 		t.Errorf("Result from import on missing file: %s", file)
 	}
 
@@ -80,11 +81,8 @@ func TestImport_sass(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res != "" {
 
-	}
-
-	e := `nav {
+	e := []byte(`nav {
   ul {
     margin: 0;
     padding: 0;
@@ -97,10 +95,10 @@ func TestImport_sass(t *testing.T) {
     display: block;
     padding: 6px 12px;
     text-decoration: none; } }
-`
+`)
 
-	if e != res {
-		t.Errorf("got:\n%s\nwanted:\n%s", res, e)
+	if !bytes.Equal(e, res) {
+		t.Errorf("got:\n%s\nwanted:\n%s", string(res), string(e))
 	}
 
 	// Importer
@@ -113,15 +111,12 @@ func TestImport_bigfile(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := NewParser()
-	pwd, contents, err := p.ImportPath("test/bigfile", "flex-box")
-	_ = pwd
+	_, contents, err := p.ImportPath("test/bigfile", "flex-box")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	e := string(bs)
-
-	if contents != e {
-		t.Errorf("got:\n%s\nwanted:\n%s", contents, e)
+	if !bytes.Equal(bs, contents) {
+		t.Errorf("got:\n%s\nwanted:\n%s", string(contents), string(bs))
 	}
 }

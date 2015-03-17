@@ -85,6 +85,7 @@ func NewContext() *Context {
 		M: make(map[string]spritewell.ImageList)}
 	c.Imgs = spritewell.SafeImageMap{
 		M: make(map[string]spritewell.ImageList)}
+	c.Imports.Init()
 
 	return &c
 }
