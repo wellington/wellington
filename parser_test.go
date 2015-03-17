@@ -27,7 +27,7 @@ func TestParser_importer(t *testing.T) {
 		PartialMap: NewPartialMap(),
 		SassDir:    os.Getenv("PWD"),
 	}
-
+	p.Imports.Init()
 	bs, err := p.Start(fileReader("test/sass/import.scss"), "test/")
 	if err != nil {
 		log.Fatal(err)
