@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"path"
 	"path/filepath"
 	"sort"
 
@@ -42,6 +43,7 @@ type Parser struct {
 	SassDir, BuildDir,
 
 	ProjDir string
+	Imports    context.Imports
 	ImageDir   string
 	Includes   []string
 	Items      []lexer.Item
@@ -53,7 +55,9 @@ type Parser struct {
 
 // NewParser returns a pointer to a Parser object.
 func NewParser() *Parser {
-	return &Parser{PartialMap: NewPartialMap()}
+	p := &Parser{PartialMap: NewPartialMap()}
+	p.Imports.Init()
+	return p
 }
 
 // Start reads the tokens from the lexer and performs
@@ -81,7 +85,7 @@ func (p *Parser) Start(r io.Reader, pkgdir string) ([]byte, error) {
 
 	// Setup paths
 	if p.MainFile == "" {
-		p.MainFile = "string"
+		p.MainFile = "stdin"
 	}
 	if p.BuildDir == "" {
 		p.BuildDir = pkgdir
@@ -123,9 +127,8 @@ func (p *Parser) Start(r io.Reader, pkgdir string) ([]byte, error) {
 	// }
 	// Process sprite calls and gen
 
-	// Parsing is no longer necessary
-	// p.Parse(p.Items)
-	p.Output = []byte(p.Input)
+	// Send original byte slice
+	p.Output = buf.Bytes() //[]byte(p.Input)
 	// Perform substitutions
 	// p.Replace()
 	// rel := []byte(fmt.Sprintf(`$rel: "%s";%s`,
@@ -221,6 +224,13 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]lexer.Item, string, er
 				}
 				p.Line[lineCount] = filename
 				pwd, contents, err := p.ImportPath(pwd, filename)
+				// FIXME: hack for top level file
+				ln := lastname
+				if path.IsAbs(ln) {
+					ln = "stdin"
+				}
+				p.Imports.Add(ln,
+					filename, contents)
 
 				if err != nil {
 					return nil, "", err
@@ -239,7 +249,7 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]lexer.Item, string, er
 				moreTokens, moreOutput, err := p.GetItems(
 					pwd,
 					filename,
-					contents)
+					string(contents))
 				// If importing was successful, each token must be moved
 				// forward by the position of the @import call that made
 				// it available.
@@ -276,13 +286,14 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]lexer.Item, string, er
 // the right way to inject one?
 func StartParser(ctx *context.Context, in io.Reader, out io.Writer, partialMap *SafePartialMap) (*Parser, error) {
 	// Run the sprite_sass parser prior to passing to libsass
-	parser := &Parser{
-		ImageDir:   ctx.ImageDir,
-		Includes:   ctx.IncludePaths,
-		BuildDir:   ctx.BuildDir,
-		MainFile:   ctx.MainFile,
-		PartialMap: partialMap,
-	}
+	parser := NewParser()
+
+	parser.ImageDir = ctx.ImageDir
+	parser.Includes = ctx.IncludePaths
+	parser.BuildDir = ctx.BuildDir
+	parser.MainFile = ctx.MainFile
+	parser.Imports = ctx.Imports
+
 	// Save reference to parser in context
 	bs, err := parser.Start(in, filepath.Dir(ctx.MainFile))
 	if err != nil {

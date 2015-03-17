@@ -17,6 +17,7 @@ func TestPartial_map(t *testing.T) {
 		PartialMap: NewPartialMap(),
 		SassDir:    os.Getenv("PWD"),
 	}
+	p.Imports.Init()
 
 	p.Start(fileReader("test/sass/import.scss"), "test/")
 

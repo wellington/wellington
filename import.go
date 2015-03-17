@@ -21,7 +21,7 @@ type nopCloser struct {
 func (n nopCloser) Close() error { return nil }
 
 // ImportPath accepts a directory and file path to find partials for importing.
-// Returns the new pwd, string of the file contents, and error.
+// Returns the new pwd, file contents, and error.
 // File can contain a directory and should be evaluated if
 // successfully found.
 // Dir is used to provide relative context to the importee.  If no file is found
@@ -36,18 +36,24 @@ func (n nopCloser) Close() error { return nil }
 // {Dir{dir+file}}/_{Base{file}}.sass
 // {Dir{dir+file}}/{Base{file}}.scss
 // {Dir{dir+file}}/{Base{file}}.sass
-func (p *Parser) ImportPath(dir, file string) (string, string, error) {
+func (p *Parser) ImportPath(dir, file string) (string, []byte, error) {
+	s, bs, err := p.importPath(dir, file)
+
+	return s, bs, err
+}
+
+func (p *Parser) importPath(dir, file string) (string, []byte, error) {
 	var baseerr string
 	// Attempt pwd
-	r, fpath, ferr := importPath(dir, file)
-	if ferr == nil {
+	r, fpath, err := findFile(dir, file)
+	if err == nil {
 		p.PartialMap.AddRelation(p.MainFile, fpath)
 		contents, err := ioutil.ReadAll(r)
 		if err != nil {
-			return "", "", err
+			return "", nil, err
 		}
 		r.Close()
-		return fpath, string(contents), nil
+		return fpath, contents, nil
 	}
 	rel, _ := filepath.Rel(p.SassDir, fpath)
 	if rel == "" {
@@ -55,40 +61,40 @@ func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 	}
 	baseerr += rel + "\n    "
 
-	if os.IsNotExist(ferr) {
+	if os.IsNotExist(err) {
 		// Look through the import path for the file
 		for _, lib := range p.Includes {
-			r, pwd, err := importPath(lib, file)
+			r, pwd, err := findFile(lib, file)
 			if err != nil {
-				return "", "", err
+				return "", nil, err
 			}
 			bs, err := ioutil.ReadAll(r)
 			if err != nil {
-				return "", "", err
+				return "", nil, err
 			}
 			p.PartialMap.AddRelation(p.MainFile, fpath)
 			r.Close()
-			return pwd, string(bs), nil
+			return pwd, bs, nil
 		}
 	}
 	// Ignore failures on compass
 	re := regexp.MustCompile("compass\\/?")
 	if re.Match([]byte(file)) {
-		return filepath.Dir(fpath), "", nil //errors.New("compass")
+		return filepath.Dir(fpath), nil, nil //errors.New("compass")
 	}
 	if file == "images" {
-		return filepath.Dir(fpath), "", nil
+		return filepath.Dir(fpath), nil, nil
 	}
 
 	baseerr += strings.Join(p.Includes, "\n    ")
-	return filepath.Dir(fpath), "",
+	return filepath.Dir(fpath), nil,
 		errors.New("Could not import: " + file + "\nTried:\n    " + baseerr)
 }
 
 // Attempt _{}.scss, _{}.sass, {}.scss, {}.sass paths and return
 // reader if found
 // Returns the file contents, pwd, and error if any
-func importPath(dir, file string) (io.ReadCloser, string, error) {
+func findFile(dir, file string) (io.ReadCloser, string, error) {
 	var errs string
 	spath, _ := filepath.Abs(filepath.Join(dir, file))
 	pwd := filepath.Dir(spath)
@@ -165,8 +171,22 @@ func ToScssReader(r io.Reader) (io.ReadCloser, error) {
 // This is predicted by the presence of semicolons
 func IsSass(r io.Reader) bool {
 	scanner := bufio.NewScanner(r)
+	var cmt bool
+	var last string
 	for scanner.Scan() {
 		text := strings.TrimSpace(scanner.Text())
+		last = text
+		// FIXME: This is not a suitable way to detect comments
+		if strings.HasPrefix(text, "/*") {
+			cmt = true
+		}
+		if strings.HasSuffix(text, "*/") {
+			cmt = false
+			continue
+		}
+		if cmt {
+			continue
+		}
 		if strings.HasSuffix(text, "{") ||
 			strings.HasSuffix(text, "}") {
 			return false
@@ -174,6 +194,11 @@ func IsSass(r io.Reader) bool {
 		if strings.HasSuffix(text, ";") {
 			return false
 		}
+	}
+	// If type is still undecided and file ends with comment, assume
+	// this is a scss file
+	if strings.HasSuffix(last, "*/") {
+		return false
 	}
 	return true
 }

@@ -39,7 +39,7 @@ func TestStdin_import(t *testing.T) {
 	out := <-outC
 
 	e := `Reading from stdin, -h for help
-/* line 8, stdin */
+/* line 3, var */
 div {
   background: #00FF00;
   font-size: 10pt; }
