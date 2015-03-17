@@ -171,8 +171,22 @@ func ToScssReader(r io.Reader) (io.ReadCloser, error) {
 // This is predicted by the presence of semicolons
 func IsSass(r io.Reader) bool {
 	scanner := bufio.NewScanner(r)
+	var cmt bool
+	var last string
 	for scanner.Scan() {
 		text := strings.TrimSpace(scanner.Text())
+		last = text
+		// FIXME: This is not a suitable way to detect comments
+		if strings.HasPrefix(text, "/*") {
+			cmt = true
+		}
+		if strings.HasSuffix(text, "*/") {
+			cmt = false
+			continue
+		}
+		if cmt {
+			continue
+		}
 		if strings.HasSuffix(text, "{") ||
 			strings.HasSuffix(text, "}") {
 			return false
@@ -180,6 +194,11 @@ func IsSass(r io.Reader) bool {
 		if strings.HasSuffix(text, ";") {
 			return false
 		}
+	}
+	// If type is still undecided and file ends with comment, assume
+	// this is a scss file
+	if strings.HasSuffix(last, "*/") {
+		return false
 	}
 	return true
 }
