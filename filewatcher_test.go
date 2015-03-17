@@ -8,13 +8,14 @@ import (
 	"time"
 )
 
-func TestPartialMap(t *testing.T) {
+func TestPartial_map(t *testing.T) {
 	path, _ := filepath.Abs("test/sass/import.scss")
 	p := Parser{
 		BuildDir:   "test/build",
 		Includes:   []string{"test/sass"},
 		MainFile:   path,
 		PartialMap: NewPartialMap(),
+		SassDir:    os.Getenv("PWD"),
 	}
 
 	p.Start(fileReader("test/sass/import.scss"), "test/")

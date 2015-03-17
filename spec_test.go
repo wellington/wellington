@@ -1,11 +1,15 @@
 package wellington
 
-import "testing"
+import (
+	"os"
+	"testing"
+)
 
 func TestSassToScss(t *testing.T) {
 
 	p := NewParser()
 	p.Includes = []string{"test/whitespace"}
+	p.SassDir = os.Getenv("PWD")
 
 	in := fileReader("test/whitespace/import.sass")
 

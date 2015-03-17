@@ -271,7 +271,6 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]lexer.Item, string, er
 }
 
 // StartParser accepts build arguments
-// TODO: Remove pkgdir, can be referenced from context
 // TODO: Should this be called StartParser or NewParser?
 // TODO: Should this function create the partialMap or is this
 // the right way to inject one?

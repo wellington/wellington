@@ -19,12 +19,13 @@ func init() {
 	rerandom = regexp.MustCompile(`-\w{6}(?:\.(png|jpg))`)
 }
 
-func TestParserImporter(t *testing.T) {
+func TestParser_importer(t *testing.T) {
 	p := Parser{
 		BuildDir:   "test/build",
 		Includes:   []string{"test/sass"},
 		MainFile:   "import.css",
 		PartialMap: NewPartialMap(),
+		SassDir:    os.Getenv("PWD"),
 	}
 
 	bs, err := p.Start(fileReader("test/sass/import.scss"), "test/")
@@ -213,10 +214,11 @@ p {
 
 }
 
-func TestParseLookupImport(t *testing.T) {
+func TestParser_lookupimport(t *testing.T) {
 	p := NewParser()
 	p.BuildDir = "test/build"
 	p.Includes = []string{"test/sass"}
+	p.SassDir = os.Getenv("PWD")
 
 	in := bytes.NewBufferString(`@import "file";
 p {

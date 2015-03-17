@@ -39,28 +39,36 @@ func (n nopCloser) Close() error { return nil }
 func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 	var baseerr string
 	// Attempt pwd
-	r, fpath, err := importPath(dir, file)
-	if err == nil {
+	r, fpath, ferr := importPath(dir, file)
+	if ferr == nil {
 		p.PartialMap.AddRelation(p.MainFile, fpath)
-		contents, _ := ioutil.ReadAll(r)
-		defer r.Close()
+		contents, err := ioutil.ReadAll(r)
+		if err != nil {
+			return "", "", err
+		}
+		r.Close()
 		return fpath, string(contents), nil
 	}
 	rel, _ := filepath.Rel(p.SassDir, fpath)
 	if rel == "" {
-		rel = "./"
+		rel = "."
 	}
 	baseerr += rel + "\n    "
-	if os.IsNotExist(err) {
+
+	if os.IsNotExist(ferr) {
 		// Look through the import path for the file
 		for _, lib := range p.Includes {
 			r, pwd, err := importPath(lib, file)
-			defer r.Close()
-			if err == nil {
-				p.PartialMap.AddRelation(p.MainFile, fpath)
-				bs, _ := ioutil.ReadAll(r)
-				return pwd, string(bs), nil
+			if err != nil {
+				return "", "", err
 			}
+			bs, err := ioutil.ReadAll(r)
+			if err != nil {
+				return "", "", err
+			}
+			p.PartialMap.AddRelation(p.MainFile, fpath)
+			r.Close()
+			return pwd, string(bs), nil
 		}
 	}
 	// Ignore failures on compass

@@ -5,10 +5,11 @@ import (
 	"flag"
 	"io"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
-func TestStdinImport(t *testing.T) {
+func TestStdin_import(t *testing.T) {
 	fh, err := os.Open("../test/sass/import.scss")
 	if err != nil {
 		t.Error(err)
@@ -20,7 +21,7 @@ func TestStdinImport(t *testing.T) {
 	os.Stdin = fh
 	r, w, _ := os.Pipe()
 	os.Stdout = w
-	flag.Set("p", "../test/sass")
+	flag.Set("p", filepath.Join(os.Getenv("PWD"), "..", "test", "sass"))
 	main()
 
 	outC := make(chan string)

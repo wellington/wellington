@@ -3,11 +3,12 @@ package wellington
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
 
-func TestImportPath(t *testing.T) {
+func TestImport_path(t *testing.T) {
 	p := NewParser()
 	dir, file := "test/sass", "var"
 	contents, _ := ioutil.ReadFile("test/sass/_var.scss")
@@ -44,8 +45,19 @@ func TestImportPath(t *testing.T) {
 	}
 }
 
-func TestMissingImport(t *testing.T) {
+func TestImport_includes(t *testing.T) {
 	p := NewParser()
+	p.Includes = []string{filepath.Join(os.Getenv("PWD"), "test", "includes")}
+	p.SassDir = filepath.Join(os.Getenv("PWD"), "test")
+	_, _, err := p.ImportPath("includes", "includea")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestImport_missing(t *testing.T) {
+	p := NewParser()
+	p.SassDir = filepath.Join(os.Getenv("PWD"), "test")
 	dir, file := "test", "notafile"
 	_, res, err := p.ImportPath(dir, file)
 	if res != "" {
@@ -54,13 +66,13 @@ func TestMissingImport(t *testing.T) {
 
 	rel := strings.Replace(err.Error(), os.Getenv("PWD"), "", 1)
 	if e := "Could not import: notafile\nTried:\n" +
-		"    ./\n    "; rel != e {
+		"    .\n    "; rel != e {
 		t.Errorf("Error message invalid\nexpected: %s\nwas: %s",
 			e, err.Error())
 	}
 }
 
-func TestImportSass(t *testing.T) {
+func TestImport_sass(t *testing.T) {
 	p := NewParser()
 	dir, file := "test/whitespace", "two"
 
@@ -95,7 +107,7 @@ func TestImportSass(t *testing.T) {
 	//dir, file := "test/whitespace", "import"
 }
 
-func TestImportPath_bigfile(t *testing.T) {
+func TestImport_bigfile(t *testing.T) {
 	bs, err := ioutil.ReadFile("test/bigfile/_flex-box.scss")
 	if err != nil {
 		t.Fatal(err)
