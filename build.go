@@ -61,10 +61,10 @@ func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) e
 			strings.Split(gba.Includes, ",")...)
 	}
 	fRead, err := os.Open(sassFile)
-	defer fRead.Close()
 	if err != nil {
 		return err
 	}
+	defer fRead.Close()
 	if fout != "" {
 		dir := filepath.Dir(fout)
 		err := os.MkdirAll(dir, 0755)

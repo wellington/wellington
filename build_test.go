@@ -35,3 +35,44 @@ Rebuilt: test/sass/file.scss
 		t.Errorf("got:\n%s\nwanted:\n%s", out, e)
 	}
 }
+
+func TestLandB_updateFile(t *testing.T) {
+	s := "file.scss"
+	ren := updateFileOutputType(s)
+	if e := "file.css"; e != ren {
+		t.Errorf("got: %s wanted: %s", ren, e)
+	}
+}
+
+func TestLoadAndBuild_args(t *testing.T) {
+	oo := os.Stdout
+
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	err := LoadAndBuild("test/sass/file.scss",
+		&BuildArgs{
+			BuildDir: "test/build",
+			Includes: "test",
+		},
+		NewPartialMap(),
+	)
+	if err != nil {
+		t.Error(err)
+	}
+	outC := make(chan string)
+	go func() {
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		outC <- buf.String()
+	}()
+
+	w.Close()
+	os.Stdout = oo
+	out := <-outC
+
+	e := `Rebuilt: test/sass/file.scss
+`
+	if e != out {
+		t.Errorf("got:\n%s\nwanted:\n%s", out, e)
+	}
+}
