@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"path"
 	"path/filepath"
 	"sort"
 
@@ -223,9 +224,13 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]lexer.Item, string, er
 				}
 				p.Line[lineCount] = filename
 				pwd, contents, err := p.ImportPath(pwd, filename)
-
-				p.Imports.Add(filepath.Base(lastname),
-					filepath.Base(filename), contents)
+				// FIXME: hack for top level file
+				ln := lastname
+				if path.IsAbs(ln) {
+					ln = "stdin"
+				}
+				p.Imports.Add(ln,
+					filename, contents)
 
 				if err != nil {
 					return nil, "", err
