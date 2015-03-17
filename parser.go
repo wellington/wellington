@@ -42,6 +42,7 @@ type Parser struct {
 	SassDir, BuildDir,
 
 	ProjDir string
+	Imports    context.Imports
 	ImageDir   string
 	Includes   []string
 	Items      []lexer.Item
@@ -239,7 +240,7 @@ func (p *Parser) GetItems(pwd, filename, input string) ([]lexer.Item, string, er
 				moreTokens, moreOutput, err := p.GetItems(
 					pwd,
 					filename,
-					contents)
+					string(contents))
 				// If importing was successful, each token must be moved
 				// forward by the position of the @import call that made
 				// it available.
@@ -281,8 +282,10 @@ func StartParser(ctx *context.Context, in io.Reader, out io.Writer, partialMap *
 		Includes:   ctx.IncludePaths,
 		BuildDir:   ctx.BuildDir,
 		MainFile:   ctx.MainFile,
+		Imports:    ctx.Imports,
 		PartialMap: partialMap,
 	}
+	parser.Imports.Init()
 	// Save reference to parser in context
 	bs, err := parser.Start(in, filepath.Dir(ctx.MainFile))
 	if err != nil {

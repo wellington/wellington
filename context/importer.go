@@ -60,6 +60,11 @@ type Imports struct {
 	m map[string]Import
 }
 
+// Init sets up a new Imports map
+func (p *Imports) Init() {
+	p.m = make(map[string]Import)
+}
+
 // Add registers an import in the context.Imports
 func (p *Imports) Add(path string, bs []byte) error {
 	p.Lock()
