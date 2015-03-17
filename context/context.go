@@ -17,8 +17,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 
 	"github.com/wellington/spritewell"
 
@@ -91,15 +93,13 @@ func NewContext() *Context {
 }
 
 // Init validates options in the struct and returns a Sass Options.
-func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options {
+func (ctx *Context) Init(opts *C.struct_Sass_Options) *C.struct_Sass_Options {
 	if ctx.Precision == 0 {
 		ctx.Precision = 5
 	}
 	cmt := C.bool(ctx.Comments)
 	imgpath := C.CString(ctx.ImageDir)
 	prec := C.int(ctx.Precision)
-
-	opts := C.sass_data_context_get_options(dc)
 
 	defer func() {
 		C.free(unsafe.Pointer(imgpath))
@@ -157,6 +157,45 @@ func (ctx *Context) Init(dc *C.struct_Sass_Data_Context) *C.struct_Sass_Options 
 	return opts
 }
 
+func (c *Context) FileCompile(path string, out io.Writer) error {
+	defer c.Reset()
+	cpath := C.CString(path)
+	fc := C.sass_make_file_context(cpath)
+	defer C.sass_delete_file_context(fc)
+	fcopts := C.sass_file_context_get_options(fc)
+	opts := c.Init(fcopts)
+	//os.PathListSeparator
+	incs := strings.Join(c.IncludePaths, string(os.PathListSeparator))
+	C.sass_option_set_include_path(opts, C.CString(incs))
+	C.sass_file_context_set_options(fc, opts)
+	cc := C.sass_file_context_get_context(fc)
+	compiler := C.sass_make_file_compiler(fc)
+	C.sass_compiler_parse(compiler)
+	C.sass_compiler_execute(compiler)
+	defer C.sass_delete_compiler(compiler)
+	cout := C.GoString(C.sass_context_get_output_string(cc))
+	io.WriteString(out, cout)
+	c.Status = int(C.sass_context_get_error_status(cc))
+	errJson := C.sass_context_get_error_json(cc)
+	err := c.ProcessSassError([]byte(C.GoString(errJson)))
+	if err != nil {
+		return err
+	}
+	if c.error() != "" {
+		/*lines := bytes.Split(bs, []byte("\n"))
+		var out string
+		for i := -7; i < 7; i++ {
+			if i+c.Errors.Line >= 0 && i+c.Errors.Line < len(lines) {
+				out += fmt.Sprintf("%s\n", string(lines[i+c.Errors.Line]))
+			}
+		}
+		// TODO: this is weird, make something more idiomatic*/
+		return errors.New(c.error())
+	}
+
+	return nil
+}
+
 // Compile reads in and writes the libsass compiled result to out.
 // Options and custom functions are applied as specified in Context.
 func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
@@ -175,7 +214,8 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	dc := C.sass_make_data_context(src)
 	defer C.sass_delete_data_context(dc)
 
-	opts := ctx.Init(dc)
+	options := C.sass_data_context_get_options(dc)
+	opts := ctx.Init(options)
 
 	// TODO: Manually free options memory without throwing
 	// malloc errors
@@ -186,9 +226,7 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 
 	C.sass_compiler_parse(compiler)
 	C.sass_compiler_execute(compiler)
-	defer func() {
-		C.sass_delete_compiler(compiler)
-	}()
+	defer C.sass_delete_compiler(compiler)
 
 	cout := C.GoString(C.sass_context_get_output_string(cc))
 	io.WriteString(out, cout)

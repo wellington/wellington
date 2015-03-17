@@ -50,7 +50,7 @@ func ImporterBridge(url *C.char, prev *C.char, ptr unsafe.Pointer) **C.struct_Sa
 		ent := C.sass_make_import_entry(url, conts, nil)
 		golist[0] = (*SassImport)(ent)
 	} else if strings.HasPrefix(rel, "compass") {
-		conts := C.CString("")
+		conts := C.CString(weAreNeverGettingBackTogether)
 		ent := C.sass_make_import_entry(url, conts, nil)
 		golist[0] = (*SassImport)(ent)
 	} else {
@@ -59,6 +59,13 @@ func ImporterBridge(url *C.char, prev *C.char, ptr unsafe.Pointer) **C.struct_Sa
 	}
 	return list
 }
+
+var weAreNeverGettingBackTogether = `@mixin sprite-dimensions($map, $name) {
+  $file: sprite-file($map, $name);
+  height: image-height($file);
+  width: image-width($file);
+}
+`
 
 // SassCallback defines the callback libsass eventually executes in sprite_sass
 type SassCallback func(ctx *Context, csv UnionSassValue) UnionSassValue

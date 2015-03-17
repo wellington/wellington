@@ -1,7 +1,6 @@
 package wellington
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -82,21 +81,12 @@ func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) e
 		}
 		// log.Println("Created:", fout)
 	}
-
-	var pout bytes.Buffer
-	par, err := StartParser(&ctx, fRead, &pout, partialMap)
+	err = ctx.FileCompile(sassFile, out)
 	if err != nil {
+		log.Println(sassFile)
 		return err
 	}
-	err = ctx.Compile(&pout, out)
 
-	if err != nil {
-		log.Println(ctx.MainFile)
-		n := ctx.ErrorLine()
-		fs := par.LookupFile(n)
-		log.Printf("Error encountered in: %s\n", fs)
-		return err
-	}
 	fmt.Printf("Rebuilt: %s\n", sassFile)
 	return nil
 }

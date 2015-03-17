@@ -116,9 +116,6 @@ func (p *Imports) Len() int {
 
 // SetImporter enables custom importer in libsass
 func (ctx *Context) SetImporter(opts *C.struct_Sass_Options) {
-	if ctx.Imports.Len() == 0 {
-		return
-	}
 	p := C.Sass_C_Import_Fn(C.SassImporter)
 	impCallback := C.sass_make_importer(p,
 		unsafe.Pointer(ctx))
