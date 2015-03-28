@@ -2,7 +2,7 @@ FROM gliderlabs/alpine:latest
 
 # install g++
 RUN apk update
-RUN apk add go build-base pkgconf autoconf automake libtool git
+RUN apk add go build-base pkgconf autoconf automake libtool git file
 
 ENV libsass_ver 8e7a2947b82adcb79484cbc0843979038c9d7c4a
 ENV LIBSASSPATH /build/libsass
