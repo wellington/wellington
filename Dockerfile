@@ -9,7 +9,7 @@ ENV LIBSASSPATH /build/libsass
 ENV GOPATH /usr/src
 
 ADD https://github.com/sass/libsass/archive/$libsass_ver.tar.gz /usr/src/libsass.tar.gz
-RUN tar xvzf /usr/src/libsass.tar.gz --strip 1 -C /usr/src/${libsass_ver}
+RUN tar xvzf /usr/src/libsass.tar.gz -C /usr/src/${libsass_ver}
 
 WORKDIR /usr/src/libsass-${libsass_ver}
 
