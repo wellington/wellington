@@ -44,7 +44,8 @@ copyout:
 	cp $(GOPATH)/bin/wt /tmp
 	chown -R $(EUID):$(EGID) /build/libsass
 	mkdir -p /tmp/lib64
-	cp /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.20 /tmp/lib64
+	cp /usr/lib/libstdc++.so.6 /tmp/lib64
+	cp /usr/lib/libgcc_s.so.1 /tmp/lib64
 
 container-build: clean
 	docker build -t wt-build .

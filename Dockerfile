@@ -26,4 +26,5 @@ COPY . /usr/src/github.com/wellington/wellington
 WORKDIR /usr/src/app
 
 RUN go get -d -v ./...
-RUN go install github.com/wellington/wellington/wt
+RUN cd wt && go install
+#RUN cd wt && godep go install
