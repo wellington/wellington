@@ -52,6 +52,7 @@ container-build:
 	docker run -v $(PWD)/build:/tmp -e EUID=$(shell id -u) -e EGID=$(shell id -g) wt-build make copyout
 
 build/Dockerfile:
+	mkdir build
 	cp Dockerfile.scratch build/Dockerfile
 
 build: build/Dockerfile container-build
