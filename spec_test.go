@@ -24,9 +24,7 @@ func TestSassToScss(t *testing.T) {
   width: image-width($file);
 }
 
-$font-stack:    Helvetica, sans-serif;
-$primary-color: #333;
-
+@import "one";
 
 body {
   font: 100% $font-stack;

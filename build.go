@@ -1,7 +1,6 @@
 package wellington
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -18,10 +17,12 @@ var inputFileTypes = []string{".scss", ".sass"}
 // TODO: make this function testable
 func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) error {
 
+	// TODO: This was a hack back when grepping discovered
+	// partials, we should no longer need this.
 	// Remove partials
-	if strings.HasPrefix(filepath.Base(sassFile), "_") {
-		return nil
-	}
+	// if strings.HasPrefix(filepath.Base(sassFile), "_") {
+	// 	return nil
+	// }
 
 	if gba == nil {
 		return fmt.Errorf("build args are nil")
@@ -56,6 +57,7 @@ func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) e
 		Comments:     gba.Comments,
 		IncludePaths: []string{filepath.Dir(sassFile)},
 	}
+	ctx.Imports.Init()
 	if gba.Includes != "" {
 		ctx.IncludePaths = append(ctx.IncludePaths,
 			strings.Split(gba.Includes, ",")...)
@@ -79,21 +81,12 @@ func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) e
 		}
 		// log.Println("Created:", fout)
 	}
-
-	var pout bytes.Buffer
-	par, err := StartParser(&ctx, fRead, &pout, partialMap)
+	err = ctx.FileCompile(sassFile, out)
 	if err != nil {
+		log.Println(sassFile)
 		return err
 	}
-	err = ctx.Compile(&pout, out)
 
-	if err != nil {
-		log.Println(ctx.MainFile)
-		n := ctx.ErrorLine()
-		fs := par.LookupFile(n)
-		log.Printf("Error encountered in: %s\n", fs)
-		return err
-	}
 	fmt.Printf("Rebuilt: %s\n", sassFile)
 	return nil
 }
