@@ -4,15 +4,15 @@ FROM gliderlabs/alpine:latest
 RUN apk update
 RUN apk add go build-base pkgconf autoconf automake libtool git
 
-ENV libsass_ver 8e7a2947
+ENV libsass_ver 8e7a2947b
 ENV LIBSASSPATH /build/libsass
 ENV GOPATH /usr/src
 
 ADD https://github.com/sass/libsass/archive/$libsass_ver.tar.gz /usr/src/libsass.tar.gz
-RUN tar xvzf /usr/src/libsass.tar.gz -C /usr/src
+RUN tar xvzf /usr/src/libsass.tar.gz --strip 1 -C /usr/src/${libsass_ver}
 
 WORKDIR /usr/src/libsass-${libsass_ver}
-RUN find .
+
 RUN autoreconf -fvi
 RUN ./configure --disable-tests --disable-shared \
              --prefix=$LIBSASSPATH --disable-silent-rules \
