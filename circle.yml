@@ -39,3 +39,9 @@ notify:
     # A list of hook hashes, containing the url field
     # gitter hook
     - url: https://webhooks.gitter.im/e/bf9c8f0282b914859ce2
+deployment:
+  hub:
+    branch: [master]
+    commands:
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+      - docker push wellington/wellington
