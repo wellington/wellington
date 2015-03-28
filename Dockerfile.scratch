@@ -1,9 +1,10 @@
-FROM progrium/busybox
+FROM gliderlabs/alpine:latest
 
 WORKDIR /usr/src/app
-COPY lib64 /usr/lib64
-RUN ln -s /usr/lib64/libstdc++.so.6.0.20 /usr/lib64/libstdc++.so.6
+COPY lib64 /usr/lib
+
 COPY wt /usr/bin/wt
+RUN chmod +x /usr/bin/wt
 
 EXPOSE 12345
 

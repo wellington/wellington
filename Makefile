@@ -44,14 +44,18 @@ copyout:
 	cp $(GOPATH)/bin/wt /tmp
 	chown -R $(EUID):$(EGID) /build/libsass
 	mkdir -p /tmp/lib64
-	cp /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.20 /tmp/lib64
+	cp /usr/lib/libstdc++.so.6 /tmp/lib64
+	cp /usr/lib/libgcc_s.so.1 /tmp/lib64
 
-container-build: clean
+container-build:
 	docker build -t wt-build .
 	docker run -v $(PWD)/build:/tmp -e EUID=$(shell id -u) -e EGID=$(shell id -g) wt-build make copyout
 
-build: container-build
+build/Dockerfile:
+	mkdir build
 	cp Dockerfile.scratch build/Dockerfile
+
+build: build/Dockerfile container-build
 	cd build; docker build -t drewwells/wellington .
 
 push: build

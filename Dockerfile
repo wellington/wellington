@@ -1,27 +1,30 @@
-FROM golang:1.4rc2
+FROM gliderlabs/alpine:latest
 
 # install g++
-RUN apt-get update
-RUN apt-get -y install g++ pkg-config dh-autoreconf
+RUN apk update
+RUN apk add go build-base pkgconf autoconf automake libtool git file
 
-ENV libsass_ver 3.1.0
+ENV libsass_ver 8e7a2947b82adcb79484cbc0843979038c9d7c4a
 ENV LIBSASSPATH /build/libsass
+ENV PKG_CONFIG_PATH $LIBSASSPATH/lib/pkgconfig
+ENV GOPATH /usr
 
-RUN curl -sSL https://github.com/sass/libsass/archive/$libsass_ver.tar.gz \
-		| tar -v -C /usr/src -xz
+ADD https://github.com/sass/libsass/archive/$libsass_ver.tar.gz /usr/src/libsass.tar.gz
+RUN tar xvzf /usr/src/libsass.tar.gz -C /usr/src
 
-WORKDIR /usr/src/libsass-$libsass_ver
-RUN autoreconf --force --install
+WORKDIR /usr/src/libsass-${libsass_ver}
+
+RUN autoreconf -fvi
 RUN ./configure --disable-tests --disable-shared \
              --prefix=$LIBSASSPATH --disable-silent-rules \
 			 --disable-dependency-tracking
 RUN make install
 
 COPY . /usr/src/app
-COPY . /go/src/github.com/wellington/wellington
+COPY . /usr/src/github.com/wellington/wellington
 
-ENV PKG_CONFIG_PATH $LIBSASSPATH/lib/pkgconfig
 WORKDIR /usr/src/app
-#RUN make deps #inlined this command to speed up docker build
+
 RUN go get -d -v ./...
-RUN go install github.com/wellington/wellington/wt
+RUN cd wt && go install
+#RUN cd wt && godep go install
