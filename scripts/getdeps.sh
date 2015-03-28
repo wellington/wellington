@@ -19,3 +19,6 @@ autoreconf -fvi
 ./configure --disable-shared --prefix=$(pwd) --disable-silent-rules --disable-dependency-tracking
 # Check file permissions
 make install
+
+# temporary fix waiting for PR#998
+cp sass_version.h include/sass_version.h
