@@ -31,6 +31,7 @@ type Cookie struct {
 func GoBridge(cargs UnionSassValue, ptr unsafe.Pointer) UnionSassValue {
 	// Recover the Cookie struct passed in
 	ck := *(*Cookie)(ptr)
+
 	usv := ck.Fn(ck.Ctx, cargs)
 	return usv
 }
@@ -44,18 +45,21 @@ func ImporterBridge(url *C.char, prev *C.char, ptr unsafe.Pointer) **C.struct_Sa
 	parent := C.GoString(prev)
 	rel := C.GoString(url)
 	list := C.sass_make_import_list(1)
-	golist := (*[1]*SassImport)(unsafe.Pointer(list))
+	golist := (*[1]*C.Sass_Import_Entry)(unsafe.Pointer(list))
 	if body, err := ctx.Imports.Get(parent, rel); err == nil {
 		conts := C.CString(string(body))
 		ent := C.sass_make_import_entry(url, conts, nil)
-		golist[0] = (*SassImport)(ent)
+		cent := (C.Sass_Import_Entry)(ent)
+		golist[0] = &cent
 	} else if strings.HasPrefix(rel, "compass") {
 		conts := C.CString(weAreNeverGettingBackTogether)
 		ent := C.sass_make_import_entry(url, conts, nil)
-		golist[0] = (*SassImport)(ent)
+		cent := (C.Sass_Import_Entry)(ent)
+		golist[0] = &cent
 	} else {
 		ent := C.sass_make_import_entry(url, nil, nil)
-		golist[0] = (*SassImport)(ent)
+		cent := (C.Sass_Import_Entry)(ent)
+		golist[0] = &cent
 	}
 	return list
 }

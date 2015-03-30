@@ -26,6 +26,7 @@ import "C"
 import (
 	"errors"
 	"io"
+	"reflect"
 	"sync"
 	"time"
 	"unsafe"
@@ -116,8 +117,18 @@ func (p *Imports) Len() int {
 
 // SetImporter enables custom importer in libsass
 func (ctx *Context) SetImporter(opts *C.struct_Sass_Options) {
-	p := C.Sass_C_Import_Fn(C.SassImporter)
-	impCallback := C.sass_make_importer(p,
+
+	imps := C.sass_make_importer_list(1)
+	hdr := reflect.SliceHeader{
+		Data: uintptr(unsafe.Pointer(imps)),
+		Len:  1, Cap: 1,
+	}
+	goimps := *(*[]C.Sass_Importer_Entry)(unsafe.Pointer(&hdr))
+	p := C.SassImporter
+	imp := C.sass_make_importer(
+		C.Sass_Importer_Fn(p),
+		C.double(0),
 		unsafe.Pointer(ctx))
-	C.sass_option_set_importer(opts, impCallback)
+	goimps[0] = imp
+	C.sass_option_set_c_importers(opts, imps)
 }

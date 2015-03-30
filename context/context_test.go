@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"regexp"
 	"testing"
+	"time"
 )
 
 var rerandom *regexp.Regexp
@@ -104,11 +105,11 @@ func TestContextCustomSimpleTypes(t *testing.T) {
 }`)
 
 	//var out bytes.Buffer
-
 	ctx := Context{}
 	ctx.Cookies = make([]Cookie, 1)
 	// Communication channel for the C Sass callback function
 	ch := make(chan []interface{}, 1)
+
 	ctx.Cookies[0] = Cookie{
 		"foo($null, $num, $str, $bool, $color)", func(c *Context, usv UnionSassValue) UnionSassValue {
 			// Send the interface fn arguments to the ch channel
@@ -138,7 +139,12 @@ func TestContextCustomSimpleTypes(t *testing.T) {
 		false,
 		color.RGBA{R: 0x0, G: 0x55, B: 0x0, A: 0x1},
 	}
-	args := <-ch
+	var args []interface{}
+	select {
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("timeout")
+	case args = <-ch:
+	}
 	if !reflect.DeepEqual(e, args) {
 		t.Errorf("wanted:\n% #v\ngot:\n% #v", e, args)
 	}
@@ -175,7 +181,12 @@ func TestContextCustomComplexTypes(t *testing.T) {
 		SassNumber{1, "mm"},
 		color.RGBA{R: 0x0, G: 0x33, B: 0x0, A: 0x1},
 	}
-	args := <-ch
+	var args interface{}
+	select {
+	case <-time.After(100 * time.Millisecond):
+		t.Fatal("timeout")
+	case args = <-ch:
+	}
 	if !reflect.DeepEqual(e, args) {
 		t.Errorf("wanted:\n%#v\ngot:\n% #v", e, args)
 	}

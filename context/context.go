@@ -4,7 +4,8 @@ package context
 // #include "sass_context.h"
 //
 // extern union Sass_Value* GoBridge( union Sass_Value* s_args, void* cookie);
-// union Sass_Value* CallSassFunction( union Sass_Value* s_args, void* cookie ) {
+// union Sass_Value* CallSassFunction( union Sass_Value* s_args, Sass_Function_Entry cb, struct Sass_Options* opts ) {
+//     void* cookie = sass_function_get_cookie(cb);
 //     return GoBridge(s_args, cookie);
 // }
 //
@@ -121,7 +122,7 @@ func (ctx *Context) Init(opts *C.struct_Sass_Options) *C.struct_Sass_Options {
 	ctx.Cookies = cookies
 	size := C.size_t(len(ctx.Cookies))
 	fns := C.sass_make_function_list(size)
-	signatures := make([]string, len(ctx.Cookies))
+
 	// Send cookies to libsass
 	// Create a slice that's backed by a C array
 	length := len(ctx.Cookies) + 1
@@ -130,18 +131,15 @@ func (ctx *Context) Init(opts *C.struct_Sass_Options) *C.struct_Sass_Options {
 		Len:  length, Cap: length,
 	}
 
-	gofns := *(*[]C.Sass_C_Function_Callback)(unsafe.Pointer(&hdr))
-	for i, v := range ctx.Cookies {
-		signatures[i] = ctx.Cookies[i].Sign
-		_ = v
-		cg := C.CString(signatures[i])
-		_ = cg
+	gofns := *(*[]C.Sass_Function_Entry)(unsafe.Pointer(&hdr))
+	for i, cookie := range ctx.Cookies {
+		sign := C.CString(cookie.Sign)
 
 		fn := C.sass_make_function(
 			// sass signature
-			C.CString(v.Sign),
+			sign,
 			// C bridge
-			C.Sass_C_Function(C.CallSassFunction),
+			C.Sass_Function_Fn(C.CallSassFunction),
 			// Only pass reference to global array, so
 			// GC won't clean it up.
 			unsafe.Pointer(&ctx.Cookies[i]))
@@ -151,7 +149,7 @@ func (ctx *Context) Init(opts *C.struct_Sass_Options) *C.struct_Sass_Options {
 
 	ctx.SetImporter(opts)
 
-	C.sass_option_set_c_functions(opts, (C.Sass_C_Function_List)(unsafe.Pointer(&gofns[0])))
+	C.sass_option_set_c_functions(opts, (C.Sass_Function_List)(unsafe.Pointer(&gofns[0])))
 	C.sass_option_set_precision(opts, prec)
 	C.sass_option_set_source_comments(opts, cmt)
 	return opts
