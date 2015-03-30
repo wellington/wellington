@@ -4,7 +4,7 @@ FROM gliderlabs/alpine:latest
 RUN apk update
 RUN apk add go build-base pkgconf autoconf automake libtool git file
 
-ENV libsass_ver 8e7a2947b82adcb79484cbc0843979038c9d7c4a
+ENV libsass_ver a73ae2637e2a004f98959d28b39fe073125000af
 ENV LIBSASSPATH /build/libsass
 ENV PKG_CONFIG_PATH $LIBSASSPATH/lib/pkgconfig
 ENV GOPATH /usr
