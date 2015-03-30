@@ -7,7 +7,7 @@ machine:
     PKG_CONFIG_PATH: "$HOME/$CIRCLE_PROJECT_REPONAME/libsass/lib/pkgconfig"
 dependencies:
   cache_directories:
-    - /usr/src/libsass-${LIBSASS_VERSION}
+    - /usr/src
   pre:
     - go get -f -u -d github.com/wellington/spritewell
     - go get -f -u -d gopkg.in/fsnotify.v1
