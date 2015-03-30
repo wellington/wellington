@@ -13,7 +13,7 @@ type ErrorMap struct {
 	message string
 }
 
-func TestErrorBasic(t *testing.T) {
+func TestError_basic(t *testing.T) {
 	in := bytes.NewBufferString(`div {
   @include invalid-function('');
 }`)
@@ -39,7 +39,7 @@ func TestErrorBasic(t *testing.T) {
 	}
 }
 
-func TestErrorUnbound(t *testing.T) {
+func TestError_unbound(t *testing.T) {
 	in := bytes.NewBufferString(`div {
   background: map-get($sprite,139);
 }`)
@@ -57,7 +57,7 @@ func TestErrorUnbound(t *testing.T) {
 
 }
 
-func TestErrorFunction(t *testing.T) {
+func TestError_function(t *testing.T) {
 	in := bytes.NewBufferString(`// Empty line
 @function uniqueFnName($file) {
   @return map-get($file,prop);
@@ -86,10 +86,11 @@ Backtrace:
 	}
 }
 
-func TestErrorImport(t *testing.T) {
+func TestError_import(t *testing.T) {
 	in := bytes.NewBufferString(`span {}
 @import "fail";
 `)
+
 	out := bytes.NewBuffer([]byte(""))
 	ctx := Context{}
 	err := ctx.Compile(in, out)
@@ -107,7 +108,7 @@ func TestErrorImport(t *testing.T) {
 
 }
 
-func TestProcessSassError(t *testing.T) {
+func TestError_processsass(t *testing.T) {
 	in := []byte(`{
   "status": 1,
   "file": "stdin",
@@ -132,7 +133,7 @@ Backtrace:
 	}
 }
 
-func TestErrorWarn(t *testing.T) {
+func TestError_warn(t *testing.T) {
 	var pout bytes.Buffer
 	log.SetFlags(0)
 	log.SetOutput(&pout)
@@ -159,7 +160,7 @@ div {
 	log.SetOutput(os.Stdout)
 }
 
-func TestErrorInvalid(t *testing.T) {
+func TestError_invalid(t *testing.T) {
 	ctx := Context{}
 	err := ctx.ProcessSassError([]byte("/a"))
 
@@ -168,7 +169,7 @@ func TestErrorInvalid(t *testing.T) {
 	}
 }
 
-func TestErrorLine(t *testing.T) {
+func TestError_line(t *testing.T) {
 	ctx := Context{}
 	ctx.errorString = "Error > stdin:1000"
 	if e := 1000; e != ctx.ErrorLine() {

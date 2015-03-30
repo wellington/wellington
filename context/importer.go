@@ -5,12 +5,13 @@ package context
 // #include "sass_context.h"
 //
 // extern struct Sass_Import** ImporterBridge(const char* url, const char* prev, void* cookie);
-// struct Sass_Import** SassImporter(const char* url, const char* prev, void* cookie)
+// Sass_Import_List SassImporter(const char* cur_path, Sass_Importer_Entry cb, struct Sass_Compiler* comp)
 // {
-//   struct Sass_Import** golist = ImporterBridge(url, prev, cookie);
-//   const char* src = sass_import_get_source(golist[0]);
-//   // printf("There should be code in this: %s\n", src);
-//   return golist;
+//   void* cookie = sass_importer_get_cookie(cb);
+//   struct Sass_Import* previous = sass_compiler_get_last_import(comp);
+//   const char* prev_path = sass_import_get_path(previous);
+//   Sass_Import_List list = ImporterBridge(cur_path, prev_path, cookie);
+//   return list;
 // }
 //
 // #ifndef UINTMAX_MAX
