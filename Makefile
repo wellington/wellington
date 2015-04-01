@@ -62,7 +62,7 @@ build/Dockerfile:
 	mkdir -p build
 	cp Dockerfile.scratch build/Dockerfile
 
-build:
+build: build/Dockerfile
 	cd build; docker build -t drewwells/wellington .
 
 push: build
