@@ -10,11 +10,7 @@ dependencies:
     - /usr/src
   pre:
     - go get -f -u -d github.com/wellington/spritewell
-    - go get -f -u -d gopkg.in/fsnotify.v1
-    - go get github.com/axw/gocov/gocov
-    - go get github.com/mattn/goveralls
-    - go get golang.org/x/tools/cmd/goimports
-    - go get github.com/golang/lint/golint
+    - go get gopkg.in/fsnotify.v1
     - echo $LIBSASS_VERSION
     - make deps
   override:

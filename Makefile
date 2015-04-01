@@ -32,6 +32,13 @@ profile: install
 	@touch libsass/.libsass_version_$(libsass_ver)
 
 deps: .libsass_version_$(libsass_ver)
+	go get github.com/tools/godep
+	godep restore
+	# retrieve lint and test deps
+	go get github.com/axw/gocov/gocov
+	go get github.com/mattn/goveralls
+	go get golang.org/x/tools/cmd/goimports
+	go get github.com/golang/lint/golint
 
 headers:
 	scripts/getheaders.sh
@@ -47,15 +54,15 @@ copyout:
 	cp /usr/lib/libstdc++.so.6 /tmp/lib64
 	cp /usr/lib/libgcc_s.so.1 /tmp/lib64
 
-container-build:
+container-build: build/Dockerfile
 	docker build -t wt-build .
-	docker run -v $(PWD)/build:/tmp -e EUID=$(shell id -u) -e EGID=$(shell id -g) wt-build make copyout
+	docker run -v $(PWD)/build:/tmp -e EUID=$(shell id -u) -e EGID=$(shell id -g) wt-build make test copyout
 
 build/Dockerfile:
-	mkdir build
+	mkdir -p build
 	cp Dockerfile.scratch build/Dockerfile
 
-build: build/Dockerfile container-build
+build:
 	cd build; docker build -t drewwells/wellington .
 
 push: build
