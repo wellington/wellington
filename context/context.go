@@ -57,6 +57,7 @@ type Context struct {
 	// Imports has the list of Import files currently present
 	// in the calling context
 	Imports Imports
+	Headers Headers
 	// Used for callbacks to retrieve sprite information, etc.
 	Imgs, Sprites spritewell.SafeImageMap
 }
@@ -93,8 +94,16 @@ func NewContext() *Context {
 	return &c
 }
 
+type SassOptions C.struct_Sass_Options
+
+func NewSassOptions() *SassOptions {
+	copts := C.sass_make_options()
+	return (*SassOptions)(copts)
+}
+
 // Init validates options in the struct and returns a Sass Options.
-func (ctx *Context) Init(opts *C.struct_Sass_Options) *C.struct_Sass_Options {
+func (ctx *Context) Init(goopts *SassOptions) *C.struct_Sass_Options {
+	opts := (*C.struct_Sass_Options)(goopts)
 	if ctx.Precision == 0 {
 		ctx.Precision = 5
 	}
@@ -146,7 +155,8 @@ func (ctx *Context) Init(opts *C.struct_Sass_Options) *C.struct_Sass_Options {
 
 		gofns[i] = fn
 	}
-
+	Mixins(ctx)
+	ctx.SetHeaders(opts)
 	ctx.SetImporter(opts)
 
 	C.sass_option_set_c_functions(opts, (C.Sass_Function_List)(unsafe.Pointer(&gofns[0])))
@@ -161,13 +171,15 @@ func (c *Context) FileCompile(path string, out io.Writer) error {
 	fc := C.sass_make_file_context(cpath)
 	defer C.sass_delete_file_context(fc)
 	fcopts := C.sass_file_context_get_options(fc)
-	opts := c.Init(fcopts)
+	goopts := (*SassOptions)(fcopts)
+	opts := c.Init(goopts)
 	//os.PathListSeparator
 	incs := strings.Join(c.IncludePaths, string(os.PathListSeparator))
 	C.sass_option_set_include_path(opts, C.CString(incs))
 	C.sass_file_context_set_options(fc, opts)
 	cc := C.sass_file_context_get_context(fc)
 	compiler := C.sass_make_file_compiler(fc)
+
 	C.sass_compiler_parse(compiler)
 	C.sass_compiler_execute(compiler)
 	defer C.sass_delete_compiler(compiler)
@@ -213,7 +225,7 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 	defer C.sass_delete_data_context(dc)
 
 	options := C.sass_data_context_get_options(dc)
-	opts := ctx.Init(options)
+	opts := ctx.Init((*SassOptions)(options))
 
 	// TODO: Manually free options memory without throwing
 	// malloc errors

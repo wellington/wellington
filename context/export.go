@@ -36,6 +36,30 @@ func GoBridge(cargs UnionSassValue, ptr unsafe.Pointer) UnionSassValue {
 	return usv
 }
 
+// HeaderBridge is called by libsass to find available custom headers
+//
+//export HeaderBridge
+func HeaderBridge(ptr unsafe.Pointer) C.Sass_Import_List {
+	ctx := (*Context)(ptr)
+	l := ctx.Headers.Len()
+	list := C.sass_make_import_list(C.size_t(l))
+	hdr := reflect.SliceHeader{
+		Data: uintptr(unsafe.Pointer(list)),
+		Len:  l, Cap: l,
+	}
+	golist := *(*[]C.Sass_Import_Entry)(unsafe.Pointer(&hdr))
+
+	for i, head := range ctx.Headers.h {
+		ent := C.sass_make_import_entry(
+			nil,
+			C.CString(head.Content),
+			nil)
+		cent := (C.Sass_Import_Entry)(ent)
+		golist[i] = cent
+	}
+	return list
+}
+
 // ImporterBridge is called by C to pass Importer arguments into Go land. A
 // Sass_Import is returned for libsass to resolve.
 //
@@ -56,8 +80,7 @@ func ImporterBridge(url *C.char, prev *C.char, ptr unsafe.Pointer) C.Sass_Import
 		cent := (C.Sass_Import_Entry)(ent)
 		golist[0] = cent
 	} else if strings.HasPrefix(rel, "compass") {
-		conts := C.CString(weAreNeverGettingBackTogether)
-		ent := C.sass_make_import_entry(url, conts, nil)
+		ent := C.sass_make_import_entry(url, nil, nil)
 		cent := (C.Sass_Import_Entry)(ent)
 		golist[0] = cent
 	} else {
@@ -68,13 +91,6 @@ func ImporterBridge(url *C.char, prev *C.char, ptr unsafe.Pointer) C.Sass_Import
 
 	return list
 }
-
-var weAreNeverGettingBackTogether = `@mixin sprite-dimensions($map, $name) {
-  $file: sprite-file($map, $name);
-  height: image-height($file);
-  width: image-width($file);
-}
-`
 
 // SassCallback defines the callback libsass eventually executes in sprite_sass
 type SassCallback func(ctx *Context, csv UnionSassValue) UnionSassValue

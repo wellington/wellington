@@ -16,13 +16,6 @@ import (
 	"github.com/wellington/wellington/token"
 )
 
-var weAreNeverGettingBackTogether = []byte(`@mixin sprite-dimensions($map, $name) {
-  $file: sprite-file($map, $name);
-  height: image-height($file);
-  width: image-width($file);
-}
-`)
-
 func init() {
 	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
 }
@@ -136,7 +129,7 @@ func (p *Parser) Start(r io.Reader, pkgdir string) ([]byte, error) {
 
 	// Code that we will never support, ever
 
-	return append(weAreNeverGettingBackTogether, p.Output...), nil
+	return p.Output, nil
 }
 
 // LookupFile translates line positions into line number
@@ -145,7 +138,7 @@ func (p *Parser) LookupFile(position int) string {
 	// Shift to 0 index
 	pos := position - 1
 	// Adjust for shift from preamble
-	shift := bytes.Count(weAreNeverGettingBackTogether, []byte{'\n'})
+	shift := 0
 	pos = pos - shift
 	if pos < 0 {
 		return "mixin"

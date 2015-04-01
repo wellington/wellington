@@ -1,0 +1,4 @@
+$sprites: sprite-map("../img/*.png");
+div {
+  @include sprite-dimensions($sprites, "139");
+}

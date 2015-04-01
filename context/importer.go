@@ -5,6 +5,7 @@ package context
 // #include "sass_context.h"
 //
 // extern struct Sass_Import** ImporterBridge(const char* url, const char* prev, void* cookie);
+//
 // Sass_Import_List SassImporter(const char* cur_path, Sass_Importer_Entry cb, struct Sass_Compiler* comp)
 // {
 //   void* cookie = sass_importer_get_cookie(cb);
