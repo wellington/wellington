@@ -2,7 +2,11 @@ FROM gliderlabs/alpine:latest
 
 # install g++
 RUN apk update
-RUN apk add go build-base pkgconf autoconf automake libtool git file
+RUN apk add build-base pkgconf autoconf automake libtool git file mercurial
+RUN curl -LsO https://circle-artifacts.com/gh/andyshinn/alpine-pkg-go/2/artifacts/0/home/ubuntu/alpine-pkg-go/packages/x86_64/go-1.4.2-r0.apk && apk --allow-untrusted add --update go-1.4.2-r0.apk
+ENV GOPATH /usr
+ENV GOROOT /usr/lib/go
+RUN go version
 
 ENV libsass_ver a73ae2637e2a004f98959d28b39fe073125000af
 ENV LIBSASSPATH /build/libsass
@@ -26,5 +30,6 @@ COPY . /usr/src/github.com/wellington/wellington
 WORKDIR /usr/src/app
 
 RUN go get -d -v ./...
+RUN make godeps
 RUN cd wt && go install
 #RUN cd wt && godep go install
