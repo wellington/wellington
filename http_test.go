@@ -127,13 +127,8 @@ func TestHTTPHandler_error(t *testing.T) {
 		t.Errorf("got: %d wanted: %d", w.Code, e)
 	}
 
-	e := `Error > stdin:6
+	e := `Error > stdin:1
 required parameter $color is missing in call to function darken
-@mixin sprite-dimensions($map, $name) {
-  $file: sprite-file($map, $name);
-  height: image-height($file);
-  width: image-width($file);
-}
 div { p { color: darken(); } };
 `
 	resp := decResp(t, w.Body)

@@ -150,7 +150,7 @@ div {
 }
 
 func TestParseImageUrl(t *testing.T) {
-
+	t.Skip("Parser is no longer required")
 	p := Parser{
 		BuildDir:   "test/build",
 		MainFile:   "test",
@@ -169,6 +169,7 @@ background: image-url('test/140.png');`; e != out {
 
 func TestParseLookupFile(t *testing.T) {
 
+	t.Skip("Parser is no longer required")
 	p := Parser{
 		BuildDir: "test/build",
 		Includes: []string{"test/sass"},
@@ -215,6 +216,7 @@ p {
 }
 
 func TestParser_lookupimport(t *testing.T) {
+	t.Skip("Parser is no longer required")
 	p := NewParser()
 	p.BuildDir = "test/build"
 	p.Includes = []string{"test/sass"}

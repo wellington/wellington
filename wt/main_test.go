@@ -51,7 +51,7 @@ div {
 
 }
 
-func TestStdinSprite(t *testing.T) {
+func TestStdin_sprite(t *testing.T) {
 	fh, err := os.Open("../test/sass/sprite.scss")
 	if err != nil {
 		t.Error(err)
@@ -82,7 +82,7 @@ func TestStdinSprite(t *testing.T) {
 	out := <-outC
 
 	e := `Reading from stdin, -h for help
-/* line 8, stdin */
+/* line 3, stdin */
 div {
   height: 139px;
   width: 96px;

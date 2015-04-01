@@ -18,12 +18,7 @@ func TestSassToScss(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	e := `@mixin sprite-dimensions($map, $name) {
-  $file: sprite-file($map, $name);
-  height: image-height($file);
-  width: image-width($file);
-}
-
+	e := `
 @import "one";
 
 body {
@@ -40,12 +35,7 @@ body {
 		t.Fatal(err)
 	}
 
-	e = `@mixin sprite-dimensions($map, $name) {
-  $file: sprite-file($map, $name);
-  height: image-height($file);
-  width: image-width($file);
-}
-
+	e = `
 html,
 body,
 ul,
