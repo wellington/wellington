@@ -31,17 +31,11 @@ profile: install
 	scripts/getdeps.sh
 	@touch libsass/.libsass_version_$(libsass_ver)
 
-godeps:
+godep:
 	go get github.com/tools/godep
-	go get golang.org/x/tools/cmd/vet
-	# retrieve lint and test deps
-	go get github.com/axw/gocov/gocov
-	go get github.com/mattn/goveralls
-	go get golang.org/x/tools/cmd/goimports
-	go get github.com/golang/lint/golint
 	godep restore
 
-deps: .libsass_version_$(libsass_ver) godeps
+deps: .libsass_version_$(libsass_ver)
 
 headers:
 	scripts/getheaders.sh
@@ -59,7 +53,7 @@ copyout:
 
 container-build: build/Dockerfile deps
 	docker build -t wt-build .
-	docker run -v $(PWD)/build:/tmp -e EUID=$(shell id -u) -e EGID=$(shell id -g) wt-build make test copyout
+	docker run -v $(PWD)/build:/tmp -e EUID=$(shell id -u) -e EGID=$(shell id -g) wt-build make copyout
 
 build/Dockerfile:
 	mkdir -p build
@@ -72,7 +66,16 @@ push: build
 	docker push drewwells/wellington:latest
 docker:
 	docker run -e HOST=http://$(shell boot2docker ip):8080 -it -p 8080:12345 -v $(current_dir):/usr/src/myapp -v $(current_dir)/test:/data drewwells/wellington
-test:
+
+scripts/goclean.sh:
+	go get golang.org/x/tools/cmd/vet
+	# retrieve lint and test deps
+	go get github.com/axw/gocov/gocov
+	go get github.com/mattn/goveralls
+	go get golang.org/x/tools/cmd/goimports
+	go get github.com/golang/lint/golint
+
+test: godep
 	scripts/goclean.sh
 compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
