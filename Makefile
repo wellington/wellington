@@ -52,6 +52,7 @@ copyout:
 	cp /usr/lib/libgcc_s.so.1 /tmp/lib64
 
 container-build: deps
+	mkdir build
 	docker build -t wt-build .
 	docker run -v $(PWD)/build:/tmp -e EUID=$(shell id -u) -e EGID=$(shell id -g) wt-build make test copyout
 
