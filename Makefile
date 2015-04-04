@@ -51,16 +51,12 @@ copyout:
 	cp /usr/lib/libstdc++.so.6 /tmp/lib64
 	cp /usr/lib/libgcc_s.so.1 /tmp/lib64
 
-container-build: build/Dockerfile deps
+container-build: deps
 	docker build -t wt-build .
 	docker run -v $(PWD)/build:/tmp -e EUID=$(shell id -u) -e EGID=$(shell id -g) wt-build make test copyout
 
-build/Dockerfile:
-	mkdir -p build
-	cp Dockerfile.scratch build/Dockerfile
-
 build: container-build
-	cd build; docker build -t drewwells/wellington .
+	docker build -f Dockerfile.scratch -t drewwells/wellington .
 
 push: build
 	docker push drewwells/wellington:latest
