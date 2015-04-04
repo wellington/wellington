@@ -76,6 +76,8 @@ test:
 	scripts/goclean.sh
 compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
+save:
+	cd libsass; git rev-parse HEAD > ../.libsass_version
 swift: install
 	scripts/swift.sh
 watch: install
