@@ -6,7 +6,7 @@ RUN curl -LsO https://circle-artifacts.com/gh/andyshinn/alpine-pkg-go/3/artifact
 
 #retrieve Go source
 ADD https://storage.googleapis.com/golang/go1.4.2.src.tar.gz /usr/lib/go1.4.2.src.tar.gz
-RUN tar xvzf /usr/lib/go1.4.2.src.tar.gz -C /usr/lib
+RUN tar xzf /usr/lib/go1.4.2.src.tar.gz -C /usr/lib
 
 ENV GOPATH /usr
 ENV GOROOT /usr/lib/go
@@ -18,7 +18,7 @@ ENV PKG_CONFIG_PATH $LIBSASSPATH/lib/pkgconfig
 ENV GOPATH /usr
 
 ADD https://github.com/sass/libsass/archive/$libsass_ver.tar.gz /usr/src/libsass.tar.gz
-RUN tar xvzf /usr/src/libsass.tar.gz -C /usr/src
+RUN tar xzf /usr/src/libsass.tar.gz -C /usr/src
 
 WORKDIR /usr/src/libsass-$libsass_ver
 
