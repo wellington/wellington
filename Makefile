@@ -67,7 +67,7 @@ push: build
 docker:
 	docker run -e HOST=http://$(shell boot2docker ip):8080 -it -p 8080:12345 -v $(current_dir):/usr/src/myapp -v $(current_dir)/test:/data drewwells/wellington
 
-scripts/goclean.sh:
+tools:
 	go get golang.org/x/tools/cmd/vet
 	# retrieve lint and test deps
 	go get github.com/axw/gocov/gocov
@@ -75,7 +75,7 @@ scripts/goclean.sh:
 	go get golang.org/x/tools/cmd/goimports
 	go get github.com/golang/lint/golint
 
-test: godep
+test: godep tools
 	scripts/goclean.sh
 compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
