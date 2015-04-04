@@ -12,7 +12,7 @@ dependencies:
     - go get -f -u -d github.com/wellington/spritewell
     - go get gopkg.in/fsnotify.v1
     - echo $LIBSASS_VERSION
-    - make deps
+    #- make deps
   override:
     - echo $PROJECT_ROOT/hello
 checkout:
