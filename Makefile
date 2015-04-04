@@ -53,7 +53,7 @@ copyout:
 
 container-build: build/Dockerfile deps
 	docker build -t wt-build .
-	docker run -v $(PWD)/build:/tmp -e EUID=$(shell id -u) -e EGID=$(shell id -g) wt-build make copyout
+	docker run -v $(PWD)/build:/tmp -e EUID=$(shell id -u) -e EGID=$(shell id -g) wt-build make test copyout
 
 build/Dockerfile:
 	mkdir -p build
