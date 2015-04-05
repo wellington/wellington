@@ -9,7 +9,7 @@ ifndef PKG_CONFIG_PATH
 	PKG_CONFIG_PATH=$(current_dir)/libsass/lib/pkgconfig
 endif
 
-install: deps
+install: getlibsass
 	go get -f -u -d github.com/wellington/spritewell
 	go get -f -u -d gopkg.in/fsnotify.v1
 	go install github.com/wellington/wellington/wt
@@ -27,7 +27,6 @@ profile: install
 	open profile.png
 
 .libsass_version_$(libsass_ver):
-	- rm libsass/.libsass_version_*
 	scripts/getdeps.sh
 	@touch libsass/.libsass_version_$(libsass_ver)
 
@@ -35,7 +34,7 @@ godep:
 	go get github.com/tools/godep
 	godep restore
 
-deps: .libsass_version_$(libsass_ver)
+getlibsass: .libsass_version_$(libsass_ver)
 
 headers:
 	scripts/getheaders.sh
@@ -51,8 +50,9 @@ copyout:
 	cp /usr/lib/libstdc++.so.6 /tmp/lib64
 	cp /usr/lib/libgcc_s.so.1 /tmp/lib64
 
-container-build: deps
-	mkdir build
+container-build:
+	- mkdir build
+	- rm profile.cov
 	docker build -t wt-build .
 	docker run -v $(PWD)/build:/tmp -e EUID=$(shell id -u) -e EGID=$(shell id -g) wt-build make test copyout
 
@@ -71,6 +71,7 @@ profile.cov:
 	go get github.com/mattn/goveralls
 	go get golang.org/x/tools/cmd/goimports
 	go get github.com/golang/lint/golint
+	go get golang.org/x/tools/cmd/cover
 	scripts/goclean.sh
 
 test: godep profile.cov
