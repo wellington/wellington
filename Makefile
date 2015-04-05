@@ -49,6 +49,7 @@ copyout:
 	mkdir -p /tmp/lib64
 	cp /usr/lib/libstdc++.so.6 /tmp/lib64
 	cp /usr/lib/libgcc_s.so.1 /tmp/lib64
+	chown -R $(EUID):$(EGID) /tmp
 
 container-build:
 	- mkdir build
