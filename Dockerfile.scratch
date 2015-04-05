@@ -1,7 +1,7 @@
 FROM gliderlabs/alpine:latest
 
 WORKDIR /usr/src/app
-COPY build/lib64 /usr/lib
+COPY lib64 /usr/lib
 
 COPY wt /usr/bin/wt
 RUN chmod +x /usr/bin/wt

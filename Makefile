@@ -57,7 +57,8 @@ container-build:
 	docker run -v $(PWD)/build:/tmp -e EUID=$(shell id -u) -e EGID=$(shell id -g) wt-build make test copyout
 
 build: container-build
-	docker build -f Dockerfile.scratch -t drewwells/wellington .
+	cp Dockerfile.scratch build/Dockerfile
+	cd build; docker build -t drewwells/wellington .
 
 push: build
 	docker push drewwells/wellington:latest
