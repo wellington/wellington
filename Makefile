@@ -9,7 +9,7 @@ ifndef PKG_CONFIG_PATH
 	PKG_CONFIG_PATH=$(current_dir)/libsass/lib/pkgconfig
 endif
 
-install: deps
+install: getlibsass
 	go get -f -u -d github.com/wellington/spritewell
 	go get -f -u -d gopkg.in/fsnotify.v1
 	go install github.com/wellington/wellington/wt
@@ -27,21 +27,14 @@ profile: install
 	open profile.png
 
 .libsass_version_$(libsass_ver):
-	- rm libsass/.libsass_version_*
 	scripts/getdeps.sh
 	@touch libsass/.libsass_version_$(libsass_ver)
 
-godeps:
+godep:
 	go get github.com/tools/godep
-	go get golang.org/x/tools/cmd/vet
-	# retrieve lint and test deps
-	go get github.com/axw/gocov/gocov
-	go get github.com/mattn/goveralls
-	go get golang.org/x/tools/cmd/goimports
-	go get github.com/golang/lint/golint
 	godep restore
 
-deps: .libsass_version_$(libsass_ver) godeps
+getlibsass: .libsass_version_$(libsass_ver)
 
 headers:
 	scripts/getheaders.sh
@@ -56,24 +49,35 @@ copyout:
 	mkdir -p /tmp/lib64
 	cp /usr/lib/libstdc++.so.6 /tmp/lib64
 	cp /usr/lib/libgcc_s.so.1 /tmp/lib64
+	chown -R $(EUID):$(EGID) /tmp
 
-container-build: build/Dockerfile deps
+container-build:
+	- mkdir build
+	- rm profile.cov
 	docker build -t wt-build .
 	docker run -v $(PWD)/build:/tmp -e EUID=$(shell id -u) -e EGID=$(shell id -g) wt-build make test copyout
 
-build/Dockerfile:
-	mkdir -p build
-	cp Dockerfile.scratch build/Dockerfile
-
 build: container-build
+	cp Dockerfile.scratch build/Dockerfile
 	cd build; docker build -t drewwells/wellington .
 
 push: build
 	docker push drewwells/wellington:latest
 docker:
 	docker run -e HOST=http://$(shell boot2docker ip):8080 -it -p 8080:12345 -v $(current_dir):/usr/src/myapp -v $(current_dir)/test:/data drewwells/wellington
-test:
+
+profile.cov:
+	go get golang.org/x/tools/cmd/vet
+	# retrieve lint and test deps
+	go get github.com/axw/gocov/gocov
+	go get github.com/mattn/goveralls
+	go get golang.org/x/tools/cmd/goimports
+	go get github.com/golang/lint/golint
+	go get golang.org/x/tools/cmd/cover
 	scripts/goclean.sh
+
+test: godep profile.cov
+
 compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
 save:

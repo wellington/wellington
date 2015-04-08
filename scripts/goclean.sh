@@ -18,7 +18,9 @@ test -z "$(golint wt/.          | tee /dev/stderr)"
 test -z "$(golint context/.     | tee /dev/stderr)"
 test -z "$(golint handlers/.    | tee /dev/stderr)"
 go vet ./...
-go test -race ./...
+echo 'Run tests'
+#go test -race ./... #disabled for alpine go142
+go test ./...
 
 # Run test coverage on each subdirectories and merge the coverage profile.
 
