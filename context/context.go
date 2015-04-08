@@ -160,11 +160,18 @@ func (ctx *Context) Init(goopts *SassOptions) *C.struct_Sass_Options {
 	Mixins(ctx)
 	ctx.SetHeaders(opts)
 	ctx.SetImporter(opts)
+	ctx.SetIncludePaths(opts)
 
 	C.sass_option_set_c_functions(opts, (C.Sass_Function_List)(unsafe.Pointer(&gofns[0])))
 	C.sass_option_set_precision(opts, prec)
 	C.sass_option_set_source_comments(opts, cmt)
 	return opts
+}
+
+func (c *Context) SetIncludePaths(opts *C.struct_Sass_Options) {
+	for _, inc := range c.IncludePaths {
+		C.sass_option_set_include_path(opts, C.CString(inc))
+	}
 }
 
 func GetImportList(cctx *C.struct_Sass_Context) []string {
