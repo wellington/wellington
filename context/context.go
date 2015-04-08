@@ -165,6 +165,20 @@ func (ctx *Context) Init(goopts *SassOptions) *C.struct_Sass_Options {
 	return opts
 }
 
+func dumpImportList(cctx *C.struct_Sass_Context) {
+	len := int(C.sass_context_get_included_files_size(cctx))
+	imps := C.sass_context_get_included_files(cctx)
+	hdr := reflect.SliceHeader{
+		Data: uintptr(unsafe.Pointer(imps)),
+		Len:  len, Cap: len,
+	}
+	goimps := *(*[]*C.char)(unsafe.Pointer(&hdr))
+	for _, goimp := range goimps {
+		fmt.Println(C.GoString(goimp))
+	}
+	return
+}
+
 func (c *Context) FileCompile(path string, out io.Writer) error {
 	defer c.Reset()
 	cpath := C.CString(path)
@@ -179,8 +193,8 @@ func (c *Context) FileCompile(path string, out io.Writer) error {
 	C.sass_file_context_set_options(fc, opts)
 	cc := C.sass_file_context_get_context(fc)
 	compiler := C.sass_make_file_compiler(fc)
-
 	C.sass_compiler_parse(compiler)
+	dumpImportList(cc)
 	C.sass_compiler_execute(compiler)
 	defer C.sass_delete_compiler(compiler)
 	cout := C.GoString(C.sass_context_get_output_string(cc))
