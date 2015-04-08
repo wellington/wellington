@@ -1,4 +1,4 @@
-FROM gliderlabs/alpine:latest
+FROM gliderlabs/alpine:edge
 
 # install g++
 RUN apk --update add build-base pkgconf autoconf automake libtool git file mercurial go
