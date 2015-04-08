@@ -76,3 +76,35 @@ func TestLoadAndBuild_args(t *testing.T) {
 		t.Errorf("got:\n%s\nwanted:\n%s", out, e)
 	}
 }
+
+func TestLoadAndBuild_comply(t *testing.T) {
+	stdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	err := LoadAndBuild("test/compass/top.scss",
+		&BuildArgs{
+			BuildDir: "test/build",
+			Includes: "test",
+		},
+		NewPartialMap(),
+	)
+	if err != nil {
+		t.Error(err)
+	}
+	outC := make(chan string)
+	go func() {
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		outC <- buf.String()
+	}()
+
+	w.Close()
+	os.Stdout = stdout
+	out := <-outC
+
+	e := `Rebuilt: test/compass/top.scss
+`
+	if e != out {
+		t.Errorf("got:\n%s\nwanted:\n%s", out, e)
+	}
+}
