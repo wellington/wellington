@@ -2,14 +2,8 @@ FROM gliderlabs/alpine:edge
 
 # install g++
 RUN apk --update add build-base pkgconf autoconf automake libtool git file mercurial go
-#RUN curl -LsO https://circle-artifacts.com/gh/andyshinn/alpine-pkg-go/3/artifacts/0/home/ubuntu/alpine-pkg-go/packages/x86_64/go-1.4.2-r0.apk && apk --allow-untrusted add --update go-1.4.2-r0.apk
-
-#retrieve Go source
-#ADD https://storage.googleapis.com/golang/go1.4.2.src.tar.gz /usr/lib/go1.4.2.src.tar.gz
-#RUN tar xzf /usr/lib/go1.4.2.src.tar.gz -C /usr/lib
 
 ENV GOPATH /usr
-ENV GOROOT /usr/lib/go
 RUN go version
 
 ENV libsass_ver d215db5edb90035d18b616a499730841a5b622df
