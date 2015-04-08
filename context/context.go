@@ -59,7 +59,7 @@ type Context struct {
 	Imports Imports
 	Headers Headers
 	// Has list of compiler included files
-	Includes []string
+	ResolvedImports []string
 	// Used for callbacks to retrieve sprite information, etc.
 	Imgs, Sprites spritewell.SafeImageMap
 }
@@ -204,7 +204,7 @@ func (c *Context) FileCompile(path string, out io.Writer) error {
 	cc := C.sass_file_context_get_context(fc)
 	compiler := C.sass_make_file_compiler(fc)
 	C.sass_compiler_parse(compiler)
-	c.Includes = GetImportList(cc)
+	c.ResolvedImports = GetImportList(cc)
 	C.sass_compiler_execute(compiler)
 	defer C.sass_delete_compiler(compiler)
 	cout := C.GoString(C.sass_context_get_output_string(cc))

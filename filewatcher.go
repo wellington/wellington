@@ -3,6 +3,7 @@ package wellington
 import (
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -114,12 +115,17 @@ func (w *Watcher) Watch() error {
 }
 
 func (w *Watcher) watchFiles() error {
+	var err error
 	//Watch the dirs of all sass partials
 	w.PartialMap.RLock()
 	for k := range w.PartialMap.M {
-		err := w.watch(filepath.Dir(k))
-		if err != nil {
-			return err
+		dir := filepath.Dir(k)
+		_, err = os.Stat(dir)
+		if !os.IsNotExist(err) && filepath.IsAbs(dir) {
+			err = w.watch(dir)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	w.PartialMap.RUnlock()
