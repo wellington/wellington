@@ -1,8 +1,10 @@
 package wellington
 
 import (
+	"errors"
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -62,9 +64,12 @@ func NewWatcher() *Watcher {
 		log.Fatal(err)
 	}
 
-	return &Watcher{
+	w := &Watcher{
 		FileWatcher: fswatcher,
+		PartialMap:  NewPartialMap(),
 	}
+
+	return w
 }
 
 // SafePartialMap is a thread safe map of partial sass files to top
@@ -103,7 +108,7 @@ func (w *Watcher) Watch() error {
 		w.PartialMap = NewPartialMap()
 	}
 	if len(w.Dirs) == 0 {
-		return fmt.Errorf("No directories to watch")
+		return errors.New("No directories to watch")
 	}
 	err := w.watchFiles()
 	if err != nil {
@@ -114,12 +119,17 @@ func (w *Watcher) Watch() error {
 }
 
 func (w *Watcher) watchFiles() error {
+	var err error
 	//Watch the dirs of all sass partials
 	w.PartialMap.RLock()
 	for k := range w.PartialMap.M {
-		err := w.watch(filepath.Dir(k))
-		if err != nil {
-			return err
+		dir := filepath.Dir(k)
+		_, err = os.Stat(dir)
+		if !os.IsNotExist(err) && filepath.IsAbs(dir) {
+			err = w.watch(dir)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	w.PartialMap.RUnlock()
@@ -159,6 +169,8 @@ func (w *Watcher) startWatching() {
 	}()
 }
 
+var rebuildChan chan ([]string)
+
 // rebuild is notified about sass file updates and looks
 // for the file in the partial map.  It also checks
 // for whether the file is a non-partial, no _ at beginning,
@@ -173,6 +185,9 @@ func (w *Watcher) rebuild(eventFileName string) error {
 	}
 	w.PartialMap.RLock()
 	go func(paths []string) {
+		if rebuildChan != nil {
+			rebuildChan <- paths
+		}
 		for i := range paths {
 			// TODO: do this in a new goroutine
 			err := LoadAndBuild(paths[i], w.BArgs, w.PartialMap)

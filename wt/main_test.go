@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -21,7 +22,12 @@ func TestStdin_import(t *testing.T) {
 	os.Stdin = fh
 	r, w, _ := os.Pipe()
 	os.Stdout = w
-	flag.Set("p", filepath.Join(os.Getenv("PWD"), "..", "test", "sass"))
+	pwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	includeDir := filepath.Join(pwd, "..", "test", "sass")
+	flag.Set("p", includeDir)
 	main()
 
 	outC := make(chan string)
@@ -37,9 +43,9 @@ func TestStdin_import(t *testing.T) {
 	os.Stdout = oldOut
 
 	out := <-outC
-
+	out = strings.Replace(out, includeDir, "", 1)
 	e := `Reading from stdin, -h for help
-/* line 3, var */
+/* line 3, /_var.scss */
 div {
   background: #00FF00;
   font-size: 10pt; }

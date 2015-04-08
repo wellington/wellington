@@ -6,14 +6,11 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"path"
 	"path/filepath"
-	"sort"
 
 	"github.com/wellington/wellington/context"
 	// TODO: Remove dot imports
 	"github.com/wellington/wellington/lexer"
-	"github.com/wellington/wellington/token"
 )
 
 func init() {
@@ -95,39 +92,8 @@ func (p *Parser) Start(r io.Reader, pkgdir string) ([]byte, error) {
 		return []byte{}, err
 	}
 
-	// This pass resolves all the imports, but positions will
-	// be off due to @import calls
-	items, input, err := p.GetItems(pkgdir, p.MainFile, string(buf.Bytes()))
-	if err != nil {
-		return []byte(""), err
-	}
-	for i := range p.Line {
-		p.LineKeys = append(p.LineKeys, i)
-	}
-	sort.Ints(p.LineKeys)
-	// Try removing this and see if it works
-	// This call will have valid token positions
-	// items, input, err = p.GetItems(pkgdir, p.MainFile, input)
-
-	p.Input = input
-	p.Items = items
-	if err != nil {
-		panic(err)
-	}
-	// DEBUG
-	// for _, item := range p.Items {
-	// 	fmt.Printf("%s %s\n", item.Type, item)
-	// }
-	// Process sprite calls and gen
-
 	// Send original byte slice
 	p.Output = buf.Bytes() //[]byte(p.Input)
-	// Perform substitutions
-	// p.Replace()
-	// rel := []byte(fmt.Sprintf(`$rel: "%s";%s`,
-	//   p.Rel(), "\n"))
-
-	// Code that we will never support, ever
 
 	return p.Output, nil
 }
@@ -160,117 +126,6 @@ func (p *Parser) LookupFile(position int) string {
 	}
 	// Either this is invalid or outside of all imports, assume it's valid
 	return fmt.Sprintf("%s:%d", p.MainFile, pos-p.LineKeys[len(p.LineKeys)-1]+1)
-}
-
-// GetItems recursively resolves all imports.  It lexes the input
-// adding the tokens to the Parser object.
-// TODO: Convert this to byte slice in/out
-func (p *Parser) GetItems(pwd, filename, input string) ([]lexer.Item, string, error) {
-
-	var (
-		status    []lexer.Item
-		importing bool
-		output    []byte
-		pos       int
-		last      *lexer.Item
-		lastname  string
-		lineCount int
-	)
-
-	lex := lexer.New(func(lex *lexer.Lexer) lexer.StateFn {
-		return lex.Action()
-	}, input)
-
-	for {
-		item := lex.Next()
-		err := item.Error()
-		//fmt.Println(item.Type, item.Value)
-		if err != nil {
-			return nil, string(output),
-				fmt.Errorf("Error: %v (pos %d)", err, item.Pos)
-		}
-		switch item.Type {
-		case token.ItemEOF:
-			if filename == p.MainFile {
-				p.Line[lineCount+bytes.Count([]byte(input[pos:]), []byte("\n"))] = filename
-			}
-			output = append(output, input[pos:]...)
-			return status, string(output), nil
-		case token.IMPORT:
-			output = append(output, input[pos:item.Pos]...)
-			last = item
-			importing = true
-		case token.INCLUDE, token.CMT:
-			output = append(output, input[pos:item.Pos]...)
-			pos = item.Pos
-			status = append(status, *item)
-		default:
-			if importing {
-				lastname = filename
-				// Found import, mark parent's current position
-				p.Line[lineCount] = filename
-				filename = fmt.Sprintf("%s", *item)
-				for _, nl := range output {
-					if nl == '\n' {
-						lineCount++
-					}
-				}
-				p.Line[lineCount] = filename
-				pwd, contents, err := p.ImportPath(pwd, filename)
-				// FIXME: hack for top level file
-				ln := lastname
-				if path.IsAbs(ln) {
-					ln = "stdin"
-				}
-				p.Imports.Add(ln,
-					filename, contents)
-
-				if err != nil {
-					return nil, "", err
-				}
-
-				//Eat the semicolon
-				item := lex.Next()
-				if item.Type != token.SEMIC {
-					log.Printf("@import in %s:%d must be followed by ;\n", filename, lineCount)
-					log.Printf("        ~~~> @import %s", filename)
-				}
-				// Set position to token after
-				// FIXME: Hack to delete newline, hopefully this doesn't break stuff
-				// then readd it to the linecount
-				pos = item.Pos + len(item.Value)
-				moreTokens, moreOutput, err := p.GetItems(
-					pwd,
-					filename,
-					string(contents))
-				// If importing was successful, each token must be moved
-				// forward by the position of the @import call that made
-				// it available.
-				for i := range moreTokens {
-					moreTokens[i].Pos += last.Pos
-				}
-
-				if err != nil {
-					return nil, "", err
-				}
-				for _, nl := range moreOutput {
-					if nl == '\n' {
-						lineCount++
-					}
-				}
-				filename = lastname
-
-				output = append(output, moreOutput...)
-				status = append(status, moreTokens...)
-				importing = false
-			} else {
-				output = append(output, input[pos:item.Pos]...)
-				pos = item.Pos
-				status = append(status, *item)
-			}
-		}
-	}
-
 }
 
 // StartParser accepts build arguments

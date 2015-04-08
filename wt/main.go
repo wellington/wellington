@@ -213,7 +213,7 @@ func main() {
 		w.PartialMap = pMap
 		w.Dirs = sassPaths
 		w.BArgs = gba
-		w.Watch()
+		//w.Watch()
 
 		fmt.Println("File watcher started use `ctrl+d` to exit")
 		in := bufio.NewReader(os.Stdin)

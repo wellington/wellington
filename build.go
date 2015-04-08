@@ -17,13 +17,6 @@ var inputFileTypes = []string{".scss", ".sass"}
 // TODO: make this function testable
 func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) error {
 
-	// TODO: This was a hack back when grepping discovered
-	// partials, we should no longer need this.
-	// Remove partials
-	// if strings.HasPrefix(filepath.Base(sassFile), "_") {
-	// 	return nil
-	// }
-
 	if gba == nil {
 		return fmt.Errorf("build args are nil")
 	}
@@ -85,6 +78,10 @@ func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) e
 	if err != nil {
 		log.Println(sassFile)
 		return err
+	}
+
+	for _, inc := range ctx.ResolvedImports {
+		partialMap.AddRelation(ctx.MainFile, inc)
 	}
 
 	fmt.Printf("Rebuilt: %s\n", sassFile)

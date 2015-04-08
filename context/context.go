@@ -58,6 +58,8 @@ type Context struct {
 	// in the calling context
 	Imports Imports
 	Headers Headers
+	// Has list of compiler included files
+	ResolvedImports []string
 	// Used for callbacks to retrieve sprite information, etc.
 	Imgs, Sprites spritewell.SafeImageMap
 }
@@ -158,11 +160,33 @@ func (ctx *Context) Init(goopts *SassOptions) *C.struct_Sass_Options {
 	Mixins(ctx)
 	ctx.SetHeaders(opts)
 	ctx.SetImporter(opts)
+	ctx.SetIncludePaths(opts)
 
 	C.sass_option_set_c_functions(opts, (C.Sass_Function_List)(unsafe.Pointer(&gofns[0])))
 	C.sass_option_set_precision(opts, prec)
 	C.sass_option_set_source_comments(opts, cmt)
 	return opts
+}
+
+func (c *Context) SetIncludePaths(opts *C.struct_Sass_Options) {
+	for _, inc := range c.IncludePaths {
+		C.sass_option_set_include_path(opts, C.CString(inc))
+	}
+}
+
+func GetImportList(cctx *C.struct_Sass_Context) []string {
+	len := int(C.sass_context_get_included_files_size(cctx))
+	imps := C.sass_context_get_included_files(cctx)
+	list := make([]string, len, len)
+	hdr := reflect.SliceHeader{
+		Data: uintptr(unsafe.Pointer(imps)),
+		Len:  len, Cap: len,
+	}
+	goimps := *(*[]*C.char)(unsafe.Pointer(&hdr))
+	for i := range goimps {
+		list[i] = C.GoString(goimps[i])
+	}
+	return list
 }
 
 func (c *Context) FileCompile(path string, out io.Writer) error {
@@ -179,8 +203,8 @@ func (c *Context) FileCompile(path string, out io.Writer) error {
 	C.sass_file_context_set_options(fc, opts)
 	cc := C.sass_file_context_get_context(fc)
 	compiler := C.sass_make_file_compiler(fc)
-
 	C.sass_compiler_parse(compiler)
+	c.ResolvedImports = GetImportList(cc)
 	C.sass_compiler_execute(compiler)
 	defer C.sass_delete_compiler(compiler)
 	cout := C.GoString(C.sass_context_get_output_string(cc))

@@ -7,7 +7,6 @@ machine:
     PKG_CONFIG_PATH: "$HOME/$CIRCLE_PROJECT_REPONAME/libsass/lib/pkgconfig"
 dependencies:
   cache_directories:
-    - /usr/src
   pre:
     - docker version #report version
     - go get -f -u -d github.com/wellington/spritewell

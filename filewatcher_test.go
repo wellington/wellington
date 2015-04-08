@@ -2,37 +2,48 @@ package wellington
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 )
 
-func TestPartial_map(t *testing.T) {
-	path, _ := filepath.Abs("test/sass/import.scss")
-	p := Parser{
-		BuildDir:   "test/build",
-		Includes:   []string{"test/sass"},
-		MainFile:   path,
-		PartialMap: NewPartialMap(),
-		SassDir:    os.Getenv("PWD"),
+func TestWatch_rebuild(t *testing.T) {
+	tdir, err := ioutil.TempDir(os.TempDir(), "testwatch_")
+	if err != nil {
+		t.Fatal(err)
 	}
-	p.Imports.Init()
-
-	p.Start(fileReader("test/sass/import.scss"), "test/")
-
-	if e := 1; len(p.PartialMap.M) != e {
-		t.Errorf("got: %d, wanted: %d", len(p.PartialMap.M), e)
+	tfile := filepath.Join(tdir, "_new.scss")
+	fh, err := os.Create(tfile)
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	for k := range p.PartialMap.M {
-		if e := 1; len(p.PartialMap.M[k]) != e {
-			t.Errorf("got: %d wanted: %d", len(p.PartialMap.M[k]), e)
+	w := NewWatcher()
+	w.Dirs = []string{tdir}
+	w.PartialMap.AddRelation("tswif", tfile)
+	err = w.Watch()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rebuildChan = make(chan []string, 1)
+	done := make(chan bool, 1)
+	go func(t *testing.T) {
+		select {
+		case <-rebuildChan:
+			done <- true
+		case <-time.After(250 * time.Millisecond):
+			done <- false
 		}
-		if p.PartialMap.M[k][0] != path {
-			t.Errorf("got: %s wanted: %s", p.PartialMap.M[k][0], path)
-		}
+		done <- true
+	}(t)
+	fh.WriteString("boom")
+	success := <-done
+	if !success {
+		t.Fatal("Timeout waiting for rebuild")
 	}
+
 }
 
 func TestWatch(t *testing.T) {
@@ -48,18 +59,12 @@ func TestWatch(t *testing.T) {
 	w.Dirs = []string{"test"}
 	err = w.Watch()
 
-	timeout := make(chan bool, 1)
-	go func() {
-		time.Sleep(500 * time.Millisecond)
-		timeout <- true
-	}()
-
 	// Test file creation event
 	go func() {
 		select {
 		case <-watcherChan:
 			break
-		case <-timeout:
+		case <-time.After(500 * time.Millisecond):
 			fmt.Printf("timeout %d\n", len(watcherChan))
 			t.Error("Timeout without creating file")
 		}
@@ -83,7 +88,7 @@ func TestWatch(t *testing.T) {
 		select {
 		case <-watcherChan:
 			break
-		case <-timeout:
+		case <-time.After(500 * time.Millisecond):
 			fmt.Printf("timeout %d\n", len(watcherChan))
 			t.Error("Timeout without detecting write")
 		}
