@@ -77,7 +77,7 @@ profile.cov:
 	scripts/goclean.sh
 
 test: godep profile.cov
-	GIT_BRANCH=$GIT_BRANCH goveralls -coverprofile=profile.cov -service=circleci -repotoken $COVERALLS_TOKEN
+	GIT_BRANCH=$(GIT_BRANCH) goveralls -coverprofile=profile.cov -service=circleci -repotoken $(COVERALLS_TOKEN)
 
 compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
