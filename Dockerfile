@@ -12,7 +12,7 @@ ENV GOPATH /usr
 ENV GOROOT /usr/lib/go
 RUN go version
 
-ENV libsass_ver d215db5edb90035d18b616a499730841a5b622df
+ENV libsass_ver 3.2.0-beta.5
 ENV LIBSASSPATH /build/libsass
 ENV PKG_CONFIG_PATH $LIBSASSPATH/lib/pkgconfig
 ENV GOPATH /usr
