@@ -24,15 +24,12 @@ os:
   - windows
 install:
   - export PATH="$HOME/gopath/bin:$PATH"
-  - echo http://localhost > $HOME/.tsuru_target
-  - make get GO_EXTRAFLAGS=-x
 before_script:
   # Check baseline memory usage; for compare with after_failure when OOM occurs
   - free
   - vmstat
 script:
-  - make install
-  - go test -race ./...
+  - make test install
 after_failure:
 after_success:
 notifications:
