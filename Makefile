@@ -55,7 +55,7 @@ container-build:
 	- mkdir build
 	- rm profile.cov
 	docker build -t wt-build .
-	docker run -v $(PWD)/build:/tmp -e COVERALLS_TOKEN=$COVERALLS_TOKEN -e EUID=$(shell id -u) -e EGID=$(shell id -g) wt-build make test copyout goveralls
+	docker run -v $(PWD)/build:/tmp -e EUID=$(shell id -u) -e EGID=$(shell id -g) wt-build make install
 
 build: container-build
 	cp Dockerfile.scratch build/Dockerfile
@@ -77,7 +77,6 @@ profile.cov:
 	scripts/goclean.sh
 
 test: godep profile.cov
-	GIT_BRANCH=$(GIT_BRANCH) goveralls -coverprofile=profile.cov -service=circleci -repotoken $(COVERALLS_TOKEN)
 
 compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
