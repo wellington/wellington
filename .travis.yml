@@ -1,7 +1,10 @@
 language: go
 go:
-  - 1.4
-  - tip
+  - 1.4.2
+os:
+  - linux
+  - osx
+  - windows
 env:
   - GOARCH=amd64
 before_install:
@@ -9,19 +12,6 @@ before_install:
   - cat .git/config
   - sudo apt-get update -qq > apt-get.out 2>&1  || (cat apt-get.out && exit 1)
   - sudo apt-get install bzr git -qq > apt-get.out 2>&1 || (cat apt-get.out && exit 1)
-  - sudo /etc/init.d/postgresql stop
-  - sudo /etc/init.d/mysql stop
-  - mongod --version
-  - sudo /etc/init.d/mongodb stop
-  - sudo sed -i 's/^journal=true//' /etc/mongodb.conf
-  - echo "nojournal = true" | sudo tee -a /etc/mongodb.conf
-  - echo "smallfiles = true" | sudo tee -a /etc/mongodb.conf
-  - cat /etc/mongodb.conf
-  - sudo /etc/init.d/mongodb start
-os:
-  - linux
-  - osx
-  - windows
 install:
   - export PATH="$HOME/gopath/bin:$PATH"
 before_script:
