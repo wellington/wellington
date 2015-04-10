@@ -27,13 +27,9 @@ RUN autoreconf -fvi
 RUN ./configure --disable-tests --disable-shared \
                 --prefix=$LIBSASSPATH --disable-silent-rules \
                 --disable-dependency-tracking
-RUN go install github.com/wellington/wellington/wt
-
-COPY . /usr/src/app
+RUN make && make install
 COPY . /usr/src/github.com/wellington/wellington
 
-WORKDIR /usr/src/app
-
-RUN make godep
-RUN cd wt && go install
-#RUN cd wt && godep go install
+WORKDIR /usr/src/github.com/wellington/wellington
+RUN cp -R Godeps/_workspace/src/* $GOPATH/src
+RUN go install github.com/wellington/wellington/wt
