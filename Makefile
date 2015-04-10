@@ -9,7 +9,7 @@ ifndef PKG_CONFIG_PATH
 	PKG_CONFIG_PATH=$(current_dir)/libsass/lib/pkgconfig
 endif
 
-install: getlibsass
+install: libsass/lib/libsass.a
 	go get -f -u -d github.com/wellington/spritewell
 	go get -f -u -d gopkg.in/fsnotify.v1
 	go install github.com/wellington/wellington/wt
@@ -26,15 +26,13 @@ profile: install
 	go tool pprof --png $(GOPATH)/bin/wt wt.prof > profile.png
 	open profile.png
 
-.libsass_version_$(libsass_ver):
-	scripts/getdeps.sh
-	@touch libsass/.libsass_version_$(libsass_ver)
-
 godep:
 	go get github.com/tools/godep
 	godep restore
 
-getlibsass: .libsass_version_$(libsass_ver)
+libsass/lib/libsass.a:
+	scripts/getdeps.sh
+	@touch libsass/lib/pkgconfig/libsass.pc
 
 headers:
 	scripts/getheaders.sh
