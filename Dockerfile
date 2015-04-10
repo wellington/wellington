@@ -27,7 +27,7 @@ RUN autoreconf -fvi
 RUN ./configure --disable-tests --disable-shared \
                 --prefix=$LIBSASSPATH --disable-silent-rules \
                 --disable-dependency-tracking
-RUN make install
+RUN go install github.com/wellington/wellington/wt
 
 COPY . /usr/src/app
 COPY . /usr/src/github.com/wellington/wellington
