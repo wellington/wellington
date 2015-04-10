@@ -30,7 +30,7 @@ godep:
 	go get github.com/tools/godep
 	godep restore
 
-libsass/lib/libsass.a:
+libsass/lib/libsass.a: libsass/*
 	scripts/getdeps.sh
 	@touch libsass/lib/pkgconfig/libsass.pc
 
