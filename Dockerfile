@@ -17,15 +17,6 @@ ENV LIBSASSPATH /build/libsass
 ENV PKG_CONFIG_PATH $LIBSASSPATH/lib/pkgconfig
 ENV GOPATH /usr
 
-ADD https://github.com/sass/libsass/archive/$libsass_ver.tar.gz /usr/src/libsass.tar.gz
-RUN tar xzf /usr/src/libsass.tar.gz -C /usr/src
-
-WORKDIR /usr/src/libsass-$libsass_ver
-
-RUN autoreconf -fvi
-RUN ./configure --disable-tests --disable-shared \
-             --prefix=$LIBSASSPATH --disable-silent-rules \
-			 --disable-dependency-tracking
 RUN make install
 
 COPY . /usr/src/app
