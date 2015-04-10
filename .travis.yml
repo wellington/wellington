@@ -18,6 +18,10 @@ before_install:
   - echo "smallfiles = true" | sudo tee -a /etc/mongodb.conf
   - cat /etc/mongodb.conf
   - sudo /etc/init.d/mongodb start
+os:
+  - linux
+  - osx
+  - windows
 install:
   - export PATH="$HOME/gopath/bin:$PATH"
   - echo http://localhost > $HOME/.tsuru_target
