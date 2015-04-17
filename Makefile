@@ -30,8 +30,10 @@ godep:
 	go get github.com/tools/godep
 	godep restore
 
-libsass/lib/libsass.a: libsass/*
+libsass/*:
 	scripts/getdeps.sh
+
+libsass/lib/libsass.a: libsass/*
 	@touch libsass/lib/pkgconfig/libsass.pc
 
 headers:
@@ -39,6 +41,9 @@ headers:
 
 clean:
 	rm -rf build/*
+
+# Deprecated, remove from wellington.rb on next release
+deps: libsass/lib/libsass.a
 
 copyout:
 	chown $(EUID):$(EGID) $(GOPATH)/bin/wt
