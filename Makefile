@@ -10,6 +10,7 @@ ifndef PKG_CONFIG_PATH
 endif
 
 install: godep libsass-src/lib/libsass.a
+	echo "PKG_CONFIG_PATH $(PKG_CONFIG_PATH)"
 	go install github.com/wellington/wellington/wt
 
 bench:
