@@ -30,6 +30,9 @@ $(LASTGOPATH)/bin/godep:
 godep: $(LASTGOPATH)/bin/godep
 	godep restore
 
+libsass-src/*:
+	mkdir -p libsass-src
+
 libsass-src/lib/libsass.a: libsass-src/*
 	scripts/getdeps.sh
 
