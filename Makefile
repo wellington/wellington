@@ -30,11 +30,8 @@ $(LASTGOPATH)/bin/godep:
 godep: $(LASTGOPATH)/bin/godep
 	godep restore
 
-libsass-src/*:
-	scripts/getdeps.sh
-
 libsass-src/lib/libsass.a: libsass-src/*
-	@touch libsass-src/lib/pkgconfig/libsass.pc
+	scripts/getdeps.sh
 
 headers:
 	scripts/getheaders.sh
