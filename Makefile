@@ -9,6 +9,9 @@ ifndef PKG_CONFIG_PATH
 	export PKG_CONFIG_PATH=$(current_dir)/libsass-src/lib/pkgconfig
 endif
 
+pkgconfig:
+	pkg-config --cflags --libs libsass
+
 install: godep deps
 	echo "PKG_CONFIG_PATH $(PKG_CONFIG_PATH)"
 	go install github.com/wellington/wellington/wt
