@@ -15,16 +15,18 @@ test -z "$(gofmt -l -w .     | tee /dev/stderr)"
 #test -z "$(goimports -l -w . | tee /dev/stderr)"
 test -z "$(golint .             | tee /dev/stderr)"
 test -z "$(golint wt/.          | tee /dev/stderr)"
-test -z "$(golint context/.     | tee /dev/stderr)"
 test -z "$(golint handlers/.    | tee /dev/stderr)"
 go vet ./...
 echo 'Run tests'
 #go test -race ./... #disabled for alpine go142
+echo "PKG_CONFIG_PATH: $PKG_CONFIG_PATH"
+
 go test ./...
 
 # Run test coverage on each subdirectories and merge the coverage profile.
 
 echo "mode: count" > profile.cov
+
 
 # Standard go tooling behavior is to ignore dirs with leading underscors
 for dir in $(find -L . -maxdepth 10 -not -path './.git*' -not -path '*/_*' -type d);

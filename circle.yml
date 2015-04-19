@@ -8,11 +8,9 @@ machine:
     GIT_BRANCH: $CIRCLE_BRANCH
 dependencies:
   cache_directories:
-    - libsass
+    - libsass-src
   pre:
     - docker version #report version
-    - go get -f -u -d github.com/wellington/spritewell
-    - go get gopkg.in/fsnotify.v1
     - echo $LIBSASS_VERSION
   override:
     - echo $PROJECT_ROOT/hello

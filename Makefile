@@ -3,15 +3,12 @@ current_dir = $(shell pwd)
 rmnpath = $(RMN_BASE_PATH)
 guipath = $(rmnpath)/www/gui
 libsass_ver = $(shell cat \.libsass_version)
-VPATH = libsass
 
 ifndef PKG_CONFIG_PATH
-	PKG_CONFIG_PATH=$(current_dir)/libsass/lib/pkgconfig
+	PKG_CONFIG_PATH=$(current_dir)/libsass-src/lib/pkgconfig
 endif
 
-install: libsass/lib/libsass.a
-	go get -f -u -d github.com/wellington/spritewell
-	go get -f -u -d gopkg.in/fsnotify.v1
+install: godep libsass-src/lib/libsass.a
 	go install github.com/wellington/wellington/wt
 
 bench:
@@ -26,15 +23,17 @@ profile: install
 	go tool pprof --png $(GOPATH)/bin/wt wt.prof > profile.png
 	open profile.png
 
-godep:
+$(GOPATH)/bin/godep:
 	go get github.com/tools/godep
+
+godep: $(GOPATH)/bin/godep
 	godep restore
 
-libsass/*:
+libsass-src/*:
 	scripts/getdeps.sh
 
-libsass/lib/libsass.a: libsass/*
-	@touch libsass/lib/pkgconfig/libsass.pc
+libsass-src/lib/libsass.a: libsass-src/*
+	@touch libsass-src/lib/pkgconfig/libsass.pc
 
 headers:
 	scripts/getheaders.sh
@@ -43,7 +42,7 @@ clean:
 	rm -rf build/*
 
 # Deprecated, remove from wellington.rb on next release
-deps: libsass/lib/libsass.a
+deps: libsass-src/lib/libsass.a
 
 copyout:
 	chown $(EUID):$(EGID) $(GOPATH)/bin/wt
@@ -77,14 +76,14 @@ profile.cov:
 	go get golang.org/x/tools/cmd/goimports
 	go get github.com/golang/lint/golint
 	go get golang.org/x/tools/cmd/cover
-	scripts/goclean.sh
+	export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH); scripts/goclean.sh
 
 test: godep profile.cov
 
 compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
 save:
-	cd libsass; git rev-parse HEAD > ../.libsass_version
+	cd libsass-src; git rev-parse HEAD > ../.libsass_version
 swift: install
 	scripts/swift.sh
 watch: install
