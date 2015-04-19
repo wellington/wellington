@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"strings"
 
+	cx "github.com/wellington/libsass"
 	sw "github.com/wellington/spritewell"
-	cx "github.com/wellington/wellington/context"
 )
 
 func init() {

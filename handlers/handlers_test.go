@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
+	cx "github.com/wellington/libsass"
 	"github.com/wellington/spritewell"
-	cx "github.com/wellington/wellington/context"
 )
 
 func init() {

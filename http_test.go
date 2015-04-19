@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/wellington/wellington/context"
+	context "github.com/wellington/libsass"
 )
 
 func decResp(t *testing.T, r io.Reader) Response {

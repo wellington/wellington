@@ -8,7 +8,7 @@ import (
 	"log"
 	"path/filepath"
 
-	"github.com/wellington/wellington/context"
+	context "github.com/wellington/libsass"
 	// TODO: Remove dot imports
 	"github.com/wellington/wellington/lexer"
 )

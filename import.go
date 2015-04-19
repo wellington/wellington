@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/wellington/wellington/context"
+	context "github.com/wellington/libsass"
 )
 
 type nopCloser struct {

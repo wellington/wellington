@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/wellington/wellington/context"
+	context "github.com/wellington/libsass"
 )
 
 // FileHandler starts a file server serving files out of the specified

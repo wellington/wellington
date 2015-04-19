@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/wellington/wellington/context"
+	context "github.com/wellington/libsass"
 )
 
 var inputFileTypes = []string{".scss", ".sass"}

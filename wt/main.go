@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wellington/wellington/context"
+	context "github.com/wellington/libsass"
 
 	wt "github.com/wellington/wellington"
 	_ "github.com/wellington/wellington/handlers"
