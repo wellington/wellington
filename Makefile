@@ -5,7 +5,7 @@ guipath = $(rmnpath)/www/gui
 libsass_ver = $(shell cat \.libsass_version)
 
 ifndef PKG_CONFIG_PATH
-	PKG_CONFIG_PATH=$(current_dir)/libsass-src/lib/pkgconfig
+	export PKG_CONFIG_PATH=$(current_dir)/libsass-src/lib/pkgconfig
 endif
 
 install: godep libsass-src/lib/libsass.a
@@ -76,7 +76,7 @@ profile.cov:
 	go get golang.org/x/tools/cmd/goimports
 	go get github.com/golang/lint/golint
 	go get golang.org/x/tools/cmd/cover
-	export PKG_CONFIG_PATH=$(PKG_CONFIG_PATH); scripts/goclean.sh
+	scripts/goclean.sh
 
 test: godep profile.cov
 
