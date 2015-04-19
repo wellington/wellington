@@ -17,4 +17,3 @@ fi
 autoreconf -fvi
 ./configure --disable-shared --prefix=$(pwd) --disable-silent-rules --disable-dependency-tracking
 # Check file permissions
-make install

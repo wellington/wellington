@@ -39,7 +39,7 @@ headers:
 clean:
 	rm -rf build/*
 
-# Deprecated, remove from wellington.rb on next release
+# FIXME: Deprecated, remove from wellington.rb on next release
 deps: libsass-src/lib/libsass.a
 
 copyout:
