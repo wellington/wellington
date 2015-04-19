@@ -20,7 +20,6 @@ dependencies:
         parallel: true
   post:
     - make pkgconfig #check output of pkg-config
-checkout:
 test:
   override:
     - cd $PROJECT_ROOT && make test:
