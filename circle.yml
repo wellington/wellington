@@ -12,14 +12,14 @@ dependencies:
   pre:
     - docker version #report version
     - echo $LIBSASS_VERSION
-  override:
-    - make deps:
-        parallel: true
-checkout:
-  post:
     - mkdir -p ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}
     - rm -rf ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
     - cp -R $(pwd) ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
+  override:
+    - cd $PROJECT_ROOT && make deps:
+        parallel: true
+checkout:
+  post:
 test:
   override:
     - cd $PROJECT_ROOT && make test:
