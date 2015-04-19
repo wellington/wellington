@@ -21,9 +21,9 @@ echo 'Run tests'
 #go test -race ./... #disabled for alpine go142
 echo "PKG_CONFIG_PATH: $PKG_CONFIG_PATH"
 
-go test -x
+godep go test -x
 
-go test ./...
+godep go test ./...
 
 # Run test coverage on each subdirectories and merge the coverage profile.
 

@@ -12,9 +12,9 @@ endif
 pkgconfig:
 	pkg-config --cflags --libs libsass
 
-install: godep deps
+install: deps
 	echo "PKG_CONFIG_PATH $(PKG_CONFIG_PATH)"
-	go install github.com/wellington/wellington/wt
+	godep go install github.com/wellington/wellington/wt
 
 deps: libsass-src/lib/libsass.a
 
@@ -34,7 +34,6 @@ $(LASTGOPATH)/bin/godep:
 	go get github.com/tools/godep
 
 godep: $(LASTGOPATH)/bin/godep
-	godep restore
 
 libsass-src/*:
 	mkdir -p libsass-src
