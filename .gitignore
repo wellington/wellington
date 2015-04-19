@@ -6,7 +6,7 @@ rmn_test.go
 *.test
 build/
 snapshot
-libsass
+libsass-src
 .wercker
 *.cov
 profile.cov
