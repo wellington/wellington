@@ -6,7 +6,7 @@ package context
 // See: http://golang.org/cmd/cgo/#hdr-C_references_to_Go
 
 // #cgo pkg-config: --cflags --libs libsass
-// #cgo LDFLAGS: -lsass -lstdc++ -ldl
+// #cgo LDFLAGS: -lstdc++ -ldl
 // #include "sass_context.h"
 //
 import "C"

@@ -1,10 +1,13 @@
 {
 	"ImportPath": "github.com/wellington/wellington",
 	"GoVersion": "go1.4.2",
+	"Packages": [
+		"./..."
+	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/wellington/libsass",
-			"Rev": "77d818795ad083a8f8ca7d62ef6341e768366b3a"
+			"Rev": "9ecc22cf35ffde459b6804755f23dee6b7c83514"
 		},
 		{
 			"ImportPath": "github.com/wellington/spritewell",
