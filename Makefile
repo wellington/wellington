@@ -79,6 +79,7 @@ profile.cov:
 	go get golang.org/x/tools/cmd/goimports
 	go get github.com/golang/lint/golint
 	go get golang.org/x/tools/cmd/cover
+	cd ../libsass && go test #check libsass
 	scripts/goclean.sh
 
 test: godep profile.cov
