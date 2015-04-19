@@ -9,9 +9,11 @@ ifndef PKG_CONFIG_PATH
 	export PKG_CONFIG_PATH=$(current_dir)/libsass-src/lib/pkgconfig
 endif
 
-install: godep libsass-src/lib/libsass.a
+install: godep deps
 	echo "PKG_CONFIG_PATH $(PKG_CONFIG_PATH)"
 	go install github.com/wellington/wellington/wt
+
+deps: libsass-src/lib/libsass.a
 
 bench:
 	go test ./... -bench=.
@@ -42,9 +44,6 @@ headers:
 
 clean:
 	rm -rf build/*
-
-# FIXME: Deprecated, remove from wellington.rb on next release
-deps: libsass-src/lib/libsass.a
 
 copyout:
 	chown $(EUID):$(EGID) $(GOPATH)/bin/wt

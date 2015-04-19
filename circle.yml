@@ -7,15 +7,13 @@ machine:
     PKG_CONFIG_PATH: "$HOME/$CIRCLE_PROJECT_REPONAME/libsass-src/lib/pkgconfig"
     GIT_BRANCH: $CIRCLE_BRANCH
 dependencies:
-  cache_directories:
-    - libsass-src
+  #cache_directories:
+    #- libsass-src
   pre:
     - docker version #report version
     - echo $LIBSASS_VERSION
   override:
-    - echo $PROJECT_ROOT/hello
-  post:
-    - make install:
+    - make deps:
         parallel: true
 checkout:
   post:
