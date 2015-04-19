@@ -4,7 +4,7 @@ machine:
   environment:
     LIBSASS_VERSION: $(cat $HOME/$CIRCLE_PROJECT_REPONAME/.libsass_version)
     PROJECT_ROOT: $HOME/.go_workspace/src/github.com/wellington/wellington
-    PKG_CONFIG_PATH: "$HOME/$CIRCLE_PROJECT_REPONAME/libsass-src/lib/pkgconfig"
+    PKG_CONFIG_PATH: "$PROJECT_ROOT/libsass-src/lib/pkgconfig"
     GIT_BRANCH: $CIRCLE_BRANCH
 dependencies:
   #cache_directories:
