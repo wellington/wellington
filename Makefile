@@ -3,6 +3,7 @@ current_dir = $(shell pwd)
 rmnpath = $(RMN_BASE_PATH)
 guipath = $(rmnpath)/www/gui
 libsass_ver = $(shell cat \.libsass_version)
+LASTGOPATH=$(shell python -c "import os; a=os.environ['GOPATH']; print a.split(':')[-1]")
 
 ifndef PKG_CONFIG_PATH
 	export PKG_CONFIG_PATH=$(current_dir)/libsass-src/lib/pkgconfig
@@ -23,10 +24,10 @@ profile: install
 	go tool pprof --png $(GOPATH)/bin/wt wt.prof > profile.png
 	open profile.png
 
-$(GOPATH)/bin/godep:
+$(LASTGOPATH)/bin/godep:
 	go get github.com/tools/godep
 
-godep: $(GOPATH)/bin/godep
+godep: $(LASTGOPATH)/bin/godep
 	godep restore
 
 libsass-src/*:
