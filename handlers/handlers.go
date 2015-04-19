@@ -12,59 +12,59 @@ import (
 	"strconv"
 	"strings"
 
-	cx "github.com/wellington/libsass"
+	libsass "github.com/wellington/libsass"
 	sw "github.com/wellington/spritewell"
 )
 
 func init() {
 
-	cx.RegisterHandler("sprite-map($glob, $spacing: 0px)", SpriteMap)
-	cx.RegisterHandler("sprite-file($map, $name)", SpriteFile)
-	cx.RegisterHandler("image-url($name)", ImageURL)
-	cx.RegisterHandler("image-height($path)", ImageHeight)
-	cx.RegisterHandler("image-width($path)", ImageWidth)
-	cx.RegisterHandler("inline-image($path, $encode: false)", InlineImage)
-	cx.RegisterHandler("font-url($path, $raw: false)", FontURL)
-	cx.RegisterHandler("sprite($map, $name, $offsetX: 0px, $offsetY: 0px)", Sprite)
+	libsass.RegisterHandler("sprite-map($glob, $spacing: 0px)", SpriteMap)
+	libsass.RegisterHandler("sprite-file($map, $name)", SpriteFile)
+	libsass.RegisterHandler("image-url($name)", ImageURL)
+	libsass.RegisterHandler("image-height($path)", ImageHeight)
+	libsass.RegisterHandler("image-width($path)", ImageWidth)
+	libsass.RegisterHandler("inline-image($path, $encode: false)", InlineImage)
+	libsass.RegisterHandler("font-url($path, $raw: false)", FontURL)
+	libsass.RegisterHandler("sprite($map, $name, $offsetX: 0px, $offsetY: 0px)", Sprite)
 }
 
 // ImageURL handles calls to resolve a local image from the
 // built css file path.
-func ImageURL(ctx *cx.Context, csv cx.UnionSassValue) cx.UnionSassValue {
+func ImageURL(ctx *libsass.Context, csv libsass.UnionSassValue) libsass.UnionSassValue {
 	var path []string
-	err := cx.Unmarshal(csv, &path)
+	err := libsass.Unmarshal(csv, &path)
 	// This should create and throw a sass error
 	if err != nil {
-		return cx.Error(err)
+		return libsass.Error(err)
 	}
 	url := filepath.Join(ctx.RelativeImage(), path[0])
-	res, err := cx.Marshal(fmt.Sprintf("url('%s')", url))
+	res, err := libsass.Marshal(fmt.Sprintf("url('%s')", url))
 	if err != nil {
-		return cx.Error(err)
+		return libsass.Error(err)
 	}
 	return res
 }
 
 // ImageHeight takes a file path (or sprite glob) and returns the
 // height in pixels of the image being referenced.
-func ImageHeight(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
+func ImageHeight(ctx *libsass.Context, usv libsass.UnionSassValue) libsass.UnionSassValue {
 	var (
 		glob string
 		name string
 	)
-	err := cx.Unmarshal(usv, &name)
+	err := libsass.Unmarshal(usv, &name)
 	// Check for sprite-file override first
 	if err != nil {
 		var inf interface{}
 		var infs []interface{}
 		// Can't unmarshal to []interface{}, so unmarshal to
 		// interface{} then reflect it into a []interface{}
-		err = cx.Unmarshal(usv, &inf)
+		err = libsass.Unmarshal(usv, &inf)
 		k := reflect.ValueOf(&infs).Elem()
 		k.Set(reflect.ValueOf(inf))
 
 		if err != nil {
-			return cx.Error(err)
+			return libsass.Error(err)
 		}
 		glob = infs[0].(string)
 		name = infs[1].(string)
@@ -90,11 +90,11 @@ func ImageHeight(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 		ctx.Sprites.RUnlock()
 	}
 	height := imgs.SImageHeight(name)
-	Hheight := cx.SassNumber{
+	Hheight := libsass.SassNumber{
 		Value: float64(height),
 		Unit:  "px",
 	}
-	res, err := cx.Marshal(Hheight)
+	res, err := libsass.Marshal(Hheight)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -103,23 +103,23 @@ func ImageHeight(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 
 // ImageWidth takes a file path (or sprite glob) and returns the
 // width in pixels of the image being referenced.
-func ImageWidth(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
+func ImageWidth(ctx *libsass.Context, usv libsass.UnionSassValue) libsass.UnionSassValue {
 	var (
 		glob, name string
 	)
-	err := cx.Unmarshal(usv, &name)
+	err := libsass.Unmarshal(usv, &name)
 	// Check for sprite-file override first
 	if err != nil {
 		var inf interface{}
 		var infs []interface{}
 		// Can't unmarshal to []interface{}, so unmarshal to
 		// interface{} then reflect it into a []interface{}
-		err = cx.Unmarshal(usv, &inf)
+		err = libsass.Unmarshal(usv, &inf)
 		k := reflect.ValueOf(&infs).Elem()
 		k.Set(reflect.ValueOf(inf))
 
 		if err != nil {
-			return cx.Error(err)
+			return libsass.Error(err)
 		}
 		glob = infs[0].(string)
 		name = infs[1].(string)
@@ -145,11 +145,11 @@ func ImageWidth(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 		ctx.Sprites.RUnlock()
 	}
 	v := imgs.SImageWidth(name)
-	vv := cx.SassNumber{
+	vv := libsass.SassNumber{
 		Value: float64(v),
 		Unit:  "px",
 	}
-	res, err := cx.Marshal(vv)
+	res, err := libsass.Marshal(vv)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -171,27 +171,27 @@ func inlineHandler(name string) (*http.Request, error) {
 }
 
 // InlineImage returns a base64 encoded png from the input image
-func InlineImage(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
+func InlineImage(ctx *libsass.Context, usv libsass.UnionSassValue) libsass.UnionSassValue {
 	var (
 		name   string
 		encode bool
 		f      io.Reader
 	)
-	err := cx.Unmarshal(usv, &name, &encode)
+	err := libsass.Unmarshal(usv, &name, &encode)
 	if err != nil {
-		return cx.Error(err)
+		return libsass.Error(err)
 	}
 
 	f, err = os.Open(filepath.Join(ctx.ImageDir, name))
 	if err != nil {
 		req, uerr := inlineHandler(name)
 		if uerr != nil || req == nil {
-			return cx.Error(err)
+			return libsass.Error(err)
 		}
 		client := &http.Client{}
 		resp, uerr := client.Do(req)
 		if uerr != nil {
-			return cx.Error(err)
+			return libsass.Error(err)
 		}
 		defer resp.Body.Close()
 
@@ -202,43 +202,43 @@ func InlineImage(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 	}
 
 	if err != nil {
-		return cx.Error(err)
+		return libsass.Error(err)
 	}
 	var buf bytes.Buffer
 
 	sw.Inline(f, &buf, encode)
-	res, err := cx.Marshal(buf.String())
+	res, err := libsass.Marshal(buf.String())
 	if err != nil {
-		return cx.Error(err)
+		return libsass.Error(err)
 	}
 	return res
 }
 
 // SpriteFile proxies the sprite glob and image name through.
-func SpriteFile(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
+func SpriteFile(ctx *libsass.Context, usv libsass.UnionSassValue) libsass.UnionSassValue {
 	var glob, name string
-	err := cx.Unmarshal(usv, &glob, &name)
+	err := libsass.Unmarshal(usv, &glob, &name)
 	if err != nil {
-		return cx.Error(err)
+		return libsass.Error(err)
 	}
 	infs := []interface{}{glob, name}
-	res, err := cx.Marshal(infs)
+	res, err := libsass.Marshal(infs)
 	return res
 }
 
 // Sprite returns the source and background position for an image in the
 // spritesheet.
-func Sprite(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
+func Sprite(ctx *libsass.Context, usv libsass.UnionSassValue) libsass.UnionSassValue {
 	var glob, name string
-	var offsetX, offsetY cx.SassNumber
+	var offsetX, offsetY libsass.SassNumber
 	_, _ = offsetX, offsetY // TODO: ignore these for now
-	err := cx.Unmarshal(usv, &glob, &name, &offsetX, &offsetY)
+	err := libsass.Unmarshal(usv, &glob, &name, &offsetX, &offsetY)
 	if err != nil {
 		if strings.Contains(err.Error(), "unsupported") {
-			return cx.Error(fmt.Errorf(
+			return libsass.Error(fmt.Errorf(
 				"Please specify unit for offset ie. (2px)"))
 		}
-		return cx.Error(err)
+		return libsass.Error(err)
 	}
 	ctx.Sprites.RLock()
 	defer ctx.Sprites.RUnlock()
@@ -249,7 +249,7 @@ func Sprite(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 			keys = append(keys, i)
 		}
 
-		return cx.Error(fmt.Errorf(
+		return libsass.Error(fmt.Errorf(
 			"Variable not found matching glob: %s sprite:%s", glob, name))
 	}
 
@@ -262,41 +262,41 @@ func Sprite(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 	} else {
 		u, err := url.Parse(ctx.HTTPPath)
 		if err != nil {
-			return cx.Error(err)
+			return libsass.Error(err)
 		}
 		u.Path = filepath.Join(u.Path, "build", filepath.Base(path))
 		path = u.String()
 	}
 	if err != nil {
-		return cx.Error(err)
+		return libsass.Error(err)
 	}
 
 	if imgs.Lookup(name) == -1 {
-		return cx.Error(fmt.Errorf("image %s not found\n"+
+		return libsass.Error(fmt.Errorf("image %s not found\n"+
 			"   try one of these: %v", name, imgs.Paths))
 	}
 	// This is an odd name for what it does
 	pos := imgs.GetPack(imgs.Lookup(name))
 
 	if err != nil {
-		return cx.Error(err)
+		return libsass.Error(err)
 	}
-	str, err := cx.Marshal(fmt.Sprintf(`url("%s") -%dpx -%dpx`,
+	str, err := libsass.Marshal(fmt.Sprintf(`url("%s") -%dpx -%dpx`,
 		path, pos.X, pos.Y))
 	if err != nil {
-		return cx.Error(err)
+		return libsass.Error(err)
 	}
 	return str
 }
 
 // SpriteMap returns a sprite from the passed glob and sprite
 // parameters.
-func SpriteMap(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
+func SpriteMap(ctx *libsass.Context, usv libsass.UnionSassValue) libsass.UnionSassValue {
 	var glob string
-	var spacing cx.SassNumber
-	err := cx.Unmarshal(usv, &glob, &spacing)
+	var spacing libsass.SassNumber
+	err := libsass.Unmarshal(usv, &glob, &spacing)
 	if err != nil {
-		return cx.Error(err)
+		return libsass.Error(err)
 	}
 	imgs := sw.ImageList{
 		ImageDir:  ctx.ImageDir,
@@ -314,9 +314,9 @@ func SpriteMap(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 	ctx.Sprites.RLock()
 	if _, ok := ctx.Sprites.M[key]; ok {
 		ctx.Sprites.RUnlock()
-		res, err := cx.Marshal(key)
+		res, err := libsass.Marshal(key)
 		if err != nil {
-			return cx.Error(err)
+			return libsass.Error(err)
 		}
 		return res
 	}
@@ -324,55 +324,55 @@ func SpriteMap(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 
 	err = imgs.Decode(glob)
 	if err != nil {
-		return cx.Error(err)
+		return libsass.Error(err)
 	}
 	_, err = imgs.Combine()
 	if err != nil {
-		return cx.Error(err)
+		return libsass.Error(err)
 	}
 
 	_, err = imgs.Export()
 	if err != nil {
-		return cx.Error(err)
+		return libsass.Error(err)
 	}
 
-	res, err := cx.Marshal(key)
+	res, err := libsass.Marshal(key)
 	ctx.Sprites.Lock()
 	ctx.Sprites.M[key] = imgs
 	ctx.Sprites.Unlock()
 	if err != nil {
-		return cx.Error(err)
+		return libsass.Error(err)
 	}
 
 	return res
 }
 
 // FontURL builds a relative path to the requested font file from the built CSS.
-func FontURL(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
+func FontURL(ctx *libsass.Context, usv libsass.UnionSassValue) libsass.UnionSassValue {
 
 	var (
 		path, format string
-		csv          cx.UnionSassValue
+		csv          libsass.UnionSassValue
 		raw          bool
 	)
-	err := cx.Unmarshal(usv, &path, &raw)
+	err := libsass.Unmarshal(usv, &path, &raw)
 
 	if err != nil {
-		return cx.Error(err)
+		return libsass.Error(err)
 	}
 
 	// Enter warning
 	if ctx.FontDir == "." || ctx.FontDir == "" {
 		s := "font-url: font path not set"
 		fmt.Println(s)
-		res, _ := cx.Marshal(s)
+		res, _ := libsass.Marshal(s)
 		return res
 	}
 
 	rel, err := filepath.Rel(ctx.BuildDir, ctx.FontDir)
 
 	if err != nil {
-		return cx.Error(err)
+		return libsass.Error(err)
 	}
 	if raw {
 		format = "%s"
@@ -380,9 +380,9 @@ func FontURL(ctx *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
 		format = `url("%s")`
 	}
 
-	csv, err = cx.Marshal(fmt.Sprintf(format, filepath.Join(rel, path)))
+	csv, err = libsass.Marshal(fmt.Sprintf(format, filepath.Join(rel, path)))
 	if err != nil {
-		return cx.Error(err)
+		return libsass.Error(err)
 	}
 	return csv
 }

@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	context "github.com/wellington/libsass"
+	libsass "github.com/wellington/libsass"
 
 	wt "github.com/wellington/wellington"
 	_ "github.com/wellington/wellington/handlers"
@@ -132,10 +132,10 @@ func main() {
 		}
 	}
 
-	style, ok := context.Style[style]
+	style, ok := libsass.Style[style]
 
 	if !ok {
-		style = context.NESTED_STYLE
+		style = libsass.NESTED_STYLE
 	}
 
 	gba := wt.NewBuildArgs()
@@ -150,7 +150,7 @@ func main() {
 
 	pMap := wt.NewPartialMap()
 	// FIXME: Copy pasta with LoadAndBuild
-	ctx := &context.Context{
+	ctx := &libsass.Context{
 		Sprites:      gba.Sprites,
 		Imgs:         gba.Imgs,
 		OutputStyle:  gba.Style,

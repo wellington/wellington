@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	cx "github.com/wellington/libsass"
+	libsass "github.com/wellington/libsass"
 	"github.com/wellington/spritewell"
 )
 
@@ -18,15 +18,15 @@ func init() {
 	os.MkdirAll("../test/build/img", 0777)
 }
 
-func wrapCallback(sc cx.SassCallback, ch chan cx.UnionSassValue) cx.SassCallback {
-	return func(c *cx.Context, usv cx.UnionSassValue) cx.UnionSassValue {
+func wrapCallback(sc libsass.SassCallback, ch chan libsass.UnionSassValue) libsass.SassCallback {
+	return func(c *libsass.Context, usv libsass.UnionSassValue) libsass.UnionSassValue {
 		usv = sc(c, usv)
 		ch <- usv
 		return usv
 	}
 }
 
-func testSprite(ctx *cx.Context) {
+func testSprite(ctx *libsass.Context) {
 	// Generate test sprite
 	imgs := spritewell.ImageList{
 		ImageDir:  ctx.ImageDir,
@@ -44,10 +44,10 @@ func testSprite(ctx *cx.Context) {
 	}
 }
 
-func setupCtx(r io.Reader, out io.Writer, cookies ...cx.Cookie) (*cx.Context, cx.UnionSassValue, error) {
-	var usv cx.UnionSassValue
-	ctx := cx.NewContext()
-	ctx.OutputStyle = cx.NESTED_STYLE
+func setupCtx(r io.Reader, out io.Writer, cookies ...libsass.Cookie) (*libsass.Context, libsass.UnionSassValue, error) {
+	var usv libsass.UnionSassValue
+	ctx := libsass.NewContext()
+	ctx.OutputStyle = libsass.NESTED_STYLE
 	ctx.IncludePaths = make([]string, 0)
 	ctx.BuildDir = "../test/build"
 	ctx.ImageDir = "../test/img"
@@ -56,13 +56,13 @@ func setupCtx(r io.Reader, out io.Writer, cookies ...cx.Cookie) (*cx.Context, cx
 	ctx.Out = ""
 
 	testSprite(ctx)
-	cc := make(chan cx.UnionSassValue, len(cookies))
+	cc := make(chan libsass.UnionSassValue, len(cookies))
 	// If callbacks were made, add them to the context
 	// and create channels for communicating with them.
 	if len(cookies) > 0 {
-		cs := make([]cx.Cookie, len(cookies))
+		cs := make([]libsass.Cookie, len(cookies))
 		for i, c := range cookies {
-			cs[i] = cx.Cookie{
+			cs[i] = libsass.Cookie{
 				Sign: c.Sign,
 				Fn:   wrapCallback(c.Fn, cc),
 				Ctx:  ctx,
@@ -75,25 +75,25 @@ func setupCtx(r io.Reader, out io.Writer, cookies ...cx.Cookie) (*cx.Context, cx
 }
 
 func TestFuncImageURL(t *testing.T) {
-	ctx := cx.Context{
+	ctx := libsass.Context{
 		BuildDir: "test/build",
 		ImageDir: "test/img",
 	}
 
-	usv, _ := cx.Marshal([]string{"image.png"})
+	usv, _ := libsass.Marshal([]string{"image.png"})
 	usv = ImageURL(&ctx, usv)
 	var path string
-	cx.Unmarshal(usv, &path)
+	libsass.Unmarshal(usv, &path)
 	if e := "url('../img/image.png')"; e != path {
 		t.Errorf("got: %s wanted: %s", path, e)
 	}
 
 	// Test sending invalid date to imageURL
-	usv, _ = cx.Marshal(cx.SassNumber{Value: 1, Unit: "px"})
+	usv, _ = libsass.Marshal(libsass.SassNumber{Value: 1, Unit: "px"})
 	_ = usv
 	errusv := ImageURL(&ctx, usv)
 	var s string
-	merr := cx.Unmarshal(errusv, &s)
+	merr := libsass.Unmarshal(errusv, &s)
 	if merr != nil {
 		t.Error(merr)
 	}
@@ -107,17 +107,17 @@ func TestFuncImageURL(t *testing.T) {
 }
 
 func TestFuncSpriteMap(t *testing.T) {
-	ctx := cx.NewContext()
+	ctx := libsass.NewContext()
 	ctx.BuildDir = "../test/build"
 	ctx.GenImgDir = "../test/build/img"
 	ctx.ImageDir = "../test/img"
 
 	// Add real arguments when sass lists can be [un]marshalled
-	lst := []interface{}{"*.png", cx.SassNumber{Value: 5, Unit: "px"}}
-	usv, _ := cx.Marshal(lst)
+	lst := []interface{}{"*.png", libsass.SassNumber{Value: 5, Unit: "px"}}
+	usv, _ := libsass.Marshal(lst)
 	usv = SpriteMap(ctx, usv)
 	var path string
-	err := cx.Unmarshal(usv, &path)
+	err := libsass.Unmarshal(usv, &path)
 	if err != nil {
 		t.Error(err)
 	}
@@ -128,17 +128,17 @@ func TestFuncSpriteMap(t *testing.T) {
 }
 
 func TestFuncSpriteFile(t *testing.T) {
-	ctx := cx.NewContext()
+	ctx := libsass.NewContext()
 	ctx.BuildDir = "../test/build"
 	ctx.GenImgDir = "../test/build/img"
 	ctx.ImageDir = "../test/img"
 
 	// Add real arguments when sass lists can be [un]marshalled
 	lst := []interface{}{"*.png", "139"}
-	usv, _ := cx.Marshal(lst)
+	usv, _ := libsass.Marshal(lst)
 	usv = SpriteFile(ctx, usv)
 	var glob, path string
-	err := cx.Unmarshal(usv, &glob, &path)
+	err := libsass.Unmarshal(usv, &glob, &path)
 	if err != nil {
 		t.Error(err)
 	}
@@ -164,7 +164,7 @@ height: $aritymap;
 line-height: $paddedmap;
 }`)
 
-	ctx := cx.NewContext()
+	ctx := libsass.NewContext()
 
 	ctx.BuildDir = "../test/build"
 	ctx.GenImgDir = "../test/build/img"
@@ -191,7 +191,7 @@ div {
   content: $map;
 }`)
 
-	ctx := cx.NewContext()
+	ctx := libsass.NewContext()
 
 	ctx.ImageDir = "../test/img"
 	ctx.BuildDir = "../test/build"
@@ -380,7 +380,7 @@ func TestFontURLFail(t *testing.T) {
   src: font-url("arial.eot");
 }`)
 	var out bytes.Buffer
-	ctx := cx.Context{}
+	ctx := libsass.Context{}
 	err := ctx.Compile(in, &out)
 
 	if err != nil {
@@ -479,7 +479,7 @@ div {
   background: sprite($map, "140");
 }`)
 
-	ctx := cx.NewContext()
+	ctx := libsass.NewContext()
 
 	ctx.BuildDir = "../test/build"
 	ctx.GenImgDir = "../test/build/img"
@@ -505,7 +505,7 @@ div {
   background: sprite($map, "140", 0, 0);
 }`)
 
-	ctx := cx.NewContext()
+	ctx := libsass.NewContext()
 
 	ctx.BuildDir = "../test/build"
 	ctx.GenImgDir = "../test/build/img"
@@ -537,7 +537,7 @@ div {
   background: sprite($map, "140");
 }`)
 
-	ctx := cx.NewContext()
+	ctx := libsass.NewContext()
 	ctx.IncludePaths = []string{"../test"}
 	ctx.HTTPPath = "http://foo.com"
 	ctx.BuildDir = "../test/build"
@@ -570,7 +570,7 @@ div {
   background: sprite($map, "twitt");
 }`)
 
-	ctx := cx.NewContext()
+	ctx := libsass.NewContext()
 
 	ctx.BuildDir = "../test/build"
 	ctx.GenImgDir = "../test/build/img"
@@ -633,13 +633,13 @@ func TestInlineSVG(t *testing.T) {
 }
 
 func BenchmarkSprite(b *testing.B) {
-	ctx := cx.NewContext()
+	ctx := libsass.NewContext()
 	ctx.BuildDir = "context/test/build"
 	ctx.GenImgDir = "context/test/build/img"
 	ctx.ImageDir = "context/test/img"
 	// Add real arguments when sass lists can be [un]marshalled
-	lst := []interface{}{"*.png", cx.SassNumber{Value: 5, Unit: "px"}}
-	usv, _ := cx.Marshal(lst)
+	lst := []interface{}{"*.png", libsass.SassNumber{Value: 5, Unit: "px"}}
+	usv, _ := libsass.Marshal(lst)
 
 	for i := 0; i < b.N; i++ {
 		usv = SpriteMap(ctx, usv)

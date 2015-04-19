@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	context "github.com/wellington/libsass"
+	libsass "github.com/wellington/libsass"
 )
 
 var inputFileTypes = []string{".scss", ".sass"}
@@ -37,7 +37,7 @@ func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) e
 	} else {
 		out = os.Stdout
 	}
-	ctx := context.Context{
+	ctx := libsass.Context{
 		Sprites:     gba.Sprites,
 		Imgs:        gba.Imgs,
 		OutputStyle: gba.Style,
