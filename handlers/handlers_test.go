@@ -358,8 +358,8 @@ div {
 	e := `Error > stdin:3
 error in C function inline-image: open ../test/img/pixel/nofile.png: no such file or directory
 Backtrace:
-	stdin:2, in function ` + "`inline-image`" + `
-	stdin:2
+	stdin:3, in function ` + "`inline-image`" + `
+	stdin:3
 
 div {
     background: inline-image("pixel/nofile.png");
@@ -442,7 +442,7 @@ $path: font-url($raw: true, $path: "arial.eot");
 
 }
 
-func TestSpriteFail(t *testing.T) {
+func TestHandle_unknownmap(t *testing.T) {
 	in := bytes.NewBufferString(`
 $map: sprite-map("*.png");
 div {
@@ -458,8 +458,8 @@ div {
 	e := `Error > stdin:4
 error in C function sprite: Variable not found matching glob: nomap sprite:140
 Backtrace:
-	stdin:3, in function ` + "`sprite`" + `
-	stdin:3
+	stdin:4, in function ` + "`sprite`" + `
+	stdin:4
 
 $map: sprite-map("*.png");
 div {
@@ -468,7 +468,7 @@ div {
 `
 
 	if e != err.Error() {
-		t.Errorf("got:\n~%s~\nwanted:\n~%s~", err.Error(), e)
+		t.Errorf("got:\n%s\nwanted:\n%s", err.Error(), e)
 	}
 }
 
@@ -498,7 +498,7 @@ div {
 
 }
 
-func TestSprite(t *testing.T) {
+func TestHandle_erroroffset(t *testing.T) {
 	in := bytes.NewBufferString(`
 $map: sprite-map("*.png", 10px);
 div {
@@ -516,8 +516,8 @@ div {
 	e := `Error > stdin:4
 error in C function sprite: Please specify unit for offset ie. (2px)
 Backtrace:
-	stdin:3, in function ` + "`sprite`" + `
-	stdin:3
+	stdin:4, in function ` + "`sprite`" + `
+	stdin:4
 
 $map: sprite-map("*.png", 10px);
 div {
