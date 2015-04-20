@@ -4,22 +4,22 @@ machine:
   environment:
     LIBSASS_VERSION: $(cat $HOME/$CIRCLE_PROJECT_REPONAME/.libsass_version)
     PROJECT_ROOT: $HOME/.go_workspace/src/github.com/wellington/wellington
-    PKG_CONFIG_PATH: "$PROJECT_ROOT/libsass-src/lib/pkgconfig"
+    GO_LIBSASS: "$HOME/.go_workspace/src/github.com/wellington/libsass"
+    PKG_CONFIG_PATH: "$GO_LIBSASS/lib/pkgconfig"
     GIT_BRANCH: $CIRCLE_BRANCH
+checkout:
+  post:
+    - cd $GO_LIBSASS; git submodule sync && \
+        git submodule update --init
 dependencies:
   #cache_directories:
     #- libsass-src
   pre:
-    - docker version #report version
-    - echo $LIBSASS_VERSION
-    - mkdir -p ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}
+    - mkdir -p ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME} # a bunch of hacks b/c circleci has problems
     - rm -rf ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
     - cp -R $(pwd) ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
-  override:
-    - cd $PROJECT_ROOT && make deps:
-        parallel: true
   post:
-    - make pkgconfig #check output of pkg-config
+    - cd $GO_LIBSASS; make deps #build libsass
 test:
   override:
     - cd $PROJECT_ROOT && make test:
