@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	libsass "github.com/wellington/libsass"
+	libsass "github.com/wellington/go-libsass"
 )
 
 var inputFileTypes = []string{".scss", ".sass"}

@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	libsass "github.com/wellington/libsass"
+	libsass "github.com/wellington/go-libsass"
 	"github.com/wellington/spritewell"
 )
 

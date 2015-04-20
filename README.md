@@ -278,7 +278,7 @@ wt -h
 It's a good idea to export `PKG_CONFIG_PATH` so that pkg-config can find `libsass.pc`. Otherwise, `go ...` commands will fail.
 
 ```
-export PKG_CONFIG_PATH=$GOPATH/src/github.com/wellington/wellington/libsass/lib/pkgconfig
+export PKG_CONFIG_PATH=$GOPATH/src/github.com/wellington/libsass/lib/pkgconfig
 ```
 
 Set your fork as the origin.

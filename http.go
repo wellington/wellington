@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	libsass "github.com/wellington/libsass"
+	libsass "github.com/wellington/go-libsass"
 )
 
 // FileHandler starts a file server serving files out of the specified

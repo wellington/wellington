@@ -6,7 +6,7 @@
 	],
 	"Deps": [
 		{
-			"ImportPath": "github.com/wellington/libsass",
+			"ImportPath": "github.com/wellington/go-libsass",
 			"Rev": "4f36f3e86b0496f2d45362cf78aa7fcf6782f58e"
 		},
 		{

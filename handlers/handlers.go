@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	libsass "github.com/wellington/libsass"
+	libsass "github.com/wellington/go-libsass"
 	sw "github.com/wellington/spritewell"
 )
 

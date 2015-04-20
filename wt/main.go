@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	libsass "github.com/wellington/libsass"
+	libsass "github.com/wellington/go-libsass"
 
 	wt "github.com/wellington/wellington"
 	_ "github.com/wellington/wellington/handlers"

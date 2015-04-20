@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	libsass "github.com/wellington/libsass"
+	libsass "github.com/wellington/go-libsass"
 )
 
 type nopCloser struct {

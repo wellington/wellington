@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	libsass "github.com/wellington/libsass"
+	libsass "github.com/wellington/go-libsass"
 )
 
 func decResp(t *testing.T, r io.Reader) Response {

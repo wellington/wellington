@@ -8,7 +8,7 @@ import (
 	"log"
 	"path/filepath"
 
-	libsass "github.com/wellington/libsass"
+	libsass "github.com/wellington/go-libsass"
 	// TODO: Remove dot imports
 	"github.com/wellington/wellington/lexer"
 )
