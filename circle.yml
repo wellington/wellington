@@ -16,6 +16,7 @@ dependencies:
     - rm -rf ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
     - cp -R $(pwd) ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
   override:
+    - make godep
     - godep restore
   post:
     - cd $GO_LIBSASS; git submodule sync && \
