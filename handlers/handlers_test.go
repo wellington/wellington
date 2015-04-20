@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -648,4 +649,28 @@ func BenchmarkSprite(b *testing.B) {
 	// var s string
 	// Unmarshal(usv, &s)
 	// fmt.Println(s)
+}
+
+func TestHttpInline(t *testing.T) {
+	e := []byte("Hello, client")
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write(e)
+	}))
+	defer ts.Close()
+
+	r, err := httpInlineImage(ts.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+
+	bs, err := ioutil.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if bytes.Compare(bs, e) != 0 {
+		t.Fatalf("got: %s was: %s", string(bs), string(e))
+	}
+
 }

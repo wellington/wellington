@@ -4,9 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"io"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 
 	libsass "github.com/wellington/libsass"
@@ -17,54 +15,6 @@ type nopCloser struct {
 }
 
 func (n nopCloser) Close() error { return nil }
-
-// Attempt _{}.scss, _{}.sass, {}.scss, {}.sass paths and return
-// reader if found
-// Returns the file contents, pwd, and error if any
-func findFile(dir, file string) (io.ReadCloser, string, error) {
-	var errs string
-	spath, _ := filepath.Abs(filepath.Join(dir, file))
-	pwd := filepath.Dir(spath)
-	base := filepath.Base(spath)
-	fpath := filepath.Join(pwd, "_"+base+".scss")
-	r, err := readSass(fpath)
-	if err == nil {
-		return r, filepath.Dir(fpath), err
-	}
-	errs += "importPath:\n    " + err.Error()
-
-	fpath = filepath.Join(pwd, base+".scss")
-	r, err = readSass(fpath)
-	if err == nil {
-		return r, filepath.Dir(fpath), err
-	}
-	errs += "\n    " + err.Error()
-
-	fpath = filepath.Join(pwd, "_"+base+".sass")
-	r, err = readSass(fpath)
-	if err == nil {
-		return r, filepath.Dir(fpath), err
-	}
-	errs += "\n    " + err.Error()
-
-	fpath = filepath.Join(pwd, base+".sass")
-	r, err = readSass(fpath)
-	if err == nil {
-		return r, filepath.Dir(fpath), err
-	}
-	errs += "\n    " + err.Error()
-
-	return nil, pwd, os.ErrNotExist
-}
-
-// readSassBytes converts readSass to []byte
-func readSassBytes(path string) ([]byte, error) {
-	reader, err := readSass(path)
-	if err != nil {
-		return nil, err
-	}
-	return ioutil.ReadAll(reader)
-}
 
 // readSass retrives a file from path. If found, it converts Sass
 // to Scss or returns found Scss;

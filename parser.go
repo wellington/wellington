@@ -98,36 +98,6 @@ func (p *Parser) Start(r io.Reader, pkgdir string) ([]byte, error) {
 	return p.Output, nil
 }
 
-// LookupFile translates line positions into line number
-// and file it belongs to
-func (p *Parser) LookupFile(position int) string {
-	// Shift to 0 index
-	pos := position - 1
-	// Adjust for shift from preamble
-	shift := 0
-	pos = pos - shift
-	if pos < 0 {
-		return "mixin"
-	}
-	for i, n := range p.LineKeys {
-		if n > pos {
-			if i == 0 {
-				// Return 1 index line numbers
-				return fmt.Sprintf("%s:%d", p.Line[i], pos+1)
-			}
-			hit := p.LineKeys[i-1]
-			filename := p.Line[hit]
-			// Catch for mainimport errors
-			if filename == "string" {
-				filename = p.MainFile
-			}
-			return fmt.Sprintf("%s:%d", filename, pos-hit+1)
-		}
-	}
-	// Either this is invalid or outside of all imports, assume it's valid
-	return fmt.Sprintf("%s:%d", p.MainFile, pos-p.LineKeys[len(p.LineKeys)-1]+1)
-}
-
 // StartParser accepts build arguments
 // TODO: Should this be called StartParser or NewParser?
 // TODO: Should this function create the partialMap or is this

@@ -170,6 +170,23 @@ func inlineHandler(name string) (*http.Request, error) {
 	return req, nil
 }
 
+func httpInlineImage(url string) (io.ReadCloser, error) {
+	req, err := inlineHandler(url)
+	if err != nil || req == nil {
+		return nil, err
+	}
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	fmt.Println(url)
+	fmt.Printf("% #v\n", err)
+	if err != nil {
+		fmt.Println("errors")
+		return nil, err
+	}
+
+	return resp.Body, nil
+}
+
 // InlineImage returns a base64 encoded png from the input image
 func InlineImage(ctx *libsass.Context, usv libsass.UnionSassValue) libsass.UnionSassValue {
 	var (
@@ -184,21 +201,14 @@ func InlineImage(ctx *libsass.Context, usv libsass.UnionSassValue) libsass.Union
 
 	f, err = os.Open(filepath.Join(ctx.ImageDir, name))
 	if err != nil {
-		req, uerr := inlineHandler(name)
-		if uerr != nil || req == nil {
+		r, err := httpInlineImage(name)
+		if err != nil {
 			return libsass.Error(err)
 		}
-		client := &http.Client{}
-		resp, uerr := client.Do(req)
-		if uerr != nil {
-			return libsass.Error(err)
+		f = r
+		if r != nil {
+			defer r.Close()
 		}
-		defer resp.Body.Close()
-
-		if uerr == nil && f != nil {
-			err = uerr
-		}
-		f = resp.Body
 	}
 
 	if err != nil {
