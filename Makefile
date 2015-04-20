@@ -17,7 +17,7 @@ install: deps
 	godep go install github.com/wellington/wellington/wt
 
 deps: libsass-src/lib/libsass.a
-
+	godep restore
 bench:
 	go test ./... -bench=.
 home:
