@@ -21,8 +21,6 @@ echo 'Run tests'
 #go test -race ./... #disabled for alpine go142
 echo "PKG_CONFIG_PATH: $PKG_CONFIG_PATH"
 
-godep go test -x
-
 godep go test ./...
 
 # Run test coverage on each subdirectories and merge the coverage profile.
@@ -34,7 +32,7 @@ echo "mode: count" > profile.cov
 for dir in $(find -L . -maxdepth 10 -not -path './.git*' -not -path '*/_*' -type d);
 do
 if ls $dir/*.go &> /dev/null; then
-	go test -covermode=count -coverprofile=$dir/profile.tmp $dir
+	godep go test -covermode=count -coverprofile=$dir/profile.tmp $dir
     if [ -f $dir/profile.tmp ]
     then
         cat $dir/profile.tmp | tail -n +2 >> profile.cov

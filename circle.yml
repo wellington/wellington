@@ -8,17 +8,19 @@ machine:
     PKG_CONFIG_PATH: "$GO_LIBSASS/lib/pkgconfig"
     GIT_BRANCH: $CIRCLE_BRANCH
 checkout:
-  post:
-    - cd $GO_LIBSASS; git submodule sync && \
-        git submodule update --init
 dependencies:
   #cache_directories:
     #- libsass-src
   pre:
-    - mkdir -p ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME} # a bunch of hacks b/c circleci has problems
+    - #bunch of bad stuff b/c circleci has issues with Go
+    - mkdir -p ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}
     - rm -rf ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
     - cp -R $(pwd) ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
+  override:
+    - godep restore
   post:
+    - cd $GO_LIBSASS; git submodule sync && \
+        git submodule update --init
     - cd $GO_LIBSASS; make deps #build libsass
 test:
   override:
