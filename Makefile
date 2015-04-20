@@ -3,16 +3,20 @@ current_dir = $(shell pwd)
 rmnpath = $(RMN_BASE_PATH)
 guipath = $(rmnpath)/www/gui
 libsass_ver = $(shell cat \.libsass_version)
-VPATH = libsass
+LASTGOPATH=$(shell python -c "import os; a=os.environ['GOPATH']; print a.split(':')[-1]")
 
 ifndef PKG_CONFIG_PATH
-	PKG_CONFIG_PATH=$(current_dir)/libsass/lib/pkgconfig
+	export PKG_CONFIG_PATH=$(current_dir)/libsass-src/lib/pkgconfig
 endif
 
-install: libsass/lib/libsass.a
-	go get -f -u -d github.com/wellington/spritewell
-	go get -f -u -d gopkg.in/fsnotify.v1
-	go install github.com/wellington/wellington/wt
+pkgconfig:
+	pkg-config --cflags --libs libsass
+
+install: deps
+	echo "PKG_CONFIG_PATH $(PKG_CONFIG_PATH)"
+	godep go install github.com/wellington/wellington/wt
+
+deps: libsass-src/lib/libsass.a
 
 bench:
 	go test ./... -bench=.
@@ -26,24 +30,22 @@ profile: install
 	go tool pprof --png $(GOPATH)/bin/wt wt.prof > profile.png
 	open profile.png
 
-godep:
+$(LASTGOPATH)/bin/godep:
 	go get github.com/tools/godep
-	godep restore
 
-libsass/*:
+godep: $(LASTGOPATH)/bin/godep
+
+libsass-src/*:
+	mkdir -p libsass-src
+
+libsass-src/lib/libsass.a: libsass-src/*
 	scripts/getdeps.sh
-
-libsass/lib/libsass.a: libsass/*
-	@touch libsass/lib/pkgconfig/libsass.pc
 
 headers:
 	scripts/getheaders.sh
 
 clean:
 	rm -rf build/*
-
-# Deprecated, remove from wellington.rb on next release
-deps: libsass/lib/libsass.a
 
 copyout:
 	chown $(EUID):$(EGID) $(GOPATH)/bin/wt
@@ -84,7 +86,7 @@ test: godep profile.cov
 compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
 save:
-	cd libsass; git rev-parse HEAD > ../.libsass_version
+	cd libsass-src; git rev-parse HEAD > ../.libsass_version
 swift: install
 	scripts/swift.sh
 watch: install

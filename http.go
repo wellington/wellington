@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/wellington/wellington/context"
+	libsass "github.com/wellington/libsass"
 )
 
 // FileHandler starts a file server serving files out of the specified
@@ -36,7 +36,7 @@ type Response struct {
 
 // HTTPHandler starts a CORS enabled web server that takes as input
 // Sass and outputs CSS.
-func HTTPHandler(ctx *context.Context) func(w http.ResponseWriter, r *http.Request) {
+func HTTPHandler(ctx *libsass.Context) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (
 			pout bytes.Buffer

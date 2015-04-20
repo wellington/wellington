@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/wellington/wellington/context"
+	libsass "github.com/wellington/libsass"
 )
 
 type nopCloser struct {
@@ -86,7 +86,7 @@ func ToScssReader(r io.Reader) (io.ReadCloser, error) {
 	if IsSass(tr) {
 
 		var ibuf bytes.Buffer
-		context.ToScss(io.MultiReader(&buf, r), &ibuf)
+		libsass.ToScss(io.MultiReader(&buf, r), &ibuf)
 		return nopCloser{&ibuf}, nil
 	}
 	mr := io.MultiReader(&buf, r)

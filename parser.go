@@ -8,7 +8,7 @@ import (
 	"log"
 	"path/filepath"
 
-	"github.com/wellington/wellington/context"
+	libsass "github.com/wellington/libsass"
 	// TODO: Remove dot imports
 	"github.com/wellington/wellington/lexer"
 )
@@ -33,7 +33,7 @@ type Parser struct {
 	SassDir, BuildDir,
 
 	ProjDir string
-	Imports    context.Imports
+	Imports    libsass.Imports
 	ImageDir   string
 	Includes   []string
 	Items      []lexer.Item
@@ -132,7 +132,7 @@ func (p *Parser) LookupFile(position int) string {
 // TODO: Should this be called StartParser or NewParser?
 // TODO: Should this function create the partialMap or is this
 // the right way to inject one?
-func StartParser(ctx *context.Context, in io.Reader, out io.Writer, partialMap *SafePartialMap) (*Parser, error) {
+func StartParser(ctx *libsass.Context, in io.Reader, out io.Writer, partialMap *SafePartialMap) (*Parser, error) {
 	// Run the sprite_sass parser prior to passing to libsass
 	parser := NewParser()
 

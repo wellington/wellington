@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/wellington/wellington/context"
+	libsass "github.com/wellington/libsass"
 )
 
 func decResp(t *testing.T, r io.Reader) Response {
@@ -57,7 +57,7 @@ func TestFileHandler(t *testing.T) {
 }
 
 func TestHTTPHandler(t *testing.T) {
-	ctx := context.NewContext()
+	ctx := libsass.NewContext()
 	hh := http.HandlerFunc(HTTPHandler(ctx))
 	req, err := http.NewRequest("GET", "", nil)
 	req.Header.Set("Origin", "http://foo.com")
@@ -112,7 +112,7 @@ func TestHTTPHandler(t *testing.T) {
 }
 
 func TestHTTPHandler_error(t *testing.T) {
-	ctx := context.NewContext()
+	ctx := libsass.NewContext()
 	hh := http.HandlerFunc(HTTPHandler(ctx))
 	// nil causes panic, is this a problem?
 	req, err := http.NewRequest("GET", "",
