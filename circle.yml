@@ -7,12 +7,11 @@ machine:
     GO_LIBSASS: "$HOME/.go_workspace/src/github.com/wellington/libsass"
     PKG_CONFIG_PATH: "$GO_LIBSASS/lib/pkgconfig"
     GIT_BRANCH: $CIRCLE_BRANCH
-checkout:
 dependencies:
   #cache_directories:
     #- libsass-src
+  #bunch of bad stuff b/c circleci has issues with Go
   pre:
-    - #bunch of bad stuff b/c circleci has issues with Go
     - mkdir -p ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}
     - rm -rf ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
     - cp -R $(pwd) ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
