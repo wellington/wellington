@@ -12,14 +12,10 @@ endif
 pkgconfig:
 	pkg-config --cflags --libs libsass
 
-install: deps
+install:
 	echo "PKG_CONFIG_PATH $(PKG_CONFIG_PATH)"
 	godep go install github.com/wellington/wellington/wt
 
-deps: libsass-src/lib/libsass.a godep
-	echo "GOPATH $(GOPATH)"
-	find $(GOPATH)/bin
-	$(GOPATH)/bin/godep restore
 bench:
 	go test ./... -bench=.
 home:
