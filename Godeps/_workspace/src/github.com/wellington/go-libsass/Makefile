@@ -1,6 +1,9 @@
 export PKG_CONFIG_PATH=$(shell pwd)/lib/pkgconfig
 
-deps:
+fetch:
+	git submodule sync
+	git submodule update --init
+deps: fetch
 	cd libsass-src; autoreconf -fvi && \
 		./configure --disable-shared --prefix=$(shell pwd) --disable-silent-rules --disable-dependency-tracking && \
 		make install
