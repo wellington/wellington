@@ -83,7 +83,7 @@ func main() {
 
 	if showVersion {
 		fmt.Printf("Wellington: %s\n", version)
-		fmt.Printf("libsass:    %s\n", libsass.Version())
+		fmt.Printf("   libsass: %s\n", libsass.Version())
 		os.Exit(0)
 	}
 
