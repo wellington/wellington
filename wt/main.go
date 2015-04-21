@@ -23,7 +23,7 @@ import (
 	_ "github.com/wellington/wellington/handlers"
 )
 
-const version = `v0.7.0`
+var version string
 
 var (
 	font, dir, gen, includes  string
@@ -82,7 +82,8 @@ func main() {
 	flag.Parse()
 
 	if showVersion {
-		fmt.Println(version)
+		fmt.Printf("Wellington: %s\n", version)
+		fmt.Printf("libsass:    %s\n", libsass.Version())
 		os.Exit(0)
 	}
 

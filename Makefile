@@ -3,6 +3,7 @@ current_dir = $(shell pwd)
 rmnpath = $(RMN_BASE_PATH)
 guipath = $(rmnpath)/www/gui
 libsass_ver = $(shell cat \.libsass_version)
+wt_ver = $(shell cat version.txt)
 LASTGOPATH=$(shell python -c "import os; a=os.environ['GOPATH']; print a.split(':')[-1]")
 
 ifndef PKG_CONFIG_PATH
@@ -13,8 +14,8 @@ pkgconfig:
 	pkg-config --cflags --libs libsass
 
 install:
-	echo "PKG_CONFIG_PATH $(PKG_CONFIG_PATH)"
-	godep go install github.com/wellington/wellington/wt
+	@echo "PKG_CONFIG_PATH $(PKG_CONFIG_PATH)"
+	godep go install -ldflags "-X main.version $(wt_ver)" github.com/wellington/wellington/wt
 
 bench:
 	go test ./... -bench=.
