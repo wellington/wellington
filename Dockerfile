@@ -12,24 +12,22 @@ ENV GOPATH /usr
 ENV GOROOT /usr/lib/go
 RUN go version
 
-ENV libsass_ver c68b0a009379e490227d91f5bc331fc9e8da17f6
 ENV LIBSASSPATH /build/libsass
 ENV PKG_CONFIG_PATH $LIBSASSPATH/lib/pkgconfig
 ENV GOPATH /usr
 
-ADD https://github.com/sass/libsass/archive/$libsass_ver.tar.gz /usr/src/libsass.tar.gz
-RUN tar xzf /usr/src/libsass.tar.gz -C /usr/src
-RUN mv /usr/src/libsass-$libsass_ver /usr/src/libsass
-
-WORKDIR /usr/src/libsass
-
-RUN autoreconf -fvi
-RUN ./configure --disable-tests --disable-shared \
-                --prefix=$LIBSASSPATH --disable-silent-rules \
-                --disable-dependency-tracking
-RUN make && make install
 COPY . /usr/src/github.com/wellington/wellington
+RUN go get github.com/tools/godep
+WORKDIR /usr/src/github.com/wellington/wellington
+RUN $GOPATH/bin/godep restore
+
+WORKDIR /usr/src/github.com/wellington/go-libsass
+RUN git submodule sync
+RUN git submodule update --init
+RUN make deps
+RUN mkdir -p $LIBSASSPATH
+RUN cp -R include $LIBSASSPATH
+RUN cp -R lib $LIBSASSPATH
 
 WORKDIR /usr/src/github.com/wellington/wellington
-RUN cp -R Godeps/_workspace/src/* $GOPATH/src
-RUN go install github.com/wellington/wellington/wt
+RUN make install
