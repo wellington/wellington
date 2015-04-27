@@ -55,8 +55,8 @@ func (p *Parser) ImportPath(dir, file string) (string, string, error) {
 		// Look through the import path for the file
 		for _, lib := range p.Includes {
 			r, pwd, err := importPath(lib, file)
-			defer r.Close()
 			if err == nil {
+				defer r.Close()
 				p.PartialMap.AddRelation(p.MainFile, fpath)
 				bs, _ := ioutil.ReadAll(r)
 				return pwd, string(bs), nil
