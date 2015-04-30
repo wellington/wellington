@@ -358,6 +358,7 @@ div {
 	}
 	e := `Error > stdin:3
 error in C function inline-image: open ../test/img/pixel/nofile.png: no such file or directory
+
 Backtrace:
 	stdin:3, in function ` + "`inline-image`" + `
 	stdin:3
@@ -458,6 +459,7 @@ div {
 
 	e := `Error > stdin:4
 error in C function sprite: Variable not found matching glob: nomap sprite:140
+
 Backtrace:
 	stdin:4, in function ` + "`sprite`" + `
 	stdin:4
@@ -516,6 +518,7 @@ div {
 
 	e := `Error > stdin:4
 error in C function sprite: Please specify unit for offset ie. (2px)
+
 Backtrace:
 	stdin:4, in function ` + "`sprite`" + `
 	stdin:4
