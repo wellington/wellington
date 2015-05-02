@@ -18,7 +18,7 @@ install:
 	godep go install -ldflags "-X main.version $(wt_ver)" github.com/wellington/wellington/wt
 
 release:
-	goxc -tasks='xc archive' -build-ldflags "-X main.version $(wt_ver)" -bc='darwin' -arch='amd64' -wd=wt -d=. -n wt
+	goxc -tasks='xc archive' -build-ldflags "-X main.version $(wt_ver)" -bc='darwin' -arch='amd64' -pv $(wt_ver) -wd=wt -d=. -n wt
 
 
 bench:

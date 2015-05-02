@@ -28,7 +28,7 @@ test:
     - cd $PROJECT_ROOT && make test:
         parallel: true
   post:
-    - goxc -tasks='xc archive' -bc 'linux' -build-ldflags="-X main.version $WT_VERSION" -arch 'amd64' -d $CIRCLE_ARTIFACTS -n wt -wd wt:
+    - goxc -tasks='xc archive' -bc 'linux' -build-ldflags="-X main.version $WT_VERSION" -pv $WT_VERSION -arch 'amd64' -d $CIRCLE_ARTIFACTS -n wt -wd wt:
         parallel: true
     - cd $PROJECT_ROOT && GIT_BRANCH=$CIRCLE_BRANCH goveralls -coverprofile=profile.cov -service=circleci -repotoken $COVERALLS_TOKEN
     - cd $PROJECT_ROOT && make build
