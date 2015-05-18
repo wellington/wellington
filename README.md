@@ -305,3 +305,7 @@ Please use pull requests for contributing code.  [CircleCI](https://circleci.com
 ### License
 
 Wellington is licensed under MIT.
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/wellington/wellington/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
