@@ -7,15 +7,17 @@ wt_ver = $(shell cat version.txt)
 LASTGOPATH=$(shell python -c "import os; a=os.environ['GOPATH']; print a.split(':')[-1]")
 
 ifndef PKG_CONFIG_PATH
-	export PKG_CONFIG_PATH=$(current_dir)/libsass-src/lib/pkgconfig
+	export PKG_CONFIG_PATH=$(current_dir)/../go-libsass/libsass-src/lib/pkgconfig
 endif
 
-pkgconfig:
-	pkg-config --cflags --libs libsass
-
-install:
+install: deps
 	@echo "PKG_CONFIG_PATH $(PKG_CONFIG_PATH)"
 	godep go install -ldflags "-X main.version $(wt_ver)" github.com/wellington/wellington/wt
+
+deps:
+	[ -d ../go-libsass ] ||	go get github.com/wellington/go-libsass
+	cd ../go-libsass && ls -l #without this like, $(MAKE) fails, go figure?
+	cd ../go-libsass && $(MAKE) deps
 
 release:
 	goxc -tasks='xc archive' -build-ldflags "-X main.version $(wt_ver)" -bc='darwin' -arch='amd64' -pv $(wt_ver) -wd=wt -d=. -n wt

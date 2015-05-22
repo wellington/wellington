@@ -263,7 +263,7 @@ There had to be a better way. Libsass was starting to gain some traction, but it
 ### See how the sausage is made
 
 #### Building from source
-Install Go and add $GOPATH/bin to your $PATH. [Detailed instructions](https://golang.org/doc/install). Wellington requires Go 1.4+.
+Install Go and add $GOPATH/bin to your $PATH. [Detailed instructions](https://golang.org/doc/install). Wellington requires Go 1.3.1+.
 
 ```
 go get -u github.com/wellington/wellington
