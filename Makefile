@@ -6,9 +6,7 @@ libsass_ver = $(shell cat \.libsass_version)
 wt_ver = $(shell cat version.txt)
 LASTGOPATH=$(shell python -c "import os; a=os.environ['GOPATH']; print a.split(':')[-1]")
 
-ifndef PKG_CONFIG_PATH
-	export PKG_CONFIG_PATH=$(current_dir)/../go-libsass/libsass-src/lib/pkgconfig
-endif
+export PKG_CONFIG_PATH=$(current_dir)/../go-libsass/lib/pkgconfig
 
 install: deps
 	@echo "PKG_CONFIG_PATH $(PKG_CONFIG_PATH)"
@@ -87,6 +85,7 @@ profile.cov:
 	scripts/goclean.sh
 
 test: godep profile.cov
+	go test -race ./...
 
 compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
