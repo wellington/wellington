@@ -17,16 +17,8 @@ import (
 	"unsafe"
 )
 
-// Cookie is used for passing context information to libsass.  Cookie is
-// passed to custom handlers when libsass executes them through the go bridge.
-type Cookie struct {
-	Sign string
-	Fn   SassCallback
-	Ctx  *Context
-}
-
-// GoBridge is exported to C for linking libsass to Go.  This function adheres
-// to the interface provided by libsass.
+// GoBridge is exported to C for linking libsass to Go.  This function
+// adheres to the interface provided by libsass.
 //
 //export GoBridge
 func GoBridge(cargs UnionSassValue, ptr unsafe.Pointer) UnionSassValue {
@@ -92,17 +84,6 @@ func ImporterBridge(url *C.char, prev *C.char, ptr unsafe.Pointer) C.Sass_Import
 	return list
 }
 
-// SassCallback defines the callback libsass eventually executes in sprite_sass
-type SassCallback func(ctx *Context, csv UnionSassValue) UnionSassValue
-
-type handler struct {
-	sign     string
-	callback func(ctx *Context, csv UnionSassValue) UnionSassValue
-}
-
-// handlers is the list of registered sass handlers
-var handlers []handler
-
 // SampleCB example how a callback is defined
 func SampleCB(ctx *Context, usv UnionSassValue) UnionSassValue {
 	var sv []interface{}
@@ -117,14 +98,7 @@ func Error(err error) UnionSassValue {
 
 // Warn takes a string and causes a warning in libsass
 func Warn(s string) UnionSassValue {
-	return C.sass_make_error(C.CString("@warn" + s + ";"))
-}
-
-// RegisterHandler sets the passed signature and callback to the
-// handlers array.
-func RegisterHandler(sign string,
-	callback func(ctx *Context, csv UnionSassValue) UnionSassValue) {
-	handlers = append(handlers, handler{sign, callback})
+	return C.sass_make_warning(C.CString(s))
 }
 
 // WarnHandler captures Sass warnings and redirects to stdout
