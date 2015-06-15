@@ -17,7 +17,10 @@ deps:
 	cd ../go-libsass && ls -l #without this like, $(MAKE) fails, go figure?
 	cd ../go-libsass && $(MAKE) deps
 
-release:
+$(LASTGOPATH)/bin/goxc:
+	go get github.com/laher/goxc
+
+release: $(LASTGOPATH)/bin/goxc
 	goxc -tasks='xc archive' -build-ldflags "-X main.version $(wt_ver)" -bc='darwin' -arch='amd64' -pv $(wt_ver) -wd=wt -d=. -n wt
 
 
