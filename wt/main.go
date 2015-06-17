@@ -206,6 +206,7 @@ func main() {
 		err := wt.LoadAndBuild(f, gba, pMap)
 		if err != nil {
 			log.Println(err)
+			os.Exit(1)
 		}
 	}
 
