@@ -5,15 +5,25 @@ os: Windows Server 2012 R2
 clone_folder: c:\gopath\src\github.com\wellington\wellington
 
 environment:
-  nodejs_version: "0.12.2"
   GOPATH: c:\gopath
 
 install:
   # install nodejs and npm
-  - ps: Install-Product node $env:nodejs_version
+  # - ps: Install-Product node $env:nodejs_version
   # install gcc (needed for sqlite3)
-  - choco install -y mingw
-  - set PATH=C:\tools\mingw64\bin;C:\gopath\bin;%PATH%
+  #- choco install -y mingw
+  #- set PATH=C:\tools\mingw64\bin;C:\gopath\bin;%PATH%
+  - ps: |
+      # Install MinGW.
+      $url  = "http://sourceforge.net/projects/mingw-w64/files/"
+      $url += "Toolchains%20targetting%20Win64/Personal%20Builds/"
+      $url += "mingw-builds/4.9.2/threads-win32/seh/"
+      $url += "x86_64-4.9.2-release-win32-seh-rt_v3-rev0.7z/download"
+      Invoke-WebRequest -UserAgent wget -Uri $url -OutFile x86_64-4.9.2-release-win32-seh-rt_v3-rev0.7z
+      &7z x -oC:\ x86_64-4.9.2-release-win32-seh-rt_v3-rev0.7z > $null
+  - set PATH=C:\mingw64\bin;C:\gopath\bin;%PATH%
+  - set CC=gcc
+  - set CXX=g++
   - echo %PATH%
   - echo %GOPATH%
   - go version
