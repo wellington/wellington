@@ -14,7 +14,6 @@ ENV GOPATH /usr
 COPY . /usr/src/github.com/wellington/wellington
 RUN go get github.com/tools/godep
 WORKDIR /usr/src/github.com/wellington/wellington
-RUN $GOPATH/bin/godep restore
+#RUN $GOPATH/bin/godep restore
 
-WORKDIR /usr/src/github.com/wellington/wellington
 RUN make install
