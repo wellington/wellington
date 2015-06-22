@@ -17,12 +17,12 @@ dependencies:
     - mkdir -p ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}
     - rm -rf ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
     - cp -R $(pwd) ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
-  override:
     - make godep
     - godep restore
+  override:
+    - go build -i -v       # cache go-libsass
   post:
-    - cd $GO_LIBSASS; git submodule sync && git submodule update --init
-    - cd $GO_LIBSASS; make deps #build libsass
+    - go build -i -v -race # cache go-libsass with race detection
 test:
   override:
     - cd $PROJECT_ROOT && make test:
