@@ -21,9 +21,10 @@ dependencies:
     - make godep
     - godep restore
     - go build -i -v
-  post:
-    - cd $GO_LIBSASS; git submodule sync && git submodule update --init
-    - cd $GO_LIBSASS; #HAHA not needed anymore! make deps #build libsass
+  # go-libsass no longer has manual build steps
+  # post:
+  #   - cd $GO_LIBSASS; git submodule sync && git submodule update --init
+  #   - cd $GO_LIBSASS; make deps #build libsass
 test:
   override:
     - cd $PROJECT_ROOT && make test:

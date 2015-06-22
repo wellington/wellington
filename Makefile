@@ -15,7 +15,8 @@ install: deps
 deps:
 	[ -d ../go-libsass ] ||	go get github.com/wellington/go-libsass
 	cd ../go-libsass && ls -l #without this like, $(MAKE) fails, go figure?
-	cd ../go-libsass && $(MAKE) deps
+	# go-libsass no longer has manual build steps
+	#cd ../go-libsass && $(MAKE) deps
 
 $(LASTGOPATH)/bin/goxc:
 	go get github.com/laher/goxc
@@ -56,7 +57,7 @@ clean:
 copyout:
 	chown $(EUID):$(EGID) $(GOPATH)/bin/wt
 	cp $(GOPATH)/bin/wt /tmp
-	chown -R $(EUID):$(EGID) /build/libsass
+	#chown -R $(EUID):$(EGID) /build/libsass
 	mkdir -p /tmp/lib64
 	cp /usr/lib/libstdc++.so.6 /tmp/lib64
 	cp /usr/lib/libgcc_s.so.1 /tmp/lib64
