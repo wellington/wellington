@@ -7,7 +7,7 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/wellington/go-libsass",
-			"Rev": "344f13ea9a4f720617a4d302d0bf64341fd62823"
+			"Rev": "f917a5f9dc176bdc3d64c548dd9070955af9bef4"
 		},
 		{
 			"ImportPath": "github.com/wellington/spritewell",
