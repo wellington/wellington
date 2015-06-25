@@ -106,6 +106,7 @@ func (ctx *Context) Init(goopts *SassOptions) *C.struct_Sass_Options {
 	imgpath := C.CString(ctx.ImageDir)
 	prec := C.int(ctx.Precision)
 
+	C.sass_option_set_output_style(opts, uint32(ctx.OutputStyle))
 	defer func() {
 		C.free(unsafe.Pointer(imgpath))
 		// C.free(unsafe.Pointer(cc))
