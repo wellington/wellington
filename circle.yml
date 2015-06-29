@@ -21,8 +21,10 @@ dependencies:
     - godep restore
   override:
     - go build -i -v       # cache go-libsass
+    - go test -i -v
   post:
     - go build -i -v -race # cache go-libsass with race detection
+    - go test -i -v -race
 test:
   override:
     - cd $PROJECT_ROOT && make test:
