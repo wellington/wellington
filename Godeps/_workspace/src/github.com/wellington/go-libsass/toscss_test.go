@@ -2,52 +2,33 @@ package context
 
 import (
 	"bytes"
-	"os"
 	"testing"
 )
 
 func TestToScss(t *testing.T) {
-	t.Skip("disabled after extraction")
-	file, err := os.Open("../test/whitespace/one.sass")
+	in := bytes.NewBufferString(`html,
+body,
+ul,
+ol
+  margin:  0
+  padding: 0
+`)
+
+	var b bytes.Buffer
+	err := ToScss(in, &b)
 	if err != nil {
 		t.Fatal(err)
 	}
-	e := `$font-stack:    Helvetica, sans-serif;
-$primary-color: #333;
-`
-	var b bytes.Buffer
-	ToScss(file, &b)
 
+	e := `html,
+body,
+ul,
+ol {
+  margin:  0;
+  padding: 0; }
+`
 	if b.String() != e {
 		t.Errorf("got:\n%s\nwanted:\n%s", b.String(), e)
 	}
 
-	s := []byte(`=border-radius($radius)
-  -webkit-border-radius: $radius
-  -moz-border-radius:    $radius
-  -ms-border-radius:     $radius
-  border-radius:         $radius
-
-.box
-  +border-radius(10px)`)
-
-	var in bytes.Buffer
-	b.Reset()
-	in.Write(s)
-
-	ToScss(&in, &b)
-
-	e = `@mixin border-radius($radius) {
-  -webkit-border-radius: $radius;
-  -moz-border-radius:    $radius;
-  -ms-border-radius:     $radius;
-  border-radius:         $radius; }
-
-.box {
-  @include border-radius(10px); }
-`
-
-	if b.String() != e {
-		t.Errorf("got:\n%s\nwanted:\n%s", b.String(), e)
-	}
 }

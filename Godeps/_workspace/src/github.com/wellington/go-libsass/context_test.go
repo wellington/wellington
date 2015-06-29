@@ -6,6 +6,8 @@ import (
 	"os"
 	"regexp"
 	"testing"
+
+	"github.com/wellington/go-libsass/libs"
 )
 
 var rerandom *regexp.Regexp
@@ -108,7 +110,9 @@ func TestLibsassError(t *testing.T) {
 	}
 
 	ctx.Cookies[0] = Cookie{
-		"foo()", SampleCB, &ctx,
+		Sign: "foo()",
+		Fn:   TestCallback,
+		Ctx:  &ctx,
 	}
 	err := ctx.Compile(in, &out)
 
@@ -144,10 +148,13 @@ func ExampleContext_Compile() {
 		ctx.Cookies = make([]Cookie, 1)
 	}
 	ctx.Cookies[0] = Cookie{
-		"foo()", func(c *Context, usv UnionSassValue) UnionSassValue {
+		Sign: "foo()",
+		Fn: func(v interface{}, usv libs.UnionSassValue, rsv *libs.UnionSassValue) error {
 			res, _ := Marshal("no-repeat")
-			return res
-		}, &ctx,
+			*rsv = res.Val()
+			return nil
+		},
+		Ctx: &ctx,
 	}
 	err := ctx.Compile(in, &out)
 	if err != nil {

@@ -1,13 +1,6 @@
-package context
+package libs
 
 import "math"
-
-// SassNumber represents numbers with units
-// coming from libsass
-type SassNumber struct {
-	Value float64
-	Unit  string
-}
 
 var sassUnitConversions = map[string]map[string]float64{
 	"in": {
@@ -131,6 +124,8 @@ var sassUnitConversions = map[string]map[string]float64{
 		"turn": 1,
 	},
 }
+
+var SassUnitConversions map[string]map[string]float64 = sassUnitConversions
 
 var sassUnitTypes = map[string]string{
 	"in":   "distance",

@@ -6,11 +6,13 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/wellington/go-libsass/libs"
 )
 
 func TestFunc_simpletypes(t *testing.T) {
 	in := bytes.NewBufferString(`div {
-  background: foo(null, 3px, asdf, false, #005500);
+  background: foo(null, 3px, asdf, false);
 }`)
 
 	//var out bytes.Buffer
@@ -20,20 +22,23 @@ func TestFunc_simpletypes(t *testing.T) {
 	ch := make(chan []interface{}, 1)
 
 	ctx.Cookies[0] = Cookie{
-		"foo($null, $num, $str, $bool, $color)", func(c *Context, usv UnionSassValue) UnionSassValue {
-			// Send the interface fn arguments to the ch channel
 
+		Sign: "foo($null, $num, $str, $bool)",
+		Fn: Handler(func(v interface{}, req SassValue, res *SassValue) error {
 			var n interface{}
-			var num SassNumber
+			var num libs.SassNumber
 			var s string
 			var b bool
-			var col = color.RGBA{}
-			var intf = []interface{}{n, num, s, b, col}
-			Unmarshal(usv, &intf)
+			var intf = []interface{}{n, num, s, b}
+			err := Unmarshal(req, &intf)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// Send the interface fn arguments to the ch channel
 			ch <- intf
-			res, _ := Marshal(false)
-			return res
-		}, &ctx,
+			return nil
+		}),
+		Ctx: &ctx,
 	}
 	var out bytes.Buffer
 	err := ctx.Compile(in, &out)
@@ -43,9 +48,55 @@ func TestFunc_simpletypes(t *testing.T) {
 
 	e := []interface{}{
 		"<nil>",
-		SassNumber{3.0, "px"},
+		libs.SassNumber{Value: 3.0, Unit: "px"},
 		"asdf",
 		false,
+	}
+	var args []interface{}
+	select {
+	case <-time.After(10 * time.Millisecond):
+		t.Fatal("timeout")
+	case args = <-ch:
+	}
+	if !reflect.DeepEqual(e, args) {
+		t.Errorf("wanted:\n% #v\ngot:\n% #v", e, args)
+	}
+}
+
+func TestFunc_colortype(t *testing.T) {
+	in := bytes.NewBufferString(`div {
+  background: foo(#005500);
+}`)
+
+	//var out bytes.Buffer
+	ctx := Context{}
+	ctx.Cookies = make([]Cookie, 1)
+	// Communication channel for the C Sass callback function
+	ch := make(chan []interface{}, 1)
+
+	ctx.Cookies[0] = Cookie{
+		Sign: "foo($color)",
+		Fn: func(v interface{}, usv libs.UnionSassValue, rsv *libs.UnionSassValue) error {
+			// Send the interface fn arguments to the ch channel
+			var infs = []interface{}{color.RGBA{}}
+			err := Unmarshal(SassValue{value: usv}, &infs)
+			if err != nil {
+				t.Fatal(err)
+			}
+			ch <- infs
+			res, _ := Marshal(false)
+			*rsv = res.Val()
+			return nil
+		},
+		Ctx: &ctx,
+	}
+	var out bytes.Buffer
+	err := ctx.Compile(in, &out)
+	if err != nil {
+		t.Error(err)
+	}
+
+	e := []interface{}{
 		color.RGBA{R: 0x0, G: 0x55, B: 0x0, A: 0x1},
 	}
 	var args []interface{}
@@ -57,6 +108,7 @@ func TestFunc_simpletypes(t *testing.T) {
 	if !reflect.DeepEqual(e, args) {
 		t.Errorf("wanted:\n% #v\ngot:\n% #v", e, args)
 	}
+
 }
 
 func TestFunc_complextypes(t *testing.T) {
@@ -71,13 +123,16 @@ func TestFunc_complextypes(t *testing.T) {
 	}
 	ch := make(chan interface{}, 1)
 	ctx.Cookies[0] = Cookie{
-		"foo($list)", func(c *Context, usv UnionSassValue) UnionSassValue {
+		Sign: "foo($list)",
+		Fn: func(v interface{}, usv libs.UnionSassValue, rsv *libs.UnionSassValue) error {
 			var sv interface{}
-			Unmarshal(usv, &sv)
+			Unmarshal(SassValue{value: usv}, &sv)
 			ch <- sv
 			res, _ := Marshal(false)
-			return res
-		}, &ctx,
+			*rsv = res.Val()
+			return nil
+		},
+		Ctx: &ctx,
 	}
 	err := ctx.Compile(in, &out)
 	if err != nil {
@@ -87,7 +142,7 @@ func TestFunc_complextypes(t *testing.T) {
 	e := []interface{}{
 		"a",
 		"b",
-		SassNumber{1, "mm"},
+		libs.SassNumber{Value: 1, Unit: "mm"},
 		color.RGBA{R: 0x0, G: 0x33, B: 0x0, A: 0x1},
 	}
 	var args interface{}
@@ -114,7 +169,9 @@ func TestFunc_customarity(t *testing.T) {
 	}
 
 	ctx.Cookies[0] = Cookie{
-		"foo()", SampleCB, &ctx,
+		Sign: "foo()",
+		Fn:   TestCallback,
+		Ctx:  &ctx,
 	}
 	err := ctx.Compile(in, &out)
 	if err == nil {

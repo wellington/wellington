@@ -7,8 +7,8 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/wellington/go-libsass",
-			"Comment": "v0.9.0-1-g41cbabc",
-			"Rev": "41cbabc0de834aa10f95147ba52fccbf16625a6b"
+			"Comment": "v0.9.0-53-gac0c145",
+			"Rev": "ac0c145f1d835ad4f785b9326485162a8aa3c723"
 		},
 		{
 			"ImportPath": "github.com/wellington/spritewell",

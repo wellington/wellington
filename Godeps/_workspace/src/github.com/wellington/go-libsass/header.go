@@ -1,46 +1,33 @@
 package context
 
-// #include <stdio.h>
-// #include "sass_context.h"
-//
-// extern struct Sass_Import** HeaderBridge(void* cookie);
-//
-// Sass_Import_List SassHeaders(const char* cur_path, Sass_Importer_Entry cb, struct Sass_Compiler* comp)
-// {
-//   void* cookie = sass_importer_get_cookie(cb);
-//   Sass_Import_List list = HeaderBridge(cookie);
-//   return list;
-// }
-//
-import "C"
-
 import (
-	"reflect"
+	"strconv"
 	"sync"
-	"unsafe"
+
+	"github.com/wellington/go-libsass/libs"
 )
 
-func (ctx *Context) SetHeaders(opts *C.struct_Sass_Options) {
+func (ctx *Context) SetHeaders(opts libs.SassOptions) {
 	// Push the headers into the local array
 	for _, gh := range globalHeaders {
-		ctx.Headers.Add(gh)
+		if !ctx.Headers.Has(gh) {
+			ctx.Headers.Add(gh)
+		}
 	}
 
-	cheads := C.sass_make_importer_list(1)
-	hdr := reflect.SliceHeader{
-		Data: uintptr(unsafe.Pointer(cheads)),
-		Len:  1, Cap: 1,
+	// Loop through headers creating ImportEntry
+	entries := make([]libs.ImportEntry, ctx.Headers.Len())
+	for i, ent := range ctx.Headers.h {
+		uniquename := "hdr" + strconv.FormatInt(int64(i), 10)
+		entries[i] = libs.ImportEntry{
+			// Each entry requires a unique identifier
+			// https://github.com/sass/libsass/issues/1292
+			Path:   uniquename,
+			Source: ent.Content,
+			SrcMap: "",
+		}
 	}
-	goheads := *(*[]C.Sass_Importer_Entry)(unsafe.Pointer(&hdr))
-
-	imper := C.sass_make_importer(
-		C.Sass_Importer_Fn(C.SassHeaders),
-		C.double(0),
-		unsafe.Pointer(ctx))
-
-	goheads[0] = imper
-
-	C.sass_option_set_c_headers(opts, cheads)
+	libs.BindHeader(opts, entries)
 }
 
 type Header struct {
@@ -59,6 +46,15 @@ func (h *Headers) Add(s string) {
 	h.h = append(h.h, Header{
 		Content: s,
 	})
+}
+
+func (h *Headers) Has(s string) bool {
+	for _, c := range h.h {
+		if s == c.Content {
+			return true
+		}
+	}
+	return false
 }
 
 func (h *Headers) Len() int {

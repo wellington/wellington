@@ -2,3 +2,17 @@ machine:
   environment:
     CC: gcc
     CXX: g++
+    PKG_CONFIG_PATH: $HOME/$CIRCLE_PROJECT_REPONAME/lib/pkgconfig
+checkout:
+  post:
+    - git submodule sync
+    - git submodule update --init
+dependencies:
+  pre:
+    #- make deps
+    #- echo $PKG_CONFIG_PATH
+  override:
+    - go build -i -tags dev
+test:
+  override:
+    - go test -tags dev ./...
