@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,7 +11,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
-	"strings"
 
 	libsass "github.com/wellington/go-libsass"
 	"github.com/wellington/go-libsass/libs"
@@ -266,7 +266,7 @@ func Sprite(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error 
 	_, _ = offsetX, offsetY // TODO: ignore these for now
 	err := libsass.Unmarshal(usv, &glob, &name, &offsetX, &offsetY)
 	if err != nil {
-		if strings.Contains(err.Error(), "unsupported") {
+		if err == libsass.ErrSassNumberNoUnit {
 			err := fmt.Errorf(
 				"Please specify unit for offset ie. (2px)")
 			return setErrorAndReturn(err, rsv)
@@ -417,11 +417,7 @@ func FontURL(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error
 	// Enter warning
 	if ctx.FontDir == "." || ctx.FontDir == "" {
 		s := "font-url: font path not set"
-		res, _ := libsass.Marshal(s)
-		if rsv != nil {
-			*rsv = res
-		}
-		return nil
+		return setErrorAndReturn(errors.New(s), rsv)
 	}
 
 	rel, err := filepath.Rel(ctx.BuildDir, ctx.FontDir)

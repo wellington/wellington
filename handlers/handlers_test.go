@@ -8,10 +8,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	libsass "github.com/wellington/go-libsass"
+	"github.com/wellington/go-libsass/libs"
 	"github.com/wellington/spritewell"
 )
 
@@ -19,12 +21,13 @@ func init() {
 	os.MkdirAll("../test/build/img", 0777)
 }
 
-func wrapCallback(sc libsass.SassCallback, ch chan libsass.UnionSassValue) libsass.SassCallback {
-	return func(c *libsass.Context, usv libsass.UnionSassValue) libsass.UnionSassValue {
-		usv = sc(c, usv)
-		ch <- usv
-		return usv
-	}
+func wrapCallback(sc libsass.HandlerFunc, ch chan libsass.SassValue) libs.SassCallback {
+	return libsass.Handler(func(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error {
+		c := v.(*libsass.Context)
+		err := sc(c, usv, rsv)
+		ch <- *rsv
+		return err
+	})
 }
 
 func testSprite(ctx *libsass.Context) {
@@ -45,8 +48,8 @@ func testSprite(ctx *libsass.Context) {
 	}
 }
 
-func setupCtx(r io.Reader, out io.Writer, cookies ...libsass.Cookie) (*libsass.Context, libsass.UnionSassValue, error) {
-	var usv libsass.UnionSassValue
+func setupCtx(r io.Reader, out io.Writer /*, cookies ...libsass.Cookie*/) (*libsass.Context, libsass.SassValue, error) {
+	var usv libsass.SassValue
 	ctx := libsass.NewContext()
 	ctx.OutputStyle = libsass.NESTED_STYLE
 	ctx.IncludePaths = make([]string, 0)
@@ -57,7 +60,7 @@ func setupCtx(r io.Reader, out io.Writer, cookies ...libsass.Cookie) (*libsass.C
 	ctx.Out = ""
 
 	testSprite(ctx)
-	cc := make(chan libsass.UnionSassValue, len(cookies))
+	/*cc := make(chan libsass.SassValue, len(cookies))
 	// If callbacks were made, add them to the context
 	// and create channels for communicating with them.
 	if len(cookies) > 0 {
@@ -70,7 +73,7 @@ func setupCtx(r io.Reader, out io.Writer, cookies ...libsass.Cookie) (*libsass.C
 			}
 		}
 		usv = <-cc
-	}
+	}*/
 	err := ctx.Compile(r, out)
 	return ctx, usv, err
 }
@@ -82,24 +85,27 @@ func TestFuncImageURL(t *testing.T) {
 	}
 
 	usv, _ := libsass.Marshal([]string{"image.png"})
-	usv = ImageURL(&ctx, usv)
+	var rsv libsass.SassValue
+	ImageURL(&ctx, usv, &rsv)
 	var path string
-	libsass.Unmarshal(usv, &path)
+	libsass.Unmarshal(rsv, &path)
 	if e := "url('../img/image.png')"; e != path {
 		t.Errorf("got: %s wanted: %s", path, e)
 	}
 
 	// Test sending invalid date to imageURL
-	usv, _ = libsass.Marshal(libsass.SassNumber{Value: 1, Unit: "px"})
+	usv, _ = libsass.Marshal(libs.SassNumber{Value: 1, Unit: "px"})
 	_ = usv
-	errusv := ImageURL(&ctx, usv)
+	var errusv libsass.SassValue
+	// TODO: we can read go error now
+	ImageURL(&ctx, usv, &errusv)
 	var s string
 	merr := libsass.Unmarshal(errusv, &s)
 	if merr != nil {
 		t.Error(merr)
 	}
 
-	e := "Sassvalue is type context.SassNumber and has value {1 px} but expected slice"
+	e := "Sassvalue is type libs.SassNumber and has value {1 px} but expected slice"
 
 	if e != s {
 		t.Errorf("got:\n%s\nwanted:\n%s", s, e)
@@ -114,11 +120,15 @@ func TestFuncSpriteMap(t *testing.T) {
 	ctx.ImageDir = "../test/img"
 
 	// Add real arguments when sass lists can be [un]marshalled
-	lst := []interface{}{"*.png", libsass.SassNumber{Value: 5, Unit: "px"}}
+	lst := []interface{}{
+		"*.png",
+		libs.SassNumber{Value: 5, Unit: "px"},
+	}
 	usv, _ := libsass.Marshal(lst)
-	usv = SpriteMap(ctx, usv)
+	var rsv libsass.SassValue
+	SpriteMap(ctx, usv, &rsv)
 	var path string
-	err := libsass.Unmarshal(usv, &path)
+	err := libsass.Unmarshal(rsv, &path)
 	if err != nil {
 		t.Error(err)
 	}
@@ -137,9 +147,10 @@ func TestFuncSpriteFile(t *testing.T) {
 	// Add real arguments when sass lists can be [un]marshalled
 	lst := []interface{}{"*.png", "139"}
 	usv, _ := libsass.Marshal(lst)
-	usv = SpriteFile(ctx, usv)
+	var rsv libsass.SassValue
+	SpriteFile(ctx, usv, &rsv)
 	var glob, path string
-	err := libsass.Unmarshal(usv, &glob, &path)
+	err := libsass.Unmarshal(rsv, &glob, &path)
 	if err != nil {
 		t.Error(err)
 	}
@@ -375,6 +386,7 @@ div {
 
 func TestFontURLFail(t *testing.T) {
 	r, w, _ := os.Pipe()
+	_ = r
 	old := os.Stdout
 	defer func() { os.Stdout = old }()
 	os.Stdout = w
@@ -385,23 +397,23 @@ func TestFontURLFail(t *testing.T) {
 	ctx := libsass.Context{}
 	err := ctx.Compile(in, &out)
 
-	if err != nil {
-		t.Error(err)
+	e := "error in C function font-url: font-url: font path not set"
+	if !strings.Contains(err.Error(), e) {
+		t.Errorf("got:\n%s\nwanted:\n%s\n", err, e)
 	}
 
-	outC := make(chan string)
-	go func(r *os.File) {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		outC <- buf.String()
-	}(r)
+	// Removed this as part of making font-url fail instead of
+	// output garbage
+	//
+	// outC := make(chan string)
+	// go func(r *os.File) {
+	// 	var buf bytes.Buffer
+	// 	io.Copy(&buf, r)
+	// 	outC <- buf.String()
+	// }(r)
 
-	w.Close()
-	stdout := <-outC
-
-	if e := "font-url: font path not set\n"; e != stdout {
-		t.Errorf("got:\n%s\nwanted:\n%s\n", stdout, e)
-	}
+	// w.Close()
+	// stdout := <-outC
 
 }
 
@@ -528,6 +540,10 @@ div {
   background: sprite($map, "140", 0, 0);
 }
 `
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
 	if e != err.Error() {
 		t.Errorf("got:\n%s\nwanted:\n%s", err.Error(), e)
 	}
@@ -642,11 +658,12 @@ func BenchmarkSprite(b *testing.B) {
 	ctx.GenImgDir = "context/test/build/img"
 	ctx.ImageDir = "context/test/img"
 	// Add real arguments when sass lists can be [un]marshalled
-	lst := []interface{}{"*.png", libsass.SassNumber{Value: 5, Unit: "px"}}
+	lst := []interface{}{"*.png", libs.SassNumber{Value: 5, Unit: "px"}}
 	usv, _ := libsass.Marshal(lst)
 
+	var rsv libsass.SassValue
 	for i := 0; i < b.N; i++ {
-		usv = SpriteMap(ctx, usv)
+		SpriteMap(ctx, usv, &rsv)
 	}
 	// Debug if needed
 	// var s string
