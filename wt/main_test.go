@@ -92,7 +92,7 @@ func TestStdin_sprite(t *testing.T) {
 div {
   height: 139px;
   width: 96px;
-  background: url("../test/img/build/91300a.png") -0px -0px; }
+  background: url("../test/img/build/91300a.png") 0px 0px; }
 `
 	if e != out {
 		t.Errorf("got:\n%s\nwanted:\n%s", out, e)

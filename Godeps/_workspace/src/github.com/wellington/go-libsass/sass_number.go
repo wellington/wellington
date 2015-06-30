@@ -1,12 +1,19 @@
 package context
 
-import "math"
+import (
+	"math"
+	"strconv"
+)
 
 // SassNumber represents numbers with units
 // coming from libsass
 type SassNumber struct {
 	Value float64
 	Unit  string
+}
+
+func (s SassNumber) String() string {
+	return strconv.FormatFloat(s.Value, 'f', -1, 64) + s.Unit
 }
 
 var sassUnitConversions = map[string]map[string]float64{
