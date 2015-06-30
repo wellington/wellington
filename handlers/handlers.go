@@ -290,11 +290,16 @@ func Sprite(ctx *libsass.Context, usv libsass.UnionSassValue) libsass.UnionSassV
 	if err != nil {
 		return libsass.Error(err)
 	}
+
+	x := libsass.SassNumber{Unit: "px", Value: float64(-pos.X)}
+	x = x.Add(offsetX)
+
+	y := libsass.SassNumber{Unit: "px", Value: float64(-pos.Y)}
+	y = y.Add(offsetY)
+
 	str, err := libsass.Marshal(
-		fmt.Sprintf(`url("%s") %dpx %dpx`,
-			path,
-			-(pos.X - int(offsetX.Value)),
-			-(pos.Y - int(offsetY.Value)),
+		fmt.Sprintf(`url("%s") %s %s`,
+			path, x, y,
 		))
 	if err != nil {
 		return libsass.Error(err)
