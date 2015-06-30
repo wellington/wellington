@@ -241,7 +241,6 @@ func SpriteFile(ctx *libsass.Context, usv libsass.UnionSassValue) libsass.UnionS
 func Sprite(ctx *libsass.Context, usv libsass.UnionSassValue) libsass.UnionSassValue {
 	var glob, name string
 	var offsetX, offsetY libsass.SassNumber
-	_, _ = offsetX, offsetY // TODO: ignore these for now
 	err := libsass.Unmarshal(usv, &glob, &name, &offsetX, &offsetY)
 	if err != nil {
 		if strings.Contains(err.Error(), "unsupported") {
@@ -291,8 +290,12 @@ func Sprite(ctx *libsass.Context, usv libsass.UnionSassValue) libsass.UnionSassV
 	if err != nil {
 		return libsass.Error(err)
 	}
-	str, err := libsass.Marshal(fmt.Sprintf(`url("%s") -%dpx -%dpx`,
-		path, pos.X, pos.Y))
+	str, err := libsass.Marshal(
+		fmt.Sprintf(`url("%s") %dpx %dpx`,
+			path,
+			-(pos.X - int(offsetX.Value)),
+			-(pos.Y - int(offsetY.Value)),
+		))
 	if err != nil {
 		return libsass.Error(err)
 	}

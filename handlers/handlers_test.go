@@ -497,8 +497,35 @@ div {
 
 	// Output:
 	// div {
-	//   background: url("img/ec0dbb.png") -0px -149px; }
+	//   background: url("img/ec0dbb.png") 0px -149px; }
 
+}
+
+func TestHandle_offset(t *testing.T) {
+	in := bytes.NewBufferString(`
+$map: sprite-map("*.png", 10px);
+div {
+  background: sprite($map, "140", 10px, 10px);
+}`)
+
+	ctx := libsass.NewContext()
+
+	ctx.BuildDir = "../test/build"
+	ctx.GenImgDir = "../test/build/img"
+	ctx.ImageDir = "../test/img"
+	var out bytes.Buffer
+	err := ctx.Compile(in, &out)
+
+	if err != nil {
+		t.Fatal("expected error")
+	}
+
+	e := `div {
+  background: url("img/ec0dbb.png") 10px -139px; }
+`
+	if e != out.String() {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
+	}
 }
 
 func TestHandle_erroroffset(t *testing.T) {
@@ -554,7 +581,7 @@ div {
 		t.Error(err)
 	}
 	e := `div {
-  background: url("http://foo.com/build/ec0dbb.png") -0px -149px; }
+  background: url("http://foo.com/build/ec0dbb.png") 0px -149px; }
 `
 	if e != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
@@ -587,11 +614,11 @@ div {
 	}
 
 	e := `div {
-  background: url("img/617970.png") -0px -0px;
-  background: url("img/617970.png") -0px -150px;
-  background: url("img/617970.png") -0px -300px;
-  background: url("img/617970.png") -0px -450px;
-  background: url("img/617970.png") -0px -600px; }
+  background: url("img/617970.png") 0px 0px;
+  background: url("img/617970.png") 0px -150px;
+  background: url("img/617970.png") 0px -300px;
+  background: url("img/617970.png") 0px -450px;
+  background: url("img/617970.png") 0px -600px; }
 `
 
 	if out.String() != e {
