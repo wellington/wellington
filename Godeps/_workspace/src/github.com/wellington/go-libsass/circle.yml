@@ -2,3 +2,21 @@ machine:
   environment:
     CC: gcc
     CXX: g++
+    PKG_CONFIG_PATH: $HOME/$CIRCLE_PROJECT_REPONAME/lib/pkgconfig
+dependencies:
+  pre:
+    - make deps
+    # hacks to make circle's gopath to work with go
+    - rm -rf ${GOPATH%%:*}/src/github.com/wellington
+    - mkdir -p ${GOPATH%%:*}/src/github.com/wellington
+    - rsync -av $HOME/$CIRCLE_PROJECT_REPONAME ${GOPATH%%:*}/src/github.com/wellington --exclude .git
+    #- make deps
+    #- echo $PKG_CONFIG_PATH
+  override:
+    - go get -t -d -v ./...
+    # - go build -i is a lie
+  post:
+    - go test -i -race
+test:
+  override:
+    - go test -race ./...

@@ -2,11 +2,15 @@ export PKG_CONFIG_PATH=$(shell pwd)/lib/pkgconfig
 
 install: deps
 
-deps: fetch lib
+deps:
 
 fetch:
 	git submodule sync
 	git submodule update --init
+
+version:
+	# hack to temporarily fix versioning
+	cp libs/sass_version.h libsass-src/sass_version.h
 
 libsass-build: libsass-src/*.cpp
 	# generate configure scripts

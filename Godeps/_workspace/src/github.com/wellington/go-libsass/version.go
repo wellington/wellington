@@ -1,11 +1,8 @@
 package context
 
-// #include "sass_context.h"
-//
-import "C"
+import "github.com/wellington/go-libsass/libs"
 
 // Version reports libsass version information
 func Version() string {
-	ver := C.GoString(C.libsass_version())
-	return ver
+	return libs.Version()
 }

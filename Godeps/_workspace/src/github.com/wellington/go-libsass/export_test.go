@@ -1,34 +1,30 @@
 package context
 
-import "testing"
-
-func TestSampleCB(t *testing.T) {
-	ctx := NewContext()
-	ctx.Cookies = make([]Cookie, 1)
-	usv, err := Marshal(float64(1))
-	if err != nil {
-		t.Error(err)
-	}
-	usv = SampleCB(ctx, usv)
-
-	var b bool
-	err = Unmarshal(usv, &b)
-	if err != nil {
-		t.Error(err)
-	}
-	if e := false; b != e {
-		t.Errorf("wanted: %t got: %t", e, b)
-	}
-}
+import (
+	"errors"
+	"testing"
+)
 
 func TestRegisterHandler(t *testing.T) {
 	l := len(handlers)
 	RegisterHandler("foo",
-		func(c *Context, csv UnionSassValue) UnionSassValue {
+		func(v interface{}, csv SassValue, rsv *SassValue) error {
 			u, _ := Marshal(false)
-			return u
+			*rsv = u
+			return nil
 		})
 	if e := l + 1; len(handlers) != e {
 		t.Errorf("got: %d wanted: %d", len(handlers), e)
+	}
+}
+
+func TestError_simple(t *testing.T) {
+	err := errors.New("help me")
+	sv := Error(err)
+
+	var s string
+	Unmarshal(sv, &s)
+	if err.Error() != s {
+		t.Errorf("got: %s wanted: %s", s, err)
 	}
 }

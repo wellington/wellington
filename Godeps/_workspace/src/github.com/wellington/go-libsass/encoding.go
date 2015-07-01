@@ -7,15 +7,28 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/wellington/go-libsass/libs"
 )
 
-// #include "sass_context.h"
-import "C"
+var (
+	ErrSassNumberNoUnit = errors.New("SassNumber has no units")
+)
 
-type UnionSassValue *C.union_Sass_Value
+type SassValue struct {
+	value libs.UnionSassValue
+}
 
-func unmarshal(arg UnionSassValue, v interface{}) error {
+func (sv SassValue) Val() libs.UnionSassValue {
+	return sv.value
+}
 
+func NewSassValue() SassValue {
+	return SassValue{value: libs.NewUnionSassValue()}
+}
+
+func unmarshal(arg SassValue, v interface{}) error {
+	sv := arg.Val()
 	//Get the underlying value of v and its kind
 	f := reflect.ValueOf(v)
 
@@ -28,36 +41,34 @@ func unmarshal(arg UnionSassValue, v interface{}) error {
 
 	if k == reflect.Interface {
 		switch {
-		default:
-			return errors.New("Uncovertable interface value. Specify type desired.")
-		case bool(C.sass_value_is_null(arg)):
+		case libs.IsNil(sv):
 			f.Set(reflect.ValueOf("<nil>"))
 			return nil
-		case bool(C.sass_value_is_string(arg)):
+		case libs.IsString(sv):
 			k = reflect.String
-		case bool(C.sass_value_is_boolean(arg)):
+		case libs.IsBool(sv):
 			k = reflect.Bool
-		case bool(C.sass_value_is_color(arg)) ||
-			bool(C.sass_value_is_number(arg)):
+		case libs.IsNumber(sv):
 			k = reflect.Struct
-		case bool(C.sass_value_is_list(arg)):
+		case libs.IsList(sv):
 			k = reflect.Slice
 			t = reflect.SliceOf(t)
-		case bool(C.sass_value_is_error(arg)):
+		case libs.IsError(sv):
 			// This should get implemented as type error
 			k = reflect.String
+		case libs.IsColor(sv):
+			k = reflect.Struct
+		default:
+			return errors.New("Uncovertable interface value.")
 		}
 	}
 
 	switch k {
-	default:
-		return errors.New("Unsupported SassValue")
 	case reflect.Invalid:
 		return errors.New("Invalid SASS Value - Taylor Swift")
 	case reflect.String:
-		if C.sass_value_is_string(arg) || C.sass_value_is_error(arg) {
-			c := C.sass_string_get_value(arg)
-			gc := C.GoString(c)
+		if libs.IsString(sv) || libs.IsError(sv) {
+			gc := libs.String(sv)
 			//drop quotes
 			if t, err := strconv.Unquote(gc); err == nil {
 				gc = t
@@ -79,78 +90,79 @@ func unmarshal(arg UnionSassValue, v interface{}) error {
 			return throwMisMatchTypeError(arg, "string")
 		}
 	case reflect.Bool:
-		if C.sass_value_is_boolean(arg) {
-			b := bool(C.sass_boolean_get_value(arg))
+		if libs.IsBool(sv) {
+			b := libs.Bool(sv)
 			f.Set(reflect.ValueOf(b))
 		} else {
 			return throwMisMatchTypeError(arg, "bool")
 		}
 	case reflect.Struct:
-		//Check for color
-		if C.sass_value_is_color(arg) {
-			col := color.RGBA{
-				R: uint8(C.sass_color_get_r(arg)),
-				G: uint8(C.sass_color_get_g(arg)),
-				B: uint8(C.sass_color_get_b(arg)),
-				A: uint8(C.sass_color_get_a(arg)),
-			}
+		switch {
+		case libs.IsColor(sv):
+			col := libs.Color(sv)
 			f.Set(reflect.ValueOf(col))
-		} else if C.sass_value_is_number(arg) {
+		case libs.IsNumber(sv):
 			u, err := getSassNumberUnit(arg)
 			if err != nil {
 				return err
 			}
-			sn := SassNumber{
-				Value: float64(C.sass_number_get_value(arg)),
+			sn := libs.SassNumber{
+				Value: libs.Float(sv),
 				Unit:  u,
 			}
 			f.Set(reflect.ValueOf(sn))
-
-		} else {
+		default:
 			return throwMisMatchTypeError(arg, "color.RGBA or SassNumber")
 		}
 	case reflect.Slice:
-		if C.sass_value_is_list(arg) {
-			newv := reflect.MakeSlice(t, int(C.sass_list_get_length(arg)), int(C.sass_list_get_length(arg)))
-			l := make([]interface{}, C.sass_list_get_length(arg))
-			for i := range l {
-				err := unmarshal(C.sass_list_get_value(arg, C.size_t(i)), &l[i])
-				if err != nil {
-					return err
-				}
-				newv.Index(i).Set(reflect.ValueOf(l[i]))
-			}
-			f.Set(newv)
-		} else {
+		if !libs.IsList(sv) {
 			return throwMisMatchTypeError(arg, "slice")
 		}
+		libs.Slice(arg.Val(), v)
+	default:
+		return errors.New("Unsupported SassValue")
 	}
 	return nil
 }
 
 // Decode converts Sass Value to Go compatible data types.
-func Unmarshal(arg UnionSassValue, v ...interface{}) error {
+func Unmarshal(arg SassValue, v ...interface{}) error {
 	var err error
-	if arg == nil {
+	sv := arg.Val()
+	var l int
+	if libs.IsList(sv) {
+		l = libs.Len(sv)
+	}
+	if arg.Val() == nil {
 		return errors.New("I can't work with this. arg UnionSassValue must not be nil. - Unmarshaller")
 	} else if len(v) == 0 {
 		return errors.New("Cannot Unmarshal an empty value - Michael Scott")
 	} else if len(v) > 1 {
-		if len(v) < int(C.sass_list_get_length(arg)) { //check for optional arguements that are not passed and pad with nil
-			return fmt.Errorf("Arguments mismatch %d C arguments did not match %d",
-				int(C.sass_list_get_length(arg)), len(v))
+		if len(v) < l { //check for optional arguements that are not passed and pad with nil
+			return fmt.Errorf(
+				"Arguments mismatch %d C arguments did not match %d",
+				l, len(v))
 		}
-		for i := 0; i < int(C.sass_list_get_length(arg)); i++ {
-			err = unmarshal(C.sass_list_get_value(arg, C.size_t(i)), v[i])
+		for i := 0; i < l; i++ {
+			val := libs.Index(sv, i)
+			err = unmarshal(SassValue{value: val}, v[i])
 			if err != nil {
 				return err
 			}
 		}
 		return err
-	} else if C.sass_value_is_list(arg) && getKind(v[0]) != reflect.Slice && int(C.sass_list_get_length(arg)) == 1 { //arg is a slice of 1 but we want back a non slice
-		return unmarshal(C.sass_list_get_value(arg, C.size_t(0)), v[0])
-	} else if C.sass_value_is_list(arg) && getKind(v[0]) == reflect.Slice && C.sass_value_is_list(C.sass_list_get_value(arg, C.size_t(0))) && int(C.sass_list_get_length(arg)) == 1 { //arg is a list of single list and we only want back a list so we need to unwrap
-		return unmarshal(C.sass_list_get_value(arg, C.size_t(0)), v[0])
+	} else if libs.IsList(sv) &&
+		getKind(v[0]) != reflect.Slice &&
+		l == 1 { //arg is a slice of 1 but we want back a non slice
+		val := libs.Index(sv, 0)
+		return unmarshal(SassValue{value: val}, v[0])
+	} else if libs.IsList(sv) &&
+		getKind(v[0]) == reflect.Slice &&
+		libs.IsList(libs.Index(sv, 0)) &&
+		l == 1 { //arg is a list of single list and we only want back a list so we need to unwrap
+		val := libs.Index(sv, 0)
+		return unmarshal(SassValue{value: val}, v[0])
+		//return unmarshal(C.sass_list_get_value(arg, C.size_t(0)), v[0])
 	} else {
 		return unmarshal(arg, v[0])
 	}
@@ -166,66 +178,66 @@ func getKind(v interface{}) reflect.Kind {
 	return f.Kind()
 }
 
-func noSassNumberUnit(arg UnionSassValue) bool {
-	return C.GoString(C.sass_number_get_unit(arg)) == "" || C.GoString(C.sass_number_get_unit(arg)) == "none"
+func noSassNumberUnit(arg SassValue) bool {
+	u := libs.Unit(arg.Val())
+	return u == "" || u == "none"
 }
 
-func getSassNumberUnit(arg UnionSassValue) (string, error) {
-	u := C.GoString(C.sass_number_get_unit(arg))
-	err := error(nil)
-
-	if u == "" || u == "none" {
-		err = fmt.Errorf("SassNumber has no units.")
+func getSassNumberUnit(arg SassValue) (string, error) {
+	u := libs.Unit(arg.Val())
+	var err error
+	if noSassNumberUnit(arg) {
+		return u, ErrSassNumberNoUnit
 	}
-
-	if _, ok := sassUnitConversions[u]; !ok {
-		err = fmt.Errorf("SassNumber units %s are unsupported", u)
+	if _, ok := libs.SassUnitConversions[u]; !ok {
+		return u, fmt.Errorf("SassNumber units %s are unsupported", u)
 	}
-
 	return u, err
 }
 
-func Marshal(v interface{}) (UnionSassValue, error) {
+func Marshal(v interface{}) (SassValue, error) {
 	return makevalue(v)
 }
 
 // make is needed to create types for use by test
-func makevalue(v interface{}) (UnionSassValue, error) {
+func makevalue(v interface{}) (SassValue, error) {
 	f := reflect.ValueOf(v)
-	err := error(nil)
+	var err error
 	switch f.Kind() {
 	default:
-		return C.sass_make_null(), err
+		return SassValue{value: libs.MakeNil()}, nil
 	case reflect.Bool:
-		return C.sass_make_boolean(C.bool(v.(bool))), err
+		b := v.(bool)
+		return SassValue{value: libs.MakeBool(b)}, nil
 	case reflect.String:
-		return C.sass_make_string(C.CString(v.(string))), err
+		s := v.(string)
+		return SassValue{value: libs.MakeString(s)}, nil
 	case reflect.Struct: //only SassNumber and color.RGBA are supported
-		if reflect.TypeOf(v).String() == "context.SassNumber" {
-			var sn = v.(SassNumber)
-			return C.sass_make_number(C.double(sn.Value), C.CString(sn.Unit)), err
-		} else if reflect.TypeOf(v).String() == "color.RGBA" {
-			var sc = v.(color.RGBA)
-			return C.sass_make_color(C.double(sc.R), C.double(sc.G), C.double(sc.B), C.double(sc.A)), err
+		if sn, ok := v.(libs.SassNumber); ok {
+			return SassValue{
+				value: libs.MakeNumber(sn.Float(), sn.UnitOf()),
+			}, err
+		} else if sc, ok := v.(color.RGBA); ok {
+			return SassValue{value: libs.MakeColor(sc)}, nil
 		} else {
 			err = errors.New(fmt.Sprintf("The struct type %s is unsupported for marshalling", reflect.TypeOf(v).String()))
-			return C.sass_make_null(), err
+			return SassValue{value: libs.MakeNil()}, err
 		}
 	case reflect.Slice:
 		// Initialize the list
-		l := C.sass_make_list(C.size_t(f.Len()), C.SASS_COMMA)
+		lst := libs.MakeList(f.Len())
 		for i := 0; i < f.Len(); i++ {
 			t, er := makevalue(f.Index(i).Interface())
 			if err == nil && er != nil {
 				err = er
 			}
-			C.sass_list_set_value(l, C.size_t(i), t)
+			libs.SetIndex(lst, i, t.Val())
 		}
-		return l, err
+		return SassValue{value: lst}, err
 	}
 }
 
-func throwMisMatchTypeError(arg UnionSassValue, expectedType string) error {
+func throwMisMatchTypeError(arg SassValue, expectedType string) error {
 	var intf interface{}
 	unmarshal(arg, &intf)
 	return fmt.Errorf("Sassvalue is type %s and has value %v but expected %s", reflect.TypeOf(intf), intf, expectedType)

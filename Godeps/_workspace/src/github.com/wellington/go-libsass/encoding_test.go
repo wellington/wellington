@@ -5,6 +5,8 @@ import (
 	"image/color"
 	"reflect"
 	"testing"
+
+	"github.com/wellington/go-libsass/libs"
 )
 
 type unsupportedStruct struct {
@@ -15,7 +17,7 @@ type TestError interface {
 	Error(...interface{})
 }
 
-func testMarshal(t TestError, v interface{}) UnionSassValue {
+func testMarshal(t TestError, v interface{}) SassValue {
 	res, err := Marshal(v)
 	if err != nil {
 		t.Error(err)
@@ -25,25 +27,25 @@ func testMarshal(t TestError, v interface{}) UnionSassValue {
 
 func TestUnmarshalNumber(t *testing.T) {
 
-	c := SassNumber{1.0, "mm"}
+	c := libs.SassNumber{1.0, "mm"}
 	sv, _ := makevalue(c)
-	var i SassNumber
+	var i libs.SassNumber
 	Unmarshal(sv, &i)
 	if c != i {
 		t.Errorf("got: %v wanted: %v", i, c)
 	}
 
-	d := SassNumber{1.5, "pt"}
+	d := libs.SassNumber{1.5, "pt"}
 	dv, _ := makevalue(d)
-	var ed SassNumber
+	var ed libs.SassNumber
 	Unmarshal(dv, &ed)
 	if d != ed {
 		t.Errorf("got: %v wanted: %v", ed, d)
 	}
 
-	d = SassNumber{2.0, "TaylorSwifts"}
+	d = libs.SassNumber{2.0, "TaylorSwifts"}
 	dv, _ = makevalue(d)
-	var ei SassNumber
+	var ei libs.SassNumber
 	err := Unmarshal(dv, &ei)
 	if err == nil {
 		t.Error("No error thrown for invalid type")
@@ -77,7 +79,7 @@ func TestUnmarshalError(t *testing.T) {
 	}
 }
 
-func TestUnmarshalComplex(t *testing.T) {
+func TestUnmarshal_complex(t *testing.T) {
 	// Only interfaces supported for lists, is this ok?
 	e := []string{"ex1", "ex2"}
 	list, _ := makevalue(e)
@@ -97,12 +99,16 @@ func TestUnmarshalComplex(t *testing.T) {
 }
 
 // Can't import C in the test package, so this is how to test cgo code
-func TestUnmarshalUnknown(t *testing.T) {
+func TestUnmarshal_unknown(t *testing.T) {
 	// Test for nil (no value, pointer, or empty error)
-	var unk UnionSassValue
-	x := testMarshal(t, unk)
+	var unk interface{}
+	res, err := Marshal(unk)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	var v interface{}
-	_ = Unmarshal(x, &v)
+	_ = Unmarshal(res, &v)
 	if v != "<nil>" {
 		t.Error("non-nil returned")
 	}
@@ -111,8 +117,8 @@ func TestUnmarshalUnknown(t *testing.T) {
 }
 
 func TestMarshalInvalidUnitSassNumber(t *testing.T) {
-	num := SassNumber{45, "em"}
-	var num2 SassNumber
+	num := libs.SassNumber{45, "em"}
+	var num2 libs.SassNumber
 	x := testMarshal(t, num)
 	error := Unmarshal(x, &num2)
 
@@ -121,9 +127,13 @@ func TestMarshalInvalidUnitSassNumber(t *testing.T) {
 	}
 }
 
-func TestMarshalList(t *testing.T) {
-	lst1 := []SassNumber{SassNumber{1, "px"}, SassNumber{2, "rad"}, SassNumber{3, "grad"}, SassNumber{4, "deg"}}
-	var lst2 []SassNumber
+func TestMarshal_list(t *testing.T) {
+	lst1 := []libs.SassNumber{
+		libs.SassNumber{Value: 1, Unit: "px"},
+		libs.SassNumber{Value: 2, Unit: "rad"},
+		libs.SassNumber{Value: 3, Unit: "grad"},
+		libs.SassNumber{Value: 4, Unit: "deg"}}
+	var lst2 []libs.SassNumber
 
 	x := testMarshal(t, lst1)
 	_ = Unmarshal(x, &lst2)
@@ -139,8 +149,8 @@ func TestMarshalList(t *testing.T) {
 	}
 }
 
-func TestMarshalNumberInterface(t *testing.T) {
-	var fl = SassNumber{3, "turn"}
+func TestMarshal_number_interface(t *testing.T) {
+	var fl = libs.SassNumber{Value: 3, Unit: "turn"}
 	var intf interface{}
 
 	x := testMarshal(t, fl)
@@ -164,11 +174,11 @@ func TestMarshalBool(t *testing.T) {
 }
 
 func TestMarshalInterfaceListToMultiVariable(t *testing.T) {
-	var lst = []interface{}{SassNumber{5, "pt"}, "a", true}
-	var i SassNumber
+	var lst = []interface{}{libs.SassNumber{Value: 5, Unit: "pt"}, "a", true}
+	var i libs.SassNumber
 	var s string
 	var b bool
-	var ir = SassNumber{5, "pt"}
+	var ir = libs.SassNumber{5, "pt"}
 	var sr = string("a")
 	var br = bool(true)
 
@@ -187,12 +197,14 @@ func TestMarshalInterfaceListToMultiVariable(t *testing.T) {
 }
 
 func TestMarshalInterfaceListToMultiVariablewList(t *testing.T) {
-	var lst = []interface{}{SassNumber{5, "pt"}, "a", true, []string{"a", "b", "c", "d"}}
-	var i SassNumber
+	var lst = []interface{}{
+		libs.SassNumber{Value: 5, Unit: "pt"}, "a", true,
+		[]string{"a", "b", "c", "d"}}
+	var i libs.SassNumber
 	var s string
 	var b bool
 	var sl []string
-	var ir = SassNumber{5, "pt"}
+	var ir = libs.SassNumber{Value: 5, Unit: "pt"}
 	var sr = string("a")
 	var br = bool(true)
 	var slr = []string{"a", "b", "c", "d"}
@@ -215,9 +227,9 @@ func TestMarshalInterfaceListToMultiVariablewList(t *testing.T) {
 }
 
 func TestMarshalInterfaceListSingleVariable(t *testing.T) {
-	var lst = []interface{}{SassNumber{5, "mm"}}
-	var i SassNumber
-	var ir = SassNumber{5, "mm"}
+	var lst = []interface{}{libs.SassNumber{Value: 5, Unit: "mm"}}
+	var i libs.SassNumber
+	var ir = libs.SassNumber{5, "mm"}
 
 	lstm := testMarshal(t, lst)
 	_ = Unmarshal(lstm, &i)
@@ -228,11 +240,11 @@ func TestMarshalInterfaceListSingleVariable(t *testing.T) {
 }
 
 func TestMarshalSassNumber(t *testing.T) {
-	sn := SassNumber{
+	sn := libs.SassNumber{
 		Value: float64(3.5),
 		Unit:  "px",
 	}
-	var sne = SassNumber{}
+	var sne = libs.SassNumber{}
 
 	snm := testMarshal(t, sn)
 	_ = Unmarshal(snm, &sne)
@@ -291,6 +303,78 @@ func TestListListtoInterfaceList(t *testing.T) {
 	}
 }
 
+func TestSlice_make(t *testing.T) {
+	l := []string{"a", "b"}
+	x := testMarshal(t, l)
+	var res []string
+	err := Unmarshal(x, &res)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e := len(l); e != len(res) {
+		t.Errorf("got: %d wanted: %d", len(res), e)
+	}
+	if e := l[0]; e != res[0] {
+		t.Fatalf("got: %s wanted: %s", res[0], e)
+	}
+
+	// Now test new fancy libs.Slice()
+	res = []string{}
+	libs.Slice(x.Val(), &res)
+	if e := len(l); e != len(res) {
+		t.Errorf("got: %d wanted: %d", len(res), e)
+	}
+	if e := l[0]; e != res[0] {
+		t.Fatalf("got: %s wanted: %s", res[0], e)
+	}
+}
+
+func TestSlice_mixedtypes(t *testing.T) {
+	infs := []interface{}{"a", "b", libs.SassNumber{Value: 1, Unit: "mm"}}
+	sv := testMarshal(t, infs)
+	var res []interface{}
+	libs.Slice(sv.Val(), &res)
+
+	if !reflect.DeepEqual(res, infs) {
+		t.Errorf("got: % #v wanted: % #v\n", res, infs)
+	}
+
+}
+
+func TestSV_equal(t *testing.T) {
+	b := libs.MakeBool(true)
+	bb := libs.MakeBool(true)
+
+	if libs.Interface(b) != libs.Interface(bb) {
+		t.Fatal("equal failed")
+	}
+
+	c := libs.MakeColor(color.RGBA{})
+	cc := libs.MakeColor(color.RGBA{})
+
+	if libs.Interface(c) != libs.Interface(cc) {
+		t.Fatal("equal failed")
+	}
+
+	s := libs.MakeString("hi")
+	ss := libs.MakeString("hi")
+	if libs.Interface(s) != libs.Interface(ss) {
+		t.Fatal("equal failed")
+	}
+}
+
+func TestMarshal_map_set(t *testing.T) {
+	t.Skip("maps are not supported")
+	m := map[string]string{"key": "val"}
+	x := testMarshal(t, m)
+	var mm map[string]string
+	err := Unmarshal(x, &mm)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Printf("% #v\n", mm)
+}
+
 func TestMarshalUnsupportedStruct(t *testing.T) {
 	us := unsupportedStruct{
 		value: 5.5,
@@ -327,13 +411,13 @@ func TestQuotedStringUnmarshal(t *testing.T) {
 }
 
 func TestOptionalParameters(t *testing.T) {
-	var lst = []interface{}{SassNumber{5, "px"}, "a", true}
-	var i SassNumber
+	var lst = []interface{}{libs.SassNumber{Value: 5, Unit: "px"}, "a", true}
+	var i libs.SassNumber
 	var s string
 	var b bool
 	var s2 string
 	var i2 float64
-	var ir = SassNumber{5, "px"}
+	var ir = libs.SassNumber{Value: 5, Unit: "px"}
 	var sr = string("a")
 	var br = bool(true)
 
@@ -359,24 +443,24 @@ func TestOptionalParameters(t *testing.T) {
 }
 
 func TestNullUnionSassValue(t *testing.T) {
-	var usv UnionSassValue
+	usv := NewSassValue()
 	var inf interface{}
 	err := Unmarshal(usv, &inf)
 	e := "I can't work with this. arg UnionSassValue must not be nil. - Unmarshaller"
-	if err.Error() != e {
+	if err != nil {
 		t.Errorf("got: %s wanted: %s", err, e)
 	}
 }
 
 func TestWrongUnmarshalToFloatType(t *testing.T) {
 	s := "Taylor Swift"
-	var ie SassNumber
+	var ie libs.SassNumber
 
 	sm := testMarshal(t, s)
 	err := Unmarshal(sm, &ie)
 
 	e := "Sassvalue is type string and has value Taylor Swift but expected color.RGBA or SassNumber"
 	if err.Error() != e {
-		t.Errorf("got: %s wanted: %s", err, e)
+		t.Errorf("got:\n%s \nwanted:\n%s", err, e)
 	}
 }
