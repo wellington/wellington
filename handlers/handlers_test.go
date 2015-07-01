@@ -105,7 +105,7 @@ func TestFuncImageURL(t *testing.T) {
 		t.Error(merr)
 	}
 
-	e := "Sassvalue is type libs.SassNumber and has value {1 px} but expected slice"
+	e := "Sassvalue is type libs.SassNumber and has value 1px but expected slice"
 
 	if e != s {
 		t.Errorf("got:\n%s\nwanted:\n%s", s, e)

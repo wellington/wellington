@@ -266,7 +266,7 @@ func Sprite(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error 
 	var offsetX, offsetY libs.SassNumber
 	err := libsass.Unmarshal(usv, &glob, &name, &offsetX, &offsetY)
 	if err != nil {
-		if err == libs.ErrSassNumberNoUnit {
+		if err == libsass.ErrSassNumberNoUnit {
 			err := fmt.Errorf(
 				"Please specify unit for offset ie. (2px)")
 			return setErrorAndReturn(err, rsv)
@@ -316,10 +316,10 @@ func Sprite(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error 
 		return setErrorAndReturn(err, rsv)
 	}
 
-	x := libsass.SassNumber{Unit: "px", Value: float64(-pos.X)}
+	x := libs.SassNumber{Unit: "px", Value: float64(-pos.X)}
 	x = x.Add(offsetX)
 
-	y := libsass.SassNumber{Unit: "px", Value: float64(-pos.Y)}
+	y := libs.SassNumber{Unit: "px", Value: float64(-pos.Y)}
 	y = y.Add(offsetY)
 
 	str, err := libsass.Marshal(
