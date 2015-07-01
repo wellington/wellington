@@ -355,6 +355,12 @@ func TestSV_equal(t *testing.T) {
 	if libs.Interface(c) != libs.Interface(cc) {
 		t.Fatal("equal failed")
 	}
+
+	s := libs.MakeString("hi")
+	ss := libs.MakeString("hi")
+	if libs.Interface(s) != libs.Interface(ss) {
+		t.Fatal("equal failed")
+	}
 }
 
 func TestMarshal_map_set(t *testing.T) {

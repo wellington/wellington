@@ -1,7 +1,6 @@
 package context
 
 import (
-	"runtime"
 	"unsafe"
 
 	"github.com/wellington/go-libsass/libs"
@@ -17,6 +16,9 @@ func Handler(h HandlerFunc) libs.SassCallback {
 		req := SassValue{value: usv}
 		res := SassValue{value: *rsv}
 		err := h(v, req, &res)
+
+		// FIXME: This shouldn't be happening, handler should assign
+		// to the address properly.
 		*rsv = res.Val()
 
 		return err
@@ -80,9 +82,10 @@ func (ctx *Context) SetFunc(goopts libs.SassOptions) {
 			Ctx:  ctx,
 		}
 	}
+	// TODO: this seems to run fine with garbage collection on
+	// surprisingly enough
 	// disable garbage collection of cookies. These need to
 	// be manually freed in the wrapper
-	runtime.SetFinalizer(&cookies, nil)
 	gofns := make([]libs.SassFunc, len(cookies))
 	for i, cookie := range cookies {
 		fn := libs.SassMakeFunction(cookie.Sign,

@@ -5,14 +5,17 @@ machine:
     PKG_CONFIG_PATH: $HOME/$CIRCLE_PROJECT_REPONAME/lib/pkgconfig
 checkout:
   post:
-    - git submodule sync
-    - git submodule update --init
+    #- git submodule sync
+    #- git submodule update --init
 dependencies:
   pre:
+    - mkdir -p ${GOPATH%%:*}/src/github.com/wellington
+    - rsync -av $HOME/$CIRCLE_PROJECT_REPONAME ${GOPATH%%:*}/src/github.com/wellington --exclude .git
     #- make deps
     #- echo $PKG_CONFIG_PATH
   override:
-    - go build -i -tags dev
+    - go get -f -u
+    - go build -i
 test:
   override:
-    - go test -tags dev ./...
+    - go test ./...

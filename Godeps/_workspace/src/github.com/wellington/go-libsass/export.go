@@ -13,7 +13,6 @@ func Error(err error) SassValue {
 
 // Warn takes a string and causes a warning in libsass
 func Warn(s string) SassValue {
-	//return C.sass_make_warning(C.CString(s))
 	return SassValue{value: libs.MakeWarning(s)}
 }
 

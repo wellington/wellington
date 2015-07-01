@@ -1,16 +1,26 @@
 package libs
 
+// #include <stdlib.h>
 // #include "sass_context.h"
 import "C"
 import (
 	"image/color"
 	"reflect"
+	"unsafe"
 )
 
 type UnionSassValue *C.union_Sass_Value
 
 func NewUnionSassValue() UnionSassValue {
 	return &C.union_Sass_Value{}
+}
+
+func CloneValue(usv UnionSassValue) UnionSassValue {
+	return C.sass_clone_value(usv)
+}
+
+func DeleteValue(usv UnionSassValue) {
+	C.sass_delete_value(usv)
 }
 
 // types
@@ -23,25 +33,37 @@ func MakeBool(b bool) UnionSassValue {
 }
 
 func MakeError(s string) UnionSassValue {
-	return C.sass_make_error(C.CString(s))
+	cs := C.CString(s)
+	defer C.free(unsafe.Pointer(cs))
+	return C.sass_make_error(cs)
 }
 
 func MakeWarning(s string) UnionSassValue {
-	return C.sass_make_warning(C.CString(s))
+	cs := C.CString(s)
+	defer C.free(unsafe.Pointer(cs))
+	return C.sass_make_warning(cs)
 }
 
 func MakeString(s string) UnionSassValue {
-	return C.sass_make_string(C.CString(s))
+	str := C.CString(s)
+	defer C.free(unsafe.Pointer(str))
+	return C.sass_make_string(str)
 }
 
 // TODO: validate unit
 func MakeNumber(f float64, unit string) UnionSassValue {
-	return C.sass_make_number(C.double(f), C.CString(unit))
+	cunit := C.CString(unit)
+	cf := C.double(f)
+	defer C.free(unsafe.Pointer(cunit))
+	return C.sass_make_number(cf, cunit)
 }
 
 func MakeColor(c color.RGBA) UnionSassValue {
-	return C.sass_make_color(C.double(c.R), C.double(c.G),
-		C.double(c.B), C.double(c.A))
+	r := C.double(c.R)
+	g := C.double(c.G)
+	b := C.double(c.B)
+	a := C.double(c.A)
+	return C.sass_make_color(r, g, b, a)
 }
 
 func MakeList(len int) UnionSassValue {
@@ -183,7 +205,8 @@ func Float(usv UnionSassValue) float64 {
 }
 
 func Unit(usv UnionSassValue) string {
-	return C.GoString(C.sass_number_get_unit(usv))
+	c := C.sass_number_get_unit(usv)
+	return C.GoString(c)
 }
 
 func Bool(usv UnionSassValue) bool {

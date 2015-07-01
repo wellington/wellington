@@ -121,6 +121,10 @@ func SassMakeDataContext(gos string) SassDataContext {
 	return (SassDataContext)(dctx)
 }
 
+func SassDeleteFileContext(fc SassFileContext) {
+	C.sass_delete_file_context(fc)
+}
+
 func SassDeleteDataContext(dc SassDataContext) {
 	C.sass_delete_data_context(dc)
 }

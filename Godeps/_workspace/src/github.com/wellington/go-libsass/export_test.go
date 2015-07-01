@@ -1,6 +1,9 @@
 package context
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 func TestRegisterHandler(t *testing.T) {
 	l := len(handlers)
@@ -12,5 +15,16 @@ func TestRegisterHandler(t *testing.T) {
 		})
 	if e := l + 1; len(handlers) != e {
 		t.Errorf("got: %d wanted: %d", len(handlers), e)
+	}
+}
+
+func TestError_simple(t *testing.T) {
+	err := errors.New("help me")
+	sv := Error(err)
+
+	var s string
+	Unmarshal(sv, &s)
+	if err.Error() != s {
+		t.Errorf("got: %s wanted: %s", s, err)
 	}
 }
