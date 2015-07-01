@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/sass_functions.cpp"
+#include "../libsass-build/sass_functions.cpp"
 #endif

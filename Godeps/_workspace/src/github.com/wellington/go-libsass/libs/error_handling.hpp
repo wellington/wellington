@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/error_handling.hpp"
+#include "../libsass-build/error_handling.hpp"
 #endif

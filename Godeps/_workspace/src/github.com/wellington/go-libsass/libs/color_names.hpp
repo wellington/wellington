@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/color_names.hpp"
+#include "../libsass-build/color_names.hpp"
 #endif

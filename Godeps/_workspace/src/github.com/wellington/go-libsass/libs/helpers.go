@@ -1,7 +1,7 @@
 package libs
 
 // #include <stdlib.h>
-// #include "sass_context.h"
+// #include "sass_context_bind.h"
 import "C"
 
 import (

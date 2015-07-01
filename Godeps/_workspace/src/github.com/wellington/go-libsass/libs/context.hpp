@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/context.hpp"
+#include "../libsass-build/context.hpp"
 #endif

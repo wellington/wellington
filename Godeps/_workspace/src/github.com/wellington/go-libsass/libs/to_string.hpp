@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/to_string.hpp"
+#include "../libsass-build/to_string.hpp"
 #endif

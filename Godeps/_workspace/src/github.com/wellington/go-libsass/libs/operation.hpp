@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/operation.hpp"
+#include "../libsass-build/operation.hpp"
 #endif

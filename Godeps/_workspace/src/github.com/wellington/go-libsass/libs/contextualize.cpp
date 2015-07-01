@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/contextualize.cpp"
+#include "../libsass-build/contextualize.cpp"
 #endif

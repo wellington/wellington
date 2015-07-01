@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/lexer.hpp"
+#include "../libsass-build/lexer.hpp"
 #endif

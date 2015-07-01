@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/emitter.hpp"
+#include "../libsass-build/emitter.hpp"
 #endif

@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/node.hpp"
+#include "../libsass-build/node.hpp"
 #endif

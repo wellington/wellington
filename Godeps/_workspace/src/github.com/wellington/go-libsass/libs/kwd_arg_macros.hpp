@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/kwd_arg_macros.hpp"
+#include "../libsass-build/kwd_arg_macros.hpp"
 #endif

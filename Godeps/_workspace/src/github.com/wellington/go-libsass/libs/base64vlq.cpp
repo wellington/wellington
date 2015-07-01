@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/base64vlq.cpp"
+#include "../libsass-build/base64vlq.cpp"
 #endif

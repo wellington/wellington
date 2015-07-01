@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/json.cpp"
+#include "../libsass-build/json.cpp"
 #endif

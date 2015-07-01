@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/expand.hpp"
+#include "../libsass-build/expand.hpp"
 #endif

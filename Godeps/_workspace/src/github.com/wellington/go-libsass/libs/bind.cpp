@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/bind.cpp"
+#include "../libsass-build/bind.cpp"
 #endif

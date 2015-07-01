@@ -2,7 +2,7 @@ export PKG_CONFIG_PATH=$(shell pwd)/lib/pkgconfig
 
 install: deps
 
-deps: fetch version
+deps:
 
 fetch:
 	git submodule sync

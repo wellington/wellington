@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/contextualize.hpp"
+#include "../libsass-build/contextualize.hpp"
 #endif

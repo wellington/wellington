@@ -1,7 +1,7 @@
 package libs
 
 // #include <stdlib.h>
-// #include "sass2scss.h"
+// #include "sass2scss_bind.h"
 import "C"
 import (
 	"io"

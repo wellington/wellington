@@ -1,9 +1,5 @@
 package main
 
-// #cgo pkg-config: --cflags --libs libsass
-// #cgo LDFLAGS: -lsass -lstdc++ -ldl -lm
-// #include "sass_context.h"
-import "C"
 import (
 	"fmt"
 

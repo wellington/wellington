@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/mapping.hpp"
+#include "../libsass-build/mapping.hpp"
 #endif

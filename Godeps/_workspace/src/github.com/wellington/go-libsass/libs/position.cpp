@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/position.cpp"
+#include "../libsass-build/position.cpp"
 #endif

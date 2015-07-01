@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/inspect.hpp"
+#include "../libsass-build/inspect.hpp"
 #endif

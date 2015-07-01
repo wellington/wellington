@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/parser.hpp"
+#include "../libsass-build/parser.hpp"
 #endif

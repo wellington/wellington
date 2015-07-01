@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/constants.hpp"
+#include "../libsass-build/constants.hpp"
 #endif

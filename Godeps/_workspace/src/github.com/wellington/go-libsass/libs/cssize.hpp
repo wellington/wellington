@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/cssize.hpp"
+#include "../libsass-build/cssize.hpp"
 #endif

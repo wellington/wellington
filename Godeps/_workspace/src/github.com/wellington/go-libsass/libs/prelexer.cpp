@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/prelexer.cpp"
+#include "../libsass-build/prelexer.cpp"
 #endif

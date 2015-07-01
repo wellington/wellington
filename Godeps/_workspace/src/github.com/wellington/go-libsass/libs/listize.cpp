@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/listize.cpp"
+#include "../libsass-build/listize.cpp"
 #endif

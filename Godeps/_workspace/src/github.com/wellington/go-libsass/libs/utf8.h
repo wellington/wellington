@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/utf8.h"
+#include "../libsass-build/utf8.h"
 #endif

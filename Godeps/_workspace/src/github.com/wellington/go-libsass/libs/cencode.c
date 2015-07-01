@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/cencode.c"
+#include "../libsass-build/cencode.c"
 #endif

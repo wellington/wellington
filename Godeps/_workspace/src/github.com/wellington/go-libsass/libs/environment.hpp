@@ -1,3 +1,3 @@
 #ifndef USE_LIBSASS
-#include "../libsass-src/environment.hpp"
+#include "../libsass-build/environment.hpp"
 #endif
