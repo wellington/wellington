@@ -1,6 +1,13 @@
 package libs
 
-import "math"
+import (
+	"math"
+	"strconv"
+)
+
+func (s SassNumber) String() string {
+	return strconv.FormatFloat(s.Value, 'f', -1, 64) + s.Unit
+}
 
 var sassUnitConversions = map[string]map[string]float64{
 	"in": {
