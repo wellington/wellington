@@ -205,7 +205,7 @@ func InlineImage(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) e
 	var (
 		name   string
 		encode bool
-		f      io.Reader
+		f      io.ReadCloser
 	)
 	ctx := v.(*libsass.Context)
 	err := libsass.Unmarshal(usv, &name, &encode)
@@ -214,6 +214,7 @@ func InlineImage(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) e
 	}
 
 	f, err = os.Open(filepath.Join(ctx.ImageDir, name))
+	defer f.Close()
 	if err != nil {
 		r, err := httpInlineImage(name)
 		if err != nil {
