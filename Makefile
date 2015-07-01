@@ -15,8 +15,7 @@ deps: godep
 	godep restore
 	# [ -d ../go-libsass ] ||	go get github.com/wellington/go-libsass
 	# cd ../go-libsass && ls -l #without this like, $(MAKE) fails, go figure?
-	# go-libsass no longer has manual build steps
-	# cd ../go-libsass && $(MAKE) deps
+	cd ../go-libsass && $(MAKE) deps
 
 $(LASTGOPATH)/bin/goxc:
 	go get github.com/laher/goxc
