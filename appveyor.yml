@@ -30,6 +30,12 @@ install:
   - go env
   - go get github.com/tools/godep
   - godep restore
+  #retrieve go 1.5
+  - go get github.com/golang/go
+  - ps: |
+      cd C:\gopath\src\github.com\golang\go\src
+      CGO_ENABLED=1 GOROOT_BOOTSTRAP=C:\go ./make.bash
+  - go env
 
 build_script:
   #- goxc -tasks='xc archive' -build-ldflags "-X main.version WIN_VER" -bc='windows' -arch='amd64' -pv $(wt_ver) -wd=wt -d=. -n wt
