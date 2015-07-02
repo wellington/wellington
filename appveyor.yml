@@ -7,6 +7,9 @@ clone_folder: c:\gopath\src\github.com\wellington\wellington
 environment:
   GOPATH: c:\gopath
   WIN_VER: windows
+  CGO_ENABLED: 1
+  GOROOT_BOOTSTRAP: C:\go
+
 
 install:
   # install nodejs and npm
@@ -36,8 +39,6 @@ install:
   - git clone -q git://github.com/golang/go.git c:\gopath\src\github.com\golang\go
   - ps: |
       cd C:\gopath\src\github.com\golang\go\src
-      set CGO_ENABLED=1
-      set GOROOT_BOOTSTRAP=C:\go
       ./make.bat
   - cp C:\gopath\bin\go C:\go\bin\go
   - go version
