@@ -30,8 +30,6 @@ install:
   - set CXX=g++
   - echo %PATH%
   - echo %GOPATH%
-  - go version
-  - go env
   #retrieve go 1.5
   #- go get -f -u -d github.com/golang/go
   - git clone -q git://github.com/golang/go.git c:\go15\
