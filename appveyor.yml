@@ -9,7 +9,7 @@ environment:
   WIN_VER: windows
   CGO_ENABLED: 1
   GOROOT_BOOTSTRAP: C:\go
-
+  GOROOT: C:\gopath\src\github.com\golang\go
 
 install:
   # install nodejs and npm
@@ -32,16 +32,16 @@ install:
   - echo %GOPATH%
   - go version
   - go env
-  - go get github.com/tools/godep
-  - godep restore
   #retrieve go 1.5
   #- go get -f -u -d github.com/golang/go
   - git clone -q git://github.com/golang/go.git c:\gopath\src\github.com\golang\go
   - ps: |
       cd C:\gopath\src\github.com\golang\go\src
       ./make.bat
-  - cp C:\gopath\bin\go C:\go\bin\go
+  - cp C:\gopath\src\github.com\golang\go\bin\go C:\go\bin\go
   - go version
+  - go get github.com/tools/godep
+  - godep restore
 
 build_script:
   #- goxc -tasks='xc archive' -build-ldflags "-X main.version WIN_VER" -bc='windows' -arch='amd64' -pv $(wt_ver) -wd=wt -d=. -n wt
