@@ -39,7 +39,8 @@ install:
       set CGO_ENABLED=1
       set GOROOT_BOOTSTRAP=C:\go
       ./make.bash
-  - go env
+  - cp C:\gopath\bin\go C:\go\bin\go
+  - go version
 
 build_script:
   #- goxc -tasks='xc archive' -build-ldflags "-X main.version WIN_VER" -bc='windows' -arch='amd64' -pv $(wt_ver) -wd=wt -d=. -n wt

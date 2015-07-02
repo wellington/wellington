@@ -23,6 +23,9 @@ $(LASTGOPATH)/bin/goxc:
 release: $(LASTGOPATH)/bin/goxc
 	goxc -tasks='xc archive' -build-ldflags "-X github.com/wellington/wellington/version.Version $(wt_ver)" -bc='darwin' -arch='amd64' -pv $(wt_ver) -wd=wt -d=. -n wt
 
+windows: $(LASTGOPATH)/bin/goxc
+	CGO_ENABLED=1 goxc -tasks='xc archive' -build-ldflags "-X main.version $(wt_ver)" -bc='windows' -arch='amd64' -pv $(wt_ver) -wd=wt -d=. -n wt
+
 bench:
 	go test ./... -bench=.
 home:
