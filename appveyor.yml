@@ -9,7 +9,7 @@ environment:
   WIN_VER: windows
   CGO_ENABLED: 1
   GOROOT_BOOTSTRAP: C:\go
-  GOROOT: C:\gopath\src\github.com\golang\go
+  GOROOT: C:\go15
 
 install:
   # install nodejs and npm
@@ -25,7 +25,7 @@ install:
       $url += "x86_64-4.9.2-release-win32-seh-rt_v3-rev0.7z/download"
       Invoke-WebRequest -UserAgent wget -Uri $url -OutFile x86_64-4.9.2-release-win32-seh-rt_v3-rev0.7z
       &7z x -oC:\ x86_64-4.9.2-release-win32-seh-rt_v3-rev0.7z > $null
-  - set PATH=C:\mingw64\bin;C:\gopath\bin;%PATH%
+  - set PATH=C:\mingw64\bin;C:\go15\bin;C:\gopath\bin;%PATH%
   - set CC=gcc
   - set CXX=g++
   - echo %PATH%
@@ -34,11 +34,11 @@ install:
   - go env
   #retrieve go 1.5
   #- go get -f -u -d github.com/golang/go
-  - git clone -q git://github.com/golang/go.git c:\gopath\src\github.com\golang\go
+  - git clone -q git://github.com/golang/go.git c:\go15\
   - ps: |
-      cd C:\gopath\src\github.com\golang\go\src
+      cd C:\go15src
       ./make.bat
-  - cp C:\gopath\src\github.com\golang\go\bin\go C:\go\bin\go
+  - which -a go
   - go version
   - go get github.com/tools/godep
   - godep restore
