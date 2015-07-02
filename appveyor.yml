@@ -36,7 +36,7 @@ install:
   # - ps: |
   #     cd C:\go15\src
   #     ./make.bat
-  - cd C:\go15\src && ./make.bat
+  - cd C:\go15\src && run make.bat
   - which -a go
   - go version
   - go get github.com/tools/godep
