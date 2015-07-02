@@ -31,7 +31,7 @@ install:
   - go get github.com/tools/godep
   - godep restore
   #retrieve go 1.5
-  - go get -d github.com/golang/go
+  - go get -f -u -d github.com/golang/go
   - ps: |
       cd C:\gopath\src\github.com\golang\go\src
       CGO_ENABLED=1 GOROOT_BOOTSTRAP=C:\go ./make.bash
