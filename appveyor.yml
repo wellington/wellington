@@ -34,7 +34,7 @@ install:
   #- go get -f -u -d github.com/golang/go
   - git clone -q git://github.com/golang/go.git c:\go15\
   - ps: |
-      cd C:\go15src
+      cd C:\go15\src
       ./make.bat
   - which -a go
   - go version
