@@ -36,7 +36,9 @@ install:
   - git clone -q git://github.com/golang/go.git c:\gopath\src\github.com\golang\go
   - ps: |
       cd C:\gopath\src\github.com\golang\go\src
-      CGO_ENABLED=1 GOROOT_BOOTSTRAP=C:\go ./make.bash
+      set CGO_ENABLED=1
+      set GOROOT_BOOTSTRAP=C:\go
+      ./make.bash
   - go env
 
 build_script:
