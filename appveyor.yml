@@ -35,12 +35,8 @@ install:
   - git clone -q git://github.com/golang/go.git c:\go15\
   - ps: |
       cd C:\go15\src
-      try {
       ./make.bat
-      }
-      catch{
-      write-host "The last exit code is:" $LastExitCode
-      }
+      exit 0
   - which -a go
   - go version
   - go get github.com/tools/godep
