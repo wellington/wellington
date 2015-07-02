@@ -38,7 +38,7 @@ install:
       cd C:\gopath\src\github.com\golang\go\src
       set CGO_ENABLED=1
       set GOROOT_BOOTSTRAP=C:\go
-      ./make.bash
+      ./make.bat
   - cp C:\gopath\bin\go C:\go\bin\go
   - go version
 
