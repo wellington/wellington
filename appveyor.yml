@@ -35,7 +35,7 @@ install:
   - git clone -q git://github.com/golang/go.git c:\go15\
   - ps: |
       cd C:\go15\src
-      make.bat
+      ./make.bat
   - which -a go
   - go version
   - go get github.com/tools/godep
