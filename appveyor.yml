@@ -6,6 +6,7 @@ clone_folder: c:\gopath\src\github.com\wellington\wellington
 
 environment:
   GOPATH: c:\gopath
+  WIN_VER: windows
 
 install:
   # install nodejs and npm
@@ -31,7 +32,8 @@ install:
   - go get github.com/tools/godep
   - godep restore
   #retrieve go 1.5
-  - go get -f -u -d github.com/golang/go
+  #- go get -f -u -d github.com/golang/go
+  - git clone -q git://github.com/golang/go.git c:\gopath\src\github.com\golang\go
   - ps: |
       cd C:\gopath\src\github.com\golang\go\src
       CGO_ENABLED=1 GOROOT_BOOTSTRAP=C:\go ./make.bash
@@ -39,7 +41,7 @@ install:
 
 build_script:
   #- goxc -tasks='xc archive' -build-ldflags "-X main.version WIN_VER" -bc='windows' -arch='amd64' -pv $(wt_ver) -wd=wt -d=. -n wt
-  - go install -x -ldflags "-X main.version WIN_VER" github.com/wellington/wellington/wt
+  - go install -x -ldflags "-extldflags '-static' -X main.version %WIN_VER%" github.com/wellington/wellington/wt
 
 artifacts:
   - path: C:\gopath\bin\*
