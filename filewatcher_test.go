@@ -33,7 +33,7 @@ func TestWatch_rebuild(t *testing.T) {
 		select {
 		case <-rebuildChan:
 			done <- true
-		case <-time.After(250 * time.Millisecond):
+		case <-time.After(2 * time.Second):
 			done <- false
 		}
 		done <- true
@@ -64,7 +64,7 @@ func TestWatch(t *testing.T) {
 		select {
 		case <-watcherChan:
 			break
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(2 * time.Second):
 			fmt.Printf("timeout %d\n", len(watcherChan))
 			t.Error("Timeout without creating file")
 		}
@@ -88,7 +88,7 @@ func TestWatch(t *testing.T) {
 		select {
 		case <-watcherChan:
 			break
-		case <-time.After(500 * time.Millisecond):
+		case <-time.After(2 * time.Second):
 			fmt.Printf("timeout %d\n", len(watcherChan))
 			t.Error("Timeout without detecting write")
 		}
