@@ -11,6 +11,7 @@ import (
 	"time"
 
 	libsass "github.com/wellington/go-libsass"
+	"github.com/wellington/wellington/version"
 )
 
 // FileHandler starts a file server serving files out of the specified
@@ -32,6 +33,7 @@ type Response struct {
 	Start    time.Time `json:"start"`
 	Elapsed  string    `json:"elapsed"`
 	Error    string    `json:"error"`
+	Version  string    `json:"version"`
 }
 
 // HTTPHandler starts a CORS enabled web server that takes as input
@@ -43,6 +45,10 @@ func HTTPHandler(ctx *libsass.Context) func(w http.ResponseWriter, r *http.Reque
 			buf  bytes.Buffer
 		)
 		start := time.Now()
+		resp := Response{
+			Start:   start,
+			Version: version.Version,
+		}
 		// Set headers
 		if origin := r.Header.Get("Origin"); origin != "" {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
@@ -53,14 +59,12 @@ func HTTPHandler(ctx *libsass.Context) func(w http.ResponseWriter, r *http.Reque
 		_, err := StartParser(ctx, r.Body, &pout, NewPartialMap())
 		if err != nil {
 			enc := json.NewEncoder(w)
-			enc.Encode(Response{
-				Start: start,
-				Elapsed: strconv.FormatFloat(float64(
-					time.Since(start).Nanoseconds())/float64(time.Millisecond),
-					'f', 3, 32) + "ms",
-				Contents: "",
-				Error:    fmt.Sprintf("%s", err),
-			})
+			resp.Elapsed = strconv.FormatFloat(float64(
+				time.Since(start).Nanoseconds())/float64(time.Millisecond),
+				'f', 3, 32) + "ms"
+			resp.Contents = ""
+			resp.Error = fmt.Sprintf("%s", err)
+			enc.Encode(resp)
 			return
 		}
 		err = ctx.Compile(&pout, &buf)
@@ -70,14 +74,12 @@ func HTTPHandler(ctx *libsass.Context) func(w http.ResponseWriter, r *http.Reque
 			if err != nil {
 				errString = err.Error()
 			}
-			enc.Encode(Response{
-				Start: start,
-				Elapsed: strconv.FormatFloat(float64(
-					time.Since(start).Nanoseconds())/(1000*1000),
-					'f', 3, 32) + "ms",
-				Contents: buf.String(),
-				Error:    errString,
-			})
+			resp.Elapsed = strconv.FormatFloat(float64(
+				time.Since(start).Nanoseconds())/(1000*1000),
+				'f', 3, 32) + "ms"
+			resp.Contents = buf.String()
+			resp.Error = errString
+			enc.Encode(resp)
 		}()
 	}
 }

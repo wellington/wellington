@@ -9,7 +9,7 @@ LASTGOPATH=$(shell python -c "import os; a=os.environ['GOPATH']; print a.split('
 export PKG_CONFIG_PATH=$(current_dir)/../go-libsass/lib/pkgconfig
 
 install: deps
-	go install -ldflags "-X main.version $(wt_ver)" github.com/wellington/wellington/wt
+	go install -ldflags "-X github.com/wellington/wellington/version.Version $(wt_ver)" github.com/wellington/wellington/wt
 
 deps: godep
 	godep restore
@@ -21,7 +21,7 @@ $(LASTGOPATH)/bin/goxc:
 	go get github.com/laher/goxc
 
 release: $(LASTGOPATH)/bin/goxc
-	goxc -tasks='xc archive' -build-ldflags "-X main.version $(wt_ver)" -bc='darwin' -arch='amd64' -pv $(wt_ver) -wd=wt -d=. -n wt
+	goxc -tasks='xc archive' -build-ldflags "-X github.com/wellington/wellington/version.Version $(wt_ver)" -bc='darwin' -arch='amd64' -pv $(wt_ver) -wd=wt -d=. -n wt
 
 bench:
 	go test ./... -bench=.
