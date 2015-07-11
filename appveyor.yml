@@ -36,7 +36,8 @@ install:
       $url  = "https://storage.googleapis.com/golang/"
       $url += $file
       Invoke-WebRequest -UserAgent wget -Uri $url -OutFile go1.5beta1.windows-amd64.zip
-      &7z x -oC:\go15 go1.5beta1.windows-amd64.zip > $null
+      &7z x -v -oC:\go15 go1.5beta1.windows-amd64.zip > $null
+  - find C:\go15
   - go version
   - go get github.com/tools/godep
   - godep restore
