@@ -40,12 +40,13 @@ install:
   - dir C:\go15
   - go version
   - go get github.com/tools/godep
+  - go get github.com/laher/goxc
   - godep restore
 
 build_script:
-  #- goxc -tasks='xc archive' -build-ldflags "-X main.version WIN_VER" -bc='windows' -arch='amd64' -pv $(wt_ver) -wd=wt -d=. -n wt
   - go build -o wt.exe -ldflags "-extldflags '-static' -X=github.com/wellington/wellington/version.Version=%WIN_VER%" github.com/wellington/wellington/wt
+  - goxc -tasks='xc archive' -build-ldflags "-X github.com/wellington/wellington/version.Version=%WIN_VER%" -bc='windows' -arch='amd64' -wd=wt -d=. -n wt
 
 artifacts:
-  - path: wt.exe
-    name: wt
+  - path: snapshot/wt_windows_amd64.zip
+    name: wt_windows_amd64.zip
