@@ -6,7 +6,7 @@ clone_folder: c:\gopath\src\github.com\wellington\wellington
 
 environment:
   GOPATH: c:\gopath
-  WIN_VER: windows
+  WIN_VER: windows-na
   CGO_ENABLED: 1
   GOROOT_BOOTSTRAP: C:\go
   GOROOT: C:\go15\go
@@ -44,10 +44,9 @@ install:
   - godep restore
 
 build_script:
-  #- go build -o wt.exe -ldflags "-extldflags '-static' -X=github.com/wellington/wellington/version.Version=%WIN_VER%" github.com/wellington/wellington/wt
-  - goxc -t
-  - goxc -tasks='archive' -build-ldflags "-X github.com/wellington/wellington/version.Version=%WIN_VER%" -bc='windows' -wd=wt -d=. -n wt
-
+  - go build -o wt.exe -ldflags "-extldflags '-static' -X=github.com/wellington/wellington/version.Version=%WIN_VER%" github.com/wellington/wellington/wt
+after_build:
+  - 7z a wt_windows_amd64.zip wt.exe
 artifacts:
-  - path: snapshot/wt_windows_amd64.zip
+  - path: wt_windows_amd64.zip
     name: wt_windows_amd64.zip
