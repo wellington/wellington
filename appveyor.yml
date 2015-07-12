@@ -44,8 +44,9 @@ install:
   - godep restore
 
 build_script:
-  - go build -o wt.exe -ldflags "-extldflags '-static' -X=github.com/wellington/wellington/version.Version=%WIN_VER%" github.com/wellington/wellington/wt
-  - goxc -tasks='xc archive' -build-ldflags "-X github.com/wellington/wellington/version.Version=%WIN_VER%" -bc='windows' -arch='amd64' -wd=wt -d=. -n wt
+  #- go build -o wt.exe -ldflags "-extldflags '-static' -X=github.com/wellington/wellington/version.Version=%WIN_VER%" github.com/wellington/wellington/wt
+  - goxc -help tasks
+  - goxc -tasks='archive-zip' -build-ldflags "-X github.com/wellington/wellington/version.Version=%WIN_VER%" -bc='windows' -arch='amd64' -wd=wt -d=. -n wt
 
 artifacts:
   - path: snapshot/wt_windows_amd64.zip
