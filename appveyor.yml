@@ -44,7 +44,7 @@ install:
 
 build_script:
   #- goxc -tasks='xc archive' -build-ldflags "-X main.version WIN_VER" -bc='windows' -arch='amd64' -pv $(wt_ver) -wd=wt -d=. -n wt
-  - go install -o wt.exe -ldflags "-extldflags '-static' -X main.version=%WIN_VER%" github.com/wellington/wellington/wt
+  - go build -o wt.exe -ldflags "-extldflags '-static' -X=github.com/wellington/wellington/version.Version=%WIN_VER%" github.com/wellington/wellington/wt
 
 artifacts:
   - path: wt.exe
