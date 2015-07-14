@@ -4,32 +4,30 @@ os: Windows Server 2012 R2
 
 clone_folder: c:\gopath\src\github.com\wellington\wellington
 
+platform:
+  - x64
+
 environment:
-  GOPATH: c:\gopath
-  WIN_VER: windows-na
-  CGO_ENABLED: 1
-  GOROOT_BOOTSTRAP: C:\go
-  GOROOT: C:\go15\go
+  global:
+    MSYS2_BASEVER: 20150512
+    GOPATH: c:\gopath
+    WIN_VER: windows-na
+    CGO_ENABLED: 1
+    GOROOT_BOOTSTRAP: C:\go
+    GOROOT: C:\go15\go
+  matrix:
+    - MSYS2_ARCH: x86_64
 
 install:
   # install nodejs and npm
   # - ps: Install-Product node $env:nodejs_version
-  # install gcc (needed for sqlite3)
-  #- choco install -y mingw
-  #- set PATH=C:\tools\mingw64\bin;C:\gopath\bin;%PATH%
 
-
-  - ps: |
-      # Install MinGW.
-      $url  = "http://sourceforge.net/projects/mingw-w64/files/"
-      $url += "Toolchains%20targetting%20Win64/Personal%20Builds/"
-      $url += "mingw-builds/4.9.2/threads-win32/seh/"
-      $url += "x86_64-4.9.2-release-win32-seh-rt_v3-rev0.7z/download"
-      # mirror on github for faster downloads
-      $url  = "https://github.com/wellington/binaries/blob/master/x86_64-4.9.2-release-win32-seh-rt_v4-rev3.7z?raw=true"
-      Invoke-WebRequest -UserAgent wget -Uri $url -OutFile x86_64-4.9.2-release-win32-seh-rt_v3-rev0.7z
-      &7z x -oC:\ x86_64-4.9.2-release-win32-seh-rt_v3-rev0.7z > $null
-  - set PATH=C:\mingw64\bin;C:\go15\go\bin;C:\gopath\bin;%PATH%
+  - appveyor DownloadFile "http://kent.dl.sourceforge.net/project/msys2/Base/%MSYS2_ARCH%/msys2-base-%MSYS2_ARCH%-%MSYS2_BASEVER%.tar.xz" -FileName "msys2.tar.xz"
+  - 7z x msys2.tar.xz
+  - 7z x msys2.tar > NUL
+  - msys64\usr\bin\bash -lc ""
+  - msys64\usr\bin\bash -lc "for i in {1..3}; do pacman --noconfirm -Suy mingw-w64-%MSYS2_ARCH%-{ragel,freetype,icu,gettext} gcc make && break || sleep 15; done"
+  - set PATH=C:\go15\go\bin;C:\gopath\bin;%PATH%
   - set CC=gcc
   - set CXX=g++
   - echo %PATH%
@@ -48,7 +46,7 @@ install:
   - godep restore
 
 build_script:
-  - go build -o wt.exe -ldflags "-extldflags '-static' -X=github.com/wellington/wellington/version.Version=%WIN_VER%" github.com/wellington/wellington/wt
+  - msys64\usr\bin\bash -lc "cd $APPVEYOR_BUILD_FOLDER; PATH=$PATH:/mingw64/bin:/mingw32/bin; exec 0</dev/null; make windows;"
 after_build:
   - 7z a wt_windows_amd64.zip wt.exe
 artifacts:
