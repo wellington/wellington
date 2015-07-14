@@ -48,7 +48,7 @@ install:
   - godep restore
 
 build_script:
-  - go build -o wt.exe -ldflags "-extldflags '-static' -X=github.com/wellington/wellington/version.Version=%WIN_VER%" github.com/wellington/wellington/wt
+  - make windows
 after_build:
   - 7z a wt_windows_amd64.zip wt.exe
 artifacts:
