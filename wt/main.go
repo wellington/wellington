@@ -5,7 +5,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -18,6 +17,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	libsass "github.com/wellington/go-libsass"
 	"github.com/wellington/wellington/version"
 
@@ -26,14 +26,14 @@ import (
 )
 
 var (
-	font, dir, gen, includes  string
-	mainFile, style           string
-	comments, watch           bool
-	cpuprofile, buildDir      string
-	jsDir                     string
-	ishttp, help, showVersion bool
-	httpPath                  string
-	timeB                     bool
+	font, dir, gen, includes      string
+	mainFile, style               string
+	comments, watch               bool
+	cpuprofile, buildDir          string
+	jsDir                         string
+	ishttp, showHelp, showVersion bool
+	httpPath                      string
+	timeB                         bool
 )
 
 /*
@@ -42,40 +42,42 @@ var (
        --fonts-dir FONTS_DIR        The directory where you keep your fonts.
 */
 func init() {
-	flag.BoolVar(&showVersion, "version", false, "Show the app version")
-	flag.BoolVar(&showVersion, "v", false, "Show the app version")
-
-	flag.BoolVar(&help, "help", false, "this help")
-	flag.BoolVar(&help, "h", false, "this help")
 
 	// Interoperability args
-	flag.StringVar(&gen, "css-dir", "", "Compass Build Directory")
-	flag.StringVar(&dir, "images-dir", "", "Compass Image Directory")
-	flag.StringVar(&includes, "sass-dir", "", "Compass Sass Directory")
-	flag.StringVar(&jsDir, "javascripts-dir", "", "Compass JS Directory")
-	flag.BoolVar(&timeB, "time", false, "Retrieve timing information")
+}
 
-	flag.StringVar(&buildDir, "b", "", "Build Directory")
-	flag.StringVar(&gen, "gen", ".", "Generated images directory")
+func flags(set *pflag.FlagSet) {
+	set.BoolVarP(&showVersion, "version", "v", false, "Show the app version")
+	//wtCmd.PersistentFlags().BoolVarP(&showHelp, "help", "h", false, "this help")
 
-	flag.StringVar(&includes, "proj", "", "Project directory")
-	flag.StringVar(&includes, "p", "", "Project directory")
-	flag.StringVar(&dir, "dir", "", "Image directory")
-	flag.StringVar(&dir, "d", "", "Image directory")
-	flag.StringVar(&font, "font", ".", "Font Directory")
+	set.StringVar(&gen, "css-dir", "", "Compass Build Directory")
+	set.StringVar(&dir, "images-dir", "", "Compass Image Directory")
+	set.StringVar(&includes, "sass-dir", "", "Compass Sass Directory")
+	set.StringVar(&jsDir, "javascripts-dir", "", "Compass JS Directory")
+	set.BoolVar(&timeB, "time", false, "Retrieve timing information")
 
-	flag.StringVar(&style, "style", "nested", "CSS nested style")
-	flag.StringVar(&style, "s", "nested", "CSS nested style")
-	flag.BoolVar(&comments, "comment", true, "Turn on source comments")
-	flag.BoolVar(&comments, "c", true, "Turn on source comments")
+	set.StringVar(&buildDir, "b", "", "Build Directory")
+	set.StringVar(&gen, "gen", ".", "Generated images directory")
 
-	flag.BoolVar(&ishttp, "http", false, "Listen for http connections")
-	flag.StringVar(&httpPath, "httppath", "",
+	set.StringVar(&includes, "proj", "", "Project directory")
+	set.StringVar(&includes, "p", "", "Project directory")
+	set.StringVar(&dir, "dir", "", "Image directory")
+	set.StringVar(&dir, "d", "", "Image directory")
+	set.StringVar(&font, "font", ".", "Font Directory")
+
+	set.StringVar(&style, "style", "nested", "CSS nested style")
+	set.StringVar(&style, "s", "nested", "CSS nested style")
+	set.BoolVar(&comments, "comment", true, "Turn on source comments")
+	set.BoolVar(&comments, "c", true, "Turn on source comments")
+
+	set.BoolVar(&ishttp, "http", false, "Listen for http connections")
+	set.StringVar(&httpPath, "httppath", "",
 		"Only for HTTP, overrides generated sprite paths to support http")
-	flag.BoolVar(&watch, "watch", false, "File watcher that will rebuild css on file changes")
-	flag.BoolVar(&watch, "w", false, "File watcher that will rebuild css on file changes")
+	set.BoolVar(&watch, "watch", false, "File watcher that will rebuild css on file changes")
+	set.BoolVar(&watch, "w", false, "File watcher that will rebuild css on file changes")
 
-	flag.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
+	set.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
+
 }
 
 var compileCmd = &cobra.Command{
@@ -83,15 +85,11 @@ var compileCmd = &cobra.Command{
 	Short: "Compile Sass stylesheets to CSS",
 	Long: `Fast compilation of Sass stylesheets to CSS. For usage consult
 the documentation at https://github.com/wellington/wellington#wellington`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("compile ran here!", args)
-	},
+	Run: Run,
 }
 
-func compile() {
-
-	wtCmd.PersistentFlags().BoolVarP(&showVersion, "version", "v", false, "Show the app version")
-
+func root() {
+	flags(wtCmd.PersistentFlags())
 }
 
 func AddCommands() {
@@ -101,15 +99,13 @@ func AddCommands() {
 var wtCmd = &cobra.Command{
 	Use:   "wt",
 	Short: "wt builds Sass",
-	Run: func(cmd *cobra.Command, args []string) {
-
-	},
+	Run:   Run,
 }
 
 func main() {
-	flag.Parse()
+	AddCommands()
+	root()
 
-	compile()
 	wtCmd.Execute()
 
 	if showVersion {
@@ -118,8 +114,15 @@ func main() {
 		os.Exit(0)
 	}
 
-	return
+	if showHelp {
+		fmt.Println("Please specify input filepath.")
+		fmt.Println("\nAvailable options:")
+		//flag.PrintDefaults()
+		return
+	}
+}
 
+func Run(cmd *cobra.Command, files []string) {
 	start := time.Now()
 
 	defer func() {
@@ -146,17 +149,10 @@ func main() {
 		}()
 	}
 
-	for _, v := range flag.Args() {
+	for _, v := range files {
 		if strings.HasPrefix(v, "-") {
 			log.Fatalf("Please specify flags before other arguments: %s", v)
 		}
-	}
-
-	if help {
-		fmt.Println("Please specify input filepath.")
-		fmt.Println("\nAvailable options:")
-		flag.PrintDefaults()
-		return
 	}
 
 	if gen != "" {
@@ -213,7 +209,7 @@ func main() {
 		return
 	}
 
-	if len(flag.Args()) == 0 {
+	if len(files) == 0 {
 
 		// Read from stdin
 		fmt.Println("Reading from stdin, -h for help")
@@ -233,8 +229,8 @@ func main() {
 		return
 	}
 
-	sassPaths := make([]string, len(flag.Args()))
-	for i, f := range flag.Args() {
+	sassPaths := make([]string, len(files))
+	for i, f := range files {
 		sassPaths[i] = filepath.Dir(f)
 		err := wt.LoadAndBuild(f, gba, pMap)
 		if err != nil {
