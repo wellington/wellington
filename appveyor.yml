@@ -4,12 +4,19 @@ os: Windows Server 2012 R2
 
 clone_folder: c:\gopath\src\github.com\wellington\wellington
 
+platform:
+  - x64
+
 environment:
-  GOPATH: c:\gopath
-  WIN_VER: windows-na
-  CGO_ENABLED: 1
-  GOROOT_BOOTSTRAP: C:\go
-  GOROOT: C:\go15\go
+  global:
+    MSYS_BASEBER: 20150512
+    GOPATH: c:\gopath
+    WIN_VER: windows-na
+    CGO_ENABLED: 1
+    GOROOT_BOOTSTRAP: C:\go
+    GOROOT: C:\go15\go
+  matrix:
+    MSYS2_ARCH: x86_64
 
 install:
   # install nodejs and npm
