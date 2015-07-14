@@ -86,12 +86,23 @@ the documentation at https://github.com/wellington/wellington#wellington`,
 	Run: Run,
 }
 
+var watchCmd = &cobra.Command{
+	Use:   "watch",
+	Short: "Watch Sass files for changes and rebuild CSS",
+	Long:  ``,
+	Run: func(cmd *cobra.Command, args []string) {
+		watch = true
+		Run(cmd, args)
+	},
+}
+
 func root() {
 	flags(wtCmd.PersistentFlags())
 }
 
 func AddCommands() {
 	wtCmd.AddCommand(compileCmd)
+	wtCmd.AddCommand(watchCmd)
 }
 
 var wtCmd = &cobra.Command{
@@ -243,7 +254,7 @@ func Run(cmd *cobra.Command, files []string) {
 		w.PartialMap = pMap
 		w.Dirs = sassPaths
 		w.BArgs = gba
-		//w.Watch()
+		w.Watch()
 
 		fmt.Println("File watcher started use `ctrl+d` to exit")
 		in := bufio.NewReader(os.Stdin)
