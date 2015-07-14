@@ -50,31 +50,29 @@ func flags(set *pflag.FlagSet) {
 	set.BoolVarP(&showVersion, "version", "v", false, "Show the app version")
 	//wtCmd.PersistentFlags().BoolVarP(&showHelp, "help", "h", false, "this help")
 
-	set.StringVar(&gen, "css-dir", "", "Compass Build Directory")
 	set.StringVar(&dir, "images-dir", "", "Compass Image Directory")
-	set.StringVar(&includes, "sass-dir", "", "Compass Sass Directory")
 	set.StringVar(&jsDir, "javascripts-dir", "", "Compass JS Directory")
 	set.BoolVar(&timeB, "time", false, "Retrieve timing information")
 
-	set.StringVar(&buildDir, "b", "", "Build Directory")
+	set.StringVarP(&buildDir, "", "b", "", "Build Directory")
+	set.StringVarP(&buildDir, "destination", "d", "", "Build Directory")
+
+	set.StringVar(&gen, "css-dir", "", "Compass Build Directory")
 	set.StringVar(&gen, "gen", ".", "Generated images directory")
 
-	set.StringVar(&includes, "proj", "", "Project directory")
-	set.StringVar(&includes, "p", "", "Project directory")
-	set.StringVar(&dir, "dir", "", "Image directory")
-	set.StringVar(&dir, "d", "", "Image directory")
-	set.StringVar(&font, "font", ".", "Font Directory")
+	set.StringVar(&includes, "sass-dir", "", "Compass Sass Directory")
+	set.StringVarP(&includes, "proj", "p", "", "Project directory")
 
-	set.StringVar(&style, "style", "nested", "CSS nested style")
-	set.StringVar(&style, "s", "nested", "CSS nested style")
-	set.BoolVar(&comments, "comment", true, "Turn on source comments")
-	set.BoolVar(&comments, "c", true, "Turn on source comments")
+	set.StringVar(&font, "font", ".", "Font Directory")
+	set.StringVarP(&style, "style", "s", "nested", "CSS nested style")
+
+	set.BoolVarP(&comments, "comment", "c", true, "Turn on source comments")
 
 	set.BoolVar(&ishttp, "http", false, "Listen for http connections")
 	set.StringVar(&httpPath, "httppath", "",
 		"Only for HTTP, overrides generated sprite paths to support http")
-	set.BoolVar(&watch, "watch", false, "File watcher that will rebuild css on file changes")
-	set.BoolVar(&watch, "w", false, "File watcher that will rebuild css on file changes")
+
+	set.BoolVarP(&watch, "watch", "w", false, "File watcher that will rebuild css on file changes")
 
 	set.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
 
@@ -107,6 +105,11 @@ func main() {
 	root()
 
 	wtCmd.Execute()
+}
+
+func Run(cmd *cobra.Command, files []string) {
+
+	start := time.Now()
 
 	if showVersion {
 		fmt.Printf("Wellington: %s\n", version.Version)
@@ -118,12 +121,8 @@ func main() {
 		fmt.Println("Please specify input filepath.")
 		fmt.Println("\nAvailable options:")
 		//flag.PrintDefaults()
-		return
+		os.Exit(0)
 	}
-}
-
-func Run(cmd *cobra.Command, files []string) {
-	start := time.Now()
 
 	defer func() {
 		diff := float64(time.Since(start).Nanoseconds()) / float64(time.Millisecond)
