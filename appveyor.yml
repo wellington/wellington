@@ -43,13 +43,18 @@ install:
   - go get github.com/laher/goxc
   - godep restore
 
+before_test:
+  #cache packages for much faster building
+  - go test -i -race ./...
+  - go test -i ./...
+
+after_test:
+  - go test -race ./...
+
 build_script:
   - go build -o wt.exe -ldflags "-extldflags '-static' -X=github.com/wellington/wellington/version.Version=%WIN_VER%" github.com/wellington/wellington/wt
 after_build:
   - 7z a wt_windows_amd64.zip wt.exe
-
-after_test:
-  - go test -race ./...
 
 artifacts:
   - path: wt_windows_amd64.zip
