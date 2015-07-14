@@ -8,9 +8,8 @@
 
 namespace Sass {
 
-  Cssize::Cssize(Context& ctx, Env* env, Backtrace* bt)
+  Cssize::Cssize(Context& ctx, Backtrace* bt)
   : ctx(ctx),
-    env(env),
     block_stack(vector<Block*>()),
     p_stack(vector<Statement*>()),
     backtrace(bt)
@@ -23,15 +22,11 @@ namespace Sass {
 
   Statement* Cssize::operator()(Block* b)
   {
-    Env new_env;
-    new_env.link(*env);
-    env = &new_env;
     Block* bb = new (ctx.mem) Block(b->pstate(), b->length(), b->is_root());
     // bb->tabs(b->tabs());
     block_stack.push_back(bb);
     append_block(b);
     block_stack.pop_back();
-    env = env->parent();
     return bb;
   }
 
@@ -136,6 +131,11 @@ namespace Sass {
     return rules;
   }
 
+  Statement* Cssize::operator()(Null* m)
+  {
+    return 0;
+  }
+
   Statement* Cssize::operator()(Media_Block* m)
   {
     if (parent()->statement_type() == Statement::RULESET)
@@ -156,7 +156,7 @@ namespace Sass {
     return debubble(mm->block(), mm)->block();
   }
 
-  Statement* Cssize::operator()(Feature_Block* m)
+  Statement* Cssize::operator()(Supports_Block* m)
   {
     if (!m->block()->length())
     { return m; }
@@ -166,8 +166,8 @@ namespace Sass {
 
     p_stack.push_back(m);
 
-    Feature_Block* mm = new (ctx.mem) Feature_Block(m->pstate(),
-                                                    m->feature_queries(),
+    Supports_Block* mm = new (ctx.mem) Supports_Block(m->pstate(),
+                                                    m->queries(),
                                                     m->block()->perform(this)->block());
     mm->tabs(m->tabs());
 
@@ -243,12 +243,11 @@ namespace Sass {
     At_Root_Block* mm = new (ctx.mem) At_Root_Block(m->pstate(),
                                                     wrapper_block,
                                                     m->expression());
-
     Bubble* bubble = new (ctx.mem) Bubble(mm->pstate(), mm);
     return bubble;
   }
 
-  Statement* Cssize::bubble(Feature_Block* m)
+  Statement* Cssize::bubble(Supports_Block* m)
   {
     Ruleset* parent = static_cast<Ruleset*>(shallow_copy(this->parent()));
 
@@ -264,8 +263,8 @@ namespace Sass {
 
     Block* wrapper_block = new (ctx.mem) Block(m->block()->pstate());
     *wrapper_block << new_rule;
-    Feature_Block* mm = new (ctx.mem) Feature_Block(m->pstate(),
-                                                    m->feature_queries(),
+    Supports_Block* mm = new (ctx.mem) Supports_Block(m->pstate(),
+                                                    m->queries(),
                                                     wrapper_block);
 
     mm->tabs(m->tabs());
@@ -293,7 +292,7 @@ namespace Sass {
     Media_Block* mm = new (ctx.mem) Media_Block(m->pstate(),
                                                 m->media_queries(),
                                                 wrapper_block,
-                                                m->selector());
+                                                0);
 
     mm->tabs(m->tabs());
 
@@ -360,8 +359,8 @@ namespace Sass {
         return new (ctx.mem) Bubble(*static_cast<Bubble*>(s));
       case Statement::DIRECTIVE:
         return new (ctx.mem) At_Rule(*static_cast<At_Rule*>(s));
-      case Statement::FEATURE:
-        return new (ctx.mem) Feature_Block(*static_cast<Feature_Block*>(s));
+      case Statement::SUPPORTS:
+        return new (ctx.mem) Supports_Block(*static_cast<Supports_Block*>(s));
       case Statement::ATROOT:
         return new (ctx.mem) At_Root_Block(*static_cast<At_Root_Block*>(s));
       case Statement::KEYFRAMERULE:
@@ -369,7 +368,7 @@ namespace Sass {
       case Statement::NONE:
       default:
         error("unknown internal error; please contact the LibSass maintainers", s->pstate(), backtrace);
-        String_Constant* msg = new (ctx.mem) String_Constant(ParserState("[WARN]"), string("`CSSize` can't clone ") + typeid(*s).name());
+        String_Quoted* msg = new (ctx.mem) String_Quoted(ParserState("[WARN]"), string("`CSSize` can't clone ") + typeid(*s).name());
         return new (ctx.mem) Warning(ParserState("[WARN]"), msg);
     }
   }
@@ -423,10 +422,9 @@ namespace Sass {
         else
         {
           List* mq = merge_media_queries(static_cast<Media_Block*>(b->node()), static_cast<Media_Block*>(parent));
-          if (mq->length()) {
-            static_cast<Media_Block*>(b->node())->media_queries(mq);
-            ss = b->node();
-          }
+          if (!mq->length()) continue;
+          static_cast<Media_Block*>(b->node())->media_queries(mq);
+          ss = b->node();
         }
 
         if (!ss) continue;
@@ -541,7 +539,7 @@ namespace Sass {
     );
 
     if (!type.empty()) {
-      mm->media_type(new (ctx.mem) String_Constant(mq1->pstate(), type));
+      mm->media_type(new (ctx.mem) String_Quoted(mq1->pstate(), type));
     }
 
     *mm += mq2;

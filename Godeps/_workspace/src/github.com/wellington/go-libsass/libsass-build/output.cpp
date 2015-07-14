@@ -23,6 +23,13 @@ namespace Sass {
     top_nodes.push_back(imp);
   }
 
+  void Output::operator()(Map* m)
+  {
+    To_String to_string(ctx);
+    string dbg(m->perform(&to_string));
+    error(dbg + " isn't a valid CSS value.", m->pstate());
+  }
+
   OutputBuffer Output::get_buffer(void)
   {
 
@@ -126,8 +133,8 @@ namespace Sass {
           if (dec->value()->concrete_type() == Expression::STRING) {
             String_Constant* valConst = static_cast<String_Constant*>(dec->value());
             string val(valConst->value());
-            if (dynamic_cast<String_Quoted*>(valConst)) {
-              if (!valConst->quote_mark() && val.empty()) {
+            if (auto qstr = dynamic_cast<String_Quoted*>(valConst)) {
+              if (!qstr->quote_mark() && val.empty()) {
                 bPrintExpression = false;
               }
             }
@@ -196,11 +203,11 @@ namespace Sass {
     append_scope_closer();
   }
 
-  void Output::operator()(Feature_Block* f)
+  void Output::operator()(Supports_Block* f)
   {
     if (f->is_invisible()) return;
 
-    Feature_Query* q    = f->feature_queries();
+    Supports_Query* q    = f->queries();
     Block* b            = f->block();
 
     // Filter out feature blocks that aren't printable (process its children though)
@@ -221,10 +228,8 @@ namespace Sass {
     q->perform(this);
     append_scope_opener();
 
-    Selector* e = f->selector();
-    if (e && b->has_non_hoistable()) {
+    if (b->has_non_hoistable()) {
       // JMA - hoisted, output the non-hoistable in a nested block, followed by the hoistable
-      e->perform(this);
       append_scope_opener();
 
       for (size_t i = 0, L = b->length(); i < L; ++i) {
@@ -284,35 +289,9 @@ namespace Sass {
     in_media_block = false;
     append_scope_opener();
 
-    Selector* e = m->selector();
-    if (e && b->has_non_hoistable()) {
-      // JMA - hoisted, output the non-hoistable in a nested block, followed by the hoistable
-      e->perform(this);
-      append_scope_opener();
-
-      for (size_t i = 0, L = b->length(); i < L; ++i) {
-        Statement* stm = (*b)[i];
-        if (!stm->is_hoistable()) {
-          stm->perform(this);
-        }
-      }
-
-      append_scope_closer();
-
-      for (size_t i = 0, L = b->length(); i < L; ++i) {
-        Statement* stm = (*b)[i];
-        if (stm->is_hoistable()) {
-          stm->perform(this);
-        }
-      }
-    }
-    else {
-      // JMA - not hoisted, just output in order
-      for (size_t i = 0, L = b->length(); i < L; ++i) {
-        Statement* stm = (*b)[i];
-        stm->perform(this);
-        if (i < L - 1) append_special_linefeed();
-      }
+    for (size_t i = 0, L = b->length(); i < L; ++i) {
+      if ((*b)[i]) (*b)[i]->perform(this);
+      if (i < L - 1) append_special_linefeed();
     }
 
     if (output_style() == NESTED) indentation -= m->tabs();
@@ -334,7 +313,7 @@ namespace Sass {
       s->perform(this);
       in_wrapped = false;
     }
-    else if (v) {
+    if (v) {
       append_mandatory_space();
       v->perform(this);
     }
@@ -383,18 +362,14 @@ namespace Sass {
 
   void Output::operator()(String_Constant* s)
   {
-    if (String_Quoted* quoted = dynamic_cast<String_Quoted*>(s)) {
-      return Output::operator()(quoted);
+    string value(s->value());
+    if (s->can_compress_whitespace() && output_style() == COMPRESSED) {
+      value.erase(std::remove_if(value.begin(), value.end(), ::isspace), value.end());
+    }
+    if (!in_comment) {
+      append_token(string_to_output(value), s);
     } else {
-      string value(s->value());
-      if (s->can_compress_whitespace() && output_style() == COMPRESSED) {
-        value.erase(std::remove_if(value.begin(), value.end(), ::isspace), value.end());
-      }
-      if (!in_comment) {
-        append_token(string_to_output(value), s);
-      } else {
-        append_token(value, s);
-      }
+      append_token(value, s);
     }
   }
 

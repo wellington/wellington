@@ -226,7 +226,7 @@ extern "C" {
       string cwd(Sass::File::get_cwd());
       JsonNode* json_err = json_mkobject();
       json_append_member(json_err, "status", json_mknumber(1));
-      json_append_member(json_err, "file", json_mkstring(e.pstate.path.c_str()));
+      json_append_member(json_err, "file", json_mkstring(e.pstate.path));
       json_append_member(json_err, "line", json_mknumber(e.pstate.line+1));
       json_append_member(json_err, "column", json_mknumber(e.pstate.column+1));
       json_append_member(json_err, "message", json_mkstring(e.message.c_str()));
@@ -236,7 +236,9 @@ extern "C" {
       bool got_newline = false;
       msg_stream << msg_prefix;
       for (char chr : e.message) {
-        if (chr == '\n') {
+        if (chr == '\r') {
+          got_newline = true;
+        } else if (chr == '\n') {
           got_newline = true;
         } else if (got_newline) {
           msg_stream << string(msg_prefix.size(), ' ');
@@ -272,9 +274,9 @@ extern "C" {
 
       c_ctx->error_json = json_stringify(json_err, "  ");;
       c_ctx->error_message = sass_strdup(msg_stream.str().c_str());
-      c_ctx->error_text = strdup(e.message.c_str());
+      c_ctx->error_text = sass_strdup(e.message.c_str());
       c_ctx->error_status = 1;
-      c_ctx->error_file = sass_strdup(e.pstate.path.c_str());
+      c_ctx->error_file = sass_strdup(e.pstate.path);
       c_ctx->error_line = e.pstate.line+1;
       c_ctx->error_column = e.pstate.column+1;
       c_ctx->error_src = e.pstate.src;
@@ -290,7 +292,7 @@ extern "C" {
       json_append_member(json_err, "message", json_mkstring(ba.what()));
       c_ctx->error_json = json_stringify(json_err, "  ");;
       c_ctx->error_message = sass_strdup(msg_stream.str().c_str());
-      c_ctx->error_text = strdup(ba.what());
+      c_ctx->error_text = sass_strdup(ba.what());
       c_ctx->error_status = 2;
       c_ctx->output_string = 0;
       c_ctx->source_map_string = 0;
@@ -304,7 +306,7 @@ extern "C" {
       json_append_member(json_err, "message", json_mkstring(e.what()));
       c_ctx->error_json = json_stringify(json_err, "  ");;
       c_ctx->error_message = sass_strdup(msg_stream.str().c_str());
-      c_ctx->error_text = strdup(e.what());
+      c_ctx->error_text = sass_strdup(e.what());
       c_ctx->error_status = 3;
       c_ctx->output_string = 0;
       c_ctx->source_map_string = 0;
@@ -318,7 +320,7 @@ extern "C" {
       json_append_member(json_err, "message", json_mkstring(e.c_str()));
       c_ctx->error_json = json_stringify(json_err, "  ");;
       c_ctx->error_message = sass_strdup(msg_stream.str().c_str());
-      c_ctx->error_text = strdup(e.c_str());
+      c_ctx->error_text = sass_strdup(e.c_str());
       c_ctx->error_status = 4;
       c_ctx->output_string = 0;
       c_ctx->source_map_string = 0;
@@ -332,7 +334,7 @@ extern "C" {
       json_append_member(json_err, "message", json_mkstring("unknown"));
       c_ctx->error_json = json_stringify(json_err, "  ");;
       c_ctx->error_message = sass_strdup(msg_stream.str().c_str());
-      c_ctx->error_text = strdup("unknown");
+      c_ctx->error_text = sass_strdup("unknown");
       c_ctx->error_status = 5;
       c_ctx->output_string = 0;
       c_ctx->source_map_string = 0;
@@ -604,6 +606,7 @@ extern "C" {
     if (c_ctx == 0) return 0;
     Context::Data cpp_opt = Context::Data();
     cpp_opt.source_c_str(c_ctx->source_string);
+    c_ctx->source_string = 0; // passed away
     return sass_prepare_context(c_ctx, cpp_opt);
   }
 
@@ -618,6 +621,7 @@ extern "C" {
       if (data_ctx->source_string == 0) { throw(runtime_error("Data context has no source string")); }
       if (*data_ctx->source_string == 0) { throw(runtime_error("Data context has empty source string")); }
       cpp_opt.source_c_str(data_ctx->source_string);
+      data_ctx->source_string = 0; // passed away
     }
     catch (...) { return handle_errors(c_ctx) | 1; }
     return sass_compile_context(c_ctx, cpp_opt);
@@ -665,8 +669,8 @@ extern "C" {
     if (compiler->c_ctx->error_status)
       return compiler->c_ctx->error_status;
     compiler->state = SASS_COMPILER_EXECUTED;
-    Context* cpp_ctx = (Context*) compiler->cpp_ctx;
-    Block* root = (Block*) compiler->root;
+    Context* cpp_ctx = compiler->cpp_ctx;
+    Block* root = compiler->root;
     // compile the parsed root block
     try { compiler->c_ctx->output_string = cpp_ctx->compile_block(root); }
     // pass catched errors to generic error handler
@@ -756,6 +760,7 @@ extern "C" {
     if (ctx->error_file)        free(ctx->error_file);
     if (ctx->input_path)        free(ctx->input_path);
     if (ctx->output_path)       free(ctx->output_path);
+    if (ctx->plugin_path)       free(ctx->plugin_path);
     if (ctx->include_path)      free(ctx->include_path);
     if (ctx->source_map_file)   free(ctx->source_map_file);
     if (ctx->source_map_root)   free(ctx->source_map_root);
@@ -779,16 +784,30 @@ extern "C" {
 
   void ADDCALL sass_delete_compiler (struct Sass_Compiler* compiler)
   {
-    if (compiler == 0) return;
-    Context* cpp_ctx = (Context*) compiler->cpp_ctx;
+    if (compiler == 0) {
+      return;
+    }
+    Context* cpp_ctx = compiler->cpp_ctx;
+    if (cpp_ctx) delete(cpp_ctx);
     compiler->cpp_ctx = 0;
-    delete cpp_ctx;
     free(compiler);
   }
 
-  // Deallocate all associated memory with contexts
-  void ADDCALL sass_delete_file_context (struct Sass_File_Context* ctx) { sass_clear_context(ctx); free(ctx); }
-  void ADDCALL sass_delete_data_context (struct Sass_Data_Context* ctx) { sass_clear_context(ctx); free(ctx); }
+  // Deallocate all associated memory with file context
+  void ADDCALL sass_delete_file_context (struct Sass_File_Context* ctx)
+  {
+    // clear the context and free it
+    sass_clear_context(ctx); free(ctx);
+  }
+  // Deallocate all associated memory with data context
+  void ADDCALL sass_delete_data_context (struct Sass_Data_Context* ctx)
+  {
+    // clean the source string if it was not passed
+    // we reset this member once we start parsing
+    if (ctx->source_string) free(ctx->source_string);
+    // clear the context and free it
+    sass_clear_context(ctx); free(ctx);
+  }
 
   // Getters for sass context from specific implementations
   struct Sass_Context* ADDCALL sass_file_context_get_context(struct Sass_File_Context* ctx) { return ctx; }

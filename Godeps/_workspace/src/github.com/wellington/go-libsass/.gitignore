@@ -1,6 +1,6 @@
 *.test
 include/
 lib/
-
+libsass-tmp/
 
 

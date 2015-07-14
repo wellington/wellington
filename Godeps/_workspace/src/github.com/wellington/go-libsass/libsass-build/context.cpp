@@ -23,8 +23,6 @@
 #include "output.hpp"
 #include "expand.hpp"
 #include "eval.hpp"
-#include "contextualize.hpp"
-#include "contextualize_eval.hpp"
 #include "cssize.hpp"
 #include "listize.hpp"
 #include "extend.hpp"
@@ -60,7 +58,8 @@ namespace Sass {
     c_options               (initializers.c_options()),
     c_compiler              (initializers.c_compiler()),
     source_c_str            (initializers.source_c_str()),
-    sources                 (vector<const char*>()),
+    sources                 (vector<char*>()),
+    strings                 (vector<char*>()),
     plugin_paths            (initializers.plugin_paths()),
     include_paths           (initializers.include_paths()),
     queue                   (vector<Sass_Queued>()),
@@ -150,12 +149,16 @@ namespace Sass {
 
   Context::~Context()
   {
-    // everything that gets put into sources will be freed by us
-    for (size_t n = 0; n < import_stack.size(); ++n) sass_delete_import(import_stack[n]);
+    // make sure we free the source even if not processed!
+    if (sources.size() == 0 && source_c_str) free(source_c_str);
     // sources are allocated by strdup or malloc (overtaken from C code)
-    for (size_t i = 0; i < sources.size(); ++i) free((void*)sources[i]);
-    // clear inner structures (vectors)
-    sources.clear(); import_stack.clear();
+    for (size_t i = 0; i < sources.size(); ++i) free(sources[i]);
+    // free all strings we kept alive during compiler execution
+    for (size_t n = 0; n < strings.size(); ++n) free(strings[n]);
+    // everything that gets put into sources will be freed by us
+    for (size_t m = 0; m < import_stack.size(); ++m) sass_delete_import(import_stack[m]);
+    // clear inner structures (vectors) and input source
+    sources.clear(); import_stack.clear(); source_c_str = 0;
   }
 
   void Context::setup_color_map()
@@ -247,7 +250,7 @@ namespace Sass {
       }
     }
   }
-  void Context::add_source(string load_path, string abs_path, const char* contents)
+  void Context::add_source(string load_path, string abs_path, char* contents)
   {
     sources.push_back(contents);
     included_files.push_back(abs_path);
@@ -319,38 +322,52 @@ namespace Sass {
         0, 0
       );
       import_stack.push_back(import);
-      Parser p(Parser::from_c_str(queue[i].source, *this, ParserState(queue[i].abs_path, queue[i].source, i)));
+      // keep a copy of the path around (for parser states)
+      strings.push_back(sass_strdup(queue[i].abs_path.c_str()));
+      ParserState pstate(strings.back(), queue[i].source, i);
+      Parser p(Parser::from_c_str(queue[i].source, *this, pstate));
       Block* ast = p.parse();
       sass_delete_import(import_stack.back());
       import_stack.pop_back();
       if (i == 0) root = ast;
+      // ToDo: we store by load_path, which can lead
+      // to duplicates if importer reports the same path
+      // Maybe we should add an error for duplicates!?
       style_sheets[queue[i].load_path] = ast;
     }
     if (root == 0) return 0;
-    Env tge;
+
+    Env global; // create root environment
+    // register built-in functions on env
+    register_built_in_functions(*this, &global);
+    // register custom functions (defined via C-API)
+    for (size_t i = 0, S = c_functions.size(); i < S; ++i)
+    { register_c_function(*this, &global, c_functions[i]); }
+    // create initial backtrace entry
     Backtrace backtrace(0, ParserState("", 0), "");
-    register_built_in_functions(*this, &tge);
-    for (size_t i = 0, S = c_functions.size(); i < S; ++i) {
-      register_c_function(*this, &tge, c_functions[i]);
-    }
-    Contextualize contextualize(*this, &tge, &backtrace);
-    Listize listize(*this);
-    Eval eval(*this, &contextualize, &listize, &tge, &backtrace);
-    Contextualize_Eval contextualize_eval(*this, &eval, &tge, &backtrace);
-    Expand expand(*this, &eval, &contextualize_eval, &tge, &backtrace);
-    Cssize cssize(*this, &tge, &backtrace);
+    // create crtp visitor objects
+    Expand expand(*this, &global, &backtrace);
+    Cssize cssize(*this, &backtrace);
+    // expand and eval the tree
     root = root->perform(&expand)->block();
+    // merge and bubble certain rules
     root = root->perform(&cssize)->block();
+    // should we extend something?
     if (!subset_map.empty()) {
+      // create crtp visitor object
       Extend extend(*this, subset_map);
+      // extend tree nodes
       root->perform(&extend);
     }
 
+    // clean up by removing empty placeholders
+    // ToDo: maybe we can do this somewhere else?
     Remove_Placeholders remove_placeholders(*this);
     root->perform(&remove_placeholders);
-
+    // return processed tree
     return root;
   }
+  // EO parse_file
 
   Block* Context::parse_string()
   {
@@ -359,7 +376,7 @@ namespace Sass {
     if(is_indented_syntax_src) {
       char * contents = sass2scss(source_c_str, SASS2SCSS_PRETTIFY_1 | SASS2SCSS_KEEP_COMMENT);
       add_source(input_path, input_path, contents);
-      delete [] source_c_str;
+      free(source_c_str);
       return parse_file();
     }
     add_source(input_path, input_path, source_c_str);
@@ -439,12 +456,11 @@ namespace Sass {
   void register_overload_stub(Context& ctx, string name, Env* env)
   {
     Definition* stub = new (ctx.mem) Definition(ParserState("[built-in function]"),
-                                            0,
-                                            name,
-                                            0,
-                                            0,
-                                            &ctx,
-                                            true);
+                                                0,
+                                                name,
+                                                0,
+                                                0,
+                                                true);
     (*env)[name + "[f]"] = stub;
   }
 
@@ -540,7 +556,14 @@ namespace Sass {
     register_function(ctx, inspect_sig, inspect, env);
     register_function(ctx, unique_id_sig, unique_id, env);
     // Selector functions
+    register_function(ctx, selector_nest_sig, selector_nest, env);
+    register_function(ctx, selector_append_sig, selector_append, env);
+    register_function(ctx, selector_extend_sig, selector_extend, env);
+    register_function(ctx, selector_replace_sig, selector_replace, env);
+    register_function(ctx, selector_unify_sig, selector_unify, env);
     register_function(ctx, is_superselector_sig, is_superselector, env);
+    register_function(ctx, simple_selectors_sig, simple_selectors, env);
+    register_function(ctx, selector_parse_sig, selector_parse, env);
   }
 
   void register_c_functions(Context& ctx, Env* env, Sass_Function_List descrs)

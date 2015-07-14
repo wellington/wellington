@@ -65,7 +65,9 @@ namespace Sass {
     // Assert string boundaries (/\Z|\z|\A/)
     // There are zero-width positive lookaheads
     const char* end_of_line(const char* src);
-    // const char* end_of_string(const char* src);
+
+    // Assert end_of_file boundary (/\z/)
+    const char* end_of_file(const char* src);
     // const char* start_of_string(const char* src);
 
     // Type definition for prelexer functions
@@ -107,7 +109,7 @@ namespace Sass {
     }
 
     // Match for members of char class.
-    // Regex equivalent: /[axy]/
+    // Regex equivalent: /[axy]+/
     template <const char* char_class>
     const char* class_chars(const char* src) {
       const char* p = src;
@@ -142,26 +144,35 @@ namespace Sass {
     // Tries supplied matchers in order.
     // Succeeds if one of them succeeds.
     // Regex equivalent: /(?:FOO|BAR)/
-    template <prelexer... mxs>
+    template <const prelexer mx>
     const char* alternatives(const char* src) {
       const char* rslt;
-      for (prelexer mx : { mxs... }) {
-        if ((rslt = mx(src))) return rslt;
-      }
+      if ((rslt = mx(src))) return rslt;
       return 0;
+    }
+    template <const prelexer mx1, const prelexer mx2, const prelexer... mxs>
+    const char* alternatives(const char* src) {
+      const char* rslt;
+      if ((rslt = mx1(src))) return rslt;
+      return alternatives<mx2, mxs...>(src);
     }
 
     // Tries supplied matchers in order.
     // Succeeds if all of them succeeds.
     // Regex equivalent: /(?:FOO)(?:BAR)/
-    template <prelexer... mxs>
+    template <const prelexer mx1>
     const char* sequence(const char* src) {
       const char* rslt = src;
-      for (prelexer mx : { mxs... }) {
-        if (!(rslt = mx(rslt))) return 0;
-      }
+      if (!(rslt = mx1(rslt))) return 0;
       return rslt;
     }
+    template <const prelexer mx1, const prelexer mx2, const prelexer... mxs>
+    const char* sequence(const char* src) {
+      const char* rslt = src;
+      if (!(rslt = mx1(rslt))) return 0;
+      return sequence<mx2, mxs...>(rslt);
+    }
+
 
     // Match a pattern or not. Always succeeds.
     // Regex equivalent: /(?:literal)?/

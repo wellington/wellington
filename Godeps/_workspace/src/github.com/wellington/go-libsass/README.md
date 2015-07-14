@@ -3,20 +3,19 @@ libsass
 
 Libsass provides Go bindings for the speedy [sass/libsass](github.com/sass/libsass) project.
 
-Libsass is required to use this library.
+To build, setup Go
 
-### Building From Source (OS X edition)
+    go build
 
-Install the following dependencies for compiling libsass:
+To test
 
-    brew install go autoconf automake libtool mercurial pkg-config
-    make deps test # if this all works, proceed to next step
-
-    export PKG_CONFIG_PATH=$(GOPATH)/src/github.com/wellington/libsass/lib/pkgconfig
     go test
 
+### FAQ
 
-Or, you can install libsass with brew.
+Rebuilding libsass on each go compilation is very slow. Optionally, it is
+possible to link against a system installed libsass. To leverage a system
+installed libsass, use `-tags dev`.
 
-    brew install libsass
-    go test
+    go build -tags dev
+    go test -tags dev
