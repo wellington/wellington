@@ -34,6 +34,7 @@ install:
   - set CXX=g++
   - echo %PATH%
   - echo %GOPATH%
+  - dir C:\mingw64\bin
   #retrieve go 1.5
   - ps: |
       $file = "go1.5beta1.windows-amd64.zip"
