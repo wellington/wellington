@@ -45,7 +45,7 @@ func TestStdin_import(t *testing.T) {
 	out := <-outC
 	out = strings.Replace(out, includeDir, "", 1)
 	e := `Reading from stdin, -h for help
-/* line 2, /_var.scss */
+/* line 3, /_var.scss */
 div {
   background: #00FF00;
   font-size: 10pt; }
@@ -88,7 +88,7 @@ func TestStdin_sprite(t *testing.T) {
 	out := <-outC
 
 	e := `Reading from stdin, -h for help
-/* line 2, stdin */
+/* line 3, stdin */
 div {
   height: 139px;
   width: 96px;
