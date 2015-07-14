@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/cobra"
 	libsass "github.com/wellington/go-libsass"
 	"github.com/wellington/wellington/version"
 
@@ -77,14 +78,47 @@ func init() {
 	flag.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
 }
 
+var compileCmd = &cobra.Command{
+	Use:   "compile",
+	Short: "Compile Sass stylesheets to CSS",
+	Long: `Fast compilation of Sass stylesheets to CSS. For usage consult
+the documentation at https://github.com/wellington/wellington#wellington`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("compile ran here!", args)
+	},
+}
+
+func compile() {
+
+	wtCmd.PersistentFlags().BoolVarP(&showVersion, "version", "v", false, "Show the app version")
+
+}
+
+func AddCommands() {
+	wtCmd.AddCommand(compileCmd)
+}
+
+var wtCmd = &cobra.Command{
+	Use:   "wt",
+	Short: "wt builds Sass",
+	Run: func(cmd *cobra.Command, args []string) {
+
+	},
+}
+
 func main() {
 	flag.Parse()
+
+	compile()
+	wtCmd.Execute()
 
 	if showVersion {
 		fmt.Printf("Wellington: %s\n", version.Version)
 		fmt.Printf("   libsass: %s\n", libsass.Version())
 		os.Exit(0)
 	}
+
+	return
 
 	start := time.Now()
 
