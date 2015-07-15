@@ -54,10 +54,9 @@ func flags(set *pflag.FlagSet) {
 	set.StringVar(&jsDir, "javascripts-dir", "", "Compass JS Directory")
 	set.BoolVar(&timeB, "time", false, "Retrieve timing information")
 
-	set.StringVarP(&buildDir, "", "b", "", "Build Directory")
-	set.StringVarP(&buildDir, "destination", "d", "", "Build Directory")
+	set.StringVarP(&buildDir, "", "b", "", "Target directory for generated CSS, relative paths are preserved")
 
-	set.StringVar(&gen, "css-dir", "", "Compass Build Directory")
+	// set.StringVar(&gen, "css-dir", "", "Location of CSS files")
 	set.StringVar(&gen, "gen", ".", "Generated images directory")
 
 	set.StringVar(&includes, "sass-dir", "", "Compass Sass Directory")
