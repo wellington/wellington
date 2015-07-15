@@ -15,7 +15,7 @@ func ConfigParse(path string) map[string]string {
 	// Parses and modifies flags to suit what was found
 	bs, err := ioutil.ReadFile(path)
 	if err != nil {
-		fmt.Println("Error reading file %s: %s", path, err)
+		fmt.Printf("Error reading file %s: %s\n", path, err)
 		os.Exit(1)
 	}
 
