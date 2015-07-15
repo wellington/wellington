@@ -34,6 +34,7 @@ install:
   - set CXX=g++
   - echo %PATH%
   - echo %GOPATH%
+  - dir C:\mingw64\bin
   #retrieve go 1.5
   - ps: |
       $file = "go1.5beta1.windows-amd64.zip"
@@ -48,7 +49,7 @@ install:
   - godep restore
 
 build_script:
-  - go build -o wt.exe -ldflags "-extldflags '-static' -X=github.com/wellington/wellington/version.Version=%WIN_VER%" github.com/wellington/wellington/wt
+  - mingw32-make windows
 after_build:
   - 7z a wt_windows_amd64.zip wt.exe
 artifacts:
