@@ -34,12 +34,12 @@ var (
 	ishttp, showHelp, showVersion bool
 	httpPath                      string
 	timeB                         bool
+	config                        string
 )
 
 /*
-   -c, --config CONFIG_FILE         Specify the location of the configuration file explicitly.
-       --app APP                    Tell compass what kind of application it is integrating with. E.g. rails
-       --fonts-dir FONTS_DIR        The directory where you keep your fonts.
+   --app APP                    Tell compass what kind of application it is integrating with. E.g. rails
+   --fonts-dir FONTS_DIR        The directory where you keep your fonts.
 */
 func init() {
 
@@ -66,7 +66,9 @@ func flags(set *pflag.FlagSet) {
 	set.StringVar(&font, "font", ".", "Font Directory")
 	set.StringVarP(&style, "style", "s", "nested", "CSS nested style")
 
-	set.BoolVarP(&comments, "comment", "c", true, "Turn on source comments")
+	set.StringVarP(&config, "config", "c", "", "Location of the config file")
+
+	set.BoolVarP(&comments, "comment", "", true, "Turn on source comments")
 
 	set.BoolVar(&ishttp, "http", false, "Listen for http connections")
 	set.StringVar(&httpPath, "httppath", "",
@@ -123,8 +125,8 @@ func Run(cmd *cobra.Command, files []string) {
 	start := time.Now()
 
 	if showVersion {
-		fmt.Printf("Wellington: %s\n", version.Version)
 		fmt.Printf("   libsass: %s\n", libsass.Version())
+		fmt.Printf("Wellington: %s\n", version.Version)
 		os.Exit(0)
 	}
 
@@ -178,6 +180,40 @@ func Run(cmd *cobra.Command, files []string) {
 		style = libsass.NESTED_STYLE
 	}
 
+	if len(config) > 0 {
+		cfg := ConfigParse(config)
+		// Manually walk through known variables looking for matches
+		// These do not override the cli flags
+		if p, ok := cfg["css_dir"]; ok && len(buildDir) == 0 {
+			buildDir = p
+		}
+
+		if p, ok := cfg["images_dir"]; ok && len(dir) == 0 {
+			dir = p
+		}
+
+		if p, ok := cfg["sass_dir"]; ok && len(includes) == 0 {
+			includes = p
+		}
+
+		if p, ok := cfg["generated_images_dir"]; ok && len(gen) == 0 {
+			gen = p
+		}
+
+		// As of yet, unsupported
+		if p, ok := cfg["http_path"]; ok {
+			_ = p
+		}
+
+		if p, ok := cfg["http_generated_images_path"]; ok {
+			_ = p
+		}
+
+		if p, ok := cfg["fonts_dir"]; ok {
+			font = p
+		}
+	}
+
 	gba := wt.NewBuildArgs()
 
 	gba.Dir = dir
@@ -219,7 +255,28 @@ func Run(cmd *cobra.Command, files []string) {
 		return
 	}
 
-	if len(files) == 0 {
+	if len(includes) > 0 {
+		rot := filepath.Join(includes, "*.scss")
+		pat := filepath.Join(includes, "**/*.scss")
+		fmt.Println("root", rot)
+		fmt.Println("pat", pat)
+		rotFiles, _ := filepath.Glob(rot)
+		patFiles, _ := filepath.Glob(pat)
+		files = append(rotFiles, patFiles...)
+		// Probably a better way to do this, but I'm impatient
+
+		clean := make([]string, 0, len(files))
+
+		for _, file := range files {
+			if !strings.HasPrefix(filepath.Base(file), "_") {
+				clean = append(clean, file)
+			}
+		}
+		files = clean
+		fmt.Println(files)
+	}
+
+	if len(files) == 0 && len(config) == 0 {
 
 		// Read from stdin
 		fmt.Println("Reading from stdin, -h for help")
