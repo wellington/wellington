@@ -70,10 +70,6 @@ func flags(set *pflag.FlagSet) {
 
 	set.BoolVarP(&comments, "comment", "", true, "Turn on source comments")
 
-	set.BoolVar(&ishttp, "http", false, "Listen for http connections")
-	set.StringVar(&httpPath, "httppath", "",
-		"Only for HTTP, overrides generated sprite paths to support http")
-
 	set.BoolVarP(&watch, "watch", "w", false, "File watcher that will rebuild css on file changes")
 
 	set.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
@@ -98,11 +94,28 @@ var watchCmd = &cobra.Command{
 	},
 }
 
+var httpCmd = &cobra.Command{
+	Use:   "serve",
+	Short: "Starts a http server that will convert Sass to CSS",
+	Long:  ``,
+	Run: func(cmd *cobra.Command, args []string) {
+		ishttp = true
+		Run(cmd, args)
+	},
+}
+
+func init() {
+	httpCmd.Flags().StringVar(&httpPath, "httppath", "",
+		"Only for HTTP, overrides generated sprite paths to support http")
+
+}
+
 func root() {
 	flags(wtCmd.PersistentFlags())
 }
 
 func AddCommands() {
+	wtCmd.AddCommand(httpCmd)
 	wtCmd.AddCommand(compileCmd)
 	wtCmd.AddCommand(watchCmd)
 }
