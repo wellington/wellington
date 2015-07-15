@@ -1,6 +1,6 @@
 [![Circle CI](https://circleci.com/gh/wellington/wellington/tree/master.svg?style=svg)](https://circleci.com/gh/wellington/wellington/tree/master)
 [![Coverage Status](https://coveralls.io/repos/wellington/wellington/badge.png?branch=master)](https://coveralls.io/r/wellington/wellington?branch=master)
-[![Build status](https://ci.appveyor.com/api/projects/status/1apfkxe0369ce26d/branch/feature/appveyor?svg=true)](https://ci.appveyor.com/project/drewwells/wellington/branch/feature/appveyor)
+[![Appveyor](https://ci.appveyor.com/api/projects/status/1apfkxe0369ce26d/branch/master?svg=true)](https://ci.appveyor.com/project/drewwells/wellington/branch/master)
 
 
 Wellington
