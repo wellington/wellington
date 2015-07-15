@@ -51,6 +51,7 @@ func flags(set *pflag.FlagSet) {
 	//wtCmd.PersistentFlags().BoolVarP(&showHelp, "help", "h", false, "this help")
 
 	set.StringVar(&dir, "images-dir", "", "Compass Image Directory")
+	set.StringVarP(&dir, "dir", "d", "", "Compass Image Directory")
 	set.StringVar(&jsDir, "javascripts-dir", "", "Compass JS Directory")
 	set.BoolVar(&timeB, "time", false, "Retrieve timing information")
 
