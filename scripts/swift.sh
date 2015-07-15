@@ -4,6 +4,6 @@ export rmnpath=$RMN_BASE_PATH
 export guipath=$rmnpath/www/gui
 
 FILES=$(find $rmnpath/www/gui/sass -name "[^_]*\.scss")
-echo wt -gen $guipath/build/im -font $guipath/font-face -b $guipath/build/css/ -p $guipath/sass -d $guipath/im/sass $FILES
+echo wt compile --gen $guipath/build/im --font $guipath/font-face --destination $guipath/build/css/ -p $guipath/sass --images-dir $guipath/im/sass $FILES
 
-time wt -gen $guipath/build/im -font $guipath/font-face -b $guipath/build/css/ -p $guipath/sass -d $guipath/im/sass $FILES
+time wt compile --gen $guipath/build/im --font $guipath/font-face --destination $guipath/build/css/ -p $guipath/sass --images-dir $guipath/im/sass $FILES
