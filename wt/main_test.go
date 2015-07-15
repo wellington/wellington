@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"flag"
 	"io"
 	"os"
 	"path/filepath"
@@ -10,7 +9,14 @@ import (
 	"testing"
 )
 
+func init() {
+	s := new(string)
+	wtCmd.PersistentFlags().StringVarP(s, "test", "t", "", "dummy for testing")
+
+}
+
 func TestStdin_import(t *testing.T) {
+	wtCmd.ResetFlags()
 	fh, err := os.Open("../test/sass/import.scss")
 	if err != nil {
 		t.Error(err)
@@ -26,8 +32,9 @@ func TestStdin_import(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	includeDir := filepath.Join(pwd, "..", "test", "sass")
-	flag.Set("p", includeDir)
+	wtCmd.SetArgs([]string{"-p", includeDir})
 	main()
 
 	outC := make(chan string)
@@ -56,6 +63,7 @@ func TestStdin_import(t *testing.T) {
 }
 
 func TestStdin_sprite(t *testing.T) {
+	wtCmd.ResetFlags()
 	fh, err := os.Open("../test/sass/sprite.scss")
 	if err != nil {
 		t.Error(err)
@@ -67,8 +75,8 @@ func TestStdin_sprite(t *testing.T) {
 	os.Stdin = fh
 	r, w, _ := os.Pipe()
 	os.Stdout = w
-	flag.Set("dir", "../test/img")
-	flag.Set("gen", "../test/img/build")
+	wtCmd.SetArgs([]string{"--dir", "../test/img",
+		"--gen", "../test/img/build"})
 	main()
 
 	outC := make(chan string)

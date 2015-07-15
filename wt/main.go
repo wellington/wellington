@@ -49,7 +49,6 @@ func init() {
 func flags(set *pflag.FlagSet) {
 	set.BoolVarP(&showVersion, "version", "v", false, "Show the app version")
 	//wtCmd.PersistentFlags().BoolVarP(&showHelp, "help", "h", false, "this help")
-
 	set.StringVar(&dir, "images-dir", "", "Compass Image Directory")
 	set.StringVarP(&dir, "dir", "d", "", "Compass Image Directory")
 	set.StringVar(&jsDir, "javascripts-dir", "", "Compass JS Directory")
@@ -268,11 +267,11 @@ func Run(cmd *cobra.Command, files []string) {
 		return
 	}
 
-	if len(includes) > 0 {
+	// Only inject files when a config is passed. Otherwise,
+	// assume we are waiting for input from stdin
+	if len(includes) > 0 && len(config) > 0 {
 		rot := filepath.Join(includes, "*.scss")
 		pat := filepath.Join(includes, "**/*.scss")
-		fmt.Println("root", rot)
-		fmt.Println("pat", pat)
 		rotFiles, _ := filepath.Glob(rot)
 		patFiles, _ := filepath.Glob(pat)
 		files = append(rotFiles, patFiles...)
@@ -286,7 +285,6 @@ func Run(cmd *cobra.Command, files []string) {
 			}
 		}
 		files = clean
-		fmt.Println(files)
 	}
 
 	if len(files) == 0 && len(config) == 0 {
