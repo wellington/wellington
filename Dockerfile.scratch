@@ -11,4 +11,4 @@ EXPOSE 12345
 VOLUME "/data"
 WORKDIR /data
 
-CMD wt -http -httppath=$HOST -p /data -d /data/img -b /data/build -gen /data/build/img
+CMD wt serve --httppath=$HOST -p /data --images-dir /data/img -b /data/build --gen /data/build/img
