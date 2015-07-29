@@ -19,6 +19,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	libsass "github.com/wellington/go-libsass"
+	"github.com/wellington/wellington/cfg"
 	"github.com/wellington/wellington/version"
 
 	wt "github.com/wellington/wellington"
@@ -193,7 +194,10 @@ func Run(cmd *cobra.Command, files []string) {
 	}
 
 	if len(config) > 0 {
-		cfg := ConfigParse(config)
+		cfg, err := cfg.Parse(config)
+		if err != nil {
+			log.Fatal(err)
+		}
 		// Manually walk through known variables looking for matches
 		// These do not override the cli flags
 		if p, ok := cfg["css_dir"]; ok && len(buildDir) == 0 {

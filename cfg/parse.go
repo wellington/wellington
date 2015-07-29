@@ -1,22 +1,22 @@
-package main
+package cfg
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"regexp"
 )
 
 var kvReg = regexp.MustCompile(`^(\S+)\s?=\s?\"(\S+)\"`)
 
-func ConfigParse(path string) map[string]string {
+func Parse(path string) (map[string]string, error) {
 	m := make(map[string]string)
 	// Parses and modifies flags to suit what was found
 	bs, err := ioutil.ReadFile(path)
 	if err != nil {
-		fmt.Printf("Error reading file %s: %s\n", path, err)
-		os.Exit(1)
+		s := fmt.Sprintf("Error reading file %s: %s\n", path, err)
+		return m, errors.New(s)
 	}
 
 	// Split file by lines
@@ -35,5 +35,5 @@ func ConfigParse(path string) map[string]string {
 
 	}
 
-	return m
+	return m, nil
 }
