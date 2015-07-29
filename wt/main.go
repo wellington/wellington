@@ -105,7 +105,15 @@ var httpCmd = &cobra.Command{
 }
 
 func init() {
-	httpCmd.Flags().StringVar(&httpPath, "httppath", "",
+	hostname := os.Getenv("HOSTNAME")
+	if len(hostname) > 0 {
+		if !strings.HasPrefix(hostname, "http") {
+			hostname = "http://" + hostname
+		}
+	} else if host, err := os.Hostname(); err == nil {
+		hostname = "http://" + host
+	}
+	httpCmd.Flags().StringVar(&httpPath, "httppath", hostname,
 		"Only for HTTP, overrides generated sprite paths to support http")
 
 }
