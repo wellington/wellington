@@ -6,8 +6,13 @@ import (
 	"github.com/wellington/go-libsass/libs"
 )
 
+// HandlerFunc describes the method signature for registering
+// a Go function to be called by libsass.
 type HandlerFunc func(v interface{}, req SassValue, res *SassValue) error
 
+// Handler accepts a HandlerFunc and returns SassCallback for sending
+// to libsass. The third argument must be a pointer and the function
+// must return an error.
 func Handler(h HandlerFunc) libs.SassCallback {
 	return func(v interface{}, usv libs.UnionSassValue, rsv *libs.UnionSassValue) error {
 		if *rsv == nil {
@@ -65,6 +70,8 @@ type Cookie struct {
 	Ctx  interface{}
 }
 
+// SetFunc assigns the registered methods to SassOptions. Functions
+// are called when the compiler encounters the registered signature.
 func (ctx *Context) SetFunc(goopts libs.SassOptions) {
 	cookies := make([]libs.Cookie, len(handlers)+len(ctx.Cookies))
 	// Append registered handlers to cookie array

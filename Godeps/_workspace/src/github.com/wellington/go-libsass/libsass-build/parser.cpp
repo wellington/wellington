@@ -8,6 +8,7 @@
 #include "constants.hpp"
 #include "util.hpp"
 #include "prelexer.hpp"
+#include "color_maps.hpp"
 #include "sass_functions.h"
 #include "error_handling.hpp"
 
@@ -590,7 +591,7 @@ namespace Sass {
       // try to parse mutliple interpolants
       if (const char* p = find_first_in_interval< exactly<hash_lbrace> >(i, end_of_selector)) {
         // accumulate the preceding segment if the position has advanced
-        if (i < p) (*schema) << new (ctx.mem) String_Quoted(pstate, string(i, p));
+        if (i < p) (*schema) << new (ctx.mem) String_Constant(pstate, string(i, p));
         // check if the interpolation only contains white-space (error out)
         if (peek < sequence < optional_spaces, exactly<rbrace> > >(p+2)) { position = p+2;
           css_error("Invalid CSS", " after ", ": expected expression (e.g. 1px, bold), was ");
@@ -610,7 +611,7 @@ namespace Sass {
       // add the last segment if there is one
       else {
         // make sure to add the last bits of the string up to the end (if any)
-        if (i < end_of_selector) (*schema) << new (ctx.mem) String_Quoted(pstate, string(i, end_of_selector));
+        if (i < end_of_selector) (*schema) << new (ctx.mem) String_Constant(pstate, string(i, end_of_selector));
         // exit loop
         i = end_of_selector;
       }
@@ -738,8 +739,8 @@ namespace Sass {
     else if (lex< sequence < exactly<'/'>, negate < exactly < '*' > > > >()) {
       // comments are allowed, but not spaces?
       combinator = Complex_Selector::REFERENCE;
-      if (!lex < identifier >()) return 0; // ToDo: error msg?
-      reference = new (ctx.mem) String_Quoted(pstate, lexed);
+      if (!lex < re_reference_combinator >()) return 0;
+      reference = new (ctx.mem) String_Constant(pstate, lexed);
       if (!lex < exactly < '/' > >()) return 0; // ToDo: error msg?
     }
     else /* if (lex< zero >()) */   combinator = Complex_Selector::ANCESTOR_OF;
@@ -850,7 +851,7 @@ namespace Sass {
     else if (lex< quoted_string >()) {
       return new (ctx.mem) Type_Selector(pstate, unquote(lexed));
     }
-    else if (lex< alternatives < variable, number, re_reference_selector > >()) {
+    else if (lex< alternatives < variable, number, static_reference_combinator > >()) {
       return new (ctx.mem) Type_Selector(pstate, lexed);
     }
     else if (peek< pseudo_not >()) {
@@ -957,7 +958,7 @@ namespace Sass {
 
     String* value = 0;
     if (lex_css< identifier >()) {
-      value = new (ctx.mem) String_Quoted(p, lexed);
+      value = new (ctx.mem) String_Constant(p, lexed);
     }
     else if (lex_css< quoted_string >()) {
       value = parse_interpolated_chunk(lexed, true); // needed!
@@ -987,7 +988,7 @@ namespace Sass {
       prop = parse_identifier_schema();
     }
     else if (lex< sequence< optional< exactly<'*'> >, identifier > >()) {
-      prop = new (ctx.mem) String_Quoted(pstate, lexed);
+      prop = new (ctx.mem) String_Constant(pstate, lexed);
       prop->is_delayed(true);
     }
     else {
@@ -1048,8 +1049,8 @@ namespace Sass {
     Map* map = new (ctx.mem) Map(pstate, 1);
     if (String_Quoted* str = dynamic_cast<String_Quoted*>(key)) {
       if (!str->quote_mark() && !str->is_delayed()) {
-        if (ctx.names_to_colors.count(str->value())) {
-          Color* c = new (ctx.mem) Color(*ctx.names_to_colors[str->value()]);
+        if (const Color* col = name_to_color(str->value())) {
+          Color* c = new (ctx.mem) Color(*col);
           c->pstate(str->pstate());
           c->disp(str->value());
           key = c;
@@ -1076,8 +1077,8 @@ namespace Sass {
       Expression* key = parse_list();
       if (String_Quoted* str = dynamic_cast<String_Quoted*>(key)) {
         if (!str->quote_mark() && !str->is_delayed()) {
-          if (ctx.names_to_colors.count(str->value())) {
-            Color* c = new (ctx.mem) Color(*ctx.names_to_colors[str->value()]);
+          if (const Color* col = name_to_color(str->value())) {
+            Color* c = new (ctx.mem) Color(*col);
             c->pstate(str->pstate());
             c->disp(str->value());
             key = c;
@@ -1133,7 +1134,7 @@ namespace Sass {
     if (!peek_css< exactly<','> >(position)) return list;
 
     // if we got so far, we actually do have a comma list
-    List* comma_list = new (ctx.mem) List(pstate, 2, List::COMMA);
+    List* comma_list = new (ctx.mem) List(pstate, 2, SASS_COMMA);
     // wrap the first expression
     (*comma_list) << list;
 
@@ -1178,7 +1179,7 @@ namespace Sass {
         > >(position)
     ) { return disj1; }
 
-    List* space_list = new (ctx.mem) List(pstate, 2, List::SPACE);
+    List* space_list = new (ctx.mem) List(pstate, 2, SASS_SPACE);
     (*space_list) << disj1;
 
     while (!(peek_css< alternatives <
@@ -1214,7 +1215,7 @@ namespace Sass {
     // if it's a singleton, return it directly
     if (operands.size() == 0) return conj;
     // fold all operands into one binary expression
-    return fold_operands(conj, operands, Binary_Expression::OR);
+    return fold_operands(conj, operands, Sass_OP::OR);
   }
   // EO parse_disjunction
 
@@ -1230,7 +1231,7 @@ namespace Sass {
     // if it's a singleton, return it directly
     if (operands.size() == 0) return rel;
     // fold all operands into one binary expression
-    return fold_operands(rel, operands, Binary_Expression::AND);
+    return fold_operands(rel, operands, Sass_OP::AND);
   }
   // EO parse_conjunction
 
@@ -1250,15 +1251,15 @@ namespace Sass {
           > >(position)))
     { return lhs; }
     // parse the operator
-    Binary_Expression::Type op
-    = lex<kwd_eq>()  ? Binary_Expression::EQ
-    : lex<kwd_neq>() ? Binary_Expression::NEQ
-    : lex<kwd_gte>() ? Binary_Expression::GTE
-    : lex<kwd_lte>() ? Binary_Expression::LTE
-    : lex<kwd_gt>()  ? Binary_Expression::GT
-    : lex<kwd_lt>()  ? Binary_Expression::LT
+    enum Sass_OP op
+    = lex<kwd_eq>()  ? Sass_OP::EQ
+    : lex<kwd_neq>() ? Sass_OP::NEQ
+    : lex<kwd_gte>() ? Sass_OP::GTE
+    : lex<kwd_lte>() ? Sass_OP::LTE
+    : lex<kwd_gt>()  ? Sass_OP::GT
+    : lex<kwd_lt>()  ? Sass_OP::LT
     // we checked the possibilites on top of fn
-    :                  Binary_Expression::EQ;
+    :                  Sass_OP::EQ;
     // parse the right hand side expression
     Expression* rhs = parse_expression();
     // return binary expression with a left and a right hand side
@@ -1283,9 +1284,9 @@ namespace Sass {
     { return lhs; }
 
     vector<Expression*> operands;
-    vector<Binary_Expression::Type> operators;
+    vector<Sass_OP> operators;
     while (lex< exactly<'+'> >() || lex< sequence< negate< digit >, exactly<'-'> > >()) {
-      operators.push_back(lexed.to_string() == "+" ? Binary_Expression::ADD : Binary_Expression::SUB);
+      operators.push_back(lexed.to_string() == "+" ? Sass_OP::ADD : Sass_OP::SUB);
       operands.push_back(parse_operators());
     }
 
@@ -1306,13 +1307,13 @@ namespace Sass {
     if (!peek_css< class_char< static_ops > >()) return factor;
     // parse more factors and operators
     vector<Expression*> operands; // factors
-    vector<Binary_Expression::Type> operators; // ops
+    vector<enum Sass_OP> operators; // ops
     // lex operations to apply to lhs
     while (lex_css< class_char< static_ops > >()) {
       switch(*lexed.begin) {
-        case '*': operators.push_back(Binary_Expression::MUL); break;
-        case '/': operators.push_back(Binary_Expression::DIV); break;
-        case '%': operators.push_back(Binary_Expression::MOD); break;
+        case '*': operators.push_back(Sass_OP::MUL); break;
+        case '/': operators.push_back(Sass_OP::DIV); break;
+        case '%': operators.push_back(Sass_OP::MOD); break;
         default: throw runtime_error("unknown static op parsed"); break;
       }
       operands.push_back(parse_factor());
@@ -1341,7 +1342,7 @@ namespace Sass {
       } else if (typeid(*value) == typeid(Binary_Expression)) {
         Binary_Expression* b = static_cast<Binary_Expression*>(value);
         Binary_Expression* lhs = static_cast<Binary_Expression*>(b->left());
-        if (lhs && lhs->type() == Binary_Expression::DIV) lhs->is_delayed(false);
+        if (lhs && lhs->type() == Sass_OP::DIV) lhs->is_delayed(false);
       }
       return value;
     }
@@ -1393,7 +1394,7 @@ namespace Sass {
       return new (ctx.mem) Parent_Selector(pstate); }
 
     if (lex< kwd_important >())
-    { return new (ctx.mem) String_Quoted(pstate, "!important"); }
+    { return new (ctx.mem) String_Constant(pstate, "!important"); }
 
     if (const char* stop = peek< value_schema >())
     { return parse_value_schema(stop); }
@@ -1427,7 +1428,7 @@ namespace Sass {
     { return new (ctx.mem) Textual(pstate, Textual::DIMENSION, lexed); }
 
     if (lex< sequence< static_component, one_plus< identifier > > >())
-    { return new (ctx.mem) String_Quoted(pstate, lexed); }
+    { return new (ctx.mem) String_Constant(pstate, lexed); }
 
     if (lex< number >())
     { return new (ctx.mem) Textual(pstate, Textual::NUMBER, lexed); }
@@ -1437,7 +1438,7 @@ namespace Sass {
 
     // Special case handling for `%` proceeding an interpolant.
     if (lex< sequence< exactly<'%'>, optional< percentage > > >())
-    { return new (ctx.mem) String_Quoted(pstate, lexed); }
+    { return new (ctx.mem) String_Constant(pstate, lexed); }
 
     error("error reading values after " + lexed.to_string(), pstate);
 
@@ -1465,7 +1466,7 @@ namespace Sass {
       if (p) {
         if (i < p) {
           // accumulate the preceding segment if it's nonempty
-          (*schema) << new (ctx.mem) String_Quoted(pstate, string(i, p));
+          (*schema) << new (ctx.mem) String_Constant(pstate, string(i, p));
         }
         // we need to skip anything inside strings
         // create a new target in parser/prelexer
@@ -1487,7 +1488,7 @@ namespace Sass {
       }
       else { // no interpolants left; add the last segment if nonempty
         // check if we need quotes here (was not sure after merge)
-        if (i < chunk.end) (*schema) << new (ctx.mem) String_Quoted(pstate, string(i, chunk.end));
+        if (i < chunk.end) (*schema) << new (ctx.mem) String_Constant(pstate, string(i, chunk.end));
         break;
       }
       ++ i;
@@ -1537,7 +1538,7 @@ namespace Sass {
       p = find_first_in_interval< exactly<hash_lbrace> >(i, str.end);
       if (p) {
         if (i < p) {
-          (*schema) << new (ctx.mem) String_Quoted(pstate, string(i, p)); // accumulate the preceding segment if it's nonempty
+          (*schema) << new (ctx.mem) String_Constant(pstate, string(i, p)); // accumulate the preceding segment if it's nonempty
         }
         if (peek < sequence < optional_spaces, exactly<rbrace> > >(p+2)) { position = p+2;
           css_error("Invalid CSS", " after ", ": expected expression (e.g. 1px, bold), was ");
@@ -1557,7 +1558,7 @@ namespace Sass {
       }
       else { // no interpolants left; add the last segment if nonempty
         if (i < str.end) {
-          (*schema) << new (ctx.mem) String_Quoted(pstate, string(i, str.end));
+          (*schema) << new (ctx.mem) String_Constant(pstate, string(i, str.end));
         }
         break;
       }
@@ -1572,10 +1573,10 @@ namespace Sass {
       *kwd_arg << new (ctx.mem) Variable(pstate, Util::normalize_underscores(lexed));
     } else {
       lex< alternatives< identifier_schema, identifier > >();
-      *kwd_arg << new (ctx.mem) String_Quoted(pstate, lexed);
+      *kwd_arg << new (ctx.mem) String_Constant(pstate, lexed);
     }
     lex< exactly<'='> >();
-    *kwd_arg << new (ctx.mem) String_Quoted(pstate, lexed);
+    *kwd_arg << new (ctx.mem) String_Constant(pstate, lexed);
     if (peek< variable >()) *kwd_arg << parse_list();
     else if (lex< number >()) *kwd_arg << new (ctx.mem) Textual(pstate, Textual::NUMBER, Util::normalize_decimals(lexed));
     else if (peek < ie_keyword_arg_value >()) { *kwd_arg << parse_list(); }
@@ -1595,7 +1596,7 @@ namespace Sass {
     while (position < stop) {
       // parse space between tokens
       if (lex< spaces >() && num_items) {
-        (*schema) << new (ctx.mem) String_Quoted(pstate, " ");
+        (*schema) << new (ctx.mem) String_Constant(pstate, " ");
       }
       if (peek< re_functional >()) {
         (*schema) << parse_function_call();
@@ -1604,7 +1605,7 @@ namespace Sass {
       else if (lex< exactly < hash_lbrace > >()) {
         // Try to lex static expression first
         if (lex< re_static_expression >()) {
-          (*schema) << new (ctx.mem) String_Quoted(pstate, lexed);
+          (*schema) << new (ctx.mem) String_Constant(pstate, lexed);
         } else {
           (*schema) << parse_list();
         }
@@ -1613,7 +1614,7 @@ namespace Sass {
       }
       // lex some string constants
       else if (lex< alternatives < exactly<'%'>, exactly < '-' >, identifier > >()) {
-        (*schema) << new (ctx.mem) String_Quoted(pstate, lexed);
+        (*schema) << new (ctx.mem) String_Constant(pstate, lexed);
       }
       // lex a quoted string
       else if (lex< quoted_string >()) {
@@ -1661,7 +1662,7 @@ namespace Sass {
     // see if there any interpolants
     const char* p = find_first_in_interval< exactly<hash_lbrace> >(id.begin, id.end);
     if (!p) {
-      return new (ctx.mem) String_Quoted(pstate, string(id.begin, id.end));
+      return new (ctx.mem) String_Constant(pstate, string(id.begin, id.end));
     }
 
     String_Schema* schema = new (ctx.mem) String_Schema(pstate);
@@ -1670,7 +1671,7 @@ namespace Sass {
       if (p) {
         if (i < p) {
           // accumulate the preceding segment if it's nonempty
-          (*schema) << new (ctx.mem) String_Quoted(pstate, string(i, p));
+          (*schema) << new (ctx.mem) String_Constant(pstate, string(i, p));
         }
         // we need to skip anything inside strings
         // create a new target in parser/prelexer
@@ -1692,7 +1693,7 @@ namespace Sass {
         }
       }
       else { // no interpolants left; add the last segment if nonempty
-        if (i < end) (*schema) << new (ctx.mem) String_Quoted(pstate, string(i, id.end));
+        if (i < end) (*schema) << new (ctx.mem) String_Constant(pstate, string(i, id.end));
         break;
       }
     }
@@ -1753,7 +1754,7 @@ namespace Sass {
     ParserState if_source_position = pstate;
     Expression* predicate = parse_list();
     predicate->is_delayed(false);
-    Block* consequent = parse_block();
+    Block* block = parse_block();
     Block* alternative = 0;
 
     if (lex< elseif_directive >()) {
@@ -1763,7 +1764,7 @@ namespace Sass {
     else if (lex< kwd_else_directive >()) {
       alternative = parse_block();
     }
-    return new (ctx.mem) If(if_source_position, predicate, consequent, alternative);
+    return new (ctx.mem) If(if_source_position, predicate, block, alternative);
   }
 
   For* Parser::parse_for_directive()
@@ -1861,7 +1862,7 @@ namespace Sass {
 
   List* Parser::parse_media_queries()
   {
-    List* media_queries = new (ctx.mem) List(pstate, 0, List::COMMA);
+    List* media_queries = new (ctx.mem) List(pstate, 0, SASS_COMMA);
     if (!peek< exactly<'{'> >()) (*media_queries) << parse_media_query();
     while (lex< exactly<','> >()) (*media_queries) << parse_media_query();
     return media_queries;
@@ -1883,7 +1884,7 @@ namespace Sass {
     if (lex < identifier_schema >()) {
       String_Schema* schema = new (ctx.mem) String_Schema(pstate);
       *schema << media_query->media_type();
-      *schema << new (ctx.mem) String_Quoted(pstate, " ");
+      *schema << new (ctx.mem) String_Constant(pstate, " ");
       *schema << parse_identifier_schema();
       media_query->media_type(schema);
     }
@@ -2127,6 +2128,9 @@ namespace Sass {
 
   Return* Parser::parse_return_directive()
   {
+    // check that we do not have an empty list (ToDo: check if we got all cases)
+    if (peek_css < alternatives < exactly < ';' >, exactly < '}' >, end_of_file > >())
+    { css_error("Invalid CSS", " after ", ": expected expression (e.g. 1px, bold), was "); }
     return new (ctx.mem) Return(pstate, parse_list());
   }
 
@@ -2146,7 +2150,7 @@ namespace Sass {
             spaces, block_comment, line_comment,
             // match `/deep/` selector (pass-trough)
             // there is no functionality for it yet
-            re_reference_selector,
+            schema_reference_combinator,
             // match selector ops /[*&%,()\[\]]/
             class_char < selector_lookahead_ops >,
             // match selector combinators /[>+~]/
@@ -2159,7 +2163,7 @@ namespace Sass {
             // main selector match
             sequence <
               // allow namespace prefix
-              optional < namespace_prefix >,
+              optional < namespace_schema >,
               // modifiers prefixes
               alternatives <
                 sequence <
@@ -2364,12 +2368,12 @@ namespace Sass {
   }
 
 
-  Expression* Parser::fold_operands(Expression* base, vector<Expression*>& operands, Binary_Expression::Type op)
+  Expression* Parser::fold_operands(Expression* base, vector<Expression*>& operands, enum Sass_OP op)
   {
     for (size_t i = 0, S = operands.size(); i < S; ++i) {
       base = new (ctx.mem) Binary_Expression(pstate, op, base, operands[i]);
       Binary_Expression* b = static_cast<Binary_Expression*>(base);
-      if (op == Binary_Expression::DIV && b->left()->is_delayed() && b->right()->is_delayed()) {
+      if (op == Sass_OP::DIV && b->left()->is_delayed() && b->right()->is_delayed()) {
         base->is_delayed(true);
       }
       else {
@@ -2380,12 +2384,12 @@ namespace Sass {
     return base;
   }
 
-  Expression* Parser::fold_operands(Expression* base, vector<Expression*>& operands, vector<Binary_Expression::Type>& ops)
+  Expression* Parser::fold_operands(Expression* base, vector<Expression*>& operands, vector<enum Sass_OP>& ops)
   {
     for (size_t i = 0, S = operands.size(); i < S; ++i) {
       base = new (ctx.mem) Binary_Expression(base->pstate(), ops[i], base, operands[i]);
       Binary_Expression* b = static_cast<Binary_Expression*>(base);
-      if (ops[i] == Binary_Expression::DIV && b->left()->is_delayed() && b->right()->is_delayed()) {
+      if (ops[i] == Sass_OP::DIV && b->left()->is_delayed() && b->right()->is_delayed()) {
         base->is_delayed(true);
       }
       else {
@@ -2398,7 +2402,7 @@ namespace Sass {
 
   void Parser::error(string msg, Position pos)
   {
-    throw Sass_Error(Sass_Error::syntax, ParserState(path, source, pos.line ? pos : before_token, Offset(0, 0)), msg);
+    throw Error_Invalid(Error_Invalid::syntax, ParserState(path, source, pos.line ? pos : before_token, Offset(0, 0)), msg);
   }
 
   // print a css parsing error with actual context information from parsed source

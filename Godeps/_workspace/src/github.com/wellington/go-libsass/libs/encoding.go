@@ -1,7 +1,7 @@
 package libs
 
 // #include <stdlib.h>
-// #include "sass_context_bind.h"
+// #include "sass_context.h"
 import "C"
 import (
 	"image/color"
@@ -11,6 +11,7 @@ import (
 
 type UnionSassValue *C.union_Sass_Value
 
+// NewUnionSassValue creates a new empty UnionSassValue
 func NewUnionSassValue() UnionSassValue {
 	return &C.union_Sass_Value{}
 }
@@ -23,21 +24,24 @@ func DeleteValue(usv UnionSassValue) {
 	C.sass_delete_value(usv)
 }
 
-// types
+// MakeNil creates Sass nil
 func MakeNil() UnionSassValue {
 	return C.sass_make_null()
 }
 
+// MakeBool creates Sass bool from a bool
 func MakeBool(b bool) UnionSassValue {
 	return C.sass_make_boolean(C.bool(b))
 }
 
+// MakeError creates Sass error from a string
 func MakeError(s string) UnionSassValue {
 	cs := C.CString(s)
 	defer C.free(unsafe.Pointer(cs))
 	return C.sass_make_error(cs)
 }
 
+// MakeWarning creates Sass warning from a string
 func MakeWarning(s string) UnionSassValue {
 	cs := C.CString(s)
 	defer C.free(unsafe.Pointer(cs))
@@ -58,6 +62,7 @@ func MakeNumber(f float64, unit string) UnionSassValue {
 	return C.sass_make_number(cf, cunit)
 }
 
+// MakeColor creates a Sass color from color.RGBA
 func MakeColor(c color.RGBA) UnionSassValue {
 	r := C.double(c.R)
 	g := C.double(c.G)
@@ -66,14 +71,17 @@ func MakeColor(c color.RGBA) UnionSassValue {
 	return C.sass_make_color(r, g, b, a)
 }
 
+// MakeList creates a Sass List
 func MakeList(len int) UnionSassValue {
 	return C.sass_make_list(C.size_t(len), C.SASS_COMMA)
 }
 
+// MakeMap cretes a new Sass Map
 func MakeMap(len int) UnionSassValue {
 	return C.sass_make_map(C.size_t(len))
 }
 
+// Slice creates a Sass List from a Go slice. Reflection is used.
 func Slice(usv UnionSassValue, inf interface{}) {
 	if !IsList(usv) {
 		panic("sass value is not a list")

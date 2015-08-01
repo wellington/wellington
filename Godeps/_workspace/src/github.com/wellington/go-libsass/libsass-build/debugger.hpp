@@ -9,28 +9,6 @@
 using namespace std;
 using namespace Sass;
 
-/*
-inline void debug_extenstion_map(Sass::ExtensionSubsetMap* map, string ind = "")
-{
-  if (ind == "") cerr << "#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
-  for(auto const &it : map->values()) {
-    debug_ast(it.first, ind + "first: ");
-    debug_ast(it.second, ind + "second: ");
-  }
-  if (ind == "") cerr << "#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
-}
-
-inline void debug_subset_entries(SubsetMapEntries* entries, string ind = "")
-{
-  if (ind == "") cerr << "#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
-  for(auto const &pair : *entries) {
-    debug_ast(pair.first, ind + "first: ");
-    debug_ast(pair.second, ind + "second: ");
-  }
-  if (ind == "") cerr << "#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
-}
-*/
-
 inline string str_replace(std::string str, const std::string& oldStr, const std::string& newStr)
 {
   size_t pos = 0;
@@ -154,35 +132,35 @@ inline void debug_ast(AST_Node* node, string ind = "", Env* env = 0)
     Wrapped_Selector* selector = dynamic_cast<Wrapped_Selector*>(node);
     cerr << ind << "Wrapped_Selector " << selector;
     cerr << " (" << pstate_source_position(node) << ")";
-    cerr << " <<" << selector->name() << ">>" << (selector->has_line_break() ? " [line-break]": " -") << (selector->has_line_feed() ? " [line-feed]": " -") << endl;
+    cerr << " <<" << selector->ns_name() << ">>" << (selector->has_line_break() ? " [line-break]": " -") << (selector->has_line_feed() ? " [line-feed]": " -") << endl;
     debug_ast(selector->selector(), ind + " () ", env);
   } else if (dynamic_cast<Pseudo_Selector*>(node)) {
     Pseudo_Selector* selector = dynamic_cast<Pseudo_Selector*>(node);
     cerr << ind << "Pseudo_Selector " << selector;
     cerr << " (" << pstate_source_position(node) << ")";
-    cerr << " <<" << selector->name() << ">>" << (selector->has_line_break() ? " [line-break]": " -") << (selector->has_line_feed() ? " [line-feed]": " -") << endl;
+    cerr << " <<" << selector->ns_name() << ">>" << (selector->has_line_break() ? " [line-break]": " -") << (selector->has_line_feed() ? " [line-feed]": " -") << endl;
     debug_ast(selector->expression(), ind + " <= ", env);
   } else if (dynamic_cast<Attribute_Selector*>(node)) {
     Attribute_Selector* selector = dynamic_cast<Attribute_Selector*>(node);
     cerr << ind << "Attribute_Selector " << selector;
     cerr << " (" << pstate_source_position(node) << ")";
-    cerr << " <<" << selector->name() << ">>" << (selector->has_line_break() ? " [line-break]": " -") << (selector->has_line_feed() ? " [line-feed]": " -") << endl;
+    cerr << " <<" << selector->ns_name() << ">>" << (selector->has_line_break() ? " [line-break]": " -") << (selector->has_line_feed() ? " [line-feed]": " -") << endl;
     debug_ast(selector->value(), ind + "[" + selector->matcher() + "] ", env);
   } else if (dynamic_cast<Selector_Qualifier*>(node)) {
     Selector_Qualifier* selector = dynamic_cast<Selector_Qualifier*>(node);
     cerr << ind << "Selector_Qualifier " << selector;
     cerr << " (" << pstate_source_position(node) << ")";
-    cerr << " <<" << selector->name() << ">>" << (selector->has_line_break() ? " [line-break]": " -") << (selector->has_line_feed() ? " [line-feed]": " -") << endl;
+    cerr << " <<" << selector->ns_name() << ">>" << (selector->has_line_break() ? " [line-break]": " -") << (selector->has_line_feed() ? " [line-feed]": " -") << endl;
   } else if (dynamic_cast<Type_Selector*>(node)) {
     Type_Selector* selector = dynamic_cast<Type_Selector*>(node);
     cerr << ind << "Type_Selector " << selector;
     cerr << " (" << pstate_source_position(node) << ")";
-    cerr << " <<" << selector->name() << ">>" << (selector->has_line_break() ? " [line-break]": " -") <<
+    cerr << " <<" << selector->ns_name() << ">>" << (selector->has_line_break() ? " [line-break]": " -") <<
       " <" << prettyprint(selector->pstate().token.ws_before()) << ">" << endl;
   } else if (dynamic_cast<Selector_Placeholder*>(node)) {
 
     Selector_Placeholder* selector = dynamic_cast<Selector_Placeholder*>(node);
-    cerr << ind << "Selector_Placeholder [" << selector->name() << "] " << selector
+    cerr << ind << "Selector_Placeholder [" << selector->ns_name() << "] " << selector
       << " [@media:" << selector->media_block() << "]"
       << (selector->is_optional() ? " [is_optional]": " -")
       << (selector->has_line_break() ? " [line-break]": " -")
@@ -283,7 +261,7 @@ inline void debug_ast(AST_Node* node, string ind = "", Env* env = 0)
     cerr << " (" << pstate_source_position(node) << ")";
     cerr << " " << block->tabs() << endl;
     debug_ast(block->predicate(), ind + " = ");
-    debug_ast(block->consequent(), ind + " <>");
+    debug_ast(block->block(), ind + " <>");
     debug_ast(block->alternative(), ind + " ><");
   } else if (dynamic_cast<Return*>(node)) {
     Return* block = dynamic_cast<Return*>(node);
@@ -311,7 +289,7 @@ inline void debug_ast(AST_Node* node, string ind = "", Env* env = 0)
     cerr << ind << "Import " << block;
     cerr << " (" << pstate_source_position(node) << ")";
     cerr << " " << block->tabs() << endl;
-    // debug_ast(block->media_queries(), ind + " @ ");
+    debug_ast(block->media_queries(), ind + " @ ");
     // vector<string>         files_;
     for (auto imp : block->urls()) debug_ast(imp, "@ ", env);
   } else if (dynamic_cast<Assignment*>(node)) {
@@ -462,6 +440,7 @@ inline void debug_ast(AST_Node* node, string ind = "", Env* env = 0)
   } else if (dynamic_cast<Binary_Expression*>(node)) {
     Binary_Expression* expression = dynamic_cast<Binary_Expression*>(node);
     cerr << ind << "Binary_Expression " << expression;
+    cerr << " [delayed: " << expression->is_delayed() << "] ";
     cerr << " (" << pstate_source_position(node) << ")";
     cerr << " [" << expression->type_name() << "]" << endl;
     debug_ast(expression->left(), ind + " left:  ", env);
@@ -480,7 +459,7 @@ inline void debug_ast(AST_Node* node, string ind = "", Env* env = 0)
     cerr << ind << "List " << expression;
     cerr << " (" << pstate_source_position(node) << ")";
     cerr << " (" << expression->length() << ") " <<
-      (expression->separator() == Sass::List::Separator::COMMA ? "Comma " : "Space ") <<
+      (expression->separator() == SASS_COMMA ? "Comma " : "Space ") <<
       " [delayed: " << expression->is_delayed() << "] " <<
       " [interpolant: " << expression->is_interpolant() << "] " <<
       " [arglist: " << expression->is_arglist() << "] " <<
@@ -556,6 +535,8 @@ inline void debug_ast(AST_Node* node, string ind = "", Env* env = 0)
       case Expression::Concrete_Type::MAP: cerr << " [MAP]"; break;
       case Expression::Concrete_Type::SELECTOR: cerr << " [SELECTOR]"; break;
       case Expression::Concrete_Type::NULL_VAL: cerr << " [NULL_VAL]"; break;
+      case Expression::Concrete_Type::C_WARNING: cerr << " [C_WARNING]"; break;
+      case Expression::Concrete_Type::C_ERROR: cerr << " [C_ERROR]"; break;
       case Expression::Concrete_Type::NUM_TYPES: cerr << " [NUM_TYPES]"; break;
     }
     cerr << endl;
@@ -587,6 +568,7 @@ inline void debug_node(Node* node, string ind = "")
       case Complex_Selector::ADJACENT_TO: cerr << "{+} "; break;
       case Complex_Selector::PARENT_OF:   cerr << "{>} "; break;
       case Complex_Selector::PRECEDES:    cerr << "{~} "; break;
+      case Complex_Selector::REFERENCE:   cerr << "{@} "; break;
       case Complex_Selector::ANCESTOR_OF: cerr << "{ } "; break;
     }
     cerr << endl;
@@ -621,6 +603,39 @@ inline void debug_node(Node* node, string ind = "")
     cerr << endl;
   }
   if (ind == "") cerr << "#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n";
+}
+
+inline void debug_ast(const AST_Node* node, string ind = "", Env* env = 0)
+{
+  debug_ast(const_cast<AST_Node*>(node), ind, env);
+}
+
+inline void debug_node(const Node* node, string ind = "")
+{
+  debug_node(const_cast<Node*>(node), ind);
+}
+
+inline void debug_extenstion_map(Sass::ExtensionSubsetMap* map, string ind = "")
+{
+  if (ind == "") cerr << "#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
+  for(auto const &it : map->values()) {
+    debug_ast(it.first, ind + "first: ");
+    debug_ast(it.second, ind + "second: ");
+  }
+  if (ind == "") cerr << "#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
+}
+
+typedef pair<Complex_Selector*, Compound_Selector*> ExtensionPair;
+typedef vector<ExtensionPair> SubsetMapEntries;
+
+inline void debug_subset_entries(SubsetMapEntries* entries, string ind = "")
+{
+  if (ind == "") cerr << "#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
+  for(auto const &pair : *entries) {
+    debug_ast(pair.first, ind + "first: ");
+    debug_ast(pair.second, ind + "second: ");
+  }
+  if (ind == "") cerr << "#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
 }
 
 #endif // SASS_DEBUGGER

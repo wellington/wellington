@@ -1,6 +1,10 @@
 libsass
 =========
 
+[![Circle CI](https://circleci.com/gh/wellington/go-libsass.svg?style=svg)](https://circleci.com/gh/wellington/go-libsass) [![Build status](https://ci.appveyor.com/api/projects/status/uhl4swbb2r7lcfpc/branch/master?svg=true)](https://ci.appveyor.com/project/drewwells/go-libsass/branch/master)
+
+
+
 Libsass provides Go bindings for the speedy [sass/libsass](github.com/sass/libsass) project.
 
 To build, setup Go

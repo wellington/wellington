@@ -279,7 +279,10 @@ namespace Sass {
   Statement* Expand::operator()(Import* imp)
   {
     Import* result = new (ctx.mem) Import(imp->pstate());
-    result->media_queries(imp->media_queries());
+    if (imp->media_queries()) {
+      Expression* ex = imp->media_queries()->perform(&eval);
+      result->media_queries(dynamic_cast<List*>(ex));
+    }
     for ( size_t i = 0, S = imp->urls().size(); i < S; ++i) {
       result->urls().push_back(imp->urls()[i]->perform(&eval));
     }
@@ -322,7 +325,7 @@ namespace Sass {
   Statement* Expand::operator()(If* i)
   {
     if (*i->predicate()->perform(&eval)) {
-      append_block(i->consequent());
+      append_block(i->block());
     }
     else {
       Block* alt = i->alternative();
@@ -398,7 +401,7 @@ namespace Sass {
       map = static_cast<Map*>(expr);
     }
     else if (expr->concrete_type() != Expression::LIST) {
-      list = new (ctx.mem) List(expr->pstate(), 1, List::COMMA);
+      list = new (ctx.mem) List(expr->pstate(), 1, SASS_COMMA);
       *list << expr;
     }
     else {
@@ -419,7 +422,7 @@ namespace Sass {
         Expression* v = map->at(key)->perform(&eval);
 
         if (variables.size() == 1) {
-          List* variable = new (ctx.mem) List(map->pstate(), 2, List::SPACE);
+          List* variable = new (ctx.mem) List(map->pstate(), 2, SASS_SPACE);
           *variable << k;
           *variable << v;
           env->set_local(variables[0], variable);
@@ -434,7 +437,7 @@ namespace Sass {
       for (size_t i = 0, L = list->length(); i < L; ++i) {
         List* variable = 0;
         if ((*list)[i]->concrete_type() != Expression::LIST  || variables.size() == 1) {
-          variable = new (ctx.mem) List((*list)[i]->pstate(), 1, List::COMMA);
+          variable = new (ctx.mem) List((*list)[i]->pstate(), 1, SASS_COMMA);
           *variable << (*list)[i];
         }
         else {

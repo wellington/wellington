@@ -31,6 +31,7 @@ type Context struct {
 	HTTPPath                    string
 	In, Src, Out, Map, MainFile string
 	Status                      int
+	libsassError                string
 	errorString                 string
 	errors                      lErrors
 
@@ -119,8 +120,10 @@ func (ctx *Context) FileCompile(path string, out io.Writer) error {
 	goout := libs.SassContextGetOutputString(gocc)
 	io.WriteString(out, goout)
 	ctx.Status = libs.SassContextGetErrorStatus(gocc)
-	errJson := libs.SassContextGetErrorJSON(gocc)
-	err := ctx.ProcessSassError([]byte(errJson))
+	errJSON := libs.SassContextGetErrorJSON(gocc)
+	// Yet another property for storing errors
+	ctx.libsassError = errJSON
+	err := ctx.ProcessSassError([]byte(errJSON))
 	if err != nil {
 		return err
 	}
@@ -161,6 +164,7 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 
 	ctx.Status = libs.SassContextGetErrorStatus(goctx)
 	errJSON := libs.SassContextGetErrorJSON(goctx)
+	ctx.libsassError = errJSON
 	err = ctx.ProcessSassError([]byte(errJSON))
 
 	if err != nil {

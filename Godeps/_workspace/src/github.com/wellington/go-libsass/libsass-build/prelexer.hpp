@@ -197,7 +197,9 @@ namespace Sass {
     const char* identifier_alnum(const char* src);
     const char* identifier_alnums(const char* src);
     // Match reference selector.
-    const char* re_reference_selector(const char* src);
+    const char* re_reference_combinator(const char* src);
+    const char* static_reference_combinator(const char* src);
+    const char* schema_reference_combinator(const char* src);
 
     // Match interpolant schemas
     const char* identifier_schema(const char* src);
@@ -252,7 +254,12 @@ namespace Sass {
     const char* re_type_selector(const char* src);
     const char* re_static_expression(const char* src);
 
+    // identifier that can start with hyphens
+    const char* css_identifier(const char* src);
+    const char* css_ip_identifier(const char* src);
+
     // Match CSS type selectors
+    const char* namespace_schema(const char* src);
     const char* namespace_prefix(const char* src);
     const char* type_selector(const char* src);
     const char* hyphens_and_identifier(const char* src);

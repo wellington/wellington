@@ -15,7 +15,7 @@ namespace Sass {
 
   Expression* Listize::operator()(Selector_List* sel)
   {
-    List* l = new (ctx.mem) List(sel->pstate(), sel->length(), List::COMMA);
+    List* l = new (ctx.mem) List(sel->pstate(), sel->length(), SASS_COMMA);
     for (size_t i = 0, L = sel->length(); i < L; ++i) {
       if (!(*sel)[i]) continue;
       *l << (*sel)[i]->perform(this);
@@ -78,13 +78,9 @@ namespace Sass {
     return l;
   }
 
-  Expression* Listize::operator()(Parent_Selector* sel)
-  {
-    return 0;
-  }
-
   Expression* Listize::fallback_impl(AST_Node* n)
   {
-    return static_cast<Expression*>(n);
+    return dynamic_cast<Expression*>(n);
   }
+
 }

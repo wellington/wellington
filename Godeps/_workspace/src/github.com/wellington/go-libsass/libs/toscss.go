@@ -1,7 +1,7 @@
 package libs
 
 // #include <stdlib.h>
-// #include "sass2scss_bind.h"
+// #include "sass2scss.h"
 import "C"
 import (
 	"io"
@@ -9,6 +9,8 @@ import (
 	"unsafe"
 )
 
+// ToScss converts Sass to Scss using sass2scss. Readers and Writers are
+// used, but libsass does not support streaming.
 func ToScss(r io.Reader, w io.Writer) error {
 	bs, _ := ioutil.ReadAll(r)
 	in := C.CString(string(bs))

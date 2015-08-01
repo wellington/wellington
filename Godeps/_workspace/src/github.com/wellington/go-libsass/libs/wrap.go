@@ -6,7 +6,7 @@ package libs
 // #//for C.free
 // #include "stdlib.h"
 //
-// #include "sass_context_bind.h"
+// #include "sass_context.h"
 //
 import "C"
 
@@ -113,110 +113,143 @@ func SassMakeFileContext(gos string) SassFileContext {
 	return (SassFileContext)(fctx)
 }
 
+// SassDeleteFileContext frees memory used for a file context
+func SassDeleteFileContext(fc SassFileContext) {
+	C.sass_delete_file_context(fc)
+}
+
 type SassDataContext *C.struct_Sass_Data_Context
 
+// SassMakeDataContext creates a data context from a source string
 func SassMakeDataContext(gos string) SassDataContext {
 	s := C.CString(gos)
 	dctx := C.sass_make_data_context(s)
 	return (SassDataContext)(dctx)
 }
 
-func SassDeleteFileContext(fc SassFileContext) {
-	C.sass_delete_file_context(fc)
-}
-
+// SassDeleteDataContext frees the memory used for a data context
 func SassDeleteDataContext(dc SassDataContext) {
 	C.sass_delete_data_context(dc)
 }
 
-type SassOptions *C.struct_Sass_Options
-
 type SassContext *C.struct_Sass_Context
 
+// SassDataContextGetContext returns a context from a data context.
+// These are useful for calling generic methods like compiling.
 func SassDataContextGetContext(godc SassDataContext) SassContext {
 	opts := C.sass_data_context_get_context(godc)
 	return (SassContext)(opts)
 }
 
-func SassFileContextSetOptions(gofc SassFileContext, goopts SassOptions) {
-	C.sass_file_context_set_options(gofc, goopts)
-}
-
+// SassFileContextGetContext returns a context from a file context.
+// These are useful for calling generic methods like compiling.
 func SassFileContextGetContext(gofc SassFileContext) SassContext {
 	opts := C.sass_file_context_get_context(gofc)
 	return (SassContext)(opts)
 }
 
+// SassOptions is a wrapper to C.struct_Sass_Options
+type SassOptions *C.struct_Sass_Options
+
+// SassMakeOptions creates a new SassOptions object
+func SassMakeOptions() SassOptions {
+	opts := C.sass_make_options()
+	return (SassOptions)(opts)
+}
+
+// SassFileContextGetOptions returns the sass options in a file context
 func SassFileContextGetOptions(gofc SassFileContext) SassOptions {
 	fcopts := C.sass_file_context_get_options(gofc)
 	return (SassOptions)(fcopts)
 }
 
+// SassFileContextGetOptions sets a sass options to a file context
+func SassFileContextSetOptions(gofc SassFileContext, goopts SassOptions) {
+	C.sass_file_context_set_options(gofc, goopts)
+}
+
+// SassDataContextGetOptions returns the Sass options in a data context
 func SassDataContextGetOptions(godc SassDataContext) SassOptions {
 	dcopts := C.sass_data_context_get_options(godc)
 	return (SassOptions)(dcopts)
 }
 
+// SassDataContextGetOptions sets a Sass options to a data context
 func SassDataContextSetOptions(godc SassDataContext, goopts SassOptions) {
 	C.sass_data_context_set_options(godc, goopts)
 }
 
+type SassCompiler *C.struct_Sass_Compiler
+
+// SassMakeFileCompiler returns a compiler from a file context
 func SassMakeFileCompiler(gofc SassFileContext) SassCompiler {
 	sc := C.sass_make_file_compiler(gofc)
 	return (SassCompiler)(sc)
 }
 
+// SassMakeDataCompiler returns a compiler from a data context
 func SassMakeDataCompiler(godc SassDataContext) SassCompiler {
 	dc := C.sass_make_data_compiler(godc)
 	return (SassCompiler)(dc)
 }
 
-type SassCompiler *C.struct_Sass_Compiler
-
-func SassCompilerExecute(c SassCompiler) {
-	C.sass_compiler_execute(c)
-}
-
+// SassCompilerParse prepares a compiler for execution
 func SassCompilerParse(c SassCompiler) {
 	C.sass_compiler_parse(c)
 }
 
+// SassCompilerExecute compiles a compiler
+func SassCompilerExecute(c SassCompiler) {
+	C.sass_compiler_execute(c)
+}
+
+// SassDeleteCompiler frees memory for the Sass compiler
 func SassDeleteCompiler(c SassCompiler) {
 	C.sass_delete_compiler(c)
 }
 
+// SassOptionSetCHeaders adds custom C headers to a SassOptions
 func SassOptionSetCHeaders(gofc SassOptions, goimp SassImporterList) {
 	C.sass_option_set_c_headers(gofc, goimp)
 }
 
+// SassContextGetOutputString retrieves the final compiled CSS after
+// compiler parses and executes.
 func SassContextGetOutputString(goctx SassContext) string {
 	cstr := C.sass_context_get_output_string(goctx)
 	defer C.free(unsafe.Pointer(cstr))
 	return C.GoString(cstr)
 }
 
+// SassContextGetErrorJSON requests an error in JSON format from libsass
 func SassContextGetErrorJSON(goctx SassContext) string {
 	cstr := C.sass_context_get_error_json(goctx)
 	defer C.free(unsafe.Pointer(cstr))
 	return C.GoString(cstr)
 }
 
+// SassContextGetErrorStatus requests error status
 func SassContextGetErrorStatus(goctx SassContext) int {
 	return int(C.sass_context_get_error_status(goctx))
 }
 
+// SassOptionSetPrecision sets the precision of floating point math
+// ie. 3.2222px. This is currently bugged and does not work.
 func SassOptionSetPrecision(goopts SassOptions, i int) {
 	C.sass_option_set_precision(goopts, C.int(i))
 }
 
+// SassOptionSetOutputStyle sets the output format of CSS see: http://godoc.org/github.com/wellington/go-libsass#pkg-constants
 func SassOptionSetOutputStyle(goopts SassOptions, i int) {
 	C.sass_option_set_output_style(goopts, uint32(i))
 }
 
+// SassOptionSetSourceComments toggles the output of line comments in CSS
 func SassOptionSetSourceComments(goopts SassOptions, b bool) {
 	C.sass_option_set_source_comments(goopts, C.bool(b))
 }
 
+// SassOptionSetIncludePaths adds additional paths to look for input Sass
 func SassOptionSetIncludePath(goopts SassOptions, path string) {
 	C.sass_option_set_include_path(goopts, C.CString(path))
 }
@@ -235,6 +268,8 @@ func SassOptionSetOmitSourceMapURL() {
 
 type SassImportEntry C.Sass_Import_Entry
 
+// SassMakeImport creates an import for overriding behavior when
+// certain imports are called.
 func SassMakeImport(path string, base string, source string, srcmap string) SassImportEntry {
 	impent := C.sass_make_import(C.CString(path), C.CString(base),
 		C.CString(source), C.CString(srcmap))
@@ -248,13 +283,10 @@ func SassImporterGetFunction(goimp SassImporter) SassImporterFN {
 	return (SassImporterFN)(impfn)
 }
 
-func SassMakeOptions() SassOptions {
-	opts := C.sass_make_options()
-	return (SassOptions)(opts)
-}
-
 func SassImporterGetListEntry() {}
 
+// SassMakeImport attaches a Go pointer to a Sass function. Go will
+// eventually kill this behavior and we should find a new way to do this.
 func SassMakeImporter(fn SassImporterFN, priority int, v interface{}) (SassImporter, error) {
 	vv := reflect.ValueOf(v).Elem()
 	if !vv.CanAddr() {
@@ -265,6 +297,8 @@ func SassMakeImporter(fn SassImporterFN, priority int, v interface{}) (SassImpor
 	return (SassImporter)(lst), nil
 }
 
+// SassImporterSetListEntry updates an import list with a new entry. The
+// index must exist in the importer list.
 func SassImporterSetListEntry(golst SassImporterList, idx int, ent SassImporter) {
 	C.sass_importer_set_list_entry(golst, C.size_t(idx), ent)
 }

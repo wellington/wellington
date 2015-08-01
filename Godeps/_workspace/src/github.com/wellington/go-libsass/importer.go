@@ -92,6 +92,8 @@ func (p *Imports) Len() int {
 	return len(p.m)
 }
 
+// SetImporters accepts a SassOptions and adds the registered
+// importers in the context.
 func (ctx *Context) SetImporters(opts libs.SassOptions) {
 	entries := make([]libs.ImportEntry, ctx.Imports.Len())
 	i := 0

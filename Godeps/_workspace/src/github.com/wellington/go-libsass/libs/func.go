@@ -1,7 +1,7 @@
 package libs
 
 // #include <stdlib.h>
-// #include "sass_context_bind.h"
+// #include "sass_context.h"
 //
 // extern union Sass_Value* GoBridge( union Sass_Value* s_args, void* cookie);
 //
@@ -17,6 +17,7 @@ import "unsafe"
 
 type SassFunc C.Sass_Function_Entry
 
+// SassMakeFunction binds a Go pointer to a Sass function signature
 func SassMakeFunction(signature string, ptr unsafe.Pointer) SassFunc {
 	csign := C.CString(signature)
 	fn := C.sass_make_function(
@@ -26,6 +27,8 @@ func SassMakeFunction(signature string, ptr unsafe.Pointer) SassFunc {
 	return (SassFunc)(fn)
 }
 
+// BindFuncs attaches a slice of Functions to a sass options. Signatures
+// are already defined in the SassFunc.
 func BindFuncs(opts SassOptions, funcs []SassFunc) {
 	sz := C.size_t(len(funcs))
 	cfuncs := C.sass_make_function_list(sz)

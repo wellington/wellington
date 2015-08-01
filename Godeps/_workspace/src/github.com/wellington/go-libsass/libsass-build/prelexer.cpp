@@ -214,8 +214,44 @@ namespace Sass {
       return sequence<exactly<'@'>, identifier>(src);
     }
 
-    const char* re_reference_selector(const char* src) {
-      return sequence < exactly <'/'>, identifier, exactly <'/'> >(src);
+    const char* re_reference_combinator(const char* src) {
+      return sequence <
+        optional <
+          sequence <
+            zero_plus <
+              exactly <'-'>
+            >,
+            identifier,
+            exactly <'|'>
+          >
+        >,
+        zero_plus <
+          exactly <'-'>
+        >,
+        identifier
+      >(src);
+    }
+
+    const char* static_reference_combinator(const char* src) {
+      return sequence <
+        exactly <'/'>,
+        re_reference_combinator,
+        exactly <'/'>
+      >(src);
+    }
+
+    const char* schema_reference_combinator(const char* src) {
+      return sequence <
+        exactly <'/'>,
+        optional <
+          sequence <
+            css_ip_identifier,
+            exactly <'|'>
+          >
+        >,
+        css_ip_identifier,
+        exactly <'/'>
+      > (src);
     }
 
     const char* kwd_import(const char* src) {
@@ -340,11 +376,59 @@ namespace Sass {
       return word<null_kwd>(src);
     }
 
+    const char* css_identifier(const char* src) {
+      return sequence <
+               zero_plus <
+                 exactly <'-'>
+               >,
+               identifier
+             >(src);
+    }
+
+    const char* css_ip_identifier(const char* src) {
+      return sequence <
+               zero_plus <
+                 exactly <'-'>
+               >,
+               alternatives <
+                 identifier,
+                 interpolant
+               >
+             >(src);
+    }
+
     // Match CSS type selectors
     const char* namespace_prefix(const char* src) {
-      return sequence< optional< alternatives< identifier, exactly<'*'> > >,
-                       exactly<'|'>, negate<exactly<'='>> >(src);
+      return sequence <
+               optional <
+                 alternatives <
+                   exactly <'*'>,
+                   css_identifier
+                 >
+               >,
+               exactly <'|'>,
+               negate <
+                 exactly <'='>
+               >
+             >(src);
     }
+
+    // Match CSS type selectors
+    const char* namespace_schema(const char* src) {
+      return sequence <
+               optional <
+                 alternatives <
+                   exactly <'*'>,
+                   css_ip_identifier
+                 >
+               >,
+               exactly<'|'>,
+               negate <
+                 exactly <'='>
+               >
+             >(src);
+    }
+
     const char* hyphens_and_identifier(const char* src) {
       return sequence< zero_plus< exactly< '-' > >, identifier >(src);
     }
@@ -352,7 +436,7 @@ namespace Sass {
       return sequence< zero_plus< exactly< '-' > >, name >(src);
     }
     const char* universal(const char* src) {
-      return sequence< optional<namespace_prefix>, exactly<'*'> >(src);
+      return sequence< optional<namespace_schema>, exactly<'*'> >(src);
     }
     // Match CSS id names.
     const char* id_name(const char* src) {
@@ -364,7 +448,7 @@ namespace Sass {
     }
     // Attribute name in an attribute selector.
     const char* attribute_name(const char* src) {
-      return alternatives< sequence< optional<namespace_prefix>, identifier>,
+      return alternatives< sequence< optional<namespace_schema>, identifier>,
                            identifier >(src);
     }
     // match placeholder selectors
@@ -754,6 +838,8 @@ namespace Sass {
                            static_string,
                            percentage,
                            hex,
+                           exactly<'|'>,
+                           // exactly<'+'>,
                            number,
                            sequence< exactly<'!'>, word<important_kwd> >
                           >(src);
@@ -829,7 +915,7 @@ namespace Sass {
     }
 
     const char* type_selector(const char* src) {
-      return sequence< optional<namespace_prefix>, identifier>(src);
+      return sequence< optional<namespace_schema>, identifier>(src);
     }
     const char* re_type_selector(const char* src) {
       return alternatives< type_selector, universal, quoted_string, dimension, percentage, number, identifier_alnums >(src);

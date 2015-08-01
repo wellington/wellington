@@ -3,7 +3,9 @@
 #include "node.hpp"
 #include "extend.hpp"
 #include "to_string.hpp"
+#include "color_maps.hpp"
 #include <set>
+#include <iomanip>
 #include <algorithm>
 #include <iostream>
 
@@ -17,13 +19,31 @@ namespace Sass {
     pstate_.offset += pstate - pstate_ + pstate.offset;
   }
 
-
-  bool Compound_Selector::operator<(const Compound_Selector& rhs) const
+  inline bool is_ns_eq(const string& l, const string& r)
   {
-    To_String to_string;
-    // ugly
-    return const_cast<Compound_Selector*>(this)->perform(&to_string) <
-           const_cast<Compound_Selector&>(rhs).perform(&to_string);
+    if (l.empty() && r.empty()) return true;
+    else if (l.empty() && r == "*") return true;
+    else if (r.empty() && l == "*") return true;
+    else return l == r;
+  }
+
+
+
+  bool Compound_Selector::operator< (const Compound_Selector& rhs) const
+  {
+    size_t L = std::min(length(), rhs.length());
+    for (size_t i = 0; i < L; ++i)
+    {
+      Simple_Selector* l = (*this)[i];
+      Simple_Selector* r = rhs[i];
+      if (!l && !r) return false;
+      else if (!r) return false;
+      else if (!l) return true;
+      else if (*l != *r)
+      { return *l < *r; }
+    }
+    // just compare the length now
+    return length() < rhs.length();
   }
 
   bool Compound_Selector::has_parent_ref()
@@ -37,41 +57,129 @@ namespace Sass {
            (tail() && tail()->has_parent_ref());
   }
 
-  bool Complex_Selector::operator<(const Complex_Selector& rhs) const
+  bool Complex_Selector::operator< (const Complex_Selector& rhs) const
   {
-    To_String to_string;
-    return const_cast<Complex_Selector*>(this)->perform(&to_string) <
-           const_cast<Complex_Selector&>(rhs).perform(&to_string);
+    // const iterators for tails
+    const Complex_Selector* l = this;
+    const Complex_Selector* r = &rhs;
+    Compound_Selector* l_h = l ? l->head() : 0;
+    Compound_Selector* r_h = r ? r->head() : 0;
+    // process all tails
+    while (true)
+    {
+      // skip empty ancestor first
+      if (l && l->is_empty_ancestor())
+      {
+        l = l->tail();
+        l_h = l ? l->head() : 0;
+        continue;
+      }
+      // skip empty ancestor first
+      if (r && r->is_empty_ancestor())
+      {
+        r = r->tail();
+        r_h = r ? r->head() : 0;
+        continue;
+      }
+      // check for valid selectors
+      if (!l) return !!r;
+      if (!r) return false;
+      // both are null
+      else if (!l_h && !r_h)
+      {
+        // check combinator after heads
+        if (l->combinator() != r->combinator())
+        { return l->combinator() < r->combinator(); }
+        // advance to next tails
+        l = l->tail();
+        r = r->tail();
+        // fetch the next headers
+        l_h = l ? l->head() : 0;
+        r_h = r ? r->head() : 0;
+      }
+      // one side is null
+      else if (!r_h) return true;
+      else if (!l_h) return false;
+      // heads ok and equal
+      else if (*l_h == *r_h)
+      {
+        // check combinator after heads
+        if (l->combinator() != r->combinator())
+        { return l->combinator() < r->combinator(); }
+        // advance to next tails
+        l = l->tail();
+        r = r->tail();
+        // fetch the next headers
+        l_h = l ? l->head() : 0;
+        r_h = r ? r->head() : 0;
+      }
+      // heads are not equal
+      else return *l_h < *r_h;
+    }
+    return true;
   }
 
-  bool Complex_Selector::operator==(const Complex_Selector& rhs) const {
-    // TODO: We have to access the tail directly using tail_ since ADD_PROPERTY doesn't provide a const version.
-
-    const Complex_Selector* pOne = this;
-    const Complex_Selector* pTwo = &rhs;
-
-    // Consume any empty references at the beginning of the Complex_Selector
-    if (pOne->combinator() == Complex_Selector::ANCESTOR_OF && pOne->head()->is_empty_reference()) {
-      pOne = pOne->tail_;
-    }
-    if (pTwo->combinator() == Complex_Selector::ANCESTOR_OF && pTwo->head()->is_empty_reference()) {
-      pTwo = pTwo->tail_;
-    }
-
-    while (pOne && pTwo) {
-      if (pOne->combinator() != pTwo->combinator()) {
-        return false;
+  bool Complex_Selector::operator== (const Complex_Selector& rhs) const
+  {
+    // const iterators for tails
+    const Complex_Selector* l = this;
+    const Complex_Selector* r = &rhs;
+    Compound_Selector* l_h = l ? l->head() : 0;
+    Compound_Selector* r_h = r ? r->head() : 0;
+    // process all tails
+    while (true)
+    {
+      // skip empty ancestor first
+      if (l && l->is_empty_ancestor())
+      {
+        l = l->tail();
+        l_h = l ? l->head() : 0;
+        continue;
       }
-
-      if (*(pOne->head()) != *(pTwo->head())) {
-        return false;
+      // skip empty ancestor first
+      if (r && r->is_empty_ancestor())
+      {
+        r = r->tail();
+        r_h = r ? r->head() : 0;
+        continue;
       }
-
-      pOne = pOne->tail_;
-      pTwo = pTwo->tail_;
+      // check the pointers
+      if (!r) return !l;
+      if (!l) return !r;
+      // both are null
+      if (!l_h && !r_h)
+      {
+        // check combinator after heads
+        if (l->combinator() != r->combinator())
+        { return l->combinator() < r->combinator(); }
+        // advance to next tails
+        l = l->tail();
+        r = r->tail();
+        // fetch the next heads
+        l_h = l ? l->head() : 0;
+        r_h = r ? r->head() : 0;
+      }
+      // fail if only one is null
+      else if (!r_h) return !l_h;
+      else if (!l_h) return !r_h;
+      // heads ok and equal
+      else if (*l_h == *r_h)
+      {
+        // check combinator after heads
+        if (l->combinator() != r->combinator())
+        { return l->combinator() == r->combinator(); }
+        // advance to next tails
+        l = l->tail();
+        r = r->tail();
+        // fetch the next heads
+        l_h = l ? l->head() : 0;
+        r_h = r ? r->head() : 0;
+      }
+      // abort
+      else break;
     }
-
-    return pOne == NULL && pTwo == NULL;
+    // unreachable
+    return false;
   }
 
   Compound_Selector* Compound_Selector::unify_with(Compound_Selector* rhs, Context& ctx)
@@ -80,32 +188,66 @@ namespace Sass {
     for (size_t i = 0, L = length(); i < L; ++i)
     {
       if (!unified) break;
-      else          unified = (*this)[i]->unify_with(unified, ctx);
+      unified = (*this)[i]->unify_with(unified, ctx);
     }
     return unified;
   }
 
-  bool Simple_Selector::operator==(const Simple_Selector& rhs) const
+  bool Simple_Selector::operator== (const Simple_Selector& rhs) const
   {
-    // Compare the string representations for equality.
-
-    // Cast away const here. To_String should take a const object, but it doesn't.
-    Simple_Selector* pLHS = const_cast<Simple_Selector*>(this);
-    Simple_Selector* pRHS = const_cast<Simple_Selector*>(&rhs);
-
-    To_String to_string;
-    return pLHS->perform(&to_string) == pRHS->perform(&to_string);
+    if (is_ns_eq(ns(), rhs.ns()))
+    { return name() == rhs.name(); }
+    return ns() == rhs.ns();
   }
 
-  bool Simple_Selector::operator<(const Simple_Selector& rhs) const {
-    // Use the string representation for ordering.
+  bool Simple_Selector::operator< (const Simple_Selector& rhs) const
+  {
+    if (is_ns_eq(ns(), rhs.ns()))
+    { return name() < rhs.name(); }
+    return ns() < rhs.ns();
+  }
 
-    // Cast away const here. To_String should take a const object, but it doesn't.
-    Simple_Selector* pLHS = const_cast<Simple_Selector*>(this);
-    Simple_Selector* pRHS = const_cast<Simple_Selector*>(&rhs);
+  bool Selector_List::operator== (const Selector& rhs) const
+  {
+    // solve the double dispatch problem by using RTTI information via dynamic cast
+    if (const Selector_List* ls = dynamic_cast<const Selector_List*>(&rhs)) { return *this == *ls; }
+    else if (const Complex_Selector* ls = dynamic_cast<const Complex_Selector*>(&rhs)) { return *this == *ls; }
+    else if (const Compound_Selector* ls = dynamic_cast<const Compound_Selector*>(&rhs)) { return *this == *ls; }
+    // no compare method
+    return this == &rhs;
+  }
 
-    To_String to_string;
-    return pLHS->perform(&to_string) < pRHS->perform(&to_string);
+  bool Selector_List::operator== (const Selector_List& rhs) const
+  {
+    // for array access
+    size_t i = 0, n = 0;
+    size_t iL = length();
+    size_t nL = rhs.length();
+    // create temporary vectors and sort them
+    vector<Complex_Selector*> l_lst = this->elements();
+    vector<Complex_Selector*> r_lst = rhs.elements();
+    std::sort(l_lst.begin(), l_lst.end(), cmp_complex_selector());
+    std::sort(r_lst.begin(), r_lst.end(), cmp_complex_selector());
+    // process loop
+    while (true)
+    {
+      // first check for valid index
+      if (i == iL) return iL == nL;
+      else if (n == nL) return iL == nL;
+      // the access the vector items
+      Complex_Selector* l = l_lst[i];
+      Complex_Selector* r = r_lst[n];
+      // skip nulls
+      if (!l) ++i;
+      else if (!r) ++n;
+      // do the check now
+      else if (*l != *r)
+      { return false; }
+      // advance now
+      ++i; ++n;
+    }
+    // no mismatch
+    return true;
   }
 
   Compound_Selector* Simple_Selector::unify_with(Compound_Selector* rhs, Context& ctx)
@@ -114,7 +256,7 @@ namespace Sass {
     for (size_t i = 0, L = rhs->length(); i < L; ++i)
     { if (perform(&to_string) == (*rhs)[i]->perform(&to_string)) return rhs; }
 
-    // check for pseudo elements because they need to come last
+    // check for pseudo elements because they are always last
     size_t i, L;
     bool found = false;
     if (typeid(*this) == typeid(Pseudo_Selector) || typeid(*this) == typeid(Wrapped_Selector))
@@ -148,6 +290,41 @@ namespace Sass {
     return cpy;
   }
 
+  Simple_Selector* Type_Selector::unify_with(Simple_Selector* rhs, Context& ctx)
+  {
+    // check if ns can be extended
+    // true for no ns or universal
+    if (has_universal_ns())
+    {
+      // but dont extend with universal
+      // true for valid ns and universal
+      if (!rhs->is_universal_ns())
+      {
+        // creaty the copy inside (avoid unnecessary copies)
+        Type_Selector* ts = new (ctx.mem) Type_Selector(*this);
+        // overwrite the name if star is given as name
+        if (ts->name() == "*") { ts->name(rhs->name()); }
+        // now overwrite the namespace name and flag
+        ts->ns(rhs->ns()); ts->has_ns(rhs->has_ns());
+        // return copy
+        return ts;
+      }
+    }
+    // namespace may changed, check the name now
+    // overwrite star (but not with another star)
+    if (name() == "*" && rhs->name() != "*")
+    {
+      // creaty the copy inside (avoid unnecessary copies)
+      Type_Selector* ts = new (ctx.mem) Type_Selector(*this);
+      // simply set the new name
+      ts->name(rhs->name());
+      // return copy
+      return ts;
+    }
+    // return original
+    return this;
+  }
+
   Compound_Selector* Type_Selector::unify_with(Compound_Selector* rhs, Context& ctx)
   {
     // TODO: handle namespaces
@@ -159,34 +336,46 @@ namespace Sass {
       return cpy;
     }
 
-    // if this is a universal selector and rhs is not empty, just return the rhs
-    if (name() == "*")
-    { return new (ctx.mem) Compound_Selector(*rhs); }
-
-
     Simple_Selector* rhs_0 = (*rhs)[0];
     // otherwise, this is a tag name
-    if (typeid(*rhs_0) == typeid(Type_Selector))
+    if (name() == "*")
     {
-      // if rhs is universal, just return this tagname + rhs's qualifiers
-      if (static_cast<Type_Selector*>(rhs_0)->name() == "*")
+      if (typeid(*rhs_0) == typeid(Type_Selector))
       {
+        // if rhs is universal, just return this tagname + rhs's qualifiers
+        Compound_Selector* cpy = new (ctx.mem) Compound_Selector(*rhs);
+        Type_Selector* ts = static_cast<Type_Selector*>(rhs_0);
+        (*cpy)[0] = this->unify_with(ts, ctx);
+        return cpy;
+      }
+      else if (dynamic_cast<Selector_Qualifier*>(rhs_0)) {
+        // qualifier is `.class`, so we can prefix with `ns|*.class`
         Compound_Selector* cpy = new (ctx.mem) Compound_Selector(rhs->pstate());
-        (*cpy) << this;
-        for (size_t i = 1, L = rhs->length(); i < L; ++i)
+        if (has_ns() && !rhs_0->has_ns()) {
+          if (ns() != "*") (*cpy) << this;
+        }
+        for (size_t i = 0, L = rhs->length(); i < L; ++i)
         { (*cpy) << (*rhs)[i]; }
         return cpy;
       }
-      // if rhs is another tag name and it matches this, return rhs
-      else if (static_cast<Type_Selector*>(rhs_0)->name() == name())
-      { return new (ctx.mem) Compound_Selector(*rhs); }
-      // else the tag names don't match; return nil
-      else
-      { return 0; }
+
+
+      return rhs;
+    }
+
+    if (typeid(*rhs_0) == typeid(Type_Selector))
+    {
+      // if rhs is universal, just return this tagname + rhs's qualifiers
+      if (rhs_0->name() != "*" && rhs_0->ns() != "*" && rhs_0->name() != name()) return 0;
+      // otherwise create new compound and unify first simple selector
+      Compound_Selector* copy = new (ctx.mem) Compound_Selector(*rhs);
+      (*copy)[0] = this->unify_with(rhs_0, ctx);
+      return copy;
+
     }
     // else it's a tag name and a bunch of qualifiers -- just append them
     Compound_Selector* cpy = new (ctx.mem) Compound_Selector(rhs->pstate());
-    (*cpy) << this;
+    if (name() != "*") (*cpy) << this;
     (*cpy) += rhs;
     return cpy;
   }
@@ -222,6 +411,24 @@ namespace Sass {
       }
     }
     return Simple_Selector::unify_with(rhs, ctx);
+  }
+
+  bool Wrapped_Selector::operator== (const Wrapped_Selector& rhs) const
+  {
+    if (is_ns_eq(ns(), rhs.ns()) && name() == rhs.name())
+    { return *(selector()) == *(rhs.selector()); }
+    else return false;
+  }
+
+  bool Wrapped_Selector::operator== (const Simple_Selector& rhs) const
+  {
+    if (const Wrapped_Selector* w = dynamic_cast<const Wrapped_Selector*>(&rhs))
+    {
+      return *this == *w;
+    }
+    if (is_ns_eq(ns(), rhs.ns()))
+    { return name() == rhs.name(); }
+    return ns() == rhs.ns();
   }
 
   bool Wrapped_Selector::is_superselector_of(Wrapped_Selector* sub)
@@ -361,87 +568,121 @@ namespace Sass {
     //for (auto l : lset) { cerr << "l: " << l << endl; }
     //for (auto r : rset) { cerr << "r: " << r << endl; }
 
-    if (lset.size() == 0) return true;
+    if (lset.empty()) return true;
     // return true if rset contains all the elements of lset
     return includes(rset.begin(), rset.end(), lset.begin(), lset.end());
 
   }
 
-  Selector_List* Complex_Selector::unify_with(Complex_Selector* other, Context& ctx) {
-    To_String to_string;
-    Compound_Selector* thisBase = last()->head();
-    Compound_Selector* rhsBase = other->last()->head();
+  // create complex selector (ancestor of) from compound selector
+  Complex_Selector* Compound_Selector::to_complex(Memory_Manager<AST_Node>& mem)
+  {
+    // create an intermediate complex selector
+    return new (mem) Complex_Selector(pstate(),
+                                      Complex_Selector::ANCESTOR_OF,
+                                      this,
+                                      0);
+  }
 
+  Selector_List* Complex_Selector::unify_with(Complex_Selector* other, Context& ctx)
+  {
 
-    if( thisBase == 0 || rhsBase == 0 ) return 0;
+    // get last tails (on the right side)
+    Complex_Selector* l_last = this->last();
+    Complex_Selector* r_last = other->last();
 
-    // Not sure about this check, but closest way I could check to see if this is a ruby 'SimpleSequence' equivalent
-    if(  tail()->combinator() != Combinator::ANCESTOR_OF || other->tail()->combinator() != Combinator::ANCESTOR_OF ) return 0;
+    // check valid pointers (assertion)
+    SASS_ASSERT(l_last, "lhs is null");
+    SASS_ASSERT(r_last, "rhs is null");
 
-    Compound_Selector* unified = rhsBase->unify_with(thisBase, ctx);
-    if( unified == 0 ) return 0;
+    // Not sure about this check, but closest way I could check
+    // was to see if this is a ruby 'SimpleSequence' equivalent.
+    // It seems to do the job correctly as some specs react to this
+    if (l_last->combinator() != Combinator::ANCESTOR_OF) return 0;
+    if (r_last->combinator() != Combinator::ANCESTOR_OF ) return 0;
 
+    // get the headers for the last tails
+    Compound_Selector* l_last_head = l_last->head();
+    Compound_Selector* r_last_head = r_last->head();
+
+    // check valid head pointers (assertion)
+    SASS_ASSERT(l_last_head, "lhs head is null");
+    SASS_ASSERT(r_last_head, "rhs head is null");
+
+    // get the unification of the last compound selectors
+    Compound_Selector* unified = r_last_head->unify_with(l_last_head, ctx);
+
+    // abort if we could not unify heads
+    if (unified == 0) return 0;
+
+    // check for universal (star: `*`) selector
+    bool is_universal = l_last_head->is_universal() ||
+                        r_last_head->is_universal();
+
+    if (is_universal)
+    {
+      // move the head
+      l_last->head(0);
+      r_last->head(unified);
+    }
+
+    // create nodes from both selectors
     Node lhsNode = complexSelectorToNode(this, ctx);
     Node rhsNode = complexSelectorToNode(other, ctx);
 
-    // Create a temp Complex_Selector, turn it into a Node, and combine it with the existing RHS node
-    Complex_Selector* fakeComplexSelector = new (ctx.mem) Complex_Selector(ParserState("[NODE]"), Complex_Selector::ANCESTOR_OF, unified, NULL);
-    Node unifiedNode = complexSelectorToNode(fakeComplexSelector, ctx);
-    rhsNode.plus(unifiedNode);
-
-    Node node = Extend::subweave(lhsNode, rhsNode, ctx);
-
-    Selector_List* result = new (ctx.mem) Selector_List(pstate());
-    for (NodeDeque::iterator iter = node.collection()->begin(), iterEnd = node.collection()->end(); iter != iterEnd; iter++) {
-      Node childNode = *iter;
-      childNode = Node::naiveTrim(childNode, ctx);
-
-      Complex_Selector* childNodeAsComplexSelector = nodeToComplexSelector(childNode, ctx);
-      if( childNodeAsComplexSelector ) { (*result) << childNodeAsComplexSelector; }
+    // overwrite universal base
+    if (!is_universal)
+    {
+      // create some temporaries to convert to node
+      Complex_Selector* fake = unified->to_complex(ctx.mem);
+      Node unified_node = complexSelectorToNode(fake, ctx);
+      // add to permutate the list?
+      rhsNode.plus(unified_node);
     }
+
+    // do some magic we inherit from node and extend
+    Node node = Extend::subweave(lhsNode, rhsNode, ctx);
+    Selector_List* result = new (ctx.mem) Selector_List(pstate());
+    NodeDequePtr col = node.collection(); // move from collection to list
+    for (NodeDeque::iterator it = col->begin(), end = col->end(); it != end; it++)
+    { (*result) << nodeToComplexSelector(Node::naiveTrim(*it, ctx), ctx); }
+
+    // only return if list has some entries
     return result->length() ? result : 0;
+
   }
 
-  bool Compound_Selector::operator==(const Compound_Selector& rhs) const {
-    To_String to_string;
-
-    // Check if pseudo-elements are the same between the selectors
-
-    set<string> lpsuedoset, rpsuedoset;
-    for (size_t i = 0, L = length(); i < L; ++i)
+  bool Compound_Selector::operator== (const Compound_Selector& rhs) const
+  {
+    // for array access
+    size_t i = 0, n = 0;
+    size_t iL = length();
+    size_t nL = rhs.length();
+    // create temporary vectors and sort them
+    vector<Simple_Selector*> l_lst = this->elements();
+    vector<Simple_Selector*> r_lst = rhs.elements();
+    std::sort(l_lst.begin(), l_lst.end(), cmp_simple_selector());
+    std::sort(r_lst.begin(), r_lst.end(), cmp_simple_selector());
+    // process loop
+    while (true)
     {
-      if ((*this)[i]->is_pseudo_element()) {
-        string pseudo((*this)[i]->perform(&to_string));
-        pseudo = pseudo.substr(pseudo.find_first_not_of(":")); // strip off colons to ensure :after matches ::after since ruby sass is forgiving
-        lpsuedoset.insert(pseudo);
-      }
+      // first check for valid index
+      if (i == iL) return iL == nL;
+      else if (n == nL) return iL == nL;
+      // the access the vector items
+      Simple_Selector* l = l_lst[i];
+      Simple_Selector* r = r_lst[n];
+      // skip nulls
+      if (!l) ++i;
+      if (!r) ++n;
+      // do the check now
+      else if (*l != *r)
+      { return false; }
+      // advance now
+      ++i; ++n;
     }
-    for (size_t i = 0, L = rhs.length(); i < L; ++i)
-    {
-      if (rhs[i]->is_pseudo_element()) {
-        string pseudo(rhs[i]->perform(&to_string));
-        pseudo = pseudo.substr(pseudo.find_first_not_of(":")); // strip off colons to ensure :after matches ::after since ruby sass is forgiving
-        rpsuedoset.insert(pseudo);
-      }
-    }
-    if (lpsuedoset != rpsuedoset) {
-      return false;
-    }
-
-    // Check the rest of the SimpleSelectors
-    // Use string representations. We can't create a set of Simple_Selector pointers because std::set == std::set is going to call ==
-    // on the pointers to determine equality. I don't know of a way to pass in a comparison object. The one you can specify as part of
-    // the template type is used for ordering, but not equality. We also can't just put in non-pointer Simple_Selectors because the
-    // class is intended to be subclassed, and we'd get splicing.
-
-    set<string> lset, rset;
-
-    for (size_t i = 0, L = length(); i < L; ++i)
-    { lset.insert((*this)[i]->perform(&to_string)); }
-    for (size_t i = 0, L = rhs.length(); i < L; ++i)
-    { rset.insert(rhs[i]->perform(&to_string)); }
-
-    return lset == rset;
+    // no mismatch
+    return true;
   }
 
   bool Complex_Selector_Pointer_Compare::operator() (const Complex_Selector* const pLeft, const Complex_Selector* const pRight) const {
@@ -460,10 +701,10 @@ namespace Sass {
     // check for selectors with leading or trailing combinators
     if (!lhs->head() || !rhs->head())
     { return false; }
-    Complex_Selector* l_innermost = lhs->innermost();
+    const Complex_Selector* l_innermost = lhs->innermost();
     if (l_innermost->combinator() != Complex_Selector::ANCESTOR_OF)
     { return false; }
-    Complex_Selector* r_innermost = rhs->innermost();
+    const Complex_Selector* r_innermost = rhs->innermost();
     if (r_innermost->combinator() != Complex_Selector::ANCESTOR_OF)
     { return false; }
     // more complex (i.e., longer) selectors are always more specific
@@ -534,7 +775,7 @@ namespace Sass {
     return false;
   }
 
-  size_t Complex_Selector::length()
+  size_t Complex_Selector::length() const
   {
     // TODO: make this iterative
     if (!tail()) return 1;
@@ -666,11 +907,68 @@ namespace Sass {
     return ss;
   }
 
-  Complex_Selector* Complex_Selector::innermost()
+  // return the last tail that is defined
+  Complex_Selector* Complex_Selector::first()
   {
-    if (!tail()) return this;
-    else         return tail()->innermost();
+    // declare variables used in loop
+    Complex_Selector* cur = this->tail_;
+    const Compound_Selector* head = head_;
+    // processing loop
+    while (cur)
+    {
+      // get the head
+      head = cur->head_;
+      // check for single parent ref
+      if (head && head->length() == 1)
+      {
+        // abort (and return) if it is not a parent selector
+        if (!dynamic_cast<Parent_Selector*>((*head)[0])) break;
+      }
+      // advance to next
+      cur = cur->tail_;
+    }
+    // result
+    return cur;
   }
+
+  // return the last tail that is defined
+  const Complex_Selector* Complex_Selector::first() const
+  {
+    // declare variables used in loop
+    const Complex_Selector* cur = this->tail_;
+    const Compound_Selector* head = head_;
+    // processing loop
+    while (cur)
+    {
+      // get the head
+      head = cur->head_;
+      // check for single parent ref
+      if (head && head->length() == 1)
+      {
+        // abort (and return) if it is not a parent selector
+        if (!dynamic_cast<Parent_Selector*>((*head)[0])) break;
+      }
+      // advance to next
+      cur = cur->tail_;
+    }
+    // result
+    return cur;
+  }
+
+  // return the last tail that is defined
+  Complex_Selector* Complex_Selector::last()
+  {
+    // ToDo: implement with a while loop
+    return tail_? tail_->last() : this;
+  }
+
+  // return the last tail that is defined
+  const Complex_Selector* Complex_Selector::last() const
+  {
+    // ToDo: implement with a while loop
+    return tail_? tail_->last() : this;
+  }
+
 
   Complex_Selector::Combinator Complex_Selector::clear_innermost()
   {
@@ -945,7 +1243,7 @@ namespace Sass {
   }
 
   Number::Number(ParserState pstate, double val, string u, bool zero)
-  : Expression(pstate),
+  : Value(pstate),
     value_(val),
     zero_(zero),
     numerator_units_(vector<string>()),
@@ -958,8 +1256,10 @@ namespace Sass {
       while (true) {
         r = u.find_first_of("*/", l);
         string unit(u.substr(l, r == string::npos ? r : r - l));
-        if (nominator) numerator_units_.push_back(unit);
-        else denominator_units_.push_back(unit);
+        if (!unit.empty()) {
+          if (nominator) numerator_units_.push_back(unit);
+          else denominator_units_.push_back(unit);
+        }
         if (r == string::npos) break;
         // ToDo: should error for multiple slashes
         // if (!nominator && u[r] == '/') error(...)
@@ -989,7 +1289,7 @@ namespace Sass {
   bool Number::is_unitless()
   { return numerator_units_.empty() && denominator_units_.empty(); }
 
-  void Number::normalize(const string& prefered)
+  void Number::normalize(const string& prefered, bool strict)
   {
 
     // first make sure same units cancel each other out
@@ -1033,7 +1333,7 @@ namespace Sass {
         if (string_to_unit(nom) == UNKNOWN) continue;
         // we now have two convertable units
         // add factor for current conversion
-        factor *= conversion_factor(nom, denom);
+        factor *= conversion_factor(nom, denom, strict);
         // update nominator/denominator exponent
         -- exponents[nom]; ++ exponents[denom];
         // inner loop done
@@ -1054,8 +1354,10 @@ namespace Sass {
       {
         // opted to have these switches in the inner loop
         // makes it more readable and should not cost much
-        if (exp.second < 0) denominator_units_.push_back(exp.first);
-        else if (exp.second > 0) numerator_units_.push_back(exp.first);
+        if (!exp.first.empty()) {
+          if (exp.second < 0) denominator_units_.push_back(exp.first);
+          else if (exp.second > 0) numerator_units_.push_back(exp.first);
+        }
       }
     }
 
@@ -1065,14 +1367,14 @@ namespace Sass {
 
     // maybe convert to other unit
     // easier implemented on its own
-    try { convert(prefered); }
+    try { convert(prefered, strict); }
     catch (incompatibleUnits& err)
     { error(err.what(), pstate()); }
     catch (...) { throw; }
 
   }
 
-  void Number::convert(const string& prefered)
+  void Number::convert(const string& prefered, bool strict)
   {
     // abort if unit is empty
     if (prefered.empty()) return;
@@ -1107,7 +1409,7 @@ namespace Sass {
       if (string_to_unit(denom) == UNKNOWN) continue;
       // we now have two convertable units
       // add factor for current conversion
-      factor *= conversion_factor(denom, prefered);
+      factor *= conversion_factor(denom, prefered, strict);
       // update nominator/denominator exponent
       ++ exponents[denom]; -- exponents[prefered];
     }
@@ -1128,7 +1430,7 @@ namespace Sass {
       if (string_to_unit(nom) == UNKNOWN) continue;
       // we now have two convertable units
       // add factor for current conversion
-      factor *= conversion_factor(nom, prefered);
+      factor *= conversion_factor(nom, prefered, strict);
       // update nominator/denominator exponent
       -- exponents[nom]; ++ exponents[prefered];
     }
@@ -1146,8 +1448,10 @@ namespace Sass {
       {
         // opted to have these switches in the inner loop
         // makes it more readable and should not cost much
-        if (exp.second < 0) denominator_units_.push_back(exp.first);
-        else if (exp.second > 0) numerator_units_.push_back(exp.first);
+        if (!exp.first.empty()) {
+          if (exp.second < 0) denominator_units_.push_back(exp.first);
+          else if (exp.second > 0) numerator_units_.push_back(exp.first);
+        }
       }
     }
 
@@ -1171,10 +1475,25 @@ namespace Sass {
     return string();
   }
 
-
-  bool Number::operator== (Expression* rhs) const
+  bool Custom_Warning::operator== (const Expression& rhs) const
   {
-    if (Number* r = static_cast<Number*>(rhs)) {
+    if (const Custom_Warning* r = dynamic_cast<const Custom_Warning*>(&rhs)) {
+      return message() == r->message();
+    }
+    return false;
+  }
+
+  bool Custom_Error::operator== (const Expression& rhs) const
+  {
+    if (const Custom_Error* r = dynamic_cast<const Custom_Error*>(&rhs)) {
+      return message() == r->message();
+    }
+    return false;
+  }
+
+  bool Number::operator== (const Expression& rhs) const
+  {
+    if (const Number* r = dynamic_cast<const Number*>(&rhs)) {
       return (value() == r->value()) &&
              (numerator_units_ == r->numerator_units_) &&
              (denominator_units_ == r->denominator_units_);
@@ -1182,30 +1501,106 @@ namespace Sass {
     return false;
   }
 
-  bool Number::operator== (Expression& rhs) const
+  bool Number::operator< (const Number& rhs) const
   {
-    return operator==(&rhs);
+    Number tmp_r(rhs);
+    tmp_r.normalize(find_convertible_unit());
+    string l_unit(unit());
+    string r_unit(tmp_r.unit());
+    if (!l_unit.empty() && !r_unit.empty() && unit() != tmp_r.unit()) {
+      error("cannot compare numbers with incompatible units", pstate());
+    }
+    return value() < tmp_r.value();
   }
 
-  bool List::operator==(Expression* rhs) const
+  bool String_Quoted::operator== (const Expression& rhs) const
   {
-    try
-    {
-      List* r = dynamic_cast<List*>(rhs);
-      if (!r || length() != r->length()) return false;
-      if (separator() != r->separator()) return false;
-      for (size_t i = 0, L = r->length(); i < L; ++i)
-        if (*elements()[i] != *(*r)[i]) return false;
-      return true;
+    if (const String_Quoted* qstr = dynamic_cast<const String_Quoted*>(&rhs)) {
+      return (value() == qstr->value());
+    } else if (const String_Constant* cstr = dynamic_cast<const String_Constant*>(&rhs)) {
+      return (value() == cstr->value());
     }
-    catch (std::bad_cast&) {}
-    catch (...) { throw; }
     return false;
   }
 
-  bool List::operator== (Expression& rhs) const
+  bool String_Constant::operator== (const Expression& rhs) const
   {
-    return operator==(&rhs);
+    if (const String_Quoted* qstr = dynamic_cast<const String_Quoted*>(&rhs)) {
+      return (value() == qstr->value());
+    } else if (const String_Constant* cstr = dynamic_cast<const String_Constant*>(&rhs)) {
+      return (value() == cstr->value());
+    }
+    return false;
+  }
+
+  bool String_Schema::operator== (const Expression& rhs) const
+  {
+    if (const String_Schema* r = dynamic_cast<const String_Schema*>(&rhs)) {
+      if (length() != r->length()) return false;
+      for (size_t i = 0, L = length(); i < L; ++i) {
+        Expression* rv = (*r)[i];
+        Expression* lv = (*this)[i];
+        if (!lv || !rv) return false;
+        if (!(*lv == *rv)) return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  bool Boolean::operator== (const Expression& rhs) const
+  {
+    if (const Boolean* r = dynamic_cast<const Boolean*>(&rhs)) {
+      return (value() == r->value());
+    }
+    return false;
+  }
+
+  bool Color::operator== (const Expression& rhs) const
+  {
+    if (const Color* r = dynamic_cast<const Color*>(&rhs)) {
+      return r_ == r->r() &&
+             g_ == r->g() &&
+             b_ == r->b() &&
+             a_ == r->a();
+    }
+    return false;
+  }
+
+  bool List::operator== (const Expression& rhs) const
+  {
+    if (const List* r = dynamic_cast<const List*>(&rhs)) {
+      if (length() != r->length()) return false;
+      if (separator() != r->separator()) return false;
+      for (size_t i = 0, L = length(); i < L; ++i) {
+        Expression* rv = (*r)[i];
+        Expression* lv = (*this)[i];
+        if (!lv || !rv) return false;
+        if (!(*lv == *rv)) return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  bool Map::operator== (const Expression& rhs) const
+  {
+    if (const Map* r = dynamic_cast<const Map*>(&rhs)) {
+      if (length() != r->length()) return false;
+      for (auto key : keys()) {
+        Expression* lv = at(key);
+        Expression* rv = r->at(key);
+        if (!rv || !lv) return false;
+        if (!(*lv == *rv)) return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  bool Null::operator== (const Expression& rhs) const
+  {
+    return rhs.concrete_type() == NULL_VAL;
   }
 
   size_t List::size() const {
@@ -1225,6 +1620,246 @@ namespace Sass {
     if (elements_.count(k))
     { return elements_.at(k); }
     else { return &sass_null; }
+  }
+
+  string Map::to_string(bool compressed, int precision) const
+  {
+    string res("");
+    if (empty()) return res;
+    if (is_invisible()) return res;
+    bool items_output = false;
+    for (auto key : keys()) {
+      if (key->is_invisible()) continue;
+      if (at(key)->is_invisible()) continue;
+      if (items_output) res += compressed ? "," : ", ";
+      Value* v_key = dynamic_cast<Value*>(key);
+      Value* v_val = dynamic_cast<Value*>(at(key));
+      if (v_key) res += v_key->to_string(compressed, precision);
+      res += compressed ? ":" : ": ";
+      if (v_val) res += v_val->to_string(compressed, precision);
+      items_output = true;
+    }
+    return res;
+  }
+
+  string List::to_string(bool compressed, int precision) const
+  {
+    string res("");
+    if (empty()) return res;
+    if (is_invisible()) return res;
+    bool items_output = false;
+    string sep = separator() == SASS_COMMA ? "," : " ";
+    if (!compressed && sep == ",") sep += " ";
+    for (size_t i = 0, L = size(); i < L; ++i) {
+      Expression* item = (*this)[i];
+      if (item->is_invisible()) continue;
+      if (items_output) res += sep;
+      if (Value* v_val = dynamic_cast<Value*>(item))
+      { res += v_val->to_string(compressed, precision); }
+      items_output = true;
+    }
+    return res;
+  }
+
+  string String_Schema::to_string(bool compressed, int precision) const
+  {
+    string res("");
+    for (size_t i = 0, L = length(); i < L; ++i) {
+      if ((*this)[i]->is_interpolant()) res += "#{";
+      if (Value* val = dynamic_cast<Value*>((*this)[i]))
+      { res += val->to_string(compressed, precision); }
+      if ((*this)[i]->is_interpolant()) res += "}";
+    }
+    return res;
+  }
+
+  string Null::to_string(bool compressed, int precision) const
+  {
+    return "null";
+  }
+
+  string Boolean::to_string(bool compressed, int precision) const
+  {
+    return value_ ? "true" : "false";
+  }
+
+  // helper function for serializing colors
+  template <size_t range>
+  static double cap_channel(double c) {
+    if      (c > range) return range;
+    else if (c < 0)     return 0;
+    else                return c;
+  }
+
+  string Color::to_string(bool compressed, int precision) const
+  {
+    stringstream ss;
+
+    // original color name
+    // maybe an unknown token
+    string name = disp();
+
+    // resolved color
+    string res_name = name;
+
+    double r = round(cap_channel<0xff>(r_));
+    double g = round(cap_channel<0xff>(g_));
+    double b = round(cap_channel<0xff>(b_));
+    double a = cap_channel<1>   (a_);
+
+    // get color from given name (if one was given at all)
+    if (name != "" && name_to_color(name)) {
+      const Color* n = name_to_color(name);
+      r = round(cap_channel<0xff>(n->r()));
+      g = round(cap_channel<0xff>(n->g()));
+      b = round(cap_channel<0xff>(n->b()));
+      a = cap_channel<1>   (n->a());
+    }
+    // otherwise get the possible resolved color name
+    else {
+      double numval = r * 0x10000 + g * 0x100 + b;
+      if (color_to_name(numval))
+        res_name = color_to_name(numval);
+    }
+
+    stringstream hexlet;
+    hexlet << '#' << setw(1) << setfill('0');
+    // create a short color hexlet if there is any need for it
+    if (compressed && is_color_doublet(r, g, b) && a == 1) {
+      hexlet << hex << setw(1) << (static_cast<unsigned long>(r) >> 4);
+      hexlet << hex << setw(1) << (static_cast<unsigned long>(g) >> 4);
+      hexlet << hex << setw(1) << (static_cast<unsigned long>(b) >> 4);
+    } else {
+      hexlet << hex << setw(2) << static_cast<unsigned long>(r);
+      hexlet << hex << setw(2) << static_cast<unsigned long>(g);
+      hexlet << hex << setw(2) << static_cast<unsigned long>(b);
+    }
+
+    if (compressed && !this->is_delayed()) name = "";
+
+    // retain the originally specified color definition if unchanged
+    if (name != "") {
+      ss << name;
+    }
+    else if (r == 0 && g == 0 && b == 0 && a == 0) {
+        ss << "transparent";
+    }
+    else if (a >= 1) {
+      if (res_name != "") {
+        if (compressed && hexlet.str().size() < res_name.size()) {
+          ss << hexlet.str();
+        } else {
+          ss << res_name;
+        }
+      }
+      else {
+        ss << hexlet.str();
+      }
+    }
+    else {
+      ss << "rgba(";
+      ss << static_cast<unsigned long>(r) << ",";
+      if (!compressed) ss << " ";
+      ss << static_cast<unsigned long>(g) << ",";
+      if (!compressed) ss << " ";
+      ss << static_cast<unsigned long>(b) << ",";
+      if (!compressed) ss << " ";
+      ss << a << ')';
+    }
+
+    return ss.str();
+
+  }
+
+  string Number::to_string(bool compressed, int precision) const
+  {
+
+    string res;
+
+    // check if the fractional part of the value equals to zero
+    // neat trick from http://stackoverflow.com/a/1521682/1550314
+    // double int_part; bool is_int = modf(value, &int_part) == 0.0;
+
+    // this all cannot be done with one run only, since fixed
+    // output differs from normal output and regular output
+    // can contain scientific notation which we do not want!
+
+    // first sample
+    stringstream ss;
+    ss.precision(12);
+    ss << value_;
+
+    // check if we got scientific notation in result
+    if (ss.str().find_first_of("e") != string::npos) {
+      ss.clear(); ss.str(string());
+      ss.precision(max(12, precision));
+      ss << fixed << value_;
+    }
+
+    string tmp = ss.str();
+    size_t pos_point = tmp.find_first_of(".,");
+    size_t pos_fract = tmp.find_last_not_of("0");
+    bool is_int = pos_point == pos_fract ||
+                  pos_point == string::npos;
+
+    // reset stream for another run
+    ss.clear(); ss.str(string());
+
+    // take a shortcut for integers
+    if (is_int)
+    {
+      ss.precision(0);
+      ss << fixed << value_;
+      res = string(ss.str());
+    }
+    // process floats
+    else
+    {
+      // do we have have too much precision?
+      if (pos_fract < precision + pos_point)
+      { precision = pos_fract - pos_point; }
+      // round value again
+      ss.precision(precision);
+      ss << fixed << value_;
+      res = string(ss.str());
+      // maybe we truncated up to decimal point
+      size_t pos = res.find_last_not_of("0");
+      bool at_dec_point = res[pos] == '.' ||
+                          res[pos] == ',';
+      // don't leave a blank point
+      if (at_dec_point) ++ pos;
+      res.resize (pos + 1);
+    }
+
+    // some final cosmetics
+    if (res == "-0.0") res.erase(0, 1);
+    else if (res == "-0") res.erase(0, 1);
+
+    // add unit now
+    res += unit();
+
+    // and return
+    return res;
+
+  }
+
+  string String_Quoted::to_string(bool compressed, int precision) const
+  {
+    return quote_mark_ ? quote(value_, quote_mark_, true) : value_;
+  }
+
+  string String_Constant::to_string(bool compressed, int precision) const
+  {
+    return quote_mark_ ? quote(value_, quote_mark_, true) : value_;
+  }
+
+  string Custom_Error::to_string(bool compressed, int precision) const
+  {
+    return message();
+  }
+  string Custom_Warning::to_string(bool compressed, int precision) const
+  {
+    return message();
   }
 
 }

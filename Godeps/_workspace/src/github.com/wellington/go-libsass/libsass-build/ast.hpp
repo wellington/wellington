@@ -48,6 +48,7 @@
 
 #include "sass.h"
 #include "sass_values.h"
+#include "sass_context.h"
 #include "sass_functions.h"
 
 namespace Sass {
@@ -102,6 +103,8 @@ namespace Sass {
       MAP,
       SELECTOR,
       NULL_VAL,
+      C_WARNING,
+      C_ERROR,
       NUM_TYPES
     };
   private:
@@ -122,12 +125,25 @@ namespace Sass {
     virtual operator bool() { return true; }
     virtual ~Expression() { }
     virtual string type() { return ""; /* TODO: raise an error? */ }
-    virtual bool is_invisible() { return false; }
+    virtual bool is_invisible() const { return false; }
     static string type_name() { return ""; }
     virtual bool is_false() { return false; }
-    virtual bool operator==( Expression& rhs) const { return false; }
+    virtual bool operator== (const Expression& rhs) const { return false; }
     virtual void set_delayed(bool delayed) { is_delayed(delayed); }
     virtual size_t hash() { return 0; }
+  };
+
+  //////////////////////////////////////////////////////////////////////
+  // base class for values that support operations
+  //////////////////////////////////////////////////////////////////////
+  class Value : public Expression {
+  public:
+    Value(ParserState pstate,
+          bool d = false, bool e = false, bool i = false, Concrete_Type ct = NONE)
+    : Expression(pstate, d, e, i, ct)
+    { }
+    virtual bool operator== (const Expression& rhs) const = 0;
+    virtual string to_string(bool compressed = false, int precision = 5) const = 0;
   };
 }
 
@@ -177,7 +193,7 @@ namespace Sass {
     size_t length() const   { return elements_.size(); }
     bool empty() const      { return elements_.empty(); }
     T last()                { return elements_.back(); }
-    T first()                { return elements_.front(); }
+    T first()               { return elements_.front(); }
     T& operator[](size_t i) { return elements_[i]; }
     const T& operator[](size_t i) const { return elements_[i]; }
     Vectorized& operator<<(T element)
@@ -201,6 +217,12 @@ namespace Sass {
     vector<T>& elements() { return elements_; }
     const vector<T>& elements() const { return elements_; }
     vector<T>& elements(vector<T>& e) { elements_ = e; return elements_; }
+
+    typename vector<T>::iterator end() { return elements_.end(); }
+    typename vector<T>::iterator begin() { return elements_.begin(); }
+    typename vector<T>::const_iterator end() const { return elements_.end(); }
+    typename vector<T>::const_iterator begin() const { return elements_.begin(); }
+
   };
   template <typename T>
   inline Vectorized<T>::~Vectorized() { }
@@ -259,6 +281,12 @@ namespace Sass {
     }
     const unordered_map<Expression*, Expression*>& pairs() const { return elements_; }
     const vector<Expression*>& keys() const { return list_; }
+
+    unordered_map<Expression*, Expression*>::iterator end() { return elements_.end(); }
+    unordered_map<Expression*, Expression*>::iterator begin() { return elements_.begin(); }
+    unordered_map<Expression*, Expression*>::const_iterator end() const { return elements_.end(); }
+    unordered_map<Expression*, Expression*>::const_iterator begin() const { return elements_.begin(); }
+
   };
   inline Hashed::~Hashed() { }
 
@@ -278,7 +306,21 @@ namespace Sass {
       SUPPORTS,
       ATROOT,
       BUBBLE,
-      KEYFRAMERULE
+      KEYFRAMERULE,
+      DECLARATION,
+      ASSIGNMENT,
+      IMPORT_STUB,
+      IMPORT,
+      COMMENT,
+      WARNING,
+      RETURN,
+      EXTEND,
+      ERROR,
+      DEBUG,
+      WHILE,
+      EACH,
+      FOR,
+      IF
     };
   private:
     ADD_PROPERTY(Block*, block)
@@ -292,7 +334,7 @@ namespace Sass {
     virtual ~Statement() = 0;
     // needed for rearranging nested rulesets during CSS emission
     virtual bool   is_hoistable() { return false; }
-    virtual bool   is_invisible() { return false; }
+    virtual bool   is_invisible() const { return false; }
     virtual bool   bubbles() { return false; }
     virtual Block* block()  { return 0; }
   };
@@ -347,7 +389,7 @@ namespace Sass {
     Ruleset(ParserState pstate, Selector* s = 0, Block* b = 0)
     : Has_Block(pstate, b), selector_(s), at_root_(false)
     { statement_type(RULESET); }
-    bool is_invisible();
+    bool is_invisible() const;
     // nested rulesets need to be hoisted out of their enclosing blocks
     bool is_hoistable() { return true; }
     ATTACH_OPERATIONS()
@@ -393,7 +435,7 @@ namespace Sass {
     { statement_type(MEDIA); }
     bool bubbles() { return true; }
     bool is_hoistable() { return true; }
-    bool is_invisible() {
+    bool is_invisible() const {
       bool is_invisible = true;
       for (size_t i = 0, L = block()->length(); i < L && is_invisible; i++)
         is_invisible &= (*block())[i]->is_invisible();
@@ -468,7 +510,7 @@ namespace Sass {
     Declaration(ParserState pstate,
                 String* prop, Expression* val, bool i = false)
     : Statement(pstate), property_(prop), value_(val), is_important_(i), is_indented_(false)
-    { }
+    { statement_type(DECLARATION); }
     ATTACH_OPERATIONS()
   };
 
@@ -486,7 +528,7 @@ namespace Sass {
                bool is_default = false,
                bool is_global = false)
     : Statement(pstate), variable_(var), value_(val), is_default_(is_default), is_global_(is_global)
-    { }
+    { statement_type(ASSIGNMENT); }
     ATTACH_OPERATIONS()
   };
 
@@ -504,7 +546,7 @@ namespace Sass {
       files_(vector<string>()),
       urls_(vector<Expression*>()),
       media_queries_(0)
-    { }
+    { statement_type(IMPORT); }
     vector<string>&      files()    { return files_; }
     vector<Expression*>& urls()     { return urls_; }
     ATTACH_OPERATIONS()
@@ -515,7 +557,7 @@ namespace Sass {
   public:
     Import_Stub(ParserState pstate, string f)
     : Statement(pstate), file_name_(f)
-    { }
+    { statement_type(IMPORT_STUB); }
     ATTACH_OPERATIONS()
   };
 
@@ -527,7 +569,7 @@ namespace Sass {
   public:
     Warning(ParserState pstate, Expression* msg)
     : Statement(pstate), message_(msg)
-    { }
+    { statement_type(WARNING); }
     ATTACH_OPERATIONS()
   };
 
@@ -539,7 +581,7 @@ namespace Sass {
   public:
     Error(ParserState pstate, Expression* msg)
     : Statement(pstate), message_(msg)
-    { }
+    { statement_type(ERROR); }
     ATTACH_OPERATIONS()
   };
 
@@ -551,7 +593,7 @@ namespace Sass {
   public:
     Debug(ParserState pstate, Expression* val)
     : Statement(pstate), value_(val)
-    { }
+    { statement_type(DEBUG); }
     ATTACH_OPERATIONS()
   };
 
@@ -564,21 +606,20 @@ namespace Sass {
   public:
     Comment(ParserState pstate, String* txt, bool is_important)
     : Statement(pstate), text_(txt), is_important_(is_important)
-    { }
+    { statement_type(COMMENT); }
     ATTACH_OPERATIONS()
   };
 
   ////////////////////////////////////
   // The Sass `@if` control directive.
   ////////////////////////////////////
-  class If : public Statement {
+  class If : public Has_Block {
     ADD_PROPERTY(Expression*, predicate)
-    ADD_PROPERTY(Block*, consequent)
     ADD_PROPERTY(Block*, alternative)
   public:
     If(ParserState pstate, Expression* pred, Block* con, Block* alt = 0)
-    : Statement(pstate), predicate_(pred), consequent_(con), alternative_(alt)
-    { }
+    : Has_Block(pstate, con), predicate_(pred), alternative_(alt)
+    { statement_type(IF); }
     ATTACH_OPERATIONS()
   };
 
@@ -595,7 +636,7 @@ namespace Sass {
         string var, Expression* lo, Expression* hi, Block* b, bool inc)
     : Has_Block(pstate, b),
       variable_(var), lower_bound_(lo), upper_bound_(hi), is_inclusive_(inc)
-    { }
+    { statement_type(FOR); }
     ATTACH_OPERATIONS()
   };
 
@@ -608,7 +649,7 @@ namespace Sass {
   public:
     Each(ParserState pstate, vector<string> vars, Expression* lst, Block* b)
     : Has_Block(pstate, b), variables_(vars), list_(lst)
-    { }
+    { statement_type(EACH); }
     ATTACH_OPERATIONS()
   };
 
@@ -620,7 +661,7 @@ namespace Sass {
   public:
     While(ParserState pstate, Expression* pred, Block* b)
     : Has_Block(pstate, b), predicate_(pred)
-    { }
+    { statement_type(WHILE); }
     ATTACH_OPERATIONS()
   };
 
@@ -632,7 +673,7 @@ namespace Sass {
   public:
     Return(ParserState pstate, Expression* val)
     : Statement(pstate), value_(val)
-    { }
+    { statement_type(RETURN); }
     ATTACH_OPERATIONS()
   };
 
@@ -644,7 +685,7 @@ namespace Sass {
   public:
     Extension(ParserState pstate, Selector* s)
     : Statement(pstate), selector_(s)
-    { }
+    { statement_type(EXTEND); }
     ATTACH_OPERATIONS()
   };
 
@@ -750,37 +791,36 @@ namespace Sass {
   // Lists of values, both comma- and space-separated (distinguished by a
   // type-tag.) Also used to represent variable-length argument lists.
   ///////////////////////////////////////////////////////////////////////
-  class List : public Expression, public Vectorized<Expression*> {
+  class List : public Value, public Vectorized<Expression*> {
     void adjust_after_pushing(Expression* e) { is_expanded(false); }
-  public:
-    enum Separator { SPACE, COMMA };
   private:
-    ADD_PROPERTY(Separator, separator)
+    ADD_PROPERTY(enum Sass_Separator, separator)
     ADD_PROPERTY(bool, is_arglist)
   public:
     List(ParserState pstate,
-         size_t size = 0, Separator sep = SPACE, bool argl = false)
-    : Expression(pstate),
+         size_t size = 0, enum Sass_Separator sep = SASS_SPACE, bool argl = false)
+    : Value(pstate),
       Vectorized<Expression*>(size),
       separator_(sep), is_arglist_(argl)
     { concrete_type(LIST); }
     string type() { return is_arglist_ ? "arglist" : "list"; }
     static string type_name() { return "list"; }
-    bool is_invisible() { return !length(); }
+    const char* sep_string(bool compressed = false) const {
+      return separator() == SASS_COMMA ?
+        (compressed ? "," : ", ") : " ";
+    }
+    bool is_invisible() const { return empty(); }
     Expression* value_at_index(size_t i);
 
     virtual size_t size() const;
-    virtual bool operator==(Expression& rhs) const;
-    virtual bool operator==(Expression* rhs) const;
 
     virtual size_t hash()
     {
-      if (hash_ > 0) return hash_;
-
-      hash_ = std::hash<string>()(separator() == COMMA ? "comma" : "space");
-      for (size_t i = 0, L = length(); i < L; ++i)
-        hash_combine(hash_, (elements()[i])->hash());
-
+      if (hash_ == 0) {
+        hash_ = std::hash<string>()(sep_string());
+        for (size_t i = 0, L = length(); i < L; ++i)
+          hash_combine(hash_, (elements()[i])->hash());
+      }
       return hash_;
     }
 
@@ -791,52 +831,41 @@ namespace Sass {
       is_delayed(delayed);
     }
 
+    virtual bool operator== (const Expression& rhs) const;
+    virtual string to_string(bool compressed = false, int precision = 5) const;
+
     ATTACH_OPERATIONS()
   };
 
   ///////////////////////////////////////////////////////////////////////
   // Key value paris.
   ///////////////////////////////////////////////////////////////////////
-  class Map : public Expression, public Hashed {
+  class Map : public Value, public Hashed {
     void adjust_after_pushing(std::pair<Expression*, Expression*> p) { is_expanded(false); }
   public:
     Map(ParserState pstate,
          size_t size = 0)
-    : Expression(pstate),
+    : Value(pstate),
       Hashed(size)
     { concrete_type(MAP); }
     string type() { return "map"; }
     static string type_name() { return "map"; }
-    bool is_invisible() { return !length(); }
-
-    virtual bool operator==(Expression& rhs) const
-    {
-      try
-      {
-        Map& m = dynamic_cast<Map&>(rhs);
-        if (!(m && length() == m.length())) return false;
-        for (auto key : keys())
-          if (!(*at(key) == *m.at(key))) return false;
-        return true;
-      }
-      catch (std::bad_cast&)
-      {
-        return false;
-      }
-      catch (...) { throw; }
-    }
+    bool is_invisible() const { return empty(); }
 
     virtual size_t hash()
     {
-      if (hash_ > 0) return hash_;
-
-      for (auto key : keys()) {
-        hash_combine(hash_, key->hash());
-        hash_combine(hash_, at(key)->hash());
+      if (hash_ == 0) {
+        for (auto key : keys()) {
+          hash_combine(hash_, key->hash());
+          hash_combine(hash_, at(key)->hash());
+        }
       }
 
       return hash_;
     }
+
+    virtual bool operator== (const Expression& rhs) const;
+    virtual string to_string(bool compressed = false, int precision = 5) const;
 
     ATTACH_OPERATIONS()
   };
@@ -847,21 +876,14 @@ namespace Sass {
   // subclassing.
   //////////////////////////////////////////////////////////////////////////
   class Binary_Expression : public Expression {
-  public:
-    enum Type {
-      AND, OR,                   // logical connectives
-      EQ, NEQ, GT, GTE, LT, LTE, // arithmetic relations
-      ADD, SUB, MUL, DIV, MOD,   // arithmetic functions
-      NUM_OPS                    // so we know how big to make the op table
-    };
   private:
-    ADD_PROPERTY(Type, type)
+    ADD_PROPERTY(enum Sass_OP, type)
     ADD_PROPERTY(Expression*, left)
     ADD_PROPERTY(Expression*, right)
     size_t hash_;
   public:
     Binary_Expression(ParserState pstate,
-                      Type t, Expression* lhs, Expression* rhs)
+                      enum Sass_OP t, Expression* lhs, Expression* rhs)
     : Expression(pstate), type_(t), left_(lhs), right_(rhs), hash_(0)
     { }
     const string type_name() {
@@ -889,15 +911,15 @@ namespace Sass {
       left()->set_delayed(delayed);
       is_delayed(delayed);
     }
-    virtual bool operator==(Expression& rhs) const
+    virtual bool operator==(const Expression& rhs) const
     {
       try
       {
-        Binary_Expression& m = dynamic_cast<Binary_Expression&>(rhs);
+        const Binary_Expression* m = dynamic_cast<const Binary_Expression*>(&rhs);
         if (m == 0) return false;
-        return type() == m.type() &&
-               left() == m.left() &&
-               right() == m.right();
+        return type() == m->type() &&
+               left() == m->left() &&
+               right() == m->right();
       }
       catch (std::bad_cast&)
       {
@@ -907,8 +929,11 @@ namespace Sass {
     }
     virtual size_t hash()
     {
-      if (hash_ > 0) return hash_;
-      hash_ = left()->hash() ^ right()->hash() ^ std::hash<size_t>()(type_);
+      if (hash_ == 0) {
+        hash_ = std::hash<size_t>()(type_);
+        hash_combine(hash_, left()->hash());
+        hash_combine(hash_, right()->hash());
+      }
       return hash_;
     }
     ATTACH_OPERATIONS()
@@ -936,14 +961,14 @@ namespace Sass {
         default: return "invalid"; break;
       }
     }
-    virtual bool operator==(Expression& rhs) const
+    virtual bool operator==(const Expression& rhs) const
     {
       try
       {
-        Unary_Expression& m = dynamic_cast<Unary_Expression&>(rhs);
+        const Unary_Expression* m = dynamic_cast<const Unary_Expression*>(&rhs);
         if (m == 0) return false;
-        return type() == m.type() &&
-               operand() == m.operand();
+        return type() == m->type() &&
+               operand() == m->operand();
       }
       catch (std::bad_cast&)
       {
@@ -953,8 +978,10 @@ namespace Sass {
     }
     virtual size_t hash()
     {
-      if (hash_ > 0) return hash_;
-      hash_ = operand()->hash() ^ std::hash<size_t>()(type_);
+      if (hash_ == 0) {
+        hash_ = std::hash<size_t>()(type_);
+        hash_combine(hash_, operand()->hash());
+      };
       return hash_;
     }
     ATTACH_OPERATIONS()
@@ -978,13 +1005,13 @@ namespace Sass {
       }
     }
 
-    virtual bool operator==(Expression& rhs) const
+    virtual bool operator==(const Expression& rhs) const
     {
       try
       {
-        Argument& m = dynamic_cast<Argument&>(rhs);
-        if (!(m && name() == m.name())) return false;
-        return *value() == *m.value();
+        const Argument* m = dynamic_cast<const Argument*>(&rhs);
+        if (!(m && name() == m->name())) return false;
+        return *value() == *m->value();
       }
       catch (std::bad_cast&)
       {
@@ -995,10 +1022,10 @@ namespace Sass {
 
     virtual size_t hash()
     {
-      if (hash_ > 0) return hash_;
-
-      hash_ = std::hash<string>()(name()) ^ value()->hash();
-
+      if (hash_ == 0) {
+        hash_ = std::hash<string>()(name());
+        hash_combine(hash_, value()->hash());
+      }
       return hash_;
     }
 
@@ -1043,15 +1070,15 @@ namespace Sass {
     : Expression(pstate), name_(n), arguments_(args), cookie_(0), hash_(0)
     { concrete_type(STRING); }
 
-    virtual bool operator==(Expression& rhs) const
+    virtual bool operator==(const Expression& rhs) const
     {
       try
       {
-        Function_Call& m = dynamic_cast<Function_Call&>(rhs);
-        if (!(m && name() == m.name())) return false;
-        if (!(m && arguments()->length() == m.arguments()->length())) return false;
+        const Function_Call* m = dynamic_cast<const Function_Call*>(&rhs);
+        if (!(m && name() == m->name())) return false;
+        if (!(m && arguments()->length() == m->arguments()->length())) return false;
         for (size_t i =0, L = arguments()->length(); i < L; ++i)
-          if (!((*arguments())[i] == (*m.arguments())[i])) return false;
+          if (!((*arguments())[i] == (*m->arguments())[i])) return false;
         return true;
       }
       catch (std::bad_cast&)
@@ -1063,12 +1090,11 @@ namespace Sass {
 
     virtual size_t hash()
     {
-      if (hash_ > 0) return hash_;
-
-      hash_ = std::hash<string>()(name());
-      for (auto argument : arguments()->elements())
-        hash_combine(hash_, argument->hash());
-
+      if (hash_ == 0) {
+        hash_ = std::hash<string>()(name());
+        for (auto argument : arguments()->elements())
+          hash_combine(hash_, argument->hash());
+      }
       return hash_;
     }
 
@@ -1098,12 +1124,12 @@ namespace Sass {
     : Expression(pstate), name_(n)
     { }
 
-    virtual bool operator==(Expression& rhs) const
+    virtual bool operator==(const Expression& rhs) const
     {
       try
       {
-        Variable& e = dynamic_cast<Variable&>(rhs);
-        return e && name() == e.name();
+        const Variable* e = dynamic_cast<const Variable*>(&rhs);
+        return e && name() == e->name();
       }
       catch (std::bad_cast&)
       {
@@ -1137,12 +1163,12 @@ namespace Sass {
       hash_(0)
     { }
 
-    virtual bool operator==(Expression& rhs) const
+    virtual bool operator==(const Expression& rhs) const
     {
       try
       {
-        Textual& e = dynamic_cast<Textual&>(rhs);
-        return e && value() == e.value() && type() == e.type();
+        const Textual* e = dynamic_cast<const Textual*>(&rhs);
+        return e && value() == e->value() && type() == e->type();
       }
       catch (std::bad_cast&)
       {
@@ -1153,7 +1179,10 @@ namespace Sass {
 
     virtual size_t hash()
     {
-      if (hash_ == 0) hash_ = std::hash<string>()(value_) ^ std::hash<int>()(type_);
+      if (hash_ == 0) {
+        hash_ = std::hash<string>()(value_);
+        hash_combine(hash_, std::hash<int>()(type_));
+      }
       return hash_;
     }
 
@@ -1163,7 +1192,7 @@ namespace Sass {
   ////////////////////////////////////////////////
   // Numbers, percentages, dimensions, and colors.
   ////////////////////////////////////////////////
-  class Number : public Expression {
+  class Number : public Value {
     ADD_PROPERTY(double, value)
     ADD_PROPERTY(bool, zero)
     vector<string> numerator_units_;
@@ -1174,24 +1203,29 @@ namespace Sass {
     bool            zero()              { return zero_; }
     vector<string>& numerator_units()   { return numerator_units_; }
     vector<string>& denominator_units() { return denominator_units_; }
+    const vector<string>& numerator_units() const   { return numerator_units_; }
+    const vector<string>& denominator_units() const { return denominator_units_; }
     string type() { return "number"; }
     static string type_name() { return "number"; }
     string unit() const;
 
     bool is_unitless();
-    void convert(const string& unit = "");
-    void normalize(const string& unit = "");
+    void convert(const string& unit = "", bool strict = false);
+    void normalize(const string& unit = "", bool strict = false);
     // useful for making one number compatible with another
     string find_convertible_unit() const;
 
-    virtual bool operator== (Expression& rhs) const;
-    virtual bool operator== (Expression* rhs) const;
-
     virtual size_t hash()
     {
-      if (hash_ == 0) hash_ = std::hash<double>()(value_);
+      if (hash_ == 0) {
+        hash_ = std::hash<double>()(value_);
+      }
       return hash_;
     }
+
+    virtual bool operator< (const Number& rhs) const;
+    virtual bool operator== (const Expression& rhs) const;
+    virtual string to_string(bool compressed = false, int precision = 5) const;
 
     ATTACH_OPERATIONS()
   };
@@ -1199,7 +1233,7 @@ namespace Sass {
   //////////
   // Colors.
   //////////
-  class Color : public Expression {
+  class Color : public Value {
     ADD_PROPERTY(double, r)
     ADD_PROPERTY(double, g)
     ADD_PROPERTY(double, b)
@@ -1209,44 +1243,66 @@ namespace Sass {
     size_t hash_;
   public:
     Color(ParserState pstate, double r, double g, double b, double a = 1, bool sixtuplet = true, const string disp = "")
-    : Expression(pstate), r_(r), g_(g), b_(b), a_(a), sixtuplet_(sixtuplet), disp_(disp),
+    : Value(pstate), r_(r), g_(g), b_(b), a_(a), sixtuplet_(sixtuplet), disp_(disp),
       hash_(0)
     { concrete_type(COLOR); }
     string type() { return "color"; }
     static string type_name() { return "color"; }
 
-    virtual bool operator==(Expression& rhs) const
-    {
-      try
-      {
-        Color& c = (dynamic_cast<Color&>(rhs));
-        return c && r() == c.r() && g() == c.g() && b() == c.b() && a() == c.a();
-      }
-      catch (std::bad_cast&)
-      {
-        return false;
-      }
-      catch (...) { throw; }
-    }
-
     virtual size_t hash()
     {
-      if (hash_ == 0) hash_ = std::hash<double>()(r_) ^ std::hash<double>()(g_) ^ std::hash<double>()(b_) ^ std::hash<double>()(a_);
+      if (hash_ == 0) {
+        hash_ = std::hash<double>()(a_);
+        hash_combine(hash_, std::hash<double>()(r_));
+        hash_combine(hash_, std::hash<double>()(g_));
+        hash_combine(hash_, std::hash<double>()(b_));
+      }
       return hash_;
     }
 
+    virtual bool operator== (const Expression& rhs) const;
+    virtual string to_string(bool compressed = false, int precision = 5) const;
+
+    ATTACH_OPERATIONS()
+  };
+
+  //////////////////////////////
+  // Errors from Sass_Values.
+  //////////////////////////////
+  class Custom_Error : public Value {
+    ADD_PROPERTY(string, message)
+  public:
+    Custom_Error(ParserState pstate, string msg)
+    : Value(pstate), message_(msg)
+    { concrete_type(C_ERROR); }
+    virtual bool operator== (const Expression& rhs) const;
+    virtual string to_string(bool compressed = false, int precision = 5) const;
+    ATTACH_OPERATIONS()
+  };
+
+  //////////////////////////////
+  // Warnings from Sass_Values.
+  //////////////////////////////
+  class Custom_Warning : public Value {
+    ADD_PROPERTY(string, message)
+  public:
+    Custom_Warning(ParserState pstate, string msg)
+    : Value(pstate), message_(msg)
+    { concrete_type(C_WARNING); }
+    virtual bool operator== (const Expression& rhs) const;
+    virtual string to_string(bool compressed = false, int precision = 5) const;
     ATTACH_OPERATIONS()
   };
 
   ////////////
   // Booleans.
   ////////////
-  class Boolean : public Expression {
+  class Boolean : public Value {
     ADD_PROPERTY(bool, value)
     size_t hash_;
   public:
     Boolean(ParserState pstate, bool val)
-    : Expression(pstate), value_(val),
+    : Value(pstate), value_(val),
       hash_(0)
     { concrete_type(BOOLEAN); }
     virtual operator bool() { return value_; }
@@ -1254,25 +1310,16 @@ namespace Sass {
     static string type_name() { return "bool"; }
     virtual bool is_false() { return !value_; }
 
-    virtual bool operator==(Expression& rhs) const
-    {
-      try
-      {
-        Boolean& e = dynamic_cast<Boolean&>(rhs);
-        return e && value() == e.value();
-      }
-      catch (std::bad_cast&)
-      {
-        return false;
-      }
-      catch (...) { throw; }
-    }
-
     virtual size_t hash()
     {
-      if (hash_ == 0) hash_ = std::hash<bool>()(value_);
+      if (hash_ == 0) {
+        hash_ = std::hash<bool>()(value_);
+      }
       return hash_;
     }
+
+    virtual bool operator== (const Expression& rhs) const;
+    virtual string to_string(bool compressed = false, int precision = 5) const;
 
     ATTACH_OPERATIONS()
   };
@@ -1281,14 +1328,16 @@ namespace Sass {
   // Abstract base class for Sass string values. Includes interpolated and
   // "flat" strings.
   ////////////////////////////////////////////////////////////////////////
-  class String : public Expression {
+  class String : public Value {
     ADD_PROPERTY(bool, sass_fix_1291)
   public:
     String(ParserState pstate, bool delayed = false, bool sass_fix_1291 = false)
-    : Expression(pstate, delayed), sass_fix_1291_(sass_fix_1291)
+    : Value(pstate, delayed), sass_fix_1291_(sass_fix_1291)
     { concrete_type(STRING); }
     static string type_name() { return "string"; }
     virtual ~String() = 0;
+    virtual bool operator==(const Expression& rhs) const = 0;
+    virtual string to_string(bool compressed = false, int precision = 5) const = 0;
     ATTACH_OPERATIONS()
   };
   inline String::~String() { };
@@ -1307,32 +1356,17 @@ namespace Sass {
     string type() { return "string"; }
     static string type_name() { return "string"; }
 
-    virtual bool operator==(Expression& rhs) const
-    {
-      try
-      {
-        String_Schema& e = dynamic_cast<String_Schema&>(rhs);
-        if (!(e && length() == e.length())) return false;
-        for (size_t i = 0, L = length(); i < L; ++i)
-          if (!((*this)[i] == e[i])) return false;
-        return true;
-      }
-      catch (std::bad_cast&)
-      {
-        return false;
-      }
-      catch (...) { throw; }
-    }
-
     virtual size_t hash()
     {
-      if (hash_ > 0) return hash_;
-
-      for (auto string : elements())
-        hash_combine(hash_, string->hash());
-
+      if (hash_ == 0) {
+        for (auto string : elements())
+          hash_combine(hash_, string->hash());
+      }
       return hash_;
     }
+
+    virtual bool operator==(const Expression& rhs) const;
+    virtual string to_string(bool compressed = false, int precision = 5) const;
 
     ATTACH_OPERATIONS()
   };
@@ -1362,25 +1396,16 @@ namespace Sass {
     string type() { return "string"; }
     static string type_name() { return "string"; }
 
-    virtual bool operator==(Expression& rhs) const
-    {
-      try
-      {
-        String_Constant& e = dynamic_cast<String_Constant&>(rhs);
-        return e && value_ == e.value_;
-      }
-      catch (std::bad_cast&)
-      {
-        return false;
-      }
-      catch (...) { throw; }
-    }
-
     virtual size_t hash()
     {
-      if (hash_ == 0) hash_ = std::hash<string>()(value_);
+      if (hash_ == 0) {
+        hash_ = std::hash<string>()(value_);
+      }
       return hash_;
     }
+
+    virtual bool operator==(const Expression& rhs) const;
+    virtual string to_string(bool compressed = false, int precision = 5) const;
 
     // static char auto_quote() { return '*'; }
     static char double_quote() { return '"'; }
@@ -1399,6 +1424,8 @@ namespace Sass {
     {
       value_ = unquote(value_, &quote_mark_);
     }
+    virtual bool operator==(const Expression& rhs) const;
+    virtual string to_string(bool compressed = false, int precision = 5) const;
     ATTACH_OPERATIONS()
   };
 
@@ -1548,24 +1575,22 @@ namespace Sass {
   //////////////////
   // The null value.
   //////////////////
-  class Null : public Expression {
+  class Null : public Value {
   public:
-    Null(ParserState pstate) : Expression(pstate) { concrete_type(NULL_VAL); }
+    Null(ParserState pstate) : Value(pstate) { concrete_type(NULL_VAL); }
     string type() { return "null"; }
     static string type_name() { return "null"; }
-    bool is_invisible() { return true; }
+    bool is_invisible() const { return true; }
     operator bool() { return false; }
     bool is_false() { return true; }
-
-    virtual bool operator==(Expression& rhs) const
-    {
-      return rhs.concrete_type() == NULL_VAL;
-    }
 
     virtual size_t hash()
     {
       return -1;
     }
+
+    virtual bool operator== (const Expression& rhs) const;
+    virtual string to_string(bool compressed = false, int precision = 5) const;
 
     ATTACH_OPERATIONS()
   };
@@ -1673,7 +1698,6 @@ namespace Sass {
       media_block_(0)
     { concrete_type(SELECTOR); }
     virtual ~Selector() = 0;
-    // virtual Selector_Placeholder* find_placeholder();
     virtual unsigned long specificity() {
       return Constants::Specificity_Universal;
     }
@@ -1700,13 +1724,15 @@ namespace Sass {
   class Simple_Selector : public Selector {
     ADD_PROPERTY(string, ns);
     ADD_PROPERTY(string, name)
+    ADD_PROPERTY(bool, has_ns)
   public:
     Simple_Selector(ParserState pstate, string n = "")
-    : Selector(pstate), ns_(""), name_(n)
+    : Selector(pstate), ns_(""), name_(n), has_ns_(false)
     {
       size_t pos = n.find('|');
       // found some namespace
       if (pos != string::npos) {
+        has_ns_ = true;
         ns_ = n.substr(0, pos);
         name_ = n.substr(pos + 1);
       }
@@ -1714,9 +1740,35 @@ namespace Sass {
     virtual string ns_name() const
     {
       string name("");
-      if (!ns_.empty())
+      if (has_ns_)
         name += ns_ + "|";
       return name + name_;
+    }
+    // namespace query functions
+    bool is_universal_ns() const
+    {
+      return has_ns_ && ns_ == "*";
+    }
+    bool has_universal_ns() const
+    {
+      return !has_ns_ || ns_ == "*";
+    }
+    bool is_empty_ns() const
+    {
+      return !has_ns_ || ns_ == "";
+    }
+    bool has_empty_ns() const
+    {
+      return has_ns_ && ns_ == "";
+    }
+    bool has_qualified_ns() const
+    {
+      return has_ns_ && ns_ != "" && ns_ != "*";
+    }
+    // name query functions
+    bool is_universal() const
+    {
+      return name_ == "*";
     }
 
     virtual ~Simple_Selector() = 0;
@@ -1783,6 +1835,7 @@ namespace Sass {
       if (name() == "*") return Constants::Specificity_Universal;
       else               return Constants::Specificity_Type;
     }
+    virtual Simple_Selector* unify_with(Simple_Selector*, Context&);
     virtual Compound_Selector* unify_with(Compound_Selector*, Context&);
     ATTACH_OPERATIONS()
   };
@@ -1891,6 +1944,8 @@ namespace Sass {
     {
       return selector_ ? selector_->specificity() : 0;
     }
+    bool operator==(const Simple_Selector& rhs) const;
+    bool operator==(const Wrapped_Selector& rhs) const;
     ATTACH_OPERATIONS()
   };
 
@@ -1925,6 +1980,13 @@ namespace Sass {
       }
       return false;
     };
+
+    bool is_universal() const
+    {
+      return length() == 1 && (*this)[0]->is_universal();
+    }
+
+    Complex_Selector* to_complex(Memory_Manager<AST_Node>& mem);
     Compound_Selector* unify_with(Compound_Selector* rhs, Context& ctx);
     // virtual Selector_Placeholder* find_placeholder();
     virtual bool has_parent_ref();
@@ -2001,17 +2063,33 @@ namespace Sass {
       if ((h && h->has_placeholder()) || (t && t->has_placeholder())) has_placeholder(true);
     }
     virtual bool has_parent_ref();
+
+    // can still have a tail
+    bool is_empty_ancestor() const
+    {
+      return (!head() || head()->length() == 0) &&
+             combinator() == Combinator::ANCESTOR_OF;
+    }
+
     Complex_Selector* context(Context&);
-    Complex_Selector* innermost();
-    Complex_Selector* last() { return innermost(); };
-    Complex_Selector* first() {
-      Complex_Selector* s = tail();
-      while (s && s->head() && s->head()->length() == 1 && dynamic_cast<Parent_Selector*>((*s->head())[0])) {
-        s = s->tail();
-      }
-      return s;
-    };
-    size_t length();
+
+
+    // front returns the first real tail
+    // skips over parent and empty ones
+    const Complex_Selector* first() const;
+
+    // last returns the last real tail
+    const Complex_Selector* last() const;
+
+    // unconstant accessors
+    Complex_Selector* first();
+    Complex_Selector* last();
+
+    // some shortcuts that should be removed
+    const Complex_Selector* innermost() const { return last(); };
+    Complex_Selector* innermost() { return last(); };
+
+    size_t length() const;
     Complex_Selector* parentize(Context& ctx);
     Selector_List* parentize(Selector_List* parents, Context& ctx);
     Complex_Selector* parentize(Complex_Selector* parent, Context& ctx);
@@ -2113,7 +2191,6 @@ namespace Sass {
     virtual bool is_superselector_of(Compound_Selector* sub, string wrapping = "");
     virtual bool is_superselector_of(Complex_Selector* sub, string wrapping = "");
     virtual bool is_superselector_of(Selector_List* sub, string wrapping = "");
-
     Selector_List* unify_with(Selector_List*, Context&);
     void populate_extends(Selector_List*, Context&, ExtensionSubsetMap&);
     virtual unsigned long specificity()
@@ -2129,11 +2206,12 @@ namespace Sass {
     }
     Selector_List* clone(Context&) const;      // does not clone Compound_Selector*s
     Selector_List* cloneFully(Context&) const; // clones Compound_Selector*s
-    // vector<Complex_Selector*> members() { return elements_; }
+    virtual bool operator==(const Selector& rhs) const;
+    virtual bool operator==(const Selector_List& rhs) const;
     ATTACH_OPERATIONS()
   };
 
-  inline bool Ruleset::is_invisible() {
+  inline bool Ruleset::is_invisible() const {
     bool is_invisible = true;
     Selector_List* sl = static_cast<Selector_List*>(selector());
     for (size_t i = 0, L = sl->length(); i < L && is_invisible; ++i)
@@ -2159,6 +2237,11 @@ namespace Sass {
       return one == two;
     }
   }
+
+  // compare function for sorting and probably other other uses
+  struct cmp_complex_selector { inline bool operator() (const Complex_Selector* l, const Complex_Selector* r) { return (*l < *r); } };
+  struct cmp_compound_selector { inline bool operator() (const Compound_Selector* l, const Compound_Selector* r) { return (*l < *r); } };
+  struct cmp_simple_selector { inline bool operator() (const Simple_Selector* l, const Simple_Selector* r) { return (*l < *r); } };
 
 }
 

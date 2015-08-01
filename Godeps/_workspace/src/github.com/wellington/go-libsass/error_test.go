@@ -39,6 +39,25 @@ func TestError_basic(t *testing.T) {
 	}
 }
 
+func TestError_JSON(t *testing.T) {
+	in := bytes.NewBufferString(`div {
+  height: 10px;`)
+	out := &bytes.Buffer{}
+	ctx := Context{}
+	ctx.Compile(in, out)
+
+	e := `{
+  "status": 1,
+  "file": "stdin",
+  "line": 2,
+  "column": 16,
+  "message": "Invalid CSS after \"...  height: 10px;\": expected \"}\", was \"\""
+}`
+	if ctx.libsassError != e {
+		t.Fatalf("got: %s\nwanted: %s\n", ctx.libsassError, e)
+	}
+}
+
 func TestError_unbound(t *testing.T) {
 	in := bytes.NewBufferString(`div {
   background: map-get($sprite,139);

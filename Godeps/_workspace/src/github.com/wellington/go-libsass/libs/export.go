@@ -1,6 +1,6 @@
 package libs
 
-// #include "sass_context_bind.h"
+// #include "sass_context.h"
 //
 import "C"
 import "unsafe"

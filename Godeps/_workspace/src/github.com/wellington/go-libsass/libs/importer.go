@@ -3,7 +3,7 @@ package libs
 // #include <stdint.h>
 // #include <stdlib.h>
 // #include <string.h>
-// #include "sass_context_bind.h"
+// #include "sass_context.h"
 //
 // extern struct Sass_Import** ImporterBridge(const char* url, const char* prev, void* cookie);
 //
@@ -30,6 +30,7 @@ import (
 	"unsafe"
 )
 
+// BindImporter attaches a custom importer Go function to an import in Sass
 func BindImporter(opts SassOptions, entries []ImportEntry) {
 	ptr := unsafe.Pointer(&entries)
 	runtime.SetFinalizer(&entries, nil)
