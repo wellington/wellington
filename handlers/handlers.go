@@ -75,15 +75,21 @@ func ImageHeight(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) e
 		BuildDir:  ctx.BuildDir,
 		GenImgDir: ctx.GenImgDir,
 	}
+
+	payload, ok := ctx.Payload.(sw.Imager)
+	if !ok {
+		return setErrorAndReturn(errors.New("inline payload not available"), rsv)
+	}
+	images := payload.Image()
 	if glob == "" {
-		if hit, ok := ctx.Imgs.M[name]; ok {
+		if hit, ok := images.M[name]; ok {
 			imgs = hit
 		} else {
 			imgs.Decode(name)
 			imgs.Combine()
-			ctx.Imgs.Lock()
-			ctx.Imgs.M[name] = imgs
-			ctx.Imgs.Unlock()
+			images.Lock()
+			images.M[name] = imgs
+			images.Unlock()
 		}
 	} else {
 		payload, ok := ctx.Payload.(sw.Spriter)
@@ -140,15 +146,22 @@ func ImageWidth(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) er
 		BuildDir:  ctx.BuildDir,
 		GenImgDir: ctx.GenImgDir,
 	}
+
+	payload, ok := ctx.Payload.(sw.Imager)
+	if !ok {
+		return setErrorAndReturn(errors.New("inline payload not available"), rsv)
+	}
+	images := payload.Image()
+
 	if glob == "" {
-		if hit, ok := ctx.Imgs.M[name]; ok {
+		if hit, ok := images.M[name]; ok {
 			imgs = hit
 		} else {
 			imgs.Decode(name)
 			imgs.Combine()
-			ctx.Imgs.Lock()
-			ctx.Imgs.M[name] = imgs
-			ctx.Imgs.Unlock()
+			images.Lock()
+			images.M[name] = imgs
+			images.Unlock()
 		}
 	} else {
 		payload, ok := ctx.Payload.(sw.Spriter)

@@ -30,7 +30,7 @@ func (p testPayload) Sprite() spritewell.SafeImageMap {
 	return p.s
 }
 
-func (p testPayload) Inline() spritewell.SafeImageMap {
+func (p testPayload) Image() spritewell.SafeImageMap {
 	return p.i
 }
 
