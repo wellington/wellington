@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"path/filepath"
@@ -15,7 +16,6 @@ func init() {
 	libsass.RegisterHandler("sprite($map, $name, $offsetX: 0px, $offsetY: 0px)", Sprite)
 	libsass.RegisterHandler("sprite-map($glob, $spacing: 0px)", SpriteMap)
 	libsass.RegisterHandler("sprite-file($map, $name)", SpriteFile)
-
 }
 
 // SpriteFile proxies the sprite glob and image name through.
@@ -133,7 +133,13 @@ func SpriteMap(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) err
 
 	key := glob + strconv.FormatInt(int64(spacing.Value), 10)
 
-	sprites := ctx.Sprites
+	payload, ok := ctx.Payload.(sw.Spriter)
+	if !ok {
+		err := errors.New("context payload not found")
+		return setErrorAndReturn(err, rsv)
+	}
+
+	sprites := payload.Sprite()
 
 	// TODO: benchmark a single write lock against this
 	// read lock then write lock
