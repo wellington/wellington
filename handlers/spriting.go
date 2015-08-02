@@ -48,7 +48,11 @@ func Sprite(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error 
 		}
 		return setErrorAndReturn(err, rsv)
 	}
-	sprites := ctx.Sprites
+	payload, ok := ctx.Payload.(sw.Spriter)
+	if !ok {
+		return setErrorAndReturn(errors.New("Context payload not found"), rsv)
+	}
+	sprites := payload.Sprite()
 	sprites.RLock()
 	defer sprites.RUnlock()
 	imgs, ok := sprites.M[glob]

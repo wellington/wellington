@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -85,7 +86,11 @@ func ImageHeight(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) e
 			ctx.Imgs.Unlock()
 		}
 	} else {
-		sprites := ctx.Sprites
+		payload, ok := ctx.Payload.(sw.Spriter)
+		if !ok {
+			return setErrorAndReturn(errors.New("Context payload not found"), rsv)
+		}
+		sprites := payload.Sprite()
 
 		sprites.RLock()
 		imgs = sprites.M[glob]
@@ -146,7 +151,11 @@ func ImageWidth(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) er
 			ctx.Imgs.Unlock()
 		}
 	} else {
-		sprites := ctx.Sprites
+		payload, ok := ctx.Payload.(sw.Spriter)
+		if !ok {
+			return setErrorAndReturn(errors.New("Context payload not found"), rsv)
+		}
+		sprites := payload.Sprite()
 		sprites.RLock()
 		imgs = sprites.M[glob]
 		sprites.RUnlock()

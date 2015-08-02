@@ -550,7 +550,7 @@ div {
 }`)
 
 	ctx := libsass.NewContext()
-
+	initCtx(ctx)
 	ctx.BuildDir = "../test/build"
 	ctx.GenImgDir = "../test/build/img"
 	ctx.ImageDir = "../test/img"
