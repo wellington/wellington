@@ -1,9 +1,9 @@
 package spritewell
 
 type Spriter interface {
-	Sprite() SafeImageMap
+	Sprite() *SafeImageMap
 }
 
 type Imager interface {
-	Image() SafeImageMap
+	Image() *SafeImageMap
 }

@@ -12,8 +12,8 @@ func InitializeContext(ctx *libsass.Context) {
 }
 
 type payload struct {
-	s spritewell.SafeImageMap
-	i spritewell.SafeImageMap
+	s *spritewell.SafeImageMap
+	i *spritewell.SafeImageMap
 }
 
 func newPayload() payload {
@@ -23,10 +23,10 @@ func newPayload() payload {
 	}
 }
 
-func (p payload) Sprite() spritewell.SafeImageMap {
+func (p payload) Sprite() *spritewell.SafeImageMap {
 	return p.s
 }
 
-func (p payload) Image() spritewell.SafeImageMap {
+func (p payload) Image() *spritewell.SafeImageMap {
 	return p.i
 }

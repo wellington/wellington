@@ -22,15 +22,15 @@ func init() {
 }
 
 type testPayload struct {
-	s spritewell.SafeImageMap
-	i spritewell.SafeImageMap
+	s *spritewell.SafeImageMap
+	i *spritewell.SafeImageMap
 }
 
-func (p testPayload) Sprite() spritewell.SafeImageMap {
+func (p testPayload) Sprite() *spritewell.SafeImageMap {
 	return p.s
 }
 
-func (p testPayload) Image() spritewell.SafeImageMap {
+func (p testPayload) Image() *spritewell.SafeImageMap {
 	return p.i
 }
 
