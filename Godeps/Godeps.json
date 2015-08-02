@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/wellington/wellington",
-	"GoVersion": "go1.5beta3",
+	"GoVersion": "go1.4.2",
 	"Packages": [
 		"./..."
 	],
@@ -19,13 +19,13 @@
 		},
 		{
 			"ImportPath": "github.com/wellington/go-libsass",
-			"Comment": "v0.9.0-117-g4b2093d",
-			"Rev": "4b2093d83c244ea7f76a0e85eb6d2cf2af80b50a"
+			"Comment": "v0.9.0-121-gb2c6c86",
+			"Rev": "b2c6c868f01f1b5b114b6a2303feae3d59683c9a"
 		},
 		{
 			"ImportPath": "github.com/wellington/spritewell",
-			"Comment": "v0.4.0-19-g748bfe9",
-			"Rev": "748bfe956f31c257605c304b41a0525a4487d17d"
+			"Comment": "v0.4.0-20-ge1e38a0",
+			"Rev": "e1e38a0cf74315c7b5cf62d4a8491068b0ba3f9f"
 		},
 		{
 			"ImportPath": "gopkg.in/fsnotify.v1",

@@ -45,6 +45,12 @@ type SafeImageMap struct {
 	M map[string]ImageList
 }
 
+func NewImageMap() SafeImageMap {
+	img := SafeImageMap{
+		M: make(map[string]ImageList)}
+	return img
+}
+
 func funnyNames() string {
 
 	names := []string{"White_and_Nerdy",
