@@ -262,6 +262,7 @@ func Run(cmd *cobra.Command, files []string) {
 		HTTPPath:     httpPath,
 		IncludePaths: []string{gba.Includes},
 	}
+	wt.InitializeContext(ctx)
 	ctx.Imports.Init()
 
 	if ishttp {
