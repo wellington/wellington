@@ -149,6 +149,7 @@ func SpriteMap(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) err
 	// read lock then write lock
 	sprites.RLock()
 	if _, ok := sprites.M[key]; ok {
+		defer sprites.RUnlock()
 		res, err := libsass.Marshal(key)
 		if err != nil {
 			return setErrorAndReturn(err, rsv)
