@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"strconv"
 
 	libsass "github.com/wellington/go-libsass"
 	"github.com/wellington/go-libsass/libs"
@@ -19,14 +17,10 @@ import (
 
 func init() {
 
-	libsass.RegisterHandler("sprite-map($glob, $spacing: 0px)", SpriteMap)
-	libsass.RegisterHandler("sprite-file($map, $name)", SpriteFile)
 	libsass.RegisterHandler("image-url($name)", ImageURL)
 	libsass.RegisterHandler("image-height($path)", ImageHeight)
 	libsass.RegisterHandler("image-width($path)", ImageWidth)
 	libsass.RegisterHandler("inline-image($path, $encode: false)", InlineImage)
-	libsass.RegisterHandler("font-url($path, $raw: false)", FontURL)
-	libsass.RegisterHandler("sprite($map, $name, $offsetX: 0px, $offsetY: 0px)", Sprite)
 }
 
 // ImageURL handles calls to resolve a local image from the
@@ -91,9 +85,11 @@ func ImageHeight(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) e
 			ctx.Imgs.Unlock()
 		}
 	} else {
-		ctx.Sprites.RLock()
-		imgs = ctx.Sprites.M[glob]
-		ctx.Sprites.RUnlock()
+		sprites := ctx.Sprites
+
+		sprites.RLock()
+		imgs = sprites.M[glob]
+		sprites.RUnlock()
 	}
 	height := imgs.SImageHeight(name)
 	Hheight := libs.SassNumber{
@@ -150,9 +146,10 @@ func ImageWidth(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) er
 			ctx.Imgs.Unlock()
 		}
 	} else {
-		ctx.Sprites.RLock()
-		imgs = ctx.Sprites.M[glob]
-		ctx.Sprites.RUnlock()
+		sprites := ctx.Sprites
+		sprites.RLock()
+		imgs = sprites.M[glob]
+		sprites.RUnlock()
 	}
 	w := imgs.SImageWidth(name)
 	ww := libs.SassNumber{
@@ -242,210 +239,10 @@ func InlineImage(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) e
 	return nil
 }
 
-// SpriteFile proxies the sprite glob and image name through.
-
-func SpriteFile(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error {
-	var glob, name string
-	err := libsass.Unmarshal(usv, &glob, &name)
-	if err != nil {
-		return setErrorAndReturn(err, rsv)
-	}
-	infs := []interface{}{glob, name}
-	res, err := libsass.Marshal(infs)
-	if rsv != nil {
-		*rsv = res
-	}
-	return nil
-}
-
-// Sprite returns the source and background position for an image in the
-// spritesheet.
-func Sprite(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error {
-	ctx := v.(*libsass.Context)
-	var glob, name string
-	var offsetX, offsetY libs.SassNumber
-	err := libsass.Unmarshal(usv, &glob, &name, &offsetX, &offsetY)
-	if err != nil {
-		if err == libsass.ErrSassNumberNoUnit {
-			err := fmt.Errorf(
-				"Please specify unit for offset ie. (2px)")
-			return setErrorAndReturn(err, rsv)
-		}
-		return setErrorAndReturn(err, rsv)
-	}
-	ctx.Sprites.RLock()
-	defer ctx.Sprites.RUnlock()
-	imgs, ok := ctx.Sprites.M[glob]
-	if !ok {
-		keys := make([]string, 0, len(ctx.Sprites.M))
-		for i := range ctx.Sprites.M {
-			keys = append(keys, i)
-		}
-
-		err := fmt.Errorf(
-			"Variable not found matching glob: %s sprite:%s", glob, name)
-		return setErrorAndReturn(err, rsv)
-	}
-
-	path, err := imgs.OutputPath()
-
-	// FIXME: path directory can not be trusted, rebuild this from the context
-	if ctx.HTTPPath == "" {
-		ctxPath, _ := filepath.Rel(ctx.BuildDir, ctx.GenImgDir)
-		path = filepath.Join(ctxPath, filepath.Base(path))
-	} else {
-		u, err := url.Parse(ctx.HTTPPath)
-		if err != nil {
-			return setErrorAndReturn(err, rsv)
-		}
-		u.Path = filepath.Join(u.Path, "build", filepath.Base(path))
-		path = u.String()
-	}
-	if err != nil {
-		return setErrorAndReturn(err, rsv)
-	}
-
-	if imgs.Lookup(name) == -1 {
-		return setErrorAndReturn(fmt.Errorf("image %s not found\n"+
-			"   try one of these: %v", name, imgs.Paths), rsv)
-	}
-	// This is an odd name for what it does
-	pos := imgs.GetPack(imgs.Lookup(name))
-
-	if err != nil {
-		return setErrorAndReturn(err, rsv)
-	}
-
-	x := libs.SassNumber{Unit: "px", Value: float64(-pos.X)}
-	x = x.Add(offsetX)
-
-	y := libs.SassNumber{Unit: "px", Value: float64(-pos.Y)}
-	y = y.Add(offsetY)
-
-	str, err := libsass.Marshal(
-		fmt.Sprintf(`url("%s") %s %s`,
-			path, x, y,
-		))
-	if err != nil {
-		return setErrorAndReturn(err, rsv)
-	}
-	if rsv != nil {
-		*rsv = str
-	}
-	return nil
-}
-
-// SpriteMap returns a sprite from the passed glob and sprite
-// parameters.
-func SpriteMap(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error {
-	ctx := v.(*libsass.Context)
-	var glob string
-	var spacing libs.SassNumber
-	err := libsass.Unmarshal(usv, &glob, &spacing)
-	if err != nil {
-		return setErrorAndReturn(err, rsv)
-	}
-	imgs := sw.ImageList{
-		ImageDir:  ctx.ImageDir,
-		BuildDir:  ctx.BuildDir,
-		GenImgDir: ctx.GenImgDir,
-	}
-	imgs.Padding = int(spacing.Value)
-	if cglob, err := strconv.Unquote(glob); err == nil {
-		glob = cglob
-	}
-
-	key := glob + strconv.FormatInt(int64(spacing.Value), 10)
-	// TODO: benchmark a single write lock against this
-	// read lock then write lock
-	ctx.Sprites.RLock()
-	if _, ok := ctx.Sprites.M[key]; ok {
-		ctx.Sprites.RUnlock()
-		res, err := libsass.Marshal(key)
-		if err != nil {
-			return setErrorAndReturn(err, rsv)
-		}
-		if rsv != nil {
-			*rsv = res
-		}
-		return nil
-	}
-	ctx.Sprites.RUnlock()
-
-	err = imgs.Decode(glob)
-	if err != nil {
-		return setErrorAndReturn(err, rsv)
-	}
-	_, err = imgs.Combine()
-	if err != nil {
-		return setErrorAndReturn(err, rsv)
-	}
-
-	_, err = imgs.Export()
-	if err != nil {
-		return setErrorAndReturn(err, rsv)
-	}
-
-	res, err := libsass.Marshal(key)
-	ctx.Sprites.Lock()
-	ctx.Sprites.M[key] = imgs
-	ctx.Sprites.Unlock()
-	if err != nil {
-		return setErrorAndReturn(err, rsv)
-	}
-
-	if rsv != nil {
-		*rsv = res
-	}
-	return nil
-}
-
 func setErrorAndReturn(err error, rsv *libsass.SassValue) error {
 	if rsv == nil {
 		panic("rsv not initialized")
 	}
 	*rsv = libsass.Error(err)
 	return err
-}
-
-// FontURL builds a relative path to the requested font file from the built CSS.
-func FontURL(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error {
-
-	var (
-		path, format string
-		csv          libsass.SassValue
-		raw          bool
-	)
-	ctx := v.(*libsass.Context)
-	err := libsass.Unmarshal(usv, &path, &raw)
-
-	if err != nil {
-		return setErrorAndReturn(err, rsv)
-	}
-
-	// Enter warning
-	if ctx.FontDir == "." || ctx.FontDir == "" {
-		s := "font-url: font path not set"
-		return setErrorAndReturn(errors.New(s), rsv)
-	}
-
-	rel, err := filepath.Rel(ctx.BuildDir, ctx.FontDir)
-
-	if err != nil {
-		return setErrorAndReturn(err, rsv)
-	}
-	if raw {
-		format = "%s"
-	} else {
-		format = `url("%s")`
-	}
-
-	csv, err = libsass.Marshal(fmt.Sprintf(format, filepath.Join(rel, path)))
-	if err != nil {
-		return setErrorAndReturn(err, rsv)
-	}
-	if rsv != nil {
-		*rsv = csv
-	}
-	return nil
 }
