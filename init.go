@@ -30,10 +30,3 @@ func (p payload) Sprite() spritewell.SafeImageMap {
 func (p payload) Image() spritewell.SafeImageMap {
 	return p.i
 }
-
-func newTestPayload() payload {
-	return payload{
-		s: spritewell.NewImageMap(),
-		i: spritewell.NewImageMap(),
-	}
-}

@@ -38,8 +38,7 @@ func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) e
 		out = os.Stdout
 	}
 	ctx := libsass.Context{
-		Sprites:     gba.Sprites,
-		Imgs:        gba.Imgs,
+		Payload:     gba.Payload,
 		OutputStyle: gba.Style,
 		ImageDir:    gba.Dir,
 		FontDir:     gba.Font,
