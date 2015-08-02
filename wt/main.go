@@ -251,8 +251,7 @@ func Run(cmd *cobra.Command, files []string) {
 	pMap := wt.NewPartialMap()
 	// FIXME: Copy pasta with LoadAndBuild
 	ctx := &libsass.Context{
-		Sprites:      gba.Sprites,
-		Imgs:         gba.Imgs,
+		Payload:      gba.Payload,
 		OutputStyle:  gba.Style,
 		BuildDir:     gba.BuildDir,
 		ImageDir:     gba.Dir,
@@ -262,6 +261,7 @@ func Run(cmd *cobra.Command, files []string) {
 		HTTPPath:     httpPath,
 		IncludePaths: []string{gba.Includes},
 	}
+	wt.InitializeContext(ctx)
 	ctx.Imports.Init()
 
 	if ishttp {

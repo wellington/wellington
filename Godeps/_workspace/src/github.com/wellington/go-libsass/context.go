@@ -11,33 +11,36 @@ import (
 	"strings"
 
 	"github.com/wellington/go-libsass/libs"
-	"github.com/wellington/spritewell"
 )
 
 // Context handles the interactions with libsass.  Context
 // exposes libsass options that are available.
 type Context struct {
-	//Parser                        Parser
+	// Options
 	OutputStyle  int
 	Precision    int
 	Comments     bool
 	IncludePaths []string
-
 	// Input directories
-	FontDir, ImageDir string
+	FontDir  string
+	ImageDir string
 	// Output/build directories
-	BuildDir, GenImgDir string
+	BuildDir  string
+	GenImgDir string
+
 	// HTTP supporting code
 	HTTPPath                    string
 	In, Src, Out, Map, MainFile string
-	Status                      int
-	libsassError                string
-	errorString                 string
-	errors                      lErrors
+	Status                      int //libsass status code
 
-	in     io.Reader
-	out    io.Writer
-	Errors SassError
+	// many error parameters some are unnecessary and should be removed
+	libsassError string
+	errorString  string
+	errors       lErrors
+	Errors       SassError
+
+	in  io.Reader
+	out io.Writer
 	// Place to keep cookies, so Go doesn't garbage collect them before C
 	// is done with them
 	Cookies []Cookie
@@ -47,8 +50,10 @@ type Context struct {
 	Headers Headers
 	// Has list of compiler included files
 	ResolvedImports []string
-	// Used for callbacks to retrieve sprite information, etc.
-	Imgs, Sprites spritewell.SafeImageMap
+
+	// Attach additional data to a context for use by custom
+	// handlers/mixins
+	Payload interface{}
 }
 
 // Constants/enums for the output style.
@@ -72,13 +77,6 @@ func init() {
 
 func NewContext() *Context {
 	c := Context{}
-
-	// Initiailize image map(s)
-	c.Sprites = spritewell.SafeImageMap{
-		M: make(map[string]spritewell.ImageList)}
-	c.Imgs = spritewell.SafeImageMap{
-		M: make(map[string]spritewell.ImageList)}
-	c.Imports.Init()
 
 	return &c
 }

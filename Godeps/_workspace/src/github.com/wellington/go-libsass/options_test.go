@@ -6,8 +6,8 @@ import (
 )
 
 func TestOption_precision(t *testing.T) {
-	t.Skip("precision does not work")
-	in := bytes.NewBufferString(`a { height: 1.1111px; }`)
+
+	in := bytes.NewBufferString(`a { height: (1/3)px; }`)
 
 	var out bytes.Buffer
 	ctx := Context{
@@ -19,7 +19,24 @@ func TestOption_precision(t *testing.T) {
 	}
 
 	e := `a {
-  height: 1.111px; }
+  height: 0.333 px; }
+`
+	if e != out.String() {
+		t.Errorf("got:\n%s\nwanted:\n%s\n", out.String(), e)
+	}
+
+	in = bytes.NewBufferString(`a { height: (1/3)px; }`)
+	out.Reset()
+	ctx = Context{
+		Precision: 6,
+	}
+	err = ctx.Compile(in, &out)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	e = `a {
+  height: 0.333333 px; }
 `
 	if e != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s\n", out.String(), e)

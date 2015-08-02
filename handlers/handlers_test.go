@@ -21,6 +21,31 @@ func init() {
 	os.MkdirAll("../test/build/img", 0777)
 }
 
+type testPayload struct {
+	s *spritewell.SafeImageMap
+	i *spritewell.SafeImageMap
+}
+
+func (p testPayload) Sprite() *spritewell.SafeImageMap {
+	return p.s
+}
+
+func (p testPayload) Image() *spritewell.SafeImageMap {
+	return p.i
+}
+
+func newTestPayload() testPayload {
+	return testPayload{
+		s: spritewell.NewImageMap(),
+		i: spritewell.NewImageMap(),
+	}
+}
+
+func initCtx(ctx *libsass.Context) {
+	// Initialize payload on context
+	ctx.Payload = newTestPayload()
+}
+
 func wrapCallback(sc libsass.HandlerFunc, ch chan libsass.SassValue) libs.SassCallback {
 	return libsass.Handler(func(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error {
 		c := v.(*libsass.Context)
@@ -51,6 +76,7 @@ func testSprite(ctx *libsass.Context) {
 func setupCtx(r io.Reader, out io.Writer /*, cookies ...libsass.Cookie*/) (*libsass.Context, libsass.SassValue, error) {
 	var usv libsass.SassValue
 	ctx := libsass.NewContext()
+	initCtx(ctx)
 	ctx.OutputStyle = libsass.NESTED_STYLE
 	ctx.IncludePaths = make([]string, 0)
 	ctx.BuildDir = "../test/build"
@@ -115,6 +141,7 @@ func TestFuncImageURL(t *testing.T) {
 
 func TestFuncSpriteMap(t *testing.T) {
 	ctx := libsass.NewContext()
+	initCtx(ctx)
 	ctx.BuildDir = "../test/build"
 	ctx.GenImgDir = "../test/build/img"
 	ctx.ImageDir = "../test/img"
@@ -177,6 +204,7 @@ line-height: $paddedmap;
 }`)
 
 	ctx := libsass.NewContext()
+	initCtx(ctx)
 
 	ctx.BuildDir = "../test/build"
 	ctx.GenImgDir = "../test/build/img"
@@ -204,6 +232,7 @@ div {
 }`)
 
 	ctx := libsass.NewContext()
+	initCtx(ctx)
 
 	ctx.ImageDir = "../test/img"
 	ctx.BuildDir = "../test/build"
@@ -495,7 +524,7 @@ div {
 }`)
 
 	ctx := libsass.NewContext()
-
+	initCtx(ctx)
 	ctx.BuildDir = "../test/build"
 	ctx.GenImgDir = "../test/build/img"
 	ctx.ImageDir = "../test/img"
@@ -521,7 +550,7 @@ div {
 }`)
 
 	ctx := libsass.NewContext()
-
+	initCtx(ctx)
 	ctx.BuildDir = "../test/build"
 	ctx.GenImgDir = "../test/build/img"
 	ctx.ImageDir = "../test/img"
@@ -548,7 +577,7 @@ div {
 }`)
 
 	ctx := libsass.NewContext()
-
+	initCtx(ctx)
 	ctx.BuildDir = "../test/build"
 	ctx.GenImgDir = "../test/build/img"
 	ctx.ImageDir = "../test/img"
@@ -585,6 +614,7 @@ div {
 }`)
 
 	ctx := libsass.NewContext()
+	initCtx(ctx)
 	ctx.IncludePaths = []string{"../test"}
 	ctx.HTTPPath = "http://foo.com"
 	ctx.BuildDir = "../test/build"
@@ -618,7 +648,7 @@ div {
 }`)
 
 	ctx := libsass.NewContext()
-
+	initCtx(ctx)
 	ctx.BuildDir = "../test/build"
 	ctx.GenImgDir = "../test/build/img"
 	ctx.ImageDir = "../test/img"
