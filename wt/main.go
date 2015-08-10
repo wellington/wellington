@@ -36,6 +36,7 @@ var (
 	httpPath                      string
 	timeB                         bool
 	config                        string
+	debug                         bool
 )
 
 /*
@@ -50,6 +51,7 @@ func init() {
 func flags(set *pflag.FlagSet) {
 	set.BoolVarP(&showVersion, "version", "v", false, "Show the app version")
 	//wtCmd.PersistentFlags().BoolVarP(&showHelp, "help", "h", false, "this help")
+	set.BoolVar(&debug, "debug", false, "Show detailed debug information")
 	set.StringVar(&dir, "images-dir", "", "Compass Image Directory")
 	set.StringVarP(&dir, "dir", "d", "", "Compass Image Directory")
 	set.StringVar(&jsDir, "javascripts-dir", "", "Compass JS Directory")
@@ -260,6 +262,14 @@ func Run(cmd *cobra.Command, files []string) {
 		Comments:     gba.Comments,
 		HTTPPath:     httpPath,
 		IncludePaths: []string{gba.Includes},
+	}
+	if debug {
+		fmt.Printf("      Font  Dir: %s\n", gba.Font)
+		fmt.Printf("      Image Dir: %s\n", gba.Dir)
+		fmt.Printf("      Build Dir: %s\n", gba.BuildDir)
+		fmt.Printf("Build Image Dir: %s\n", gba.Gen)
+		fmt.Printf(" Include Dir(s): %s\n", gba.Includes)
+		fmt.Println("===================================")
 	}
 	wt.InitializeContext(ctx)
 	ctx.Imports.Init()
