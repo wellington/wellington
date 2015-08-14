@@ -124,6 +124,8 @@ func root() {
 	flags(wtCmd.PersistentFlags())
 }
 
+// AddCommands attaches the cli subcommands ie. http, compile to the
+// main cli entrypoint.
 func AddCommands() {
 	wtCmd.AddCommand(httpCmd)
 	wtCmd.AddCommand(compileCmd)
@@ -143,6 +145,7 @@ func main() {
 	wtCmd.Execute()
 }
 
+// Run is the main entrypoint for the cli.
 func Run(cmd *cobra.Command, files []string) {
 
 	start := time.Now()
