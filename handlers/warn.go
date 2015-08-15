@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/fatih/color"
 	libsass "github.com/wellington/go-libsass"
@@ -11,7 +11,7 @@ import (
 func WarnHandler(v interface{}, csv libsass.SassValue, rsv *libsass.SassValue) error {
 	var s string
 	libsass.Unmarshal(csv, &s)
-	fmt.Println(color.YellowString("WARNING: " + s))
+	log.Println(color.YellowString("WARNING: " + s))
 
 	r, _ := libsass.Marshal("")
 	*rsv = r
