@@ -130,7 +130,7 @@ func TestFuncImageURL(t *testing.T) {
 		t.Error(merr)
 	}
 
-	e := "Sassvalue is type libs.SassNumber and has value 1px but expected slice"
+	e := "Invalid Sass type expected: slice got: libs.SassNumber value: 1px"
 
 	if e != s {
 		t.Errorf("got:\n%s\nwanted:\n%s", s, e)
