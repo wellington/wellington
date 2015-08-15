@@ -107,3 +107,11 @@ func TestRebuild(t *testing.T) {
 		t.Fatalf("wanted: %s\ngot: %s", e, err)
 	}
 }
+
+func TestAppendUnique(t *testing.T) {
+	lst := []string{"a", "b", "c"}
+	new := appendUnique(lst, "a")
+	if len(new) != len(lst) {
+		t.Errorf("got: %d wanted: %d", len(new), len(lst))
+	}
+}
