@@ -85,7 +85,7 @@ profile.cov:
 	go get github.com/axw/gocov/gocov
 	go get github.com/mattn/goveralls
 	go get golang.org/x/tools/cmd/goimports
-	#go get github.com/golang/lint/golint
+	go get github.com/golang/lint/golint
 	go get golang.org/x/tools/cmd/cover
 	scripts/goclean.sh
 
