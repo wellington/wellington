@@ -6,7 +6,6 @@ clone_folder: c:\gopath\src\github.com\wellington\go-libsass
 
 environment:
   GOPATH: c:\gopath
-  WIN_VER: windows-na
   CGO_ENABLED: 1
   GOROOT_BOOTSTRAP: C:\go
   GOROOT: C:\go15\go
@@ -16,33 +15,30 @@ install:
   # - ps: Install-Product node $env:nodejs_version
   # install gcc (needed for sqlite3)
   #- choco install -y mingw
-  #- set PATH=C:\tools\mingw64\bin;C:\gopath\bin;%PATH%
-
-
+  - set PATH=C:\mingw64\bin;C:\go15\go\bin;C:\gopath\bin;%PATH%
+  #retrieve go 1.5
+  - ps: |
+      $file = "go1.5rc1.windows-amd64.zip"
+      $url  = "https://storage.googleapis.com/golang/"
+      $url += $file
+      Invoke-WebRequest -UserAgent wget -Uri $url -OutFile $file
+      &7z x -oC:\go15 $file > $null
+  - go version
   - ps: |
       # Install MinGW.
       $url  = "http://sourceforge.net/projects/mingw-w64/files/"
       $url += "Toolchains%20targetting%20Win64/Personal%20Builds/"
-      $url += "mingw-builds/4.9.2/threads-win32/seh/"
-      $url += "x86_64-4.9.2-release-win32-seh-rt_v3-rev0.7z/download"
+      $url += "mingw-builds/5.1.0/threads-win32/seh/"
+      $url += "x86_64-5.1.0-release-win32-seh-rt_v4-rev0.7z/download"
       # mirror on github for faster downloads
-      $url  = "https://github.com/wellington/binaries/blob/master/x86_64-4.9.2-release-win32-seh-rt_v4-rev3.7z?raw=true"
-      Invoke-WebRequest -UserAgent wget -Uri $url -OutFile x86_64-4.9.2-release-win32-seh-rt_v3-rev0.7z
-      &7z x -oC:\ x86_64-4.9.2-release-win32-seh-rt_v3-rev0.7z > $null
-  - set PATH=C:\mingw64\bin;C:\go15\go\bin;C:\gopath\bin;%PATH%
+      #$url  = "https://github.com/wellington/binaries/blob/master/x86_64-4.9.2-release-win32-seh-rt_v4-rev3.7z?raw=true"
+      Invoke-WebRequest -UserAgent wget -Uri $url -OutFile ming32-64.7z
+      &7z x -oC:\ ming32-64.7z > $null
   - set CC=gcc
   - set CXX=g++
   - echo %PATH%
   - echo %GOPATH%
   - dir C:\mingw64\bin
-  #retrieve go 1.5
-  - ps: |
-      $file = "go1.5beta1.windows-amd64.zip"
-      $url  = "https://storage.googleapis.com/golang/"
-      $url += $file
-      Invoke-WebRequest -UserAgent wget -Uri $url -OutFile go1.5beta1.windows-amd64.zip
-      &7z x -oC:\go15 go1.5beta1.windows-amd64.zip > $null
-  - go version
   - go get github.com/wellington/spritewell
 
 build_script:
