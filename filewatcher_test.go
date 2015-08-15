@@ -114,4 +114,9 @@ func TestAppendUnique(t *testing.T) {
 	if len(new) != len(lst) {
 		t.Errorf("got: %d wanted: %d", len(new), len(lst))
 	}
+
+	new = appendUnique(lst, "d")
+	if len(new) != len(lst)+1 {
+		t.Errorf("got: %d wanted: %d", len(new), len(lst)+1)
+	}
 }
