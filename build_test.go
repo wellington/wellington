@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -43,11 +44,14 @@ func TestLandB_error(t *testing.T) {
 	defer w.Close()
 	os.Stdout = w
 	err := LoadAndBuild("test/sass/error.scss", &BuildArgs{}, NewPartialMap())
-	fmt.Println(err)
-	e := `"\x1b[31mError > /Users/drew/src/github.com/wellington/wellington/test/sass/error.scss:1\nInvalid CSS after \"div {\\a\": expected \"}\", was \"\"\x1b[0m"`
 	qs := fmt.Sprintf("%q", err.Error())
-	if qs != e {
-		t.Errorf("got:\n~%s~\nwanted:\n~%s~", qs, e)
+
+	if !strings.HasPrefix(qs, `"\x1b[31mError >`) {
+		t.Fatalf("Error is not colorized")
+	}
+
+	if !strings.HasSuffix(qs, `error.scss:1\nInvalid CSS after \"div {\\a\": expected \"}\", was \"\"\x1b[0m"`) {
+		t.Fatalf("Error contains invalid text:\n%s", qs)
 	}
 	os.Stdout = oo
 }
