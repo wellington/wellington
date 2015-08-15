@@ -43,6 +43,26 @@ func TestFontURLFail(t *testing.T) {
 
 }
 
+func TestFontURL_invalid(t *testing.T) {
+	r, w, _ := os.Pipe()
+	_, _ = r, w
+	old := os.Stdout
+	defer func() { os.Stdout = old }()
+	//os.Stdout = w
+	in := bytes.NewBufferString(`@font-face {
+  src: font-url(5px);
+}`)
+	var out bytes.Buffer
+	ctx := libsass.Context{}
+	err := ctx.Compile(in, &out)
+
+	e := `Error > stdin:2
+error in C function font-url: Invalid Sass type expected: string got: libs.SassNumber value: 5px`
+	if !strings.HasPrefix(err.Error(), e) {
+		t.Errorf("got:\n%s\nwanted:\n%s", err, e)
+	}
+}
+
 func ExampleFontURL() {
 	in := bytes.NewBufferString(`
 $path: font-url("arial.eot", true);

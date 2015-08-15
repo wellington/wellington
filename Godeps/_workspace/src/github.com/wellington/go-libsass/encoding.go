@@ -240,5 +240,7 @@ func makevalue(v interface{}) (SassValue, error) {
 func throwMisMatchTypeError(arg SassValue, expectedType string) error {
 	var intf interface{}
 	unmarshal(arg, &intf)
-	return fmt.Errorf("Sassvalue is type %s and has value %v but expected %s", reflect.TypeOf(intf), intf, expectedType)
+	svinf := libs.Interface(arg.Val())
+	return fmt.Errorf("Invalid Sass type expected: %s got: %T value: %v",
+		expectedType, svinf, svinf)
 }

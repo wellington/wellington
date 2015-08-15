@@ -459,7 +459,7 @@ func TestWrongUnmarshalToFloatType(t *testing.T) {
 	sm := testMarshal(t, s)
 	err := Unmarshal(sm, &ie)
 
-	e := "Sassvalue is type string and has value Taylor Swift but expected color.RGBA or SassNumber"
+	e := "Invalid Sass type expected: color.RGBA or SassNumber got: string value: Taylor Swift"
 	if err.Error() != e {
 		t.Errorf("got:\n%s \nwanted:\n%s", err, e)
 	}
