@@ -2,6 +2,7 @@ package wellington
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"testing"
@@ -34,6 +35,21 @@ Rebuilt: test/sass/file.scss
 	if e != out {
 		t.Errorf("got:\n%s\nwanted:\n%s", out, e)
 	}
+}
+
+func TestLandB_error(t *testing.T) {
+	oo := os.Stdout
+	var w *os.File
+	defer w.Close()
+	os.Stdout = w
+	err := LoadAndBuild("test/sass/error.scss", &BuildArgs{}, NewPartialMap())
+	fmt.Println(err)
+	e := `"\x1b[31mError > /Users/drew/src/github.com/wellington/wellington/test/sass/error.scss:1\nInvalid CSS after \"div {\\a\": expected \"}\", was \"\"\x1b[0m"`
+	qs := fmt.Sprintf("%q", err.Error())
+	if qs != e {
+		t.Errorf("got:\n~%s~\nwanted:\n~%s~", qs, e)
+	}
+	os.Stdout = oo
 }
 
 func TestLandB_updateFile(t *testing.T) {

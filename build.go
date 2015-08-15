@@ -1,13 +1,14 @@
 package wellington
 
 import (
+	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/fatih/color"
 	libsass "github.com/wellington/go-libsass"
 )
 
@@ -75,8 +76,7 @@ func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) e
 	}
 	err = ctx.FileCompile(sassFile, out)
 	if err != nil {
-		log.Println(sassFile)
-		return err
+		return errors.New(color.RedString("%s", err))
 	}
 
 	for _, inc := range ctx.ResolvedImports {

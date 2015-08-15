@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	libsass "github.com/wellington/go-libsass"
@@ -327,7 +328,7 @@ func Run(cmd *cobra.Command, files []string) {
 		err = ctx.Compile(&pout, out)
 
 		if err != nil {
-			log.Println(err)
+			color.Red(err.Error())
 		}
 		return
 	}
