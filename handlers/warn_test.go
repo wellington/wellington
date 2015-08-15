@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"testing"
 
 	libsass "github.com/wellington/go-libsass"
 )
 
 func TestError_warn(t *testing.T) {
-	t.Skip("Color does not work with ./...")
+
 	oo := os.Stdout
 	r, w, _ := os.Pipe()
 	defer w.Close()
@@ -28,7 +29,7 @@ div { color: red; }`)
 		t.Error(err)
 	}
 
-	e := `"\x1b[33mWARNING: !\x1b[0m\n"`
+	e := `WARNING: !`
 	outC := make(chan string)
 	go func() {
 		var buf bytes.Buffer
@@ -41,7 +42,7 @@ div { color: red; }`)
 	out := <-outC
 	qout := fmt.Sprintf("%q", out)
 
-	if e != qout {
+	if !strings.Contains(qout, e) {
 		t.Errorf("got:\n%s\nwanted:\n%s", qout, e)
 	}
 	os.Stdout = oo

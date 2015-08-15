@@ -39,7 +39,7 @@ Rebuilt: test/sass/file.scss
 }
 
 func TestLandB_error(t *testing.T) {
-	t.Skip("colorized doesnt support ./...")
+
 	oo := os.Stdout
 	var w *os.File
 	defer w.Close()
@@ -47,11 +47,7 @@ func TestLandB_error(t *testing.T) {
 	err := LoadAndBuild("test/sass/error.scss", &BuildArgs{}, NewPartialMap())
 	qs := fmt.Sprintf("%q", err.Error())
 
-	if !strings.HasPrefix(qs, `"\x1b[31mError >`) {
-		t.Fatalf("Error is not colorized")
-	}
-
-	if !strings.HasSuffix(qs, `error.scss:1\nInvalid CSS after \"div {\\a\": expected \"}\", was \"\"\x1b[0m"`) {
+	if !strings.Contains(qs, `error.scss:1\nInvalid CSS after \"div {\\a\": expected \"}\", was \"\"`) {
 		t.Fatalf("Error contains invalid text:\n%s", qs)
 	}
 	os.Stdout = oo
