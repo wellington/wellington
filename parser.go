@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"path/filepath"
 
 	libsass "github.com/wellington/go-libsass"
@@ -14,7 +13,7 @@ import (
 )
 
 func init() {
-	log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
+	//log.SetFlags(log.Lshortfile | log.Ldate | log.Ltime)
 }
 
 // Replace holds token values for replacing source input with parsed input.

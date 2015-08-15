@@ -2,8 +2,6 @@ package context
 
 import (
 	"bytes"
-	"log"
-	"os"
 
 	"testing"
 )
@@ -151,33 +149,6 @@ Backtrace:
 	if e != ctx.error() {
 		t.Errorf("got:\n%s\nwanted:\n%s", err.Error(), e)
 	}
-}
-
-func TestError_warn(t *testing.T) {
-	var pout bytes.Buffer
-	log.SetFlags(0)
-	log.SetOutput(&pout)
-	// Disabled while new warn integration is built
-	in := bytes.NewBufferString(`
-@warn "!";
-div {
-  color: red;
-}`)
-	var out bytes.Buffer
-	ctx := Context{}
-	err := ctx.Compile(in, &out)
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	e := `WARNING: !
-`
-
-	if e != pout.String() {
-		t.Errorf("got:\n%s\nwanted:\n%s", pout.String(), e)
-	}
-	log.SetOutput(os.Stdout)
 }
 
 func TestError_invalid(t *testing.T) {

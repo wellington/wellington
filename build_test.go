@@ -2,8 +2,10 @@ package wellington
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -34,6 +36,25 @@ Rebuilt: test/sass/file.scss
 	if e != out {
 		t.Errorf("got:\n%s\nwanted:\n%s", out, e)
 	}
+}
+
+func TestLandB_error(t *testing.T) {
+	t.Skip("colorized doesnt support ./...")
+	oo := os.Stdout
+	var w *os.File
+	defer w.Close()
+	os.Stdout = w
+	err := LoadAndBuild("test/sass/error.scss", &BuildArgs{}, NewPartialMap())
+	qs := fmt.Sprintf("%q", err.Error())
+
+	if !strings.HasPrefix(qs, `"\x1b[31mError >`) {
+		t.Fatalf("Error is not colorized")
+	}
+
+	if !strings.HasSuffix(qs, `error.scss:1\nInvalid CSS after \"div {\\a\": expected \"}\", was \"\"\x1b[0m"`) {
+		t.Fatalf("Error contains invalid text:\n%s", qs)
+	}
+	os.Stdout = oo
 }
 
 func TestLandB_updateFile(t *testing.T) {

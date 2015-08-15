@@ -104,6 +104,6 @@ func TestRebuild(t *testing.T) {
 	err := w.rebuild("file/event")
 
 	if e := fmt.Sprintf("build args are nil"); e != err.Error() {
-		t.Errorf("wanted: %s\ngot: %s", e, err)
+		t.Fatalf("wanted: %s\ngot: %s", e, err)
 	}
 }
