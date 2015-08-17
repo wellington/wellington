@@ -38,6 +38,11 @@ var (
 	timeB                         bool
 	config                        string
 	debug                         bool
+
+	// unused
+	noLineComments bool
+	relativeAssets bool
+	cssDir         string
 )
 
 /*
@@ -50,6 +55,10 @@ func init() {
 }
 
 func flags(set *pflag.FlagSet) {
+	// Unused cli args
+	set.BoolVar(&noLineComments, "no-line-comments", false, "UNSUPPORTED: Disable line comments")
+	set.BoolVar(&relativeAssets, "relative-assets", false, "UNSUPPORTED: Make compass asset helpers generate relative urls to assets.")
+
 	set.BoolVarP(&showVersion, "version", "v", false, "Show the app version")
 	//wtCmd.PersistentFlags().BoolVarP(&showHelp, "help", "h", false, "this help")
 	set.BoolVar(&debug, "debug", false, "Show detailed debug information")
@@ -59,8 +68,8 @@ func flags(set *pflag.FlagSet) {
 	set.BoolVar(&timeB, "time", false, "Retrieve timing information")
 
 	set.StringVarP(&buildDir, "build", "b", "", "Target directory for generated CSS, relative paths from sass-dir are preserved")
+	set.StringVar(&buildDir, "css-dir", "", "Location of CSS files")
 
-	// set.StringVar(&gen, "css-dir", "", "Location of CSS files")
 	set.StringVar(&gen, "gen", ".", "Generated images directory")
 
 	set.StringVar(&includes, "sass-dir", "", "Compass Sass Directory")
