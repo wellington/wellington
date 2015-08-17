@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/wellington/wellington/types"
@@ -175,12 +174,12 @@ var rebuildChan chan ([]string)
 // and requests the file be rebuilt directly.
 func (w *Watcher) rebuild(eventFileName string) error {
 	// Top level file modified, rebuild it directly
-	if !strings.HasPrefix(filepath.Base(eventFileName), "_") {
-		err := LoadAndBuild(eventFileName, w.BArgs, w.PartialMap)
-		if err != nil {
-			return err
-		}
-	}
+	// if !strings.HasPrefix(filepath.Base(eventFileName), "_") {
+	// 	err := LoadAndBuild(eventFileName, w.BArgs, w.PartialMap)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 	w.PartialMap.RLock()
 	go func(paths []string) {
 		if rebuildChan != nil {
