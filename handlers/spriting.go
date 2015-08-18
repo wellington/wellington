@@ -16,6 +16,59 @@ func init() {
 	libsass.RegisterHandler("sprite($map, $name, $offsetX: 0px, $offsetY: 0px)", Sprite)
 	libsass.RegisterHandler("sprite-map($glob, $spacing: 0px)", SpriteMap)
 	libsass.RegisterHandler("sprite-file($map, $name)", SpriteFile)
+	libsass.RegisterHandler("sprite-position($map, $file)", SpritePosition)
+}
+
+// SpritePosition returns the position of the image in the sprite-map.
+// This is useful for passing directly to background-position
+func SpritePosition(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error {
+	ctx := v.(*libsass.Context)
+	var glob, name string
+	err := libsass.Unmarshal(usv, &glob, &name)
+	if err != nil {
+		return setErrorAndReturn(err, rsv)
+	}
+	payload, ok := ctx.Payload.(sw.Spriter)
+	if !ok {
+		return setErrorAndReturn(errors.New("Context payload not found"), rsv)
+	}
+	sprites := payload.Sprite()
+	sprites.RLock()
+	defer sprites.RUnlock()
+	imgs, ok := sprites.M[glob]
+	if !ok {
+		err := fmt.Errorf(
+			"Variable not found matching glob: %s sprite:%s", glob, name)
+		return setErrorAndReturn(err, rsv)
+	}
+
+	if imgs.Lookup(name) == -1 {
+		return setErrorAndReturn(fmt.Errorf("image %s not found\n"+
+			"   try one of these: %v", name, imgs.Paths), rsv)
+	}
+
+	// This is an odd name for what it does
+	pos := imgs.GetPack(imgs.Lookup(name))
+
+	if err != nil {
+		return setErrorAndReturn(err, rsv)
+	}
+
+	x := libs.SassNumber{Unit: "px", Value: float64(-pos.X)}
+	y := libs.SassNumber{Unit: "px", Value: float64(-pos.Y)}
+
+	str, err := libsass.Marshal(
+		[]libs.SassNumber{x, y},
+	)
+
+	if err != nil {
+		return setErrorAndReturn(err, rsv)
+	}
+	if rsv != nil {
+		*rsv = str
+	}
+
+	return nil
 }
 
 // SpriteFile proxies the sprite glob and image name through.
