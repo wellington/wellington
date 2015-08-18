@@ -167,6 +167,7 @@ func (w *Watcher) startWatching() {
 }
 
 var rebuildChan chan ([]string)
+var errChan chan error
 
 // rebuild is notified about sass file updates and looks
 // for the file in the partial map.  It also checks
@@ -190,6 +191,9 @@ func (w *Watcher) rebuild(eventFileName string) error {
 			err := LoadAndBuild(paths[i], w.BArgs, w.PartialMap)
 			if err != nil {
 				log.Println(err)
+				if errChan != nil {
+					errChan <- err
+				}
 			}
 		}
 	}(w.PartialMap.M[eventFileName])

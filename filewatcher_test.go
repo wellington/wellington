@@ -3,13 +3,36 @@ package wellington
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 )
 
-func TestWatch_rebuild(t *testing.T) {
+func TestRebuild(t *testing.T) {
+	var f *os.File
+	log.SetOutput(f)
+	wc := NewWatcher()
+	go func(t *testing.T) {
+		select {
+		case err := <-errChan:
+			if err == nil {
+				t.Fatal(err)
+			}
+			if e := fmt.Errorf("build args"); e != err {
+				t.Fatalf("got: %s wanted: %s", e, err)
+			}
+		case <-time.After(100 * time.Millisecond):
+			t.Fatal("timeout waiting for load error")
+		}
+	}(t)
+
+	// rebuild doesn't throw errors ever
+	wc.rebuild("file/event")
+}
+
+func TestRebuild_watch(t *testing.T) {
 	tdir, err := ioutil.TempDir(os.TempDir(), "testwatch_")
 	if err != nil {
 		t.Fatal(err)
@@ -97,15 +120,6 @@ func TestWatch(t *testing.T) {
 	f.WriteString("data")
 	f.Sync()
 
-}
-
-func TestRebuild(t *testing.T) {
-	w := NewWatcher()
-	err := w.rebuild("file/event")
-
-	if e := fmt.Sprintf("build args are nil"); e != err.Error() {
-		t.Fatalf("wanted: %s\ngot: %s", e, err)
-	}
 }
 
 func TestAppendUnique(t *testing.T) {
