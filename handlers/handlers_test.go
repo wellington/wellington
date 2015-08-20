@@ -385,26 +385,6 @@ div {
 
 }
 
-func ExampleMappedArguments() {
-	in := bytes.NewBufferString(`
-$path: font-url($raw: true, $path: "arial.eot");
-@font-face {
-  src: font-url("arial.eot");
-  src: url("#{$path}");
-}`)
-
-	_, _, err := setupCtx(in, os.Stdout)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	// Output:
-	// @font-face {
-	//   src: url("../font/arial.eot");
-	//   src: url("../font/arial.eot"); }
-
-}
-
 func TestHandle_unknownmap(t *testing.T) {
 	in := bytes.NewBufferString(`
 $map: sprite-map("*.png");

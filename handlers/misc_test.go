@@ -43,6 +43,26 @@ func TestFontURLFail(t *testing.T) {
 
 }
 
+func ExampleFontURL() {
+	in := bytes.NewBufferString(`
+$path: font-url($raw: true, $path: "arial.eot");
+@font-face {
+  src: font-url("arial.eot");
+  src: url("#{$path}");
+}`)
+
+	_, _, err := setupCtx(in, os.Stdout)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// Output:
+	// @font-face {
+	//   src: url("../font/arial.eot");
+	//   src: url("../font/arial.eot"); }
+
+}
+
 func TestFontURL_invalid(t *testing.T) {
 	r, w, _ := os.Pipe()
 	_, _ = r, w
@@ -61,23 +81,4 @@ error in C function font-url: Invalid Sass type expected: string got: libs.SassN
 	if !strings.HasPrefix(err.Error(), e) {
 		t.Errorf("got:\n%s\nwanted:\n%s", err, e)
 	}
-}
-
-func ExampleFontURL() {
-	in := bytes.NewBufferString(`
-$path: font-url("arial.eot", true);
-@font-face {
-  src: font-url("arial.eot");
-  src: url("#{$path}");
-}`)
-
-	_, _, err := setupCtx(in, os.Stdout)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	// Output:
-	// @font-face {
-	//   src: url("../font/arial.eot");
-	//   src: url("../font/arial.eot"); }
 }

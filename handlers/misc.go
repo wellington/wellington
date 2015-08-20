@@ -44,7 +44,8 @@ func FontURL(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error
 		format = `url("%s")`
 	}
 
-	csv, err = libsass.Marshal(fmt.Sprintf(format, filepath.Join(rel, path)))
+	csv, err = libsass.Marshal(fmt.Sprintf(format,
+		filepath.ToSlash(filepath.Join(rel, path))))
 	if err != nil {
 		return setErrorAndReturn(err, rsv)
 	}

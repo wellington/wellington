@@ -210,8 +210,6 @@ func httpInlineImage(url string) (io.ReadCloser, error) {
 	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
-	fmt.Println(url)
-	fmt.Printf("% #v\n", err)
 	if err != nil {
 		fmt.Println("errors")
 		return nil, err
