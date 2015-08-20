@@ -174,7 +174,7 @@ func (l *ImageList) OutputPath() (string, error) {
 	}
 
 	hasher := md5.New()
-	hasher.Write([]byte(path + strings.Join(l.Globs, "|")))
+	hasher.Write([]byte(filepath.ToSlash(path + strings.Join(l.Globs, "|"))))
 	salt := hex.EncodeToString(hasher.Sum(nil))[:6]
 	l.OutFile = filepath.Join(path, salt+".png")
 	return l.OutFile, nil
