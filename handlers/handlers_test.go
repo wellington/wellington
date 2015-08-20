@@ -459,7 +459,6 @@ div {
 	// Output:
 	// div {
 	//   background: url("img/ec0dbb.png") 0px -149px; }
-
 }
 
 func TestHandle_offset(t *testing.T) {

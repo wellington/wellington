@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	libsass "github.com/wellington/go-libsass"
 	"github.com/wellington/go-libsass/libs"
@@ -125,13 +126,13 @@ func Sprite(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error 
 	// FIXME: path directory can not be trusted, rebuild this from the context
 	if ctx.HTTPPath == "" {
 		ctxPath, _ := filepath.Rel(ctx.BuildDir, ctx.GenImgDir)
-		path = filepath.Join(ctxPath, filepath.Base(path))
+		path = strings.Join([]string{ctxPath, filepath.Base(path)}, "/")
 	} else {
 		u, err := url.Parse(ctx.HTTPPath)
 		if err != nil {
 			return setErrorAndReturn(err, rsv)
 		}
-		u.Path = filepath.Join(u.Path, "build", filepath.Base(path))
+		u.Path = strings.Join([]string{u.Path, "build", filepath.Base(path)}, "/")
 		path = u.String()
 	}
 	if err != nil {

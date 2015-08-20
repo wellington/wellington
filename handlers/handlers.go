@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 
 	libsass "github.com/wellington/go-libsass"
 	"github.com/wellington/go-libsass/libs"
@@ -34,7 +35,7 @@ func ImageURL(v interface{}, csv libsass.SassValue, rsv *libsass.SassValue) erro
 	if err != nil {
 		return setErrorAndReturn(err, rsv)
 	}
-	url := filepath.Join(ctx.RelativeImage(), path[0])
+	url := strings.Join([]string{ctx.RelativeImage(), path[0]}, "/")
 	res, err := libsass.Marshal(fmt.Sprintf("url('%s')", url))
 	if err != nil {
 		return setErrorAndReturn(err, rsv)
