@@ -7,7 +7,33 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/wellington/go-libsass"
 )
+
+func TestCompileStdin_imports(t *testing.T) {
+
+	in := bytes.NewBufferString(`@import "compass";
+@import "compass/utilities/sprite/base";
+
+`)
+	ctx := &libsass.Context{}
+	InitializeContext(ctx)
+	ctx.Imports.Init()
+
+	var buf bytes.Buffer
+	err := ctx.Compile(in, &buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	out := buf.String()
+
+	if e := ``; e != out {
+		t.Fatalf("mismatch expected:\n%s\nwas:\n%s\n", e, out)
+	}
+
+}
 
 func TestLoadAndBuild(t *testing.T) {
 	oo := os.Stdout
