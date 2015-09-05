@@ -68,15 +68,18 @@ func TestLandB_error(t *testing.T) {
 
 	oo := os.Stdout
 	var w *os.File
-	defer w.Close()
+	defer func() {
+		w.Close()
+		os.Stdout = oo
+	}()
 	os.Stdout = w
 	err := LoadAndBuild("test/sass/error.scss", &BuildArgs{}, NewPartialMap())
 	qs := fmt.Sprintf("%q", err.Error())
 
-	if !strings.Contains(qs, `error.scss:1\nInvalid CSS after \"div {\\a\": expected \"}\", was \"\"`) {
+	e := `Invalid CSS after \"div {\": expected \"}\", was \"\"`
+	if !strings.Contains(qs, e) {
 		t.Fatalf("Error contains invalid text:\n%s", qs)
 	}
-	os.Stdout = oo
 }
 
 func TestLandB_updateFile(t *testing.T) {
