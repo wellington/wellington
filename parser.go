@@ -9,7 +9,6 @@ import (
 
 	libsass "github.com/wellington/go-libsass"
 	// TODO: Remove dot imports
-	"github.com/wellington/wellington/lexer"
 )
 
 func init() {
@@ -35,7 +34,6 @@ type Parser struct {
 	Imports    libsass.Imports
 	ImageDir   string
 	Includes   []string
-	Items      []lexer.Item
 	Output     []byte
 	Line       map[int]string
 	LineKeys   []int
