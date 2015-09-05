@@ -29,7 +29,7 @@ compass   73.800s
 
 #### What it does
 
-Take a Sass file as follows:
+wt is a Sass preprocessor that compiles Sass to CSS. wt supports many image operations not supported by the Sass lanaguge. It can take a directory of images, compose them into a sprite, and create CSS valid references to those images.
 ```
 $images: sprite-map("sprites/*.png");
 div {
@@ -39,7 +39,7 @@ div {
 }
 ```
 
-The following CSS file is generated
+The output CSS
 ```
 div {
   width: 140px;
@@ -49,9 +49,9 @@ div {
 ```
 #### Try before you buy
 
-You can try out Wellington on Codepen, fork the [Wellington Playground](http://codepen.io/pen/def?fork=KwggLx)!
+You can try out Wellington on Codepen, fork the [Wellington Playground](http://codepen.io/pen/def?fork=KwggLx)! This live example has images you can use, or you can bring your Sass.
 
-Check out the Wellington [collection](http://codepen.io/collection/DbNZQJ/)
+There are many examples on Codepen just see the Wellington [collection](http://codepen.io/collection/DbNZQJ/)
 
 #### Installation
 
@@ -60,9 +60,9 @@ Wellington can be installed via brew
 	brew install wellington
 	wt -h
 
-Run Wellington in docker
+Or, you can run wellington in a docker container
 
-	docker run -v $(pwd):/data -it drewwells/wellington wt proj.scss
+	docker run -v $(pwd):/data -it drewwells/wellington wt compile proj.scss
 
 ## Documentation
 
