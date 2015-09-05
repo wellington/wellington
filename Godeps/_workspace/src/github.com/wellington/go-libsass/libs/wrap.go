@@ -193,6 +193,12 @@ func SassMakeDataCompiler(godc SassDataContext) SassCompiler {
 	return (SassCompiler)(dc)
 }
 
+// SassCompileFileContext compile from file context
+func SassCompileFileContext(gofc SassFileContext) int {
+	cstatus := C.sass_compile_file_context(gofc)
+	return int(cstatus)
+}
+
 // SassCompilerParse prepares a compiler for execution
 func SassCompilerParse(c SassCompiler) {
 	C.sass_compiler_parse(c)

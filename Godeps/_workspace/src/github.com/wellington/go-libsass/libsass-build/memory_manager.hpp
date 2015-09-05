@@ -2,10 +2,8 @@
 #define SASS_MEMORY_MANAGER_H
 
 #include <vector>
-#include <iostream>
 
 namespace Sass {
-  using namespace std;
   /////////////////////////////////////////////////////////////////////////////
   // A class for tracking allocations of AST_Node objects. The intended usage
   // is something like: Some_Node* n = new (mem_mgr) Some_Node(...);
@@ -15,7 +13,7 @@ namespace Sass {
   /////////////////////////////////////////////////////////////////////////////
   template <typename T>
   class Memory_Manager {
-    vector<T*> nodes;
+    std::vector<T*> nodes;
 
   public:
     Memory_Manager(size_t size = 0);
@@ -26,17 +24,17 @@ namespace Sass {
     void deallocate(T* np);
     void remove(T* np);
     void destroy(T* np);
-    T* operator()(T* np);
+    T* add(T* np);
 
   };
 }
 
-template <typename T>
-inline void* operator new(size_t size, Sass::Memory_Manager<T>& mem)
-{ return mem(mem.allocate(size)); }
+///////////////////////////////////////////////////////////////////////////////
+// Use macros for the allocation task, since overloading operator `new`
+// has been proven to be flaky under certain compilers (see comment below).
+///////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-inline void operator delete(void *np, Sass::Memory_Manager<T>& mem)
-{ mem.destroy(reinterpret_cast<T*>(np)); }
+#define SASS_MEMORY_NEW(mgr, Class, ...)                                                 \
+  (static_cast<Class*>(mgr.add(new (mgr.allocate(sizeof(Class))) Class(__VA_ARGS__))))   \
 
 #endif

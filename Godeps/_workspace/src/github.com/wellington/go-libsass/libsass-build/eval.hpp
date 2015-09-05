@@ -1,13 +1,11 @@
 #ifndef SASS_EVAL_H
 #define SASS_EVAL_H
 
-#include <iostream>
 #include "context.hpp"
 #include "listize.hpp"
 #include "operation.hpp"
 
 namespace Sass {
-  using namespace std;
 
   class Expand;
   class Context;
@@ -61,8 +59,10 @@ namespace Sass {
     Expression* operator()(Media_Query*);
     Expression* operator()(Media_Query_Expression*);
     Expression* operator()(At_Root_Expression*);
-    Expression* operator()(Supports_Query*);
-    Expression* operator()(Supports_Condition*);
+    Expression* operator()(Supports_Operator*);
+    Expression* operator()(Supports_Negation*);
+    Expression* operator()(Supports_Declaration*);
+    Expression* operator()(Supports_Interpolation*);
     Expression* operator()(Null*);
     Expression* operator()(Argument*);
     Expression* operator()(Arguments*);
@@ -96,7 +96,7 @@ namespace Sass {
     static Value* op_strings(Memory_Manager<AST_Node>&, enum Sass_OP, Value&, Value&, bool compressed = false, int precision = 5);
 
   private:
-    string interpolation(Expression* s);
+    std::string interpolation(Expression* s);
 
   };
 

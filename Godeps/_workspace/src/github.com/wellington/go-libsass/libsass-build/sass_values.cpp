@@ -1,9 +1,3 @@
-#ifdef _WIN32
-#include <io.h>
-#else
-#include <unistd.h>
-#endif
-
 #include <cstdlib>
 #include <cstring>
 #include "util.hpp"
@@ -12,7 +6,6 @@
 #include "sass_values.h"
 
 extern "C" {
-  using namespace std;
   using namespace Sass;
 
   struct Sass_Unknown {
@@ -82,7 +75,7 @@ extern "C" {
     struct Sass_Map     map;
     struct Sass_Null    null;
     struct Sass_Error   error;
-    struct Sass_Warning   warning;
+    struct Sass_Warning warning;
   };
 
   struct Sass_MapPair {
@@ -357,7 +350,7 @@ extern "C" {
   {
     Memory_Manager<AST_Node> mem;
     Value* val = sass_value_to_ast_node(mem, v);
-    string str(val->to_string(compressed, precision));
+    std::string str(val->to_string(compressed, precision));
     return sass_make_qstring(str.c_str());
   }
 

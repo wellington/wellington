@@ -1,4 +1,4 @@
-package context
+package libsass
 
 import (
 	"bytes"
@@ -34,21 +34,26 @@ type Context struct {
 	Status                      int //libsass status code
 
 	// many error parameters some are unnecessary and should be removed
-	libsassError string
-	errorString  string
-	errors       lErrors
-	Errors       SassError
+	errorString string
+	err         SassError
 
 	in  io.Reader
 	out io.Writer
 	// Place to keep cookies, so Go doesn't garbage collect them before C
 	// is done with them
 	Cookies []Cookie
-	// Imports has the list of Import files currently present
-	// in the calling context
+
+	// Imports is a map of overridden imports. When Sass attempts to
+	// import a path matching on in this map, it will include the import
+	// found in the map before looking for a file on the system.
 	Imports Imports
+	// Headers are a map of strings to start any Sass project with. Any
+	// header listed here will be present before any other Sass code is
+	// compiled.
 	Headers Headers
-	// Has list of compiler included files
+
+	// ResolvedImports is the list of files libsass used to compile this
+	// Sass sheet.
 	ResolvedImports []string
 
 	// Attach additional data to a context for use by custom
@@ -120,14 +125,13 @@ func (ctx *Context) FileCompile(path string, out io.Writer) error {
 	ctx.Status = libs.SassContextGetErrorStatus(gocc)
 	errJSON := libs.SassContextGetErrorJSON(gocc)
 	// Yet another property for storing errors
-	ctx.libsassError = errJSON
 	err := ctx.ProcessSassError([]byte(errJSON))
 	if err != nil {
 		return err
 	}
-	if ctx.error() != "" {
+	if ctx.Error() != "" {
 		// TODO: this is weird, make something more idiomatic*/
-		return errors.New(ctx.error())
+		return errors.New(ctx.Error())
 	}
 
 	return nil
@@ -162,23 +166,22 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 
 	ctx.Status = libs.SassContextGetErrorStatus(goctx)
 	errJSON := libs.SassContextGetErrorJSON(goctx)
-	ctx.libsassError = errJSON
 	err = ctx.ProcessSassError([]byte(errJSON))
 
 	if err != nil {
 		return err
 	}
 
-	if ctx.error() != "" {
+	if ctx.Error() != "" {
 		lines := bytes.Split(bs, []byte("\n"))
 		var out string
 		for i := -7; i < 7; i++ {
-			if i+ctx.Errors.Line >= 0 && i+ctx.Errors.Line < len(lines) {
-				out += fmt.Sprintf("%s\n", string(lines[i+ctx.Errors.Line]))
+			if i+ctx.err.Line >= 0 && i+ctx.err.Line < len(lines) {
+				out += fmt.Sprintf("%s\n", string(lines[i+ctx.err.Line]))
 			}
 		}
 		// TODO: this is weird, make something more idiomatic
-		return errors.New(ctx.error() + "\n" + out)
+		return errors.New(ctx.Error() + "\n" + out)
 	}
 
 	return nil
@@ -189,5 +192,5 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 // with generated images like sprites.
 func (p *Context) RelativeImage() string {
 	rel, _ := filepath.Rel(p.BuildDir, p.ImageDir)
-	return filepath.Clean(rel)
+	return filepath.ToSlash(filepath.Clean(rel))
 }

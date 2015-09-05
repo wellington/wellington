@@ -11,7 +11,7 @@ package libs
 // {
 //   void* cookie = sass_importer_get_cookie(cb);
 //   struct Sass_Import* previous = sass_compiler_get_last_import(comp);
-//   const char* prev_path = sass_import_get_path(previous);
+//   const char* prev_path = sass_import_get_imp_path(previous);
 //   Sass_Import_List list = ImporterBridge(cur_path, prev_path, cookie);
 //   return list;
 // }

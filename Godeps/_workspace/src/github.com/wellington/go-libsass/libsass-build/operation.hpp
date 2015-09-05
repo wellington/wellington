@@ -1,13 +1,9 @@
 #ifndef SASS_OPERATION_H
 #define SASS_OPERATION_H
 
-#include <iostream>
-#include <typeinfo>
-
 #include "ast_fwd_decl.hpp"
 
 namespace Sass {
-  using namespace std;
 
   template<typename T>
   class Operation {
@@ -58,8 +54,11 @@ namespace Sass {
     virtual T operator()(String_Schema* x)          = 0;
     virtual T operator()(String_Quoted* x)          = 0;
     virtual T operator()(String_Constant* x)        = 0;
-    virtual T operator()(Supports_Query* x)          = 0;
-    virtual T operator()(Supports_Condition* x)= 0;
+    virtual T operator()(Supports_Condition* x)     = 0;
+    virtual T operator()(Supports_Operator* x)      = 0;
+    virtual T operator()(Supports_Negation* x)      = 0;
+    virtual T operator()(Supports_Declaration* x)   = 0;
+    virtual T operator()(Supports_Interpolation* x) = 0;
     virtual T operator()(Media_Query* x)            = 0;
     virtual T operator()(Media_Query_Expression* x) = 0;
     virtual T operator()(At_Root_Expression* x)     = 0;
@@ -135,8 +134,11 @@ namespace Sass {
     virtual T operator()(String_Schema* x)          { return static_cast<D*>(this)->fallback(x); }
     virtual T operator()(String_Constant* x)        { return static_cast<D*>(this)->fallback(x); }
     virtual T operator()(String_Quoted* x)          { return static_cast<D*>(this)->fallback(x); }
-    virtual T operator()(Supports_Query* x)         { return static_cast<D*>(this)->fallback(x); }
     virtual T operator()(Supports_Condition* x)     { return static_cast<D*>(this)->fallback(x); }
+    virtual T operator()(Supports_Operator* x)      { return static_cast<D*>(this)->fallback(x); }
+    virtual T operator()(Supports_Negation* x)      { return static_cast<D*>(this)->fallback(x); }
+    virtual T operator()(Supports_Declaration* x)   { return static_cast<D*>(this)->fallback(x); }
+    virtual T operator()(Supports_Interpolation* x) { return static_cast<D*>(this)->fallback(x); }
     virtual T operator()(Media_Query* x)            { return static_cast<D*>(this)->fallback(x); }
     virtual T operator()(Media_Query_Expression* x) { return static_cast<D*>(this)->fallback(x); }
     virtual T operator()(At_Root_Expression* x)     { return static_cast<D*>(this)->fallback(x); }

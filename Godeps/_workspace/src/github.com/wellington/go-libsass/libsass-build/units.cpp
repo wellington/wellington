@@ -56,7 +56,7 @@ namespace Sass {
   {
     switch (unit & 0xFF00)
     {
-      case SassUnitType::SIZE:        return SassUnitType::SIZE; break;
+      case SassUnitType::LENGTH:      return SassUnitType::LENGTH; break;
       case SassUnitType::ANGLE:       return SassUnitType::ANGLE; break;
       case SassUnitType::TIME:        return SassUnitType::TIME; break;
       case SassUnitType::FREQUENCY:   return SassUnitType::FREQUENCY; break;
@@ -65,7 +65,7 @@ namespace Sass {
     }
   };
 
-  SassUnit string_to_unit(const string& s)
+  SassUnit string_to_unit(const std::string& s)
   {
     // size units
     if      (s == "px")   return SassUnit::PX;
@@ -124,7 +124,7 @@ namespace Sass {
   }
 
   // throws incompatibleUnits exceptions
-  double conversion_factor(const string& s1, const string& s2, bool strict)
+  double conversion_factor(const std::string& s1, const std::string& s2, bool strict)
   {
     // assert for same units
     if (s1 == s2) return 1;
@@ -144,7 +144,7 @@ namespace Sass {
     // only process known units
     if (u1 != UNKNOWN && u2 != UNKNOWN) {
       switch (t1) {
-        case SassUnitType::SIZE:              return size_conversion_factors[i1][i2]; break;
+        case SassUnitType::LENGTH:              return size_conversion_factors[i1][i2]; break;
         case SassUnitType::ANGLE:             return angle_conversion_factors[i1][i2]; break;
         case SassUnitType::TIME:              return time_conversion_factors[i1][i2]; break;
         case SassUnitType::FREQUENCY:         return frequency_conversion_factors[i1][i2]; break;

@@ -33,7 +33,6 @@ namespace Sass {
     const char* block_comment(const char* src)
     {
       return sequence<
-               zero_plus < space >,
                delimited_by<
                  slash_star,
                  star_slash,
@@ -71,7 +70,15 @@ namespace Sass {
     {
       return sequence<
         exactly<'\\'>,
-        any_char
+        alternatives <
+          minmax_range<
+            1, 3, xdigit
+          >,
+          any_char
+        >,
+        optional <
+          exactly <' '>
+        >
       >(src);
     }
 
@@ -79,6 +86,7 @@ namespace Sass {
     const char* identifier_alpha(const char* src)
     {
       return alternatives<
+               unicode_seq,
                alpha,
                unicode,
                exactly<'-'>,
@@ -91,6 +99,7 @@ namespace Sass {
     const char* identifier_alnum(const char* src)
     {
       return alternatives<
+               unicode_seq,
                alnum,
                unicode,
                exactly<'-'>,
@@ -107,6 +116,42 @@ namespace Sass {
                one_plus < identifier_alpha >,
                zero_plus < identifier_alnum >
                // word_boundary not needed
+             >(src);
+    }
+
+    const char* strict_identifier_alpha(const char* src)
+    {
+      return alternatives <
+               alpha,
+               unicode,
+               escape_seq,
+               exactly<'_'>
+             >(src);
+    }
+
+    const char* strict_identifier_alnum(const char* src)
+    {
+      return alternatives <
+               alnum,
+               unicode,
+               escape_seq,
+               exactly<'_'>
+             >(src);
+    }
+
+    // Match CSS unit identifier.
+    const char* unit_identifier(const char* src)
+    {
+      return sequence <
+               optional < exactly <'-'> >,
+               strict_identifier_alpha,
+               zero_plus < alternatives<
+                 strict_identifier_alnum,
+                 sequence <
+                   one_plus < exactly<'-'> >,
+                   strict_identifier_alpha
+                 >
+               > >
              >(src);
     }
 
@@ -129,11 +174,32 @@ namespace Sass {
 
     // Match interpolant schemas
     const char* identifier_schema(const char* src) {
-      // follows this pattern: (x*ix*)+ ... well, not quite
-      return sequence< one_plus< sequence< zero_plus< alternatives< identifier, exactly<'-'> > >,
-                                 interpolant,
-                                 zero_plus< alternatives< identifier, number, exactly<'-'> > > > >,
-                       negate< exactly<'%'> > >(src);
+
+      return sequence <
+               one_plus <
+                 sequence <
+                   zero_plus <
+                     alternatives <
+                       identifier,
+                       exactly <'-'>
+                     >
+                   >,
+                   interpolant,
+                   zero_plus <
+                     alternatives <
+                       digits,
+                       identifier,
+                       quoted_string,
+                       exactly<'+'>,
+                       exactly<'-'>
+                     >
+                   >
+                 >
+               >,
+               negate <
+                 exactly<'%'>
+               >
+             > (src);
     }
 
     // interpolants can be recursive/nested
@@ -154,6 +220,7 @@ namespace Sass {
               re_linebreak
             >,
             escape_seq,
+            unicode_seq,
             // skip interpolants
             interpolant,
             // skip non delimiters
@@ -177,6 +244,7 @@ namespace Sass {
               re_linebreak
             >,
             escape_seq,
+            unicode_seq,
             // skip interpolants
             interpolant,
             // skip non delimiters
@@ -496,7 +564,7 @@ namespace Sass {
       return sequence< number, exactly<em_kwd> >(src);
     } */
     const char* dimension(const char* src) {
-      return sequence<number, one_plus< alpha > >(src);
+      return sequence<number, unit_identifier >(src);
     }
     const char* hex(const char* src) {
       const char* p = sequence< exactly<'#'>, one_plus<xdigit> >(src);
@@ -591,7 +659,35 @@ namespace Sass {
     }
     // Match CSS function call openers.
     const char* functional_schema(const char* src) {
-      return sequence< identifier_schema, lookahead < exactly<'('> > >(src);
+      return sequence <
+               one_plus <
+                 sequence <
+                   zero_plus <
+                     alternatives <
+                       identifier,
+                       exactly <'-'>
+                     >
+                   >,
+                   one_plus <
+                     sequence <
+                       interpolant,
+                       alternatives <
+                         digits,
+                         identifier,
+                         exactly<'+'>,
+                         exactly<'-'>
+                       >
+                     >
+                   >
+                 >
+               >,
+               negate <
+                 exactly <'%'>
+               >,
+               lookahead <
+                 exactly <'('>
+               >
+             > (src);
     }
 
     const char* re_nothing(const char* src) {
@@ -833,6 +929,20 @@ namespace Sass {
       return (p == 0) ? t.end : 0;
     }
 
+    const char* unicode_seq(const char* src) {
+      return sequence <
+        alternatives <
+          exactly< 'U' >,
+          exactly< 'u' >
+        >,
+        exactly< '+' >,
+        padded_token <
+          6, xdigit,
+          exactly < '?' >
+        >
+      >(src);
+    }
+
     const char* static_component(const char* src) {
       return alternatives< identifier,
                            static_string,
@@ -925,6 +1035,36 @@ namespace Sass {
     }
     const char* re_static_expression(const char* src) {
       return sequence< number, optional_spaces, exactly<'/'>, optional_spaces, number >(src);
+    }
+
+    template <size_t size, prelexer mx, prelexer pad>
+    const char* padded_token(const char* src)
+    {
+      size_t got = 0;
+      const char* pos = src;
+      while (got < size) {
+        if (!mx(pos)) break;
+        ++ pos; ++ got;
+      }
+      while (got < size) {
+        if (!pad(pos)) break;
+        ++ pos; ++ got;
+      }
+      return got ? pos : 0;
+    }
+
+    template <size_t min, size_t max, prelexer mx>
+    const char* minmax_range(const char* src)
+    {
+      size_t got = 0;
+      const char* pos = src;
+      while (got < max) {
+        if (!mx(pos)) break;
+        ++ pos; ++ got;
+      }
+      if (got < min) return 0;
+      if (got > max) return 0;
+      return pos;
     }
 
   }

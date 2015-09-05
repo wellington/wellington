@@ -13,6 +13,7 @@
 #include "debug.hpp"
 #include <iostream>
 #include <deque>
+#include <set>
 
 
 /*
@@ -64,13 +65,13 @@
 namespace Sass {
 
 
-  typedef pair<Complex_Selector*, Compound_Selector*> ExtensionPair;
-  typedef vector<ExtensionPair> SubsetMapEntries;
+  typedef std::pair<Complex_Selector*, Compound_Selector*> ExtensionPair;
+  typedef std::vector<ExtensionPair> SubsetMapEntries;
 
 #ifdef DEBUG
 
   // TODO: move the ast specific ostream operators into ast.hpp/ast.cpp
-  ostream& operator<<(ostream& os, const Complex_Selector::Combinator combinator) {
+  std::ostream& operator<<(std::ostream& os, const Complex_Selector::Combinator combinator) {
     switch (combinator) {
       case Complex_Selector::ANCESTOR_OF: os << "\" \""; break;
       case Complex_Selector::PARENT_OF:   os << "\">\""; break;
@@ -83,11 +84,43 @@ namespace Sass {
   }
 
 
-  ostream& operator<<(ostream& os, Compound_Selector& compoundSelector) {
+  std::ostream& operator<<(std::ostream& os, Compound_Selector& compoundSelector) {
     To_String to_string;
-    os << compoundSelector.perform(&to_string);
+    for (size_t i = 0, L = compoundSelector.length(); i < L; ++i) {
+      if (i > 0) os << ", ";
+      os << compoundSelector[i]->perform(&to_string);
+    }
     return os;
   }
+
+  std::ostream& operator<<(std::ostream& os, Simple_Selector& simpleSelector) {
+    To_String to_string;
+    os << simpleSelector.perform(&to_string);
+    return os;
+  }
+
+  // Print a string representation of a Compound_Selector
+  static void printSimpleSelector(Simple_Selector* pSimpleSelector, const char* message=NULL, bool newline=true) {
+    To_String to_string;
+
+    if (message) {
+      std::cerr << message;
+    }
+
+    if (pSimpleSelector) {
+      std::cerr << "[" << *pSimpleSelector << "]";
+    } else {
+      std::cerr << "NULL";
+    }
+
+    if (newline) {
+      std::cerr << std::endl;
+    }
+  }
+
+  // Print a string representation of a Compound_Selector
+    typedef std::pair<Compound_Selector*, Complex_Selector*> SelsNewSeqPair;
+    typedef std::vector<SelsNewSeqPair> SelsNewSeqPairCollection;
 
 
   // Print a string representation of a Compound_Selector
@@ -95,22 +128,22 @@ namespace Sass {
     To_String to_string;
 
     if (message) {
-      cerr << message;
+      std::cerr << message;
     }
 
     if (pCompoundSelector) {
-      cerr << *pCompoundSelector;
+      std::cerr << "[" << *pCompoundSelector << "]";
     } else {
-      cerr << "NULL";
+      std::cerr << "NULL";
     }
 
     if (newline) {
-      cerr << endl;
+      std::cerr << std::endl;
     }
   }
 
 
-  ostream& operator<<(ostream& os, Complex_Selector& complexSelector) {
+  std::ostream& operator<<(std::ostream& os, Complex_Selector& complexSelector) {
     To_String to_string;
 
     os << "[";
@@ -149,36 +182,62 @@ namespace Sass {
     To_String to_string;
 
     if (message) {
-      cerr << message;
+      std::cerr << message;
     }
 
     if (pComplexSelector) {
-      cerr << *pComplexSelector;
+      std::cerr << *pComplexSelector;
     } else {
-      cerr << "NULL";
+      std::cerr << "NULL";
     }
 
     if (newline) {
-      cerr << endl;
+      std::cerr << std::endl;
     }
   }
 
+  static void printSelsNewSeqPairCollection(SelsNewSeqPairCollection& collection, const char* message=NULL, bool newline=true) {
+    To_String to_string;
+
+    if (message) {
+      std::cerr << message;
+    }
+    bool first = true;
+    std::cerr << "[";
+    for(SelsNewSeqPair& pair : collection) {
+      if (first) {
+        first = false;
+      } else {
+        std::cerr << ", ";
+      }
+      std::cerr << "[";
+      Compound_Selector* pSels = pair.first;
+      Complex_Selector* pNewSelector = pair.second;
+      std::cerr << "[" << *pSels << "], ";
+      printComplexSelector(pNewSelector, NULL, false);
+    }
+    std::cerr << "]";
+
+    if (newline) {
+      std::cerr << std::endl;
+    }
+  }
 
   // Print a string representation of a SourcesSet
   static void printSourcesSet(SourcesSet& sources, Context& ctx, const char* message=NULL, bool newline=true) {
     To_String to_string;
 
     if (message) {
-      cerr << message;
+      std::cerr << message;
     }
 
     // Convert to a deque of strings so we can sort since order doesn't matter in a set. This should cut down on
     // the differences we see when debug printing.
-    typedef deque<string> SourceStrings;
+    typedef std::deque<std::string> SourceStrings;
     SourceStrings sourceStrings;
     for (SourcesSet::iterator iterator = sources.begin(), iteratorEnd = sources.end(); iterator != iteratorEnd; ++iterator) {
       Complex_Selector* pSource = *iterator;
-      stringstream sstream;
+      std::stringstream sstream;
       sstream << complexSelectorToNode(pSource, ctx);
       sourceStrings.push_back(sstream.str());
     }
@@ -186,23 +245,23 @@ namespace Sass {
     // Sort to get consistent output
     std::sort(sourceStrings.begin(), sourceStrings.end());
 
-    cerr << "SourcesSet[";
+    std::cerr << "SourcesSet[";
     for (SourceStrings::iterator iterator = sourceStrings.begin(), iteratorEnd = sourceStrings.end(); iterator != iteratorEnd; ++iterator) {
-      string source = *iterator;
+      std::string source = *iterator;
       if (iterator != sourceStrings.begin()) {
-        cerr << ", ";
+        std::cerr << ", ";
       }
-      cerr << source;
+      std::cerr << source;
     }
-    cerr << "]";
+    std::cerr << "]";
 
     if (newline) {
-      cerr << endl;
+      std::cerr << std::endl;
     }
   }
 
 
-  ostream& operator<<(ostream& os, SubsetMapEntries& entries) {
+  std::ostream& operator<<(std::ostream& os, SubsetMapEntries& entries) {
     os << "SUBSET_MAP_ENTRIES[";
 
     for (SubsetMapEntries::iterator iterator = entries.begin(), endIterator = entries.end(); iterator != endIterator; ++iterator) {
@@ -216,17 +275,17 @@ namespace Sass {
       os << "(";
 
       if (pExtComplexSelector) {
-        cerr << *pExtComplexSelector;
+        std::cerr << *pExtComplexSelector;
       } else {
-        cerr << "NULL";
+        std::cerr << "NULL";
       }
 
       os << " -> ";
 
       if (pExtCompoundSelector) {
-        cerr << *pExtCompoundSelector;
+        std::cerr << *pExtCompoundSelector;
       } else {
-        cerr << "NULL";
+        std::cerr << "NULL";
       }
 
       os << ")";
@@ -363,7 +422,7 @@ namespace Sass {
     //DEBUG_PRINTLN(LCS, "LCSTABLE: X=" << x << " Y=" << y)
     // TODO: make printComplexSelectorDeque and use DEBUG_EXEC AND DEBUG_PRINTLN HERE to get equivalent output
 
-    LCSTable c(x.size(), vector<int>(y.size()));
+    LCSTable c(x.size(), std::vector<int>(y.size()));
 
     // These shouldn't be necessary since the vector will be initialized to 0 already.
     // x.size.times {|i| c[i][0] = 0}
@@ -376,7 +435,7 @@ namespace Sass {
         if (comparator(x[i], y[j], pCompareOut)) {
           c[i][j] = c[i - 1][j - 1] + 1;
         } else {
-          c[i][j] = max(c[i][j - 1], c[i - 1][j]);
+          c[i][j] = std::max(c[i][j - 1], c[i - 1][j]);
         }
       }
     }
@@ -524,12 +583,12 @@ namespace Sass {
         unsigned long maxSpecificity = isReplace ? pSeq1->specificity() : 0;
         SourcesSet sources = pSeq1->sources();
 
-        DEBUG_PRINTLN(TRIM, "TRIMASDF SEQ1: " << seq1)
-        DEBUG_EXEC(TRIM, printSourcesSet(sources, ctx, "TRIMASDF SOURCES: "))
+        DEBUG_PRINTLN(TRIM, "TRIM SEQ1: " << seq1)
+        DEBUG_EXEC(TRIM, printSourcesSet(sources, ctx, "TRIM SOURCES: "))
 
         for (SourcesSet::iterator sourcesSetIterator = sources.begin(), sourcesSetIteratorEnd = sources.end(); sourcesSetIterator != sourcesSetIteratorEnd; ++sourcesSetIterator) {
           const Complex_Selector* const pCurrentSelector = *sourcesSetIterator;
-          maxSpecificity = max(maxSpecificity, pCurrentSelector->specificity());
+          maxSpecificity = std::max(maxSpecificity, pCurrentSelector->specificity());
         }
 
         DEBUG_PRINTLN(TRIM, "MAX SPECIFICITY: " << maxSpecificity)
@@ -1031,8 +1090,8 @@ namespace Sass {
         res.collection()->push_front(op2);
         res.collection()->push_front(sel2);
 
-        seq2.collection()->push_back(sel1);
-        seq2.collection()->push_back(op1);
+        seq1.collection()->push_back(sel1);
+        seq1.collection()->push_back(op1);
 
       } else if (op2.combinator() == Complex_Selector::PARENT_OF && (op1.combinator() == Complex_Selector::PRECEDES || op1.combinator() == Complex_Selector::ADJACENT_TO)) {
 
@@ -1463,7 +1522,7 @@ namespace Sass {
     Complex_Selector* pComplexSelector,
     Context& ctx,
     ExtensionSubsetMap& subset_map,
-    set<Compound_Selector> seen, bool isReplace);
+    std::set<Compound_Selector> seen, bool isReplace, bool isOriginal);
 
 
 
@@ -1491,9 +1550,10 @@ namespace Sass {
     Compound_Selector* pSelector,
     Context& ctx,
     ExtensionSubsetMap& subset_map,
-    set<Compound_Selector> seen, bool isReplace) {
+    std::set<Compound_Selector> seen, bool isReplace) {
 
     DEBUG_EXEC(EXTEND_COMPOUND, printCompoundSelector(pSelector, "EXTEND COMPOUND: "))
+    // TODO: Ruby has another loop here to skip certain members?
 
     Node extendedSelectors = Node::createCollection();
     // extendedSelectors.got_line_feed = true;
@@ -1502,30 +1562,30 @@ namespace Sass {
 
     SubsetMapEntries entries = subset_map.get_v(pSelector->to_str_vec());
 
-    typedef vector<pair<Complex_Selector, vector<ExtensionPair> > > GroupedByToAResult;
+    typedef std::vector<std::pair<Complex_Selector, std::vector<ExtensionPair> > > GroupedByToAResult;
 
     GroupByToAFunctor<Complex_Selector> extPairKeyFunctor;
     GroupedByToAResult arr;
     group_by_to_a(entries, extPairKeyFunctor, arr);
 
-    typedef pair<Compound_Selector*, Complex_Selector*> SelsNewSeqPair;
-    typedef vector<SelsNewSeqPair> SelsNewSeqPairCollection;
+    typedef std::pair<Compound_Selector*, Complex_Selector*> SelsNewSeqPair;
+    typedef std::vector<SelsNewSeqPair> SelsNewSeqPairCollection;
 
 
     SelsNewSeqPairCollection holder;
 
 
     for (GroupedByToAResult::iterator groupedIter = arr.begin(), groupedIterEnd = arr.end(); groupedIter != groupedIterEnd; groupedIter++) {
-      pair<Complex_Selector, vector<ExtensionPair> >& groupedPair = *groupedIter;
+      std::pair<Complex_Selector, std::vector<ExtensionPair> >& groupedPair = *groupedIter;
 
       Complex_Selector& seq = groupedPair.first;
-      vector<ExtensionPair>& group = groupedPair.second;
+      std::vector<ExtensionPair>& group = groupedPair.second;
 
       DEBUG_EXEC(EXTEND_COMPOUND, printComplexSelector(&seq, "SEQ: "))
 
 
-      Compound_Selector* pSels = new (ctx.mem) Compound_Selector(pSelector->pstate());
-      for (vector<ExtensionPair>::iterator groupIter = group.begin(), groupIterEnd = group.end(); groupIter != groupIterEnd; groupIter++) {
+      Compound_Selector* pSels = SASS_MEMORY_NEW(ctx.mem, Compound_Selector, pSelector->pstate());
+      for (std::vector<ExtensionPair>::iterator groupIter = group.begin(), groupIterEnd = group.end(); groupIter != groupIterEnd; groupIter++) {
         ExtensionPair& pair = *groupIter;
         Compound_Selector* pCompound = pair.second;
         for (size_t index = 0; index < pCompound->length(); index++) {
@@ -1540,6 +1600,7 @@ namespace Sass {
       Compound_Selector* pExtCompoundSelector = pSels; // All the simple selectors to be replaced from the current compound selector from all extensions
 
       // TODO: This can return a Compound_Selector with no elements. Should that just be returning NULL?
+      // RUBY: self_without_sel = Sass::Util.array_minus(members, sels)
       Compound_Selector* pSelectorWithoutExtendSelectors = pSelector->minus(pExtCompoundSelector, ctx);
 
       DEBUG_EXEC(EXTEND_COMPOUND, printCompoundSelector(pSelector, "MEMBERS: "))
@@ -1549,7 +1610,7 @@ namespace Sass {
       Compound_Selector* pUnifiedSelector = NULL;
 
       if (!pInnermostCompoundSelector) {
-        pInnermostCompoundSelector = new (ctx.mem) Compound_Selector(pSelector->pstate());
+        pInnermostCompoundSelector = SASS_MEMORY_NEW(ctx.mem, Compound_Selector, pSelector->pstate());
       }
 
       pUnifiedSelector = pInnermostCompoundSelector->unify_with(pSelectorWithoutExtendSelectors, ctx);
@@ -1559,6 +1620,7 @@ namespace Sass {
       DEBUG_EXEC(EXTEND_COMPOUND, printCompoundSelector(pSelectorWithoutExtendSelectors, "RHS: "))
       DEBUG_EXEC(EXTEND_COMPOUND, printCompoundSelector(pUnifiedSelector, "UNIFIED: "))
 
+      // RUBY: next unless unified
       if (!pUnifiedSelector || pUnifiedSelector->length() == 0) {
         continue;
       }
@@ -1572,7 +1634,7 @@ namespace Sass {
       // out and aren't operated on.
       Complex_Selector* pNewSelector = pExtComplexSelector->cloneFully(ctx); // ->first();
 
-      Complex_Selector* pNewInnerMost = new (ctx.mem) Complex_Selector(pSelector->pstate(), Complex_Selector::ANCESTOR_OF, pUnifiedSelector, NULL);
+      Complex_Selector* pNewInnerMost = SASS_MEMORY_NEW(ctx.mem, Complex_Selector, pSelector->pstate(), Complex_Selector::ANCESTOR_OF, pUnifiedSelector, NULL);
 
       Complex_Selector::Combinator combinator = pNewSelector->clear_innermost();
       pNewSelector->set_innermost(pNewInnerMost, combinator);
@@ -1602,6 +1664,7 @@ namespace Sass {
       newSourcesSet.insert(pExtComplexSelector);
       DEBUG_EXEC(EXTEND_COMPOUND, printSourcesSet(newSourcesSet, ctx, "SOURCES WITH NEW SOURCE: "))
 
+      // RUBY: new_seq.add_sources!(sources + [seq])
       pNewSelector->addSources(newSourcesSet, ctx);
 
       DEBUG_EXEC(EXTEND_COMPOUND, SourcesSet newSet = pNewSelector->sources(); printSourcesSet(newSet, ctx, "SOURCES ON NEW SELECTOR AFTER ADD: "))
@@ -1610,7 +1673,7 @@ namespace Sass {
 
       if (pSels->has_line_feed()) pNewSelector->has_line_feed(true);;
 
-      holder.push_back(make_pair(pSels, pNewSelector));
+      holder.push_back(std::make_pair(pSels, pNewSelector));
     }
 
 
@@ -1621,17 +1684,18 @@ namespace Sass {
       Complex_Selector* pNewSelector = pair.second;
 
 
+      // RUBY??: next [] if seen.include?(sels)
       if (seen.find(*pSels) != seen.end()) {
         continue;
       }
 
 
-      set<Compound_Selector> recurseSeen(seen);
+      std::set<Compound_Selector> recurseSeen(seen);
       recurseSeen.insert(*pSels);
 
 
       DEBUG_PRINTLN(EXTEND_COMPOUND, "RECURSING DO EXTEND: " << complexSelectorToNode(pNewSelector, ctx))
-      Node recurseExtendedSelectors = extendComplexSelector(pNewSelector, ctx, subset_map, recurseSeen, isReplace);
+      Node recurseExtendedSelectors = extendComplexSelector(pNewSelector, ctx, subset_map, recurseSeen, isReplace, false); // !:isOriginal
 
       DEBUG_PRINTLN(EXTEND_COMPOUND, "RECURSING DO EXTEND RETURN: " << recurseExtendedSelectors)
 
@@ -1678,16 +1742,16 @@ namespace Sass {
               ext.second->media_block()->media_queries() &&
               pComplexSelector->media_block()->media_queries()
           ) {
-            string query_left(ext.second->media_block()->media_queries()->perform(&to_string));
-            string query_right(pComplexSelector->media_block()->media_queries()->perform(&to_string));
+            std::string query_left(ext.second->media_block()->media_queries()->perform(&to_string));
+            std::string query_right(pComplexSelector->media_block()->media_queries()->perform(&to_string));
             if (query_left == query_right) continue;
           }
 
           // fail if one goes across media block boundaries
-          stringstream err;
-          string cwd(Sass::File::get_cwd());
+          std::stringstream err;
+          std::string cwd(Sass::File::get_cwd());
           ParserState pstate(ext.second->pstate());
-          string rel_path(Sass::File::resolve_relative_path(pstate.path, cwd, cwd));
+          std::string rel_path(Sass::File::resolve_relative_path(pstate.path, cwd, cwd));
           err << "You may not @extend an outer selector from within @media.\n";
           err << "You may only @extend selectors within the same directive.\n";
           err << "From \"@extend " << ext.second->perform(&to_string) << "\"";
@@ -1702,10 +1766,10 @@ namespace Sass {
 
     if (!hasExtension) {
       /* ToDo: don't break stuff
-      stringstream err;
+      std::stringstream err;
       To_String to_string(&ctx);
-      string cwd(Sass::File::get_cwd());
-      string sel1(pComplexSelector->perform(&to_string));
+      std::string cwd(Sass::File::get_cwd());
+      std::string sel1(pComplexSelector->perform(&to_string));
       Compound_Selector* pExtendSelector = 0;
       for (auto i : subset_map.values()) {
         if (i.first == pComplexSelector) {
@@ -1714,7 +1778,7 @@ namespace Sass {
         }
       }
       if (!pExtendSelector || !pExtendSelector->is_optional()) {
-        string sel2(pExtendSelector ? pExtendSelector->perform(&to_string) : "[unknown]");
+        std::string sel2(pExtendSelector ? pExtendSelector->perform(&to_string) : "[unknown]");
         err << "\"" << sel1 << "\" failed to @extend \"" << sel2 << "\"\n";
         err << "The selector \"" << sel2 << "\" was not found.\n";
         err << "Use \"@extend " << sel2 << " !optional\" if the extend should be able to fail.";
@@ -1742,19 +1806,24 @@ namespace Sass {
     Complex_Selector* pComplexSelector,
     Context& ctx,
     ExtensionSubsetMap& subset_map,
-    set<Compound_Selector> seen, bool isReplace) {
+    std::set<Compound_Selector> seen, bool isReplace, bool isOriginal) {
 
     Node complexSelector = complexSelectorToNode(pComplexSelector, ctx);
     DEBUG_PRINTLN(EXTEND_COMPLEX, "EXTEND COMPLEX: " << complexSelector)
 
     Node extendedNotExpanded = Node::createCollection();
 
-    for (NodeDeque::iterator complexSelIter = complexSelector.collection()->begin(), complexSelIterEnd = complexSelector.collection()->end(); complexSelIter != complexSelIterEnd; ++complexSelIter) {
+    for (NodeDeque::iterator complexSelIter = complexSelector.collection()->begin(),
+                             complexSelIterEnd = complexSelector.collection()->end();
+         complexSelIter != complexSelIterEnd; ++complexSelIter)
+    {
+
       Node& sseqOrOp = *complexSelIter;
 
       DEBUG_PRINTLN(EXTEND_COMPLEX, "LOOP: " << sseqOrOp)
 
       // If it's not a selector (meaning it's a combinator), just include it automatically
+      // RUBY: next [[sseq_or_op]] unless sseq_or_op.is_a?(SimpleSequence)
       if (!sseqOrOp.isSelector()) {
         // Wrap our Combinator in two collections to match ruby. This is essentially making a collection Node
         // with one collection child. The collection child represents a Complex_Selector that is only a combinator.
@@ -1768,6 +1837,7 @@ namespace Sass {
 
       Compound_Selector* pCompoundSelector = sseqOrOp.selector()->head();
 
+      // RUBY: extended = sseq_or_op.do_extend(extends, parent_directives, replace, seen)
       Node extended = extendCompoundSelector(pCompoundSelector, ctx, subset_map, seen, isReplace);
       if (sseqOrOp.got_line_feed) extended.got_line_feed = true;
       DEBUG_PRINTLN(EXTEND_COMPLEX, "EXTENDED: " << extended)
@@ -1776,6 +1846,14 @@ namespace Sass {
       // Prepend the Compound_Selector based on the choices logic; choices seems to be extend but with an ruby Array instead of a Sequence
       // due to the member mapping: choices = extended.map {|seq| seq.members}
       Complex_Selector* pJustCurrentCompoundSelector = sseqOrOp.selector();
+
+      // RUBY: extended.first.add_sources!([self]) if original && !has_placeholder?
+      if (isOriginal && !pComplexSelector->has_placeholder()) {
+        SourcesSet srcset;
+        srcset.insert(pComplexSelector);
+        pJustCurrentCompoundSelector->addSources(srcset, ctx);
+        DEBUG_PRINTLN(EXTEND_COMPLEX, "ADD SOURCES: " << *pComplexSelector)
+      }
 
       bool isSuperselector = false;
       for (NodeDeque::iterator iterator = extended.collection()->begin(), endIterator = extended.collection()->end();
@@ -1852,7 +1930,7 @@ namespace Sass {
 
     To_String to_string(&ctx);
 
-    Selector_List* pNewSelectors = new (ctx.mem) Selector_List(pSelectorList->pstate(), pSelectorList->length());
+    Selector_List* pNewSelectors = SASS_MEMORY_NEW(ctx.mem, Selector_List, pSelectorList->pstate(), pSelectorList->length());
 
     extendedSomething = false;
 
@@ -1871,9 +1949,9 @@ namespace Sass {
 
       extendedSomething = true;
 
-      set<Compound_Selector> seen;
+      std::set<Compound_Selector> seen;
 
-      Node extendedSelectors = extendComplexSelector(pSelector, ctx, subset_map, seen, isReplace);
+      Node extendedSelectors = extendComplexSelector(pSelector, ctx, subset_map, seen, isReplace, true);
       if (!pSelector->has_placeholder()) {
         if (!extendedSelectors.contains(complexSelectorToNode(pSelector, ctx), true /*simpleSelectorOrderDependent*/)) {
           *pNewSelectors << pSelector;
@@ -1945,6 +2023,7 @@ namespace Sass {
     if (extendedSomething && pNewSelectorList) {
       DEBUG_PRINTLN(EXTEND_OBJECT, "EXTEND ORIGINAL SELECTORS: " << static_cast<Selector_List*>(pObject->selector())->perform(&to_string))
       DEBUG_PRINTLN(EXTEND_OBJECT, "EXTEND SETTING NEW SELECTORS: " << pNewSelectorList->perform(&to_string))
+      pNewSelectorList->remove_parent_selectors();
       pObject->selector(pNewSelectorList);
     } else {
       DEBUG_PRINTLN(EXTEND_OBJECT, "EXTEND DID NOT TRY TO EXTEND ANYTHING")

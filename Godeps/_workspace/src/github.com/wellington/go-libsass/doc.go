@@ -3,4 +3,4 @@
 // access see: http://godoc.org/github.com/wellington/go-libsass/libs
 //
 // For more info, see https://github.com/sass/libsass
-package context
+package libsass

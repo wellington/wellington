@@ -1,8 +1,6 @@
 #ifndef SASS_FUNCTIONS_H
 #define SASS_FUNCTIONS_H
 
-#include <string>
-
 #include "position.hpp"
 #include "environment.hpp"
 #include "sass_functions.h"
@@ -22,6 +20,8 @@ namespace Sass {
 
   Definition* make_native_function(Signature, Native_Function, Context& ctx);
   Definition* make_c_function(Sass_Function_Entry c_func, Context& ctx);
+
+  std::string function_name(Signature);
 
   namespace Functions {
 

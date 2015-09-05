@@ -35,6 +35,7 @@ libsass-build:
 	cp -R libsass-src/src/*.hpp libsass-build
 	cp -R libsass-src/src/*.h libsass-build
 	cp libsass-tmp/include/sass_version.h libsass-build/include/sass_version.h
+	touch libs/*.go
 
 copy: libsass-tmp libsass-build
 	- echo "Success"

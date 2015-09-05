@@ -1,4 +1,4 @@
-package context
+package libsass
 
 import (
 	"bytes"
@@ -178,8 +178,8 @@ func TestFunc_customarity(t *testing.T) {
 		t.Error("No error thrown for incorrect arity")
 	}
 
-	if e := "function foo only takes 0 arguments; given 2"; e != ctx.Errors.Message {
-		t.Errorf("wanted:\n%s\ngot:\n%s\n", e, ctx.Errors.Message)
+	if e := "function foo only takes 0 arguments; given 2"; e != ctx.err.Message {
+		t.Errorf("wanted:\n%s\ngot:\n%s\n", e, ctx.err.Message)
 	}
 	e := `Error > stdin:3
 function foo only takes 0 arguments; given 2

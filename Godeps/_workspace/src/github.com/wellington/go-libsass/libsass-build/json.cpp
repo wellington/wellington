@@ -34,35 +34,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef _MSC_VER
-
+#if defined(_MSC_VER) && _MSC_VER < 1900
 #include <stdarg.h>
-#define snprintf c99_snprintf
-
-inline int c99_vsnprintf(char* str, size_t size, const char* format, va_list ap)
-{
-    int count = -1;
-
-    if (size != 0)
-        count = _vsnprintf_s(str, size, _TRUNCATE, format, ap);
-    if (count == -1)
-        count = _vscprintf(format, ap);
-
-    return count;
-}
-
-inline int c99_snprintf(char* str, size_t size, const char* format, ...)
-{
-    int count;
-    va_list ap;
-
-    va_start(ap, format);
-    count = c99_vsnprintf(str, size, format, ap);
-    va_end(ap);
-
-    return count;
-}
-#endif // _MSC_VER
+#ifdef snprintf
+#undef snprintf
+#endif
+extern "C" int snprintf(char *, size_t, const char *, ...);
+#endif
 
 #define out_of_memory() do {                    \
     fprintf(stderr, "Out of memory.\n");    \
@@ -134,7 +112,7 @@ static void sb_put(SB *sb, const char *bytes, int count)
 
 static void sb_puts(SB *sb, const char *str)
 {
-  sb_put(sb, str, strlen(str));
+  sb_put(sb, str, (int)strlen(str));
 }
 
 static char *sb_finish(SB *sb)
@@ -684,7 +662,7 @@ static bool parse_value(const char **sp, JsonNode **out)
       return false;
 
     case '"': {
-      char *str;
+      char *str = NULL;
       if (parse_string(&s, out ? &str : NULL)) {
         if (out)
           *out = mkstring(str);
@@ -725,7 +703,7 @@ static bool parse_array(const char **sp, JsonNode **out)
 {
   const char *s = *sp;
   JsonNode *ret = out ? json_mkarray() : NULL;
-  JsonNode *element;
+  JsonNode *element = NULL;
 
   if (*s++ != '[')
     goto failure;
@@ -769,8 +747,8 @@ static bool parse_object(const char **sp, JsonNode **out)
 {
   const char *s = *sp;
   JsonNode *ret = out ? json_mkobject() : NULL;
-  char *key;
-  JsonNode *value;
+  char *key = NULL;
+  JsonNode *value = NULL;
 
   if (*s++ != '{')
     goto failure;

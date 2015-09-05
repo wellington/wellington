@@ -195,7 +195,11 @@ namespace Sass {
     const char* identifier(const char* src);
     const char* identifier_alpha(const char* src);
     const char* identifier_alnum(const char* src);
-    const char* identifier_alnums(const char* src);
+    const char* strict_identifier_alpha(const char* src);
+    const char* strict_identifier_alnum(const char* src);
+    // Match a CSS unit identifier.
+    const char* unit_identifier(const char* src);
+    // const char* strict_identifier_alnums(const char* src);
     // Match reference selector.
     const char* re_reference_combinator(const char* src);
     const char* static_reference_combinator(const char* src);
@@ -226,6 +230,8 @@ namespace Sass {
     const char* kwd_content_directive(const char* src);
     const char* kwd_charset_directive(const char* src);
     const char* kwd_extend(const char* src);
+
+    const char* unicode_seq(const char* src);
 
     const char* kwd_if_directive(const char* src);
     const char* kwd_else_directive(const char* src);
@@ -387,6 +393,12 @@ namespace Sass {
       }
       return counter;
     }
+
+    template <size_t size, prelexer mx, prelexer pad>
+    const char* padded_token(const char* src);
+
+    template <size_t min, size_t max, prelexer mx>
+    const char* minmax_range(const char* src);
 
   }
 }

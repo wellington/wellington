@@ -1,7 +1,9 @@
-package context
+package libsass
 
 import (
 	"bytes"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -25,8 +27,15 @@ func TestFile_resolved(t *testing.T) {
 		t.Errorf("got: %d wanted: %d", len(ctx.ResolvedImports), e)
 	}
 
-	if e := path; ctx.ResolvedImports[0] != e {
-		t.Errorf("got: %s wanted: %s", ctx.ResolvedImports[0], e)
+	abs, err := filepath.Abs(".")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	relPath := strings.TrimPrefix(ctx.ResolvedImports[0], abs)
+
+	if e := string(filepath.Separator) + path; relPath != e {
+		t.Errorf("got: %s wanted: %s", relPath, e)
 	}
 
 }

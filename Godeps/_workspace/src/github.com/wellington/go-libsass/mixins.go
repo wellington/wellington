@@ -1,4 +1,4 @@
-package context
+package libsass
 
 // Mixins registers the default list of supported mixins
 func Mixins(ctx *Context) {

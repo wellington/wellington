@@ -32,8 +32,8 @@
 		},
 		{
 			"ImportPath": "github.com/wellington/go-libsass",
-			"Comment": "v0.9.0-129-ge903b34",
-			"Rev": "e903b34bb22f4b0c6ad4f90dcefa02326d5bff47"
+			"Comment": "v0.9.0-154-g38b1630",
+			"Rev": "38b16303e4e9aa085eaf2aa49fe9c72f56e0d9c6"
 		},
 		{
 			"ImportPath": "github.com/wellington/spritewell",
