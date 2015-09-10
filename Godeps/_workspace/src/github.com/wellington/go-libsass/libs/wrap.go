@@ -6,7 +6,7 @@ package libs
 // #//for C.free
 // #include "stdlib.h"
 //
-// #include "sass_context.h"
+// #include "sass/context.h"
 //
 import "C"
 

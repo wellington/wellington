@@ -12,6 +12,9 @@ namespace Sass {
 
   char* sass_strdup(const char* str);
   double sass_atof(const char* str);
+  const char* safe_str(const char *);
+  void free_string_array(char **);
+  char **copy_strings(const std::vector<std::string>&, char ***, int = 0);
   std::string string_escape(const std::string& str);
   std::string string_unescape(const std::string& str);
   std::string string_eval_escapes(const std::string& str);
@@ -23,7 +26,7 @@ namespace Sass {
   std::string normalize_wspace(const std::string& str);
 
   std::string quote(const std::string&, char q = 0, bool keep_linefeed_whitespace = false);
-  std::string unquote(const std::string&, char* q = 0);
+  std::string unquote(const std::string&, char* q = 0, bool keep_utf8_sequences = false);
   char detect_best_quotemark(const char* s, char qm = '"');
 
   bool is_hex_doublet(double n);

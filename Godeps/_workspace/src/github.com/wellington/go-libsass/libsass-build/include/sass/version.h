@@ -2,7 +2,7 @@
 #define SASS_VERSION_H
 
 #ifndef LIBSASS_VERSION
-#define LIBSASS_VERSION "3.2.5-289-g6075"
+#define LIBSASS_VERSION "3.3.0-beta1"
 #endif
 
 #endif

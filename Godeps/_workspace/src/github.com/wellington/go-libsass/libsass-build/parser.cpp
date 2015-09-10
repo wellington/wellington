@@ -9,7 +9,7 @@
 #include "util.hpp"
 #include "prelexer.hpp"
 #include "color_maps.hpp"
-#include "sass_functions.h"
+#include "sass/functions.h"
 #include "error_handling.hpp"
 
 #include <typeinfo>
@@ -1460,7 +1460,7 @@ namespace Sass {
     if (lex< sequence< dimension, optional< sequence< exactly<'-'>, negate< digit > > > > >())
     { return SASS_MEMORY_NEW(ctx.mem, Textual, pstate, Textual::DIMENSION, lexed); }
 
-    if (lex< sequence< static_component, one_plus< identifier > > >())
+    if (lex< sequence< static_component, one_plus< strict_identifier > > >())
     { return SASS_MEMORY_NEW(ctx.mem, String_Constant, pstate, lexed); }
 
     if (lex< number >())
@@ -2161,7 +2161,7 @@ namespace Sass {
   Lookahead Parser::lookahead_for_selector(const char* start)
   {
     // init result struct
-    Lookahead rv { 0 };
+    Lookahead rv = Lookahead();
     // get start position
     const char* p = start ? start : position;
     // match in one big "regex"
@@ -2278,7 +2278,7 @@ namespace Sass {
   Lookahead Parser::lookahead_for_value(const char* start)
   {
     // init result struct
-    Lookahead rv { 0 };
+    Lookahead rv = Lookahead();
     // get start position
     const char* p = start ? start : position;
     // match in one big "regex"
