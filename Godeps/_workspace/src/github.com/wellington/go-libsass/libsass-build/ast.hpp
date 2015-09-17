@@ -9,7 +9,16 @@
 #include <iostream>
 #include <typeinfo>
 #include <algorithm>
+#ifdef   HAVE_CONFIG_H
+#include "config.h"
+#endif
+#ifdef   HAVE_CXX_ONLY_TR1_UNORDERED_MAP
+#include <tr1/unordered_map>
+#define  _TR1_ tr1::
+#else
 #include <unordered_map>
+#define  _TR1_
+#endif
 
 #ifdef __clang__
 
@@ -66,7 +75,7 @@ namespace Sass {
   //////////////////////////////////////////////////////////
   // Abstract base class for all abstract syntax tree nodes.
   //////////////////////////////////////////////////////////
-  class AST_Node {
+  class AST_Node : public Memory_Object {
     ADD_PROPERTY(ParserState, pstate)
   public:
     AST_Node(ParserState pstate)
@@ -150,6 +159,9 @@ namespace Sass {
 /////////////////////////////////////////////////////////////////////////////////////
 
 namespace std {
+#ifdef HAVE_CXX_ONLY_TR1_UNORDERED_MAP
+namespace tr1 {
+#endif
   template<>
   struct hash<Sass::Expression*>
   {
@@ -158,6 +170,9 @@ namespace std {
       return s->hash();
     }
   };
+#ifdef HAVE_CXX_ONLY_TR1_UNORDERED_MAP
+}
+#endif
   template<>
   struct equal_to<Sass::Expression*>
   {
@@ -231,7 +246,7 @@ namespace Sass {
   /////////////////////////////////////////////////////////////////////////////
   class Hashed {
   private:
-    std::unordered_map<Expression*, Expression*> elements_;
+    std::_TR1_ unordered_map<Expression*, Expression*> elements_;
     std::vector<Expression*> list_;
   protected:
     size_t hash_;
@@ -240,8 +255,13 @@ namespace Sass {
     void reset_duplicate_key() { duplicate_key_ = 0; }
     virtual void adjust_after_pushing(std::pair<Expression*, Expression*> p) { }
   public:
-    Hashed(size_t s = 0) : elements_(std::unordered_map<Expression*, Expression*>(s)), list_(std::vector<Expression*>())
-    { elements_.reserve(s); list_.reserve(s); reset_duplicate_key(); }
+    Hashed(size_t s = 0) : elements_(std::_TR1_ unordered_map<Expression*, Expression*>(s)), list_(std::vector<Expression*>())
+    { 
+#ifdef HAVE_CXX_UNORDERED_MAP_RESERVE
+      elements_.reserve(s); list_.reserve(s);
+#endif
+      reset_duplicate_key();
+    }
     virtual ~Hashed();
     size_t length() const                  { return list_.size(); }
     bool empty() const                     { return list_.empty(); }
@@ -249,7 +269,7 @@ namespace Sass {
     Expression* at(Expression* k) const;
     bool has_duplicate_key() const         { return duplicate_key_ != 0; }
     Expression* get_duplicate_key() const  { return duplicate_key_; }
-    const std::unordered_map<Expression*, Expression*> elements() { return elements_; }
+    const std::_TR1_ unordered_map<Expression*, Expression*> elements() { return elements_; }
     Hashed& operator<<(std::pair<Expression*, Expression*> p)
     {
       reset_hash();
@@ -277,13 +297,13 @@ namespace Sass {
       reset_duplicate_key();
       return *this;
     }
-    const std::unordered_map<Expression*, Expression*>& pairs() const { return elements_; }
+    const std::_TR1_ unordered_map<Expression*, Expression*>& pairs() const { return elements_; }
     const std::vector<Expression*>& keys() const { return list_; }
 
-    std::unordered_map<Expression*, Expression*>::iterator end() { return elements_.end(); }
-    std::unordered_map<Expression*, Expression*>::iterator begin() { return elements_.begin(); }
-    std::unordered_map<Expression*, Expression*>::const_iterator end() const { return elements_.end(); }
-    std::unordered_map<Expression*, Expression*>::const_iterator begin() const { return elements_.begin(); }
+    std::_TR1_ unordered_map<Expression*, Expression*>::iterator end() { return elements_.end(); }
+    std::_TR1_ unordered_map<Expression*, Expression*>::iterator begin() { return elements_.begin(); }
+    std::_TR1_ unordered_map<Expression*, Expression*>::const_iterator end() const { return elements_.end(); }
+    std::_TR1_ unordered_map<Expression*, Expression*>::const_iterator begin() const { return elements_.begin(); }
 
   };
   inline Hashed::~Hashed() { }
@@ -2040,7 +2060,7 @@ namespace Sass {
       return length() == 1 && (*this)[0]->is_universal();
     }
 
-    Complex_Selector* to_complex(Memory_Manager<AST_Node>& mem);
+    Complex_Selector* to_complex(Memory_Manager& mem);
     Compound_Selector* unify_with(Compound_Selector* rhs, Context& ctx);
     // virtual Selector_Placeholder* find_placeholder();
     virtual bool has_parent_ref();

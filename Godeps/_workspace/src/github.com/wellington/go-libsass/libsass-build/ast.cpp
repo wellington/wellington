@@ -585,7 +585,7 @@ namespace Sass {
   }
 
   // create complex selector (ancestor of) from compound selector
-  Complex_Selector* Compound_Selector::to_complex(Memory_Manager<AST_Node>& mem)
+  Complex_Selector* Compound_Selector::to_complex(Memory_Manager& mem)
   {
     // create an intermediate complex selector
     return SASS_MEMORY_NEW(mem, Complex_Selector,
@@ -1713,7 +1713,18 @@ namespace Sass {
   Expression* Hashed::at(Expression* k) const
   {
     if (elements_.count(k))
-    { return elements_.at(k); }
+    {
+#ifdef HAVE_CXX_UNORDERED_MAP_AT
+      return elements_.at(k);
+#else
+      std::_TR1_ unordered_map<Expression*, Expression*>::const_iterator it = elements_.find(k);
+      if (it != elements_.end()) {
+        return it->second;
+      } else {
+        throw std::out_of_range("item not found");
+      }
+#endif
+    }
     else { return &sass_null; }
   }
 
