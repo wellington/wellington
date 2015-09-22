@@ -16,11 +16,7 @@ var inputFileTypes = []string{".scss", ".sass"}
 
 // LoadAndBuild kicks off parser and compiling
 // TODO: make this function testable
-func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) error {
-
-	if gba == nil {
-		return fmt.Errorf("build args are nil")
-	}
+func LoadAndBuild(sassFile string, gba BuildArgs, partialMap *SafePartialMap) error {
 
 	// If no imagedir specified, assume relative to the input file
 	if gba.Dir == "" {

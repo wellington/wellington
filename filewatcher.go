@@ -33,8 +33,8 @@ type BuildArgs struct {
 
 // NewBuildArgs creates a BuildArgs and initializes Cache maps for
 // sprites and images
-func NewBuildArgs() *BuildArgs {
-	bArgs := &BuildArgs{
+func NewBuildArgs() BuildArgs {
+	bArgs := BuildArgs{
 		Payload: newPayload(),
 	}
 	return bArgs
@@ -50,7 +50,7 @@ type Watcher struct {
 	FileWatcher *fsnotify.Watcher
 	PartialMap  *SafePartialMap
 	Dirs        []string
-	BArgs       *BuildArgs
+	BArgs       BuildArgs
 }
 
 // NewWatcher returns a new watcher pointer

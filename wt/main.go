@@ -347,16 +347,17 @@ func Run(cmd *cobra.Command, files []string) {
 	for i, f := range files {
 		wg.Add(1)
 		sassPaths[i] = filepath.Dir(f)
-		go func(f string) {
-			err := wt.LoadAndBuild(f, gba, pMap)
+		go func(f string, gba wt.BuildArgs, pMap *wt.SafePartialMap) {
+			ppMap := wt.NewPartialMap()
+			err := wt.LoadAndBuild(f, gba, ppMap)
 			defer wg.Done()
 			if err != nil {
 				log.Println(err)
 				os.Exit(1)
 			}
-		}(f)
-		wg.Wait()
+		}(f, gba, pMap)
 	}
+	defer wg.Wait()
 
 	if watch {
 		w := wt.NewWatcher()

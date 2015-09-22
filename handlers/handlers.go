@@ -155,6 +155,7 @@ func ImageWidth(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) er
 	images := payload.Image()
 
 	if glob == "" {
+		images.RLock()
 		if hit, ok := images.M[name]; ok {
 			imgs = hit
 		} else {
@@ -164,6 +165,7 @@ func ImageWidth(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) er
 			images.M[name] = imgs
 			images.Unlock()
 		}
+		images.RUnlock()
 	} else {
 		payload, ok := ctx.Payload.(sw.Spriter)
 		if !ok {
