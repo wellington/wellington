@@ -14,6 +14,7 @@ import (
 	"runtime/pprof"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fatih/color"
@@ -341,15 +342,20 @@ func Run(cmd *cobra.Command, files []string) {
 		}
 		return
 	}
-
+	var wg sync.WaitGroup
 	sassPaths := make([]string, len(files))
 	for i, f := range files {
+		wg.Add(1)
 		sassPaths[i] = filepath.Dir(f)
-		err := wt.LoadAndBuild(f, gba, pMap)
-		if err != nil {
-			log.Println(err)
-			os.Exit(1)
-		}
+		go func(f string) {
+			err := wt.LoadAndBuild(f, gba, pMap)
+			defer wg.Done()
+			if err != nil {
+				log.Println(err)
+				os.Exit(1)
+			}
+		}(f)
+		wg.Wait()
 	}
 
 	if watch {
