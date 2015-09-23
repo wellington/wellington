@@ -99,7 +99,18 @@ func setupCtx(r io.Reader, out io.Writer /*, cookies ...libsass.Cookie*/) (*libs
 		}
 		usv = <-cc
 	}*/
+	done := make(chan struct{})
+	go func() {
+		select {
+		case <-time.After(1 * time.Second):
+			panic("timeout")
+		case <-done:
+			return
+		}
+	}()
+
 	err := ctx.Compile(r, out)
+	close(done)
 	return ctx, usv, err
 }
 
