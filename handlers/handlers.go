@@ -83,7 +83,10 @@ func ImageHeight(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) e
 	}
 	images := payload.Image()
 	if glob == "" {
-		if hit, ok := images.M[name]; ok {
+		images.RLock()
+		hit, ok := images.M[name]
+		images.RUnlock()
+		if ok {
 			imgs = hit
 		} else {
 			imgs.Decode(name)
