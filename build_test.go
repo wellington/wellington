@@ -40,7 +40,7 @@ func TestLoadAndBuild(t *testing.T) {
 
 	r, w, _ := os.Pipe()
 	os.Stdout = w
-	err := LoadAndBuild("test/sass/file.scss", &BuildArgs{}, NewPartialMap())
+	err := LoadAndBuild("test/sass/file.scss", BuildArgs{}, NewPartialMap())
 	if err != nil {
 		t.Error(err)
 	}
@@ -73,7 +73,7 @@ func TestLandB_error(t *testing.T) {
 		os.Stdout = oo
 	}()
 	os.Stdout = w
-	err := LoadAndBuild("test/sass/error.scss", &BuildArgs{}, NewPartialMap())
+	err := LoadAndBuild("test/sass/error.scss", BuildArgs{}, NewPartialMap())
 	qs := fmt.Sprintf("%q", err.Error())
 
 	e := `Invalid CSS after \"div {\": expected \"}\", was \"\"`
@@ -96,7 +96,7 @@ func TestLoadAndBuild_args(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 	err := LoadAndBuild("test/sass/file.scss",
-		&BuildArgs{
+		BuildArgs{
 			BuildDir: "test/build",
 			Includes: "test",
 		},
@@ -128,7 +128,7 @@ func TestLoadAndBuild_comply(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 	err := LoadAndBuild("test/compass/top.scss",
-		&BuildArgs{
+		BuildArgs{
 			BuildDir: "test/build",
 			Includes: "test",
 		},
