@@ -14,6 +14,7 @@ import (
 	"runtime/pprof"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fatih/color"
@@ -38,6 +39,7 @@ var (
 	timeB                         bool
 	config                        string
 	debug                         bool
+	multi                         bool
 
 	// unused
 	noLineComments bool
@@ -85,7 +87,7 @@ func flags(set *pflag.FlagSet) {
 	set.BoolVarP(&watch, "watch", "w", false, "File watcher that will rebuild css on file changes")
 
 	set.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
-
+	set.BoolVarP(&multi, "multi", "", false, "Enable multi-threaded operation")
 }
 
 var compileCmd = &cobra.Command{
@@ -265,17 +267,17 @@ func Run(cmd *cobra.Command, files []string) {
 
 	pMap := wt.NewPartialMap()
 	// FIXME: Copy pasta with LoadAndBuild
-	ctx := &libsass.Context{
-		Payload:      gba.Payload,
-		OutputStyle:  gba.Style,
-		BuildDir:     gba.BuildDir,
-		ImageDir:     gba.Dir,
-		FontDir:      gba.Font,
-		GenImgDir:    gba.Gen,
-		Comments:     gba.Comments,
-		HTTPPath:     httpPath,
-		IncludePaths: []string{gba.Includes},
-	}
+	ctx := libsass.NewContext()
+	ctx.Payload = gba.Payload
+	ctx.OutputStyle = gba.Style
+	ctx.BuildDir = gba.BuildDir
+	ctx.ImageDir = gba.Dir
+	ctx.FontDir = gba.Font
+	ctx.GenImgDir = gba.Gen
+	ctx.Comments = gba.Comments
+	ctx.HTTPPath = httpPath
+	ctx.IncludePaths = []string{gba.Includes}
+
 	if debug {
 		fmt.Printf("      Font  Dir: %s\n", gba.Font)
 		fmt.Printf("      Image Dir: %s\n", gba.Dir)
@@ -342,14 +344,36 @@ func Run(cmd *cobra.Command, files []string) {
 		return
 	}
 
+	var wg sync.WaitGroup
 	sassPaths := make([]string, len(files))
-	for i, f := range files {
-		sassPaths[i] = filepath.Dir(f)
-		err := wt.LoadAndBuild(f, gba, pMap)
-		if err != nil {
-			log.Println(err)
-			os.Exit(1)
+	if multi {
+		for i, f := range files {
+			wg.Add(1)
+			sassPaths[i] = filepath.Dir(f)
+			go func(f string, gba wt.BuildArgs, pMap *wt.SafePartialMap) {
+				ppMap := wt.NewPartialMap()
+				err := wt.LoadAndBuild(f, gba, ppMap)
+				defer wg.Done()
+				if err != nil {
+					log.Println(err)
+					os.Exit(1)
+				}
+			}(f, gba, pMap)
 		}
+		defer wg.Wait()
+	} else {
+		for i, f := range files {
+			wg.Add(1)
+			sassPaths[i] = filepath.Dir(f)
+			ppMap := wt.NewPartialMap()
+			err := wt.LoadAndBuild(f, gba, ppMap)
+			defer wg.Done()
+			if err != nil {
+				log.Println(err)
+				os.Exit(1)
+			}
+		}
+
 	}
 
 	if watch {

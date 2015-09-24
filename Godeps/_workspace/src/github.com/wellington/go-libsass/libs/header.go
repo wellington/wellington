@@ -15,16 +15,21 @@ package libs
 // }
 //
 import "C"
-import (
-	"runtime"
-	"unsafe"
-)
+import "unsafe"
 
-// This binds the header to the libsass header lookup
-func BindHeader(opts SassOptions, entries []ImportEntry) {
-	ptr := unsafe.Pointer(&entries)
-	// FIXME: this should be cleaned up manually later
-	runtime.SetFinalizer(&entries, nil)
+var globalHeaders SafeMap
+
+func init() {
+	globalHeaders.init()
+}
+
+// BindHeader attaches the header to a libsass context ensuring
+// gc does not delete the pointers necessary to make this happen.
+func BindHeader(opts SassOptions, entries []ImportEntry) *string {
+
+	idx := globalHeaders.set(entries)
+	ptr := unsafe.Pointer(idx)
+
 	imper := C.sass_make_importer(
 		C.Sass_Importer_Fn(C.SassHeaders),
 		C.double(0),
@@ -36,4 +41,10 @@ func BindHeader(opts SassOptions, entries []ImportEntry) {
 	C.sass_option_set_c_headers(
 		(*C.struct_Sass_Options)(unsafe.Pointer(opts)),
 		impers)
+	return idx
+}
+
+func RemoveHeaders(idx *string) error {
+	delete(globalHeaders.m, idx)
+	return nil
 }

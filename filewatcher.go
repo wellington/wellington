@@ -33,8 +33,8 @@ type BuildArgs struct {
 
 // NewBuildArgs creates a BuildArgs and initializes Cache maps for
 // sprites and images
-func NewBuildArgs() *BuildArgs {
-	bArgs := &BuildArgs{
+func NewBuildArgs() BuildArgs {
+	bArgs := BuildArgs{
 		Payload: newPayload(),
 	}
 	return bArgs
@@ -50,7 +50,7 @@ type Watcher struct {
 	FileWatcher *fsnotify.Watcher
 	PartialMap  *SafePartialMap
 	Dirs        []string
-	BArgs       *BuildArgs
+	BArgs       BuildArgs
 }
 
 // NewWatcher returns a new watcher pointer
@@ -166,6 +166,7 @@ func (w *Watcher) startWatching() {
 	}()
 }
 
+var rebuildMu sync.RWMutex
 var rebuildChan chan ([]string)
 var errChan chan error
 
@@ -183,9 +184,11 @@ func (w *Watcher) rebuild(eventFileName string) error {
 	// }
 	w.PartialMap.RLock()
 	go func(paths []string) {
+		rebuildMu.RLock()
 		if rebuildChan != nil {
 			rebuildChan <- paths
 		}
+		rebuildMu.RUnlock()
 		for i := range paths {
 			// TODO: do this in a new goroutine
 			err := LoadAndBuild(paths[i], w.BArgs, w.PartialMap)

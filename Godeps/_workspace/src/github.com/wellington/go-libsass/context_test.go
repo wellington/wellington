@@ -34,7 +34,7 @@ p {
 }`)
 
 	var out bytes.Buffer
-	ctx := Context{}
+	ctx := NewContext()
 	err := ctx.Compile(in, &out)
 	if err != nil {
 		panic(err)
@@ -58,7 +58,7 @@ p {
 
 func TestContextNilRun(t *testing.T) {
 	var in, out bytes.Buffer
-	ctx := Context{}
+	ctx := NewContext()
 	err := ctx.Compile(&in, &out)
 	if err == nil {
 		t.Error("No error returned")
@@ -80,7 +80,7 @@ div {
 `)
 
 	var out bytes.Buffer
-	ctx := Context{}
+	ctx := NewContext()
 	err := ctx.Compile(in, &out)
 	if err != nil {
 		panic(err)
@@ -104,16 +104,13 @@ func TestLibsassError(t *testing.T) {
 }`)
 
 	var out bytes.Buffer
-	ctx := Context{}
-	if ctx.Cookies == nil {
-		ctx.Cookies = make([]Cookie, 1)
-	}
+	ctx := NewContext()
 
-	ctx.Cookies[0] = Cookie{
+	ctx.Funcs.Add(Func{
 		Sign: "foo()",
 		Fn:   TestCallback,
 		Ctx:  &ctx,
-	}
+	})
 	err := ctx.Compile(in, &out)
 
 	if err == nil {
@@ -141,13 +138,10 @@ func ExampleContext_Compile() {
 			}`)
 
 	var out bytes.Buffer
-	ctx := Context{
+	ctx := NewContext()
 	//Customs: []string{"foo()"},
-	}
-	if ctx.Cookies == nil {
-		ctx.Cookies = make([]Cookie, 1)
-	}
-	ctx.Cookies[0] = Cookie{
+
+	ctx.Funcs.Add(Func{
 		Sign: "foo()",
 		Fn: func(v interface{}, usv libs.UnionSassValue, rsv *libs.UnionSassValue) error {
 			res, _ := Marshal("no-repeat")
@@ -155,7 +149,7 @@ func ExampleContext_Compile() {
 			return nil
 		},
 		Ctx: &ctx,
-	}
+	})
 	err := ctx.Compile(in, &out)
 	if err != nil {
 		panic(err)

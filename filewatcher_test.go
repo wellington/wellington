@@ -43,6 +43,10 @@ func TestRebuild_watch(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	rebuildMu.Lock()
+	rebuildChan = make(chan []string, 1)
+	rebuildMu.Unlock()
+
 	w := NewWatcher()
 	w.Dirs = []string{tdir}
 	w.PartialMap.AddRelation("tswif", tfile)
@@ -50,7 +54,7 @@ func TestRebuild_watch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rebuildChan = make(chan []string, 1)
+
 	done := make(chan bool, 1)
 	go func(t *testing.T) {
 		select {

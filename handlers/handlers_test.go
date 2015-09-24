@@ -99,19 +99,29 @@ func setupCtx(r io.Reader, out io.Writer /*, cookies ...libsass.Cookie*/) (*libs
 		}
 		usv = <-cc
 	}*/
+	done := make(chan struct{})
+	go func() {
+		select {
+		case <-time.After(1 * time.Second):
+			panic("timeout")
+		case <-done:
+			return
+		}
+	}()
+
 	err := ctx.Compile(r, out)
+	close(done)
 	return ctx, usv, err
 }
 
 func TestFuncImageURL(t *testing.T) {
-	ctx := libsass.Context{
-		BuildDir: "test/build",
-		ImageDir: "test/img",
-	}
+	ctx := libsass.NewContext()
+	ctx.BuildDir = "test/build"
+	ctx.ImageDir = "test/img"
 
 	usv, _ := libsass.Marshal([]string{"image.png"})
 	var rsv libsass.SassValue
-	ImageURL(&ctx, usv, &rsv)
+	ImageURL(ctx, usv, &rsv)
 	var path string
 	libsass.Unmarshal(rsv, &path)
 	if e := "url('../img/image.png')"; e != path {
@@ -123,7 +133,7 @@ func TestFuncImageURL(t *testing.T) {
 	_ = usv
 	var errusv libsass.SassValue
 	// TODO: we can read go error now
-	ImageURL(&ctx, usv, &errusv)
+	ImageURL(ctx, usv, &errusv)
 	var s string
 	merr := libsass.Unmarshal(errusv, &s)
 	if merr != nil {

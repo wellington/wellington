@@ -10,9 +10,8 @@ func TestOption_precision(t *testing.T) {
 	in := bytes.NewBufferString(`a { height: (1/3)px; }`)
 
 	var out bytes.Buffer
-	ctx := Context{
-		Precision: 3,
-	}
+	ctx := NewContext()
+	ctx.Precision = 3
 	err := ctx.Compile(in, &out)
 	if err != nil {
 		t.Fatal(err)
@@ -27,9 +26,8 @@ func TestOption_precision(t *testing.T) {
 
 	in = bytes.NewBufferString(`a { height: (1/3)px; }`)
 	out.Reset()
-	ctx = Context{
-		Precision: 6,
-	}
+	ctx = NewContext()
+	ctx.Precision = 6
 	err = ctx.Compile(in, &out)
 	if err != nil {
 		t.Fatal(err)
@@ -48,9 +46,9 @@ func TestOption_style(t *testing.T) {
 	in := bytes.NewBufferString(`div { p { color: red; } }`)
 
 	var out bytes.Buffer
-	ctx := Context{
-		OutputStyle: 0,
-	}
+	ctx := NewContext()
+	ctx.OutputStyle = 0
+
 	err := ctx.Compile(in, &out)
 	if err != nil {
 		t.Fatal(err)
@@ -113,9 +111,9 @@ func TestOption_comment(t *testing.T) {
 	in := bytes.NewBufferString(`div { p { color: red; } }`)
 
 	var out bytes.Buffer
-	ctx := Context{
-		Comments: false,
-	}
+	ctx := NewContext()
+	ctx.Comments = false
+
 	err := ctx.Compile(in, &out)
 	if err != nil {
 		t.Fatal(err)
@@ -150,9 +148,8 @@ func TestOption_include(t *testing.T) {
 	in := bytes.NewBufferString(`@import "include";`)
 
 	var out bytes.Buffer
-	ctx := Context{
-		IncludePaths: []string{"test/scss"},
-	}
+	ctx := NewContext()
+	ctx.IncludePaths = []string{"test/scss"}
 	err := ctx.Compile(in, &out)
 	if err != nil {
 		t.Fatal(err)

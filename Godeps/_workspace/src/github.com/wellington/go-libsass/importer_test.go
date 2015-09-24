@@ -10,7 +10,7 @@ func TestSassImport_single(t *testing.T) {
 	in := bytes.NewBufferString(`@import "a";`)
 
 	var out bytes.Buffer
-	ctx := Context{}
+	ctx := NewContext()
 	ctx.Imports.m = make(map[string]Import)
 	ctx.Imports.Add("", "a", []byte("a { color: blue; }"))
 	err := ctx.Compile(in, &out)
@@ -29,7 +29,7 @@ func TestSassImport_single(t *testing.T) {
 func TestSassImport_file(t *testing.T) {
 
 	var out bytes.Buffer
-	ctx := Context{}
+	ctx := NewContext()
 	ctx.Imports.m = make(map[string]Import)
 	ctx.Imports.Add("test/scss/file.scss", "a", []byte("a { color: blue; }"))
 	err := ctx.FileCompile("test/scss/file.scss", &out)
@@ -51,7 +51,7 @@ func TestSassImport_multi(t *testing.T) {
 @import "b";`)
 
 	var out bytes.Buffer
-	ctx := Context{}
+	ctx := NewContext()
 	ctx.Imports.m = make(map[string]Import)
 	ctx.Imports.Add("", "a", []byte("a { color: blue; }"))
 	ctx.Imports.Add("", "b", []byte("b { font-weight: bold; }"))
@@ -79,7 +79,7 @@ div.branch {
 }`)
 
 	var out bytes.Buffer
-	ctx := Context{}
+	ctx := NewContext()
 	ctx.Imports.m = make(map[string]Import)
 	ctx.Imports.Add("", "branch", []byte(`%branch { color: brown; }`))
 	err := ctx.Compile(in, &out)
@@ -104,7 +104,7 @@ div.branch {
 }`)
 
 	var out bytes.Buffer
-	ctx := Context{}
+	ctx := NewContext()
 	ctx.Imports.m = make(map[string]Import)
 	ctx.Imports.Add("", "branch", []byte(`@import "leaf";
 %branch { color: brown; }`))
@@ -134,7 +134,7 @@ div.branch {
 }`)
 
 	var out bytes.Buffer
-	ctx := Context{}
+	ctx := NewContext()
 	ctx.Imports.m = make(map[string]Import)
 	err := ctx.Compile(in, &out)
 	if err == nil {
@@ -170,7 +170,7 @@ div.branch {
 }`)
 
 	var out bytes.Buffer
-	ctx := Context{}
+	ctx := NewContext()
 	ctx.Imports.m = make(map[string]Import)
 	ctx.Imports.Add("", "nope", []byte(`@import "leaf";
 %branch { color: brown; }`))

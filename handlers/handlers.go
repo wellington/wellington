@@ -83,7 +83,10 @@ func ImageHeight(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) e
 	}
 	images := payload.Image()
 	if glob == "" {
-		if hit, ok := images.M[name]; ok {
+		images.RLock()
+		hit, ok := images.M[name]
+		images.RUnlock()
+		if ok {
 			imgs = hit
 		} else {
 			imgs.Decode(name)
@@ -155,7 +158,10 @@ func ImageWidth(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) er
 	images := payload.Image()
 
 	if glob == "" {
-		if hit, ok := images.M[name]; ok {
+		images.RLock()
+		hit, ok := images.M[name]
+		images.RUnlock()
+		if ok {
 			imgs = hit
 		} else {
 			imgs.Decode(name)
@@ -249,7 +255,10 @@ func InlineImage(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) e
 	}
 	var buf bytes.Buffer
 
-	sw.Inline(f, &buf, encode)
+	err = sw.Inline(f, &buf, encode)
+	if err != nil {
+		return setErrorAndReturn(err, rsv)
+	}
 	res, err := libsass.Marshal(buf.String())
 	if err != nil {
 		return setErrorAndReturn(err, rsv)

@@ -16,11 +16,7 @@ var inputFileTypes = []string{".scss", ".sass"}
 
 // LoadAndBuild kicks off parser and compiling
 // TODO: make this function testable
-func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) error {
-
-	if gba == nil {
-		return fmt.Errorf("build args are nil")
-	}
+func LoadAndBuild(sassFile string, gba BuildArgs, partialMap *SafePartialMap) error {
 
 	// If no imagedir specified, assume relative to the input file
 	if gba.Dir == "" {
@@ -38,18 +34,18 @@ func LoadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap) e
 	} else {
 		out = os.Stdout
 	}
-	ctx := libsass.Context{
-		Payload:     gba.Payload,
-		OutputStyle: gba.Style,
-		ImageDir:    gba.Dir,
-		FontDir:     gba.Font,
-		// Assumption that output is a file
-		BuildDir:     filepath.Dir(fout),
-		GenImgDir:    gba.Gen,
-		MainFile:     sassFile,
-		Comments:     gba.Comments,
-		IncludePaths: []string{filepath.Dir(sassFile)},
-	}
+	ctx := libsass.NewContext()
+	ctx.Payload = gba.Payload
+	ctx.OutputStyle = gba.Style
+	ctx.ImageDir = gba.Dir
+	ctx.FontDir = gba.Font
+	// Assumption that output is a file
+	ctx.BuildDir = filepath.Dir(fout)
+	ctx.GenImgDir = gba.Gen
+	ctx.MainFile = sassFile
+	ctx.Comments = gba.Comments
+	ctx.IncludePaths = []string{filepath.Dir(sassFile)}
+
 	ctx.Imports.Init()
 	if gba.Includes != "" {
 		ctx.IncludePaths = append(ctx.IncludePaths,

@@ -21,7 +21,7 @@ func TestError_warn(t *testing.T) {
 	// Disabled while new warn integration is built
 	in := bytes.NewBufferString(`@warn "!";
 div { color: red; }`)
-	ctx := libsass.Context{}
+	ctx := libsass.NewContext()
 	libsass.RegisterHandler("@warn", WarnHandler)
 	var empty bytes.Buffer
 	err := ctx.Compile(in, &empty)

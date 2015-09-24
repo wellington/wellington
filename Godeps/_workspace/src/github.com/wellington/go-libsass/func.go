@@ -1,10 +1,27 @@
 package libsass
 
 import (
-	"unsafe"
+	"fmt"
+	"sync"
 
 	"github.com/wellington/go-libsass/libs"
 )
+
+var ghMu sync.RWMutex
+
+// globalHandlers is the list of predefined handlers registered externally
+var globalHandlers []handler
+
+// RegisterHandler sets the passed signature and callback to the
+// handlers array.
+func RegisterHandler(sign string, callback HandlerFunc) {
+	ghMu.Lock()
+	globalHandlers = append(globalHandlers, handler{
+		sign:     sign,
+		callback: Handler(callback),
+	})
+	ghMu.Unlock()
+}
 
 // HandlerFunc describes the method signature for registering
 // a Go function to be called by libsass.
@@ -24,7 +41,9 @@ func Handler(h HandlerFunc) libs.SassCallback {
 
 		// FIXME: This shouldn't be happening, handler should assign
 		// to the address properly.
-		*rsv = res.Val()
+		if rsv != nil {
+			*rsv = res.Val()
+		}
 
 		return err
 	}
@@ -33,15 +52,6 @@ func Handler(h HandlerFunc) libs.SassCallback {
 type handler struct {
 	sign     string
 	callback libs.SassCallback
-}
-
-// RegisterHandler sets the passed signature and callback to the
-// handlers array.
-func RegisterHandler(sign string, callback HandlerFunc) {
-	handlers = append(handlers, handler{
-		sign:     sign,
-		callback: Handler(callback),
-	})
 }
 
 var _ libs.SassCallback = TestCallback
@@ -58,46 +68,71 @@ var TestCallback = testCallback(func(_ interface{}, _ SassValue, _ *SassValue) e
 	return nil
 })
 
-// handlers is the list of registered sass handlers
-var handlers []handler
-
 // Cookie is used for passing context information to libsass.  Cookie is
 // passed to custom handlers when libsass executes them through the go
 // bridge.
-type Cookie struct {
+type Func struct {
 	Sign string
 	Fn   libs.SassCallback
 	Ctx  interface{}
 }
 
+type Funcs struct {
+	sync.RWMutex
+	wg      sync.WaitGroup
+	closing chan struct{}
+	f       []Func
+	idx     []*string
+
+	// Func are complex, we need a reference to the entire context to
+	// successfully execute them.
+	ctx *Context
+}
+
+func NewFuncs(ctx *Context) *Funcs {
+	return &Funcs{
+		closing: make(chan struct{}),
+		ctx:     ctx,
+	}
+}
+
+func (fs *Funcs) Add(f Func) {
+	fs.Lock()
+	defer fs.Unlock()
+	fs.f = append(fs.f, f)
+}
+
 // SetFunc assigns the registered methods to SassOptions. Functions
 // are called when the compiler encounters the registered signature.
-func (ctx *Context) SetFunc(goopts libs.SassOptions) {
-	cookies := make([]libs.Cookie, len(handlers)+len(ctx.Cookies))
+func (fs *Funcs) Bind(goopts libs.SassOptions) {
+	ghMu.RLock()
+	cookies := make([]libs.Cookie, len(globalHandlers)+len(fs.f))
 	// Append registered handlers to cookie array
-	for i, h := range handlers {
+	for i, h := range globalHandlers {
 		cookies[i] = libs.Cookie{
 			Sign: h.sign,
 			Fn:   h.callback,
-			Ctx:  ctx,
+			Ctx:  fs.ctx,
 		}
 	}
-	for i, h := range ctx.Cookies {
-		cookies[i+len(handlers)] = libs.Cookie{
+	l := len(globalHandlers)
+	ghMu.RUnlock()
+
+	for i, h := range fs.f {
+		cookies[i+l] = libs.Cookie{
 			Sign: h.Sign,
 			Fn:   h.Fn,
-			Ctx:  ctx,
+			Ctx:  fs.ctx,
 		}
 	}
-	// TODO: this seems to run fine with garbage collection on
-	// surprisingly enough
-	// disable garbage collection of cookies. These need to
-	// be manually freed in the wrapper
-	gofns := make([]libs.SassFunc, len(cookies))
-	for i, cookie := range cookies {
-		fn := libs.SassMakeFunction(cookie.Sign,
-			unsafe.Pointer(&cookies[i]))
-		gofns[i] = fn
+	fs.idx = libs.BindFuncs(goopts, cookies)
+}
+
+func (fs *Funcs) Close() {
+	err := libs.RemoveFuncs(fs.idx)
+	if err != nil {
+		fmt.Println("error cleaning up funcs", err)
 	}
-	libs.BindFuncs(goopts, gofns)
+	close(fs.closing)
+	fs.wg.Wait()
 }

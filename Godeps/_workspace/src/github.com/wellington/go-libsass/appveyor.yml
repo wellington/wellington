@@ -22,7 +22,7 @@ install:
   - set PATH=C:\mingw64\bin;C:\go15\go\bin;C:\gopath\bin;%PATH%
   #retrieve go 1.5
   - ps: |
-      $file = "go1.5.windows-amd64.zip"
+      $file = "go1.5.1.windows-amd64.zip"
       $url  = "https://bintray.com/artifact/download/drewwells/generic/"
       $url += $file
       $goAUTHOR="C:\go15\go\AUTHORS"
