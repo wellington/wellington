@@ -39,6 +39,7 @@ var (
 	timeB                         bool
 	config                        string
 	debug                         bool
+	multi                         bool
 
 	// unused
 	noLineComments bool
@@ -86,7 +87,7 @@ func flags(set *pflag.FlagSet) {
 	set.BoolVarP(&watch, "watch", "w", false, "File watcher that will rebuild css on file changes")
 
 	set.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
-
+	set.BoolVarP(&multi, "multi", "", "Enable multi-threaded operation")
 }
 
 var compileCmd = &cobra.Command{
@@ -342,12 +343,28 @@ func Run(cmd *cobra.Command, files []string) {
 		}
 		return
 	}
+
 	var wg sync.WaitGroup
 	sassPaths := make([]string, len(files))
-	for i, f := range files {
-		wg.Add(1)
-		sassPaths[i] = filepath.Dir(f)
-		go func(f string, gba wt.BuildArgs, pMap *wt.SafePartialMap) {
+	if multi {
+		for i, f := range files {
+			wg.Add(1)
+			sassPaths[i] = filepath.Dir(f)
+			go func(f string, gba wt.BuildArgs, pMap *wt.SafePartialMap) {
+				ppMap := wt.NewPartialMap()
+				err := wt.LoadAndBuild(f, gba, ppMap)
+				defer wg.Done()
+				if err != nil {
+					log.Println(err)
+					os.Exit(1)
+				}
+			}(f, gba, pMap)
+		}
+		defer wg.Wait()
+	} else {
+		for i, f := range files {
+			wg.Add(1)
+			sassPaths[i] = filepath.Dir(f)
 			ppMap := wt.NewPartialMap()
 			err := wt.LoadAndBuild(f, gba, ppMap)
 			defer wg.Done()
@@ -355,9 +372,9 @@ func Run(cmd *cobra.Command, files []string) {
 				log.Println(err)
 				os.Exit(1)
 			}
-		}(f, gba, pMap)
+		}
+
 	}
-	defer wg.Wait()
 
 	if watch {
 		w := wt.NewWatcher()
