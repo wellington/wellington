@@ -20,7 +20,7 @@ func TestFontURLFail(t *testing.T) {
   src: font-url("arial.eot");
 }`)
 	var out bytes.Buffer
-	ctx := libsass.Context{}
+	ctx := libsass.NewContext()
 	err := ctx.Compile(in, &out)
 
 	e := "error in C function font-url: font-url: font path not set"
@@ -73,7 +73,7 @@ func TestFontURL_invalid(t *testing.T) {
   src: font-url(5px);
 }`)
 	var out bytes.Buffer
-	ctx := libsass.Context{}
+	ctx := libsass.NewContext()
 	err := ctx.Compile(in, &out)
 
 	e := `Error > stdin:2

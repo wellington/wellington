@@ -107,7 +107,7 @@ func StartParser(ctx *libsass.Context, in io.Reader, out io.Writer, partialMap *
 	parser.Includes = ctx.IncludePaths
 	parser.BuildDir = ctx.BuildDir
 	parser.MainFile = ctx.MainFile
-	parser.Imports = ctx.Imports
+	parser.Imports = *ctx.Imports
 
 	// Save reference to parser in context
 	bs, err := parser.Start(in, filepath.Dir(ctx.MainFile))

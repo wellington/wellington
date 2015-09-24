@@ -266,17 +266,17 @@ func Run(cmd *cobra.Command, files []string) {
 
 	pMap := wt.NewPartialMap()
 	// FIXME: Copy pasta with LoadAndBuild
-	ctx := &libsass.Context{
-		Payload:      gba.Payload,
-		OutputStyle:  gba.Style,
-		BuildDir:     gba.BuildDir,
-		ImageDir:     gba.Dir,
-		FontDir:      gba.Font,
-		GenImgDir:    gba.Gen,
-		Comments:     gba.Comments,
-		HTTPPath:     httpPath,
-		IncludePaths: []string{gba.Includes},
-	}
+	ctx := libsass.NewContext()
+	ctx.Payload = gba.Payload
+	ctx.OutputStyle = gba.Style
+	ctx.BuildDir = gba.BuildDir
+	ctx.ImageDir = gba.Dir
+	ctx.FontDir = gba.Font
+	ctx.GenImgDir = gba.Gen
+	ctx.Comments = gba.Comments
+	ctx.HTTPPath = httpPath
+	ctx.IncludePaths = []string{gba.Includes}
+
 	if debug {
 		fmt.Printf("      Font  Dir: %s\n", gba.Font)
 		fmt.Printf("      Image Dir: %s\n", gba.Dir)

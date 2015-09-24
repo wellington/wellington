@@ -17,7 +17,7 @@ func TestCompileStdin_imports(t *testing.T) {
 @import "compass/utilities/sprite/base";
 
 `)
-	ctx := &libsass.Context{}
+	ctx := libsass.NewContext()
 	InitializeContext(ctx)
 	ctx.Imports.Init()
 
