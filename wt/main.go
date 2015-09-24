@@ -87,7 +87,7 @@ func flags(set *pflag.FlagSet) {
 	set.BoolVarP(&watch, "watch", "w", false, "File watcher that will rebuild css on file changes")
 
 	set.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
-	set.BoolVarP(&multi, "multi", "", "Enable multi-threaded operation")
+	set.BoolVarP(&multi, "multi", "", false, "Enable multi-threaded operation")
 }
 
 var compileCmd = &cobra.Command{
