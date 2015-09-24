@@ -12,6 +12,7 @@ import "C"
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"unsafe"
@@ -34,18 +35,14 @@ type ImportEntry struct {
 	SrcMap string
 }
 
-func GetEntry(es []ImportEntry, parent string, path string) (string, error) {
-	for _, e := range es {
-		if parent == e.Parent && path == e.Path {
-			return e.Source, nil
-		}
-	}
-	return "", errors.New("entry not found")
-}
-
 //export HeaderBridge
 func HeaderBridge(ptr unsafe.Pointer) C.Sass_Import_List {
-	entries := *(*[]ImportEntry)(ptr)
+	idx := (*string)(ptr)
+	entries, ok := globalHeaders.get(idx).([]ImportEntry)
+	if !ok {
+		fmt.Printf("failed to resolve header slice: %p\n", ptr)
+		return C.sass_make_import_list(C.size_t(1))
+	}
 
 	cents := C.sass_make_import_list(C.size_t(len(entries)))
 
@@ -70,12 +67,28 @@ func HeaderBridge(ptr unsafe.Pointer) C.Sass_Import_List {
 	return cents
 }
 
+func GetEntry(es []ImportEntry, parent string, path string) (string, error) {
+	for _, e := range es {
+		if parent == e.Parent && path == e.Path {
+			return e.Source, nil
+		}
+	}
+	return "", errors.New("entry not found")
+}
+
 // ImporterBridge is called by C to pass Importer arguments into Go land. A
 // Sass_Import is returned for libsass to resolve.
 //
 //export ImporterBridge
 func ImporterBridge(url *C.char, prev *C.char, ptr unsafe.Pointer) C.Sass_Import_List {
-	entries := *(*[]ImportEntry)(ptr)
+	// Retrieve the index
+	idx := (*string)(ptr)
+	entries, ok := globalImports.get(idx).([]ImportEntry)
+	if !ok {
+		fmt.Printf("failed to resolve import slice: %p\n", ptr)
+		entries = []ImportEntry{}
+	}
+
 	parent := C.GoString(prev)
 	rel := C.GoString(url)
 	list := C.sass_make_import_list(1)

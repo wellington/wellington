@@ -30,8 +30,22 @@ func (i Import) ModTime() time.Time {
 
 // Imports is a map with key of "path/to/file"
 type Imports struct {
+	wg      sync.WaitGroup
+	closing chan struct{}
 	sync.RWMutex
-	m map[string]Import
+	m   map[string]Import
+	idx *string
+}
+
+func NewImports() *Imports {
+	return &Imports{
+		closing: make(chan struct{}),
+	}
+}
+
+func (i *Imports) Close() {
+	close(i.closing)
+	i.wg.Wait()
 }
 
 // Init sets up a new Imports map
@@ -92,13 +106,14 @@ func (p *Imports) Len() int {
 	return len(p.m)
 }
 
-// SetImporters accepts a SassOptions and adds the registered
+// Bind accepts a SassOptions and adds the registered
 // importers in the context.
-func (ctx *Context) SetImporters(opts libs.SassOptions) {
-	entries := make([]libs.ImportEntry, ctx.Imports.Len())
+func (p *Imports) Bind(opts libs.SassOptions) {
+	entries := make([]libs.ImportEntry, p.Len())
 	i := 0
 
-	for _, ent := range ctx.Imports.m {
+	p.RLock()
+	for _, ent := range p.m {
 		bs := ent.bytes
 		entries[i] = libs.ImportEntry{
 			Parent: ent.Prev,
@@ -107,5 +122,8 @@ func (ctx *Context) SetImporters(opts libs.SassOptions) {
 		}
 		i++
 	}
-	libs.BindImporter(opts, entries)
+	p.RUnlock()
+
+	// set entries somewhere so GC doesn't collect it
+	p.idx = libs.BindImporter(opts, entries)
 }

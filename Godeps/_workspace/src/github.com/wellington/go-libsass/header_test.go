@@ -12,7 +12,7 @@ func TestSassHeader_single(t *testing.T) {
 `)
 
 	var out bytes.Buffer
-	ctx := Context{}
+	ctx := NewContext()
 	ctx.Headers.Add(`@mixin mix() {
   width: 50px;
 }
@@ -42,7 +42,7 @@ func TestSassHeader_multi(t *testing.T) {
 `)
 
 	var out bytes.Buffer
-	ctx := Context{}
+	ctx := NewContext()
 	ctx.Headers.Add(`@mixin mix() {
   width: 50px;
 }

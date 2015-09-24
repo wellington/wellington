@@ -39,18 +39,18 @@ type Context struct {
 
 	in  io.Reader
 	out io.Writer
-	// Place to keep cookies, so Go doesn't garbage collect them before C
-	// is done with them
-	Cookies []Cookie
 
+	// Funcs is a slice of Sass function handlers. Registry these globally
+	// by calling RegisterHandler
+	Funcs *Funcs
 	// Imports is a map of overridden imports. When Sass attempts to
 	// import a path matching on in this map, it will include the import
 	// found in the map before looking for a file on the system.
-	Imports Imports
+	Imports *Imports
 	// Headers are a map of strings to start any Sass project with. Any
 	// header listed here will be present before any other Sass code is
 	// compiled.
-	Headers Headers
+	Headers *Headers
 
 	// ResolvedImports is the list of files libsass used to compile this
 	// Sass sheet.
@@ -59,6 +59,9 @@ type Context struct {
 	// Attach additional data to a context for use by custom
 	// handlers/mixins
 	Payload interface{}
+
+	// Safe place to store memory allocations for C
+	entries *[]libs.ImportEntry
 }
 
 // Constants/enums for the output style.
@@ -81,9 +84,12 @@ func init() {
 }
 
 func NewContext() *Context {
-	c := Context{}
-
-	return &c
+	c := &Context{
+		Headers: NewHeaders(),
+		Imports: NewImports(),
+	}
+	c.Funcs = NewFuncs(c)
+	return c
 }
 
 // Init validates options in the struct and returns a Sass Options.
@@ -93,10 +99,9 @@ func (ctx *Context) Init(goopts libs.SassOptions) libs.SassOptions {
 	}
 
 	Mixins(ctx)
-
-	ctx.SetHeaders(goopts)
-	ctx.SetImporters(goopts)
-	ctx.SetFunc(goopts)
+	ctx.Headers.Bind(goopts)
+	ctx.Imports.Bind(goopts)
+	ctx.Funcs.Bind(goopts)
 	libs.SetIncludePaths(goopts, ctx.IncludePaths)
 	libs.SassOptionSetPrecision(goopts, ctx.Precision)
 	libs.SassOptionSetOutputStyle(goopts, ctx.OutputStyle)

@@ -10,7 +10,7 @@ import (
 func TestFile_resolved(t *testing.T) {
 	path := "test/scss/main.scss"
 	var out bytes.Buffer
-	ctx := Context{}
+	ctx := NewContext()
 	err := ctx.FileCompile(path, &out)
 	if err != nil {
 		panic(err)

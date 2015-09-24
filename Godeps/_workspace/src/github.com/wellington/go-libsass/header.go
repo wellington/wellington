@@ -7,17 +7,52 @@ import (
 	"github.com/wellington/go-libsass/libs"
 )
 
-func (ctx *Context) SetHeaders(opts libs.SassOptions) {
+var globalHeaders []string
+
+// RegisterHeader fifo
+func RegisterHeader(body string) {
+	ghMu.Lock()
+	globalHeaders = append(globalHeaders, body)
+	ghMu.Unlock()
+}
+
+type Header struct {
+	idx     *string
+	Content string
+}
+
+type Headers struct {
+	wg      sync.WaitGroup
+	closing chan struct{}
+	sync.RWMutex
+	h []Header
+	// idx is a pointer for libsass to lookup these Headers
+	idx *string
+}
+
+// NewHeaders instantiates a Headers for prefixing Sass to input
+// See: https://github.com/sass/libsass/wiki/API-Sass-Importer
+func NewHeaders() *Headers {
+	h := &Headers{
+		closing: make(chan struct{}),
+	}
+	return h
+}
+
+func (hdrs *Headers) Bind(opts libs.SassOptions) {
 	// Push the headers into the local array
+	ghMu.RLock()
 	for _, gh := range globalHeaders {
-		if !ctx.Headers.Has(gh) {
-			ctx.Headers.Add(gh)
+		if !hdrs.Has(gh) {
+			hdrs.Add(gh)
 		}
 	}
+	ghMu.RUnlock()
 
 	// Loop through headers creating ImportEntry
-	entries := make([]libs.ImportEntry, ctx.Headers.Len())
-	for i, ent := range ctx.Headers.h {
+	entries := make([]libs.ImportEntry, hdrs.Len())
+	hdrs.RLock()
+	for i, ent := range hdrs.h {
 		uniquename := "hdr" + strconv.FormatInt(int64(i), 10)
 		entries[i] = libs.ImportEntry{
 			// Each entry requires a unique identifier
@@ -27,16 +62,16 @@ func (ctx *Context) SetHeaders(opts libs.SassOptions) {
 			SrcMap: "",
 		}
 	}
-	libs.BindHeader(opts, entries)
+	hdrs.RUnlock()
+	// Preserve reference to libs address to these entries
+	hdrs.idx = libs.BindHeader(opts, entries)
 }
 
-type Header struct {
-	Content string
-}
-
-type Headers struct {
-	sync.RWMutex
-	h []Header
+func (hdrs *Headers) Close() {
+	// Clean up memory reserved for headers
+	libs.RemoveHeaders(hdrs.idx)
+	close(hdrs.closing)
+	hdrs.wg.Wait()
 }
 
 func (h *Headers) Add(s string) {
@@ -59,11 +94,4 @@ func (h *Headers) Has(s string) bool {
 
 func (h *Headers) Len() int {
 	return len(h.h)
-}
-
-var globalHeaders []string
-
-// RegisterHeader fifo
-func RegisterHeader(body string) {
-	globalHeaders = append(globalHeaders, body)
 }

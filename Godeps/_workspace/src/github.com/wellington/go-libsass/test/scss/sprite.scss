@@ -1,0 +1,7 @@
+$sprites: sprite-map("../img/*.png");
+$width: sprite-width($sprites, 139);
+div {
+    height: image-height(sprite-file($sprites, "139"));
+    width: image-width(sprite-file($sprites, "139"));
+	background: sprite($sprites, "139");
+}
