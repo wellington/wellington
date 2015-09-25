@@ -66,10 +66,7 @@ func testSprite(ctx *libsass.Context) {
 	if err != nil {
 		panic(err)
 	}
-	_, err = imgs.Combine()
-	if err != nil {
-		panic(err)
-	}
+	imgs.Combine()
 }
 
 func setupCtx(r io.Reader, out io.Writer /*, cookies ...libsass.Cookie*/) (*libsass.Context, libsass.SassValue, error) {
