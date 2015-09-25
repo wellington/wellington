@@ -11,4 +11,4 @@ libsass-src
 .wercker
 *.cov
 profile.cov
-sprite.prof
+*.prof

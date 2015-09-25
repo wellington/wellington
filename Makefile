@@ -33,11 +33,6 @@ home:
 homewatch:
 	go run wt/main.go --watch -font $(guipath)/font-face -gen $(guipath)/build/im -b $(guipath)/build/css/ -p $(guipath)/sass -d $(guipath)/im/sass $(guipath)/sass/_pages/home.scss
 
-profile: install
-	wt --cpuprofile=wt.prof -gen $(guipath)/build/im -font $(guipath)/font-face -b $(guipath)/build/css/ -p $(guipath)/sass -d $(guipath)/im/sass $(FILES)
-	go tool pprof --png $(GOPATH)/bin/wt wt.prof > profile.png
-	open profile.png
-
 $(LASTGOPATH)/bin/godep:
 	go get github.com/tools/godep
 
@@ -96,6 +91,8 @@ compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
 save:
 	cd libsass-src; git rev-parse HEAD > ../.libsass_version
+profile: #install
+	scripts/profile.sh
 swift: install
 	scripts/swift.sh
 watch: install
