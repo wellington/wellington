@@ -351,8 +351,7 @@ func Run(cmd *cobra.Command, files []string) {
 			wg.Add(1)
 			sassPaths[i] = filepath.Dir(f)
 			go func(f string, gba wt.BuildArgs, pMap *wt.SafePartialMap) {
-				ppMap := wt.NewPartialMap()
-				err := wt.LoadAndBuild(f, gba, ppMap)
+				err := wt.LoadAndBuild(f, gba, pMap)
 				defer wg.Done()
 				if err != nil {
 					log.Println(err)
@@ -365,8 +364,8 @@ func Run(cmd *cobra.Command, files []string) {
 		for i, f := range files {
 			wg.Add(1)
 			sassPaths[i] = filepath.Dir(f)
-			ppMap := wt.NewPartialMap()
-			err := wt.LoadAndBuild(f, gba, ppMap)
+			// ppMap := wt.NewPartialMap()
+			err := wt.LoadAndBuild(f, gba, pMap)
 			defer wg.Done()
 			if err != nil {
 				log.Println(err)

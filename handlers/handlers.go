@@ -71,7 +71,7 @@ func ImageHeight(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) e
 		glob = infs[0].(string)
 		name = infs[1].(string)
 	}
-	imgs := sw.ImageList{
+	imgs := &sw.ImageList{
 		ImageDir:  ctx.ImageDir,
 		BuildDir:  ctx.BuildDir,
 		GenImgDir: ctx.GenImgDir,
@@ -145,7 +145,7 @@ func ImageWidth(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) er
 		glob = infs[0].(string)
 		name = infs[1].(string)
 	}
-	imgs := sw.ImageList{
+	imgs := &sw.ImageList{
 		ImageDir:  ctx.ImageDir,
 		BuildDir:  ctx.BuildDir,
 		GenImgDir: ctx.GenImgDir,

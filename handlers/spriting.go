@@ -179,7 +179,7 @@ func SpriteMap(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) err
 	if err != nil {
 		return setErrorAndReturn(err, rsv)
 	}
-	imgs := sw.ImageList{
+	imgs := &sw.ImageList{
 		ImageDir:  ctx.ImageDir,
 		BuildDir:  ctx.BuildDir,
 		GenImgDir: ctx.GenImgDir,
@@ -219,15 +219,9 @@ func SpriteMap(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) err
 	if err != nil {
 		return setErrorAndReturn(err, rsv)
 	}
-	_, err = imgs.Combine()
-	if err != nil {
-		return setErrorAndReturn(err, rsv)
-	}
+	imgs.Combine()
 
-	_, err = imgs.Export()
-	if err != nil {
-		return setErrorAndReturn(err, rsv)
-	}
+	go imgs.Export()
 
 	res, err := libsass.Marshal(key)
 	sprites.Lock()
