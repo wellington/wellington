@@ -419,7 +419,8 @@ func Run(cmd *cobra.Command, files []string) {
 			}
 		}
 		img.Wait()
-		log.Println(time.Since(flush))
+		_ = flush
+		// log.Println("Extra time spent flushing images to disk: ", time.Since(flush))
 		pMap.RUnlock()
 	}
 }
