@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -56,17 +57,17 @@ func wrapCallback(sc libsass.HandlerFunc, ch chan libsass.SassValue) libs.SassCa
 
 func testSprite(ctx *libsass.Context) {
 	// Generate test sprite
-	imgs := spritewell.ImageList{
+	imgs := spritewell.New(&spritewell.Options{
 		ImageDir:  ctx.ImageDir,
 		BuildDir:  ctx.BuildDir,
 		GenImgDir: ctx.GenImgDir,
-	}
+	})
 	glob := "*.png"
 	err := imgs.Decode(glob)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	imgs.Combine()
+
 }
 
 func setupCtx(r io.Reader, out io.Writer /*, cookies ...libsass.Cookie*/) (*libsass.Context, libsass.SassValue, error) {
@@ -100,7 +101,7 @@ func setupCtx(r io.Reader, out io.Writer /*, cookies ...libsass.Cookie*/) (*libs
 	go func() {
 		select {
 		case <-time.After(1 * time.Second):
-			panic("timeout")
+			log.Fatal("timeout")
 		case <-done:
 			return
 		}
@@ -445,7 +446,7 @@ div {
 
 	// Output:
 	// div {
-	//   background: url("img/ec0dbb.png") 0px -149px; }
+	//   background: url("img/4f0c6e.png") 0px -149px; }
 }
 
 func TestHandle_offset(t *testing.T) {
@@ -468,7 +469,7 @@ div {
 	}
 
 	e := `div {
-  background: url("img/ec0dbb.png") 10px -139px; }
+  background: url("img/4f0c6e.png") 10px -139px; }
 `
 	if e != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
@@ -533,7 +534,7 @@ div {
 		t.Error(err)
 	}
 	e := `div {
-  background: url("http://foo.com/build/ec0dbb.png") 0px -149px; }
+  background: url("http://foo.com/build/4f0c6e.png") 0px -149px; }
 `
 	if e != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
@@ -566,11 +567,11 @@ div {
 	}
 
 	e := `div {
-  background: url("img/617970.png") 0px 0px;
-  background: url("img/617970.png") 0px -150px;
-  background: url("img/617970.png") 0px -300px;
-  background: url("img/617970.png") 0px -450px;
-  background: url("img/617970.png") 0px -600px; }
+  background: url("img/744d97.png") 0px 0px;
+  background: url("img/744d97.png") 0px -150px;
+  background: url("img/744d97.png") 0px -300px;
+  background: url("img/744d97.png") 0px -450px;
+  background: url("img/744d97.png") 0px -600px; }
 `
 
 	if out.String() != e {
