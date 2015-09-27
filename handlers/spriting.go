@@ -220,7 +220,10 @@ func SpriteMap(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) err
 		return setErrorAndReturn(err, rsv)
 	}
 
-	imgs.Export()
+	path, err := imgs.Export()
+	if err != nil {
+		return setErrorAndReturn(err, rsv)
+	}
 
 	res, err := libsass.Marshal(key)
 	sprites.Lock()
