@@ -165,20 +165,57 @@ func TestSpriteGlob(t *testing.T) {
 	}
 }
 
+// ExampleSprite shows how to take all the images matching the glob
+// and creating a sprite image in ./test/build/img.
 func ExampleSprite() {
-	// This shouldn't be part of spritewell
+	imgs := New(&Options{
+		ImageDir:  ".",
+		BuildDir:  "test/build",
+		GenImgDir: "test/build/img",
+	})
+	err := imgs.Decode("test/1*.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(imgs)
+
+	// Export will start the process of writing the sprite to disk
+	of, err := imgs.Export()
+	if err != nil {
+		log.Fatal(err)
+	}
+	_ = of
+	// Calls are non-blocking, use Wait() to ensure image encoding has
+	// completed and results are flushed to disk.
+	imgs.Wait()
+
+	// Output:
+	// img/68ca3a.png
+}
+
+// ExampleSpritePosition shows how to find the position of an image
+// in the the spritesheet.
+func ExampleSpritePosition() {
+
 	imgs := New(&Options{
 		ImageDir:  ".",
 		BuildDir:  "test/build",
 		GenImgDir: "test/build/img",
 	})
 
-	imgs.Decode("test/*.png")
-	of, _ := imgs.OutputPath()
-	fmt.Println(of)
+	err := imgs.Decode("test/1*.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	pos := imgs.GetPack(imgs.Lookup("140"))
+
+	fmt.Printf(`background: url("%s") -%dpx -%dpx no-repeat;`,
+		imgs, pos.X, pos.Y)
 
 	// Output:
-	// img/dbf3ef.png
+	// background: url("img/68ca3a.png") -0px -139px no-repeat;
 }
 
 func TestSpriteDecode_fail(t *testing.T) {

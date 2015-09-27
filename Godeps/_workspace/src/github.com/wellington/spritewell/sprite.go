@@ -28,8 +28,6 @@ var ErrNoImages = errors.New("no images matched for pattern")
 
 var formats = []string{".png", ".gif", ".jpg"}
 
-type GoImages []image.Image
-
 type Sprite struct {
 	buf bytes.Buffer
 
@@ -38,9 +36,9 @@ type Sprite struct {
 
 	goImagesMu sync.RWMutex
 	len        int
-	GoImages   GoImages
+	imgs       []image.Image
 
-	outFileMu sync.Mutex
+	outFileMu sync.RWMutex
 	outFile   string
 
 	combineMu sync.Mutex
@@ -73,12 +71,13 @@ func New(opts *Options) *Sprite {
 		opts:     opts,
 		done:     make(chan error),
 	}
+
 	go l.loopAndCombine(l.queue, l.combined)
 	return l
 }
 
 type work struct {
-	imgs GoImages
+	imgs []image.Image
 	pos  Pos
 	pack string
 }
@@ -114,18 +113,6 @@ func funnyNames() string {
 	return names[mrand.Intn(len(names))]
 }
 
-// String generates CSS path to output file
-func (l *Sprite) String() string {
-	paths := ""
-	l.globMu.RLock()
-	defer l.globMu.RUnlock()
-	for _, path := range l.paths {
-		path += strings.TrimSuffix(filepath.Base(path),
-			filepath.Ext(path)) + " "
-	}
-	return paths
-}
-
 func (l *Sprite) Paths() []string {
 	l.globMu.RLock()
 	defer l.globMu.RUnlock()
@@ -154,7 +141,10 @@ func (l *Sprite) Lookup(f string) int {
 	var base string
 	pos := -1
 	l.globMu.RLock()
-	for i, v := range l.paths {
+	paths := l.paths
+	l.globMu.RUnlock()
+
+	for i, v := range paths {
 		base = filepath.Base(v)
 		base = strings.TrimSuffix(base, filepath.Ext(v))
 		if f == v {
@@ -164,7 +154,6 @@ func (l *Sprite) Lookup(f string) int {
 			pos = i
 		}
 	}
-	l.globMu.RUnlock()
 
 	return pos
 
@@ -208,7 +197,7 @@ func (l *Sprite) ImageWidth(pos int) int {
 	}
 	l.goImagesMu.RLock()
 	defer l.goImagesMu.RUnlock()
-	return l.GoImages[pos].Bounds().Dx()
+	return l.imgs[pos].Bounds().Dx()
 }
 
 func (l *Sprite) SImageHeight(s string) int {
@@ -224,7 +213,7 @@ func (l *Sprite) ImageHeight(pos int) int {
 	}
 	l.goImagesMu.RLock()
 	defer l.goImagesMu.RUnlock()
-	return l.GoImages[pos].Bounds().Dy()
+	return l.imgs[pos].Bounds().Dy()
 }
 
 // Dimensions is the total W,H pixels of the generate sprite
@@ -233,14 +222,33 @@ func (l *Sprite) Dimensions() Pos {
 	return l.GetPack(l.Len())
 }
 
+// String is a convenience wrapper to OutputPath returning the
+// relative path to the generated sprite from the build directory.
+func (l *Sprite) String() string {
+	path, err := l.OutputPath()
+	if err != nil {
+		return ""
+	}
+	return path
+}
+
 // OutputPath generates a unique filename based on the relative path
 // from image directory to build directory and the files matched in
 // the glob lookup.  OutputPath is not cache safe.
 func (l *Sprite) OutputPath() (string, error) {
-	l.outFileMu.Lock()
-	defer l.outFileMu.Unlock()
-	if len(l.outFile) > 0 {
+	l.outFileMu.RLock()
+	outFile := l.outFile
+	l.outFileMu.RUnlock()
+	// Pull cached output path
+	if len(outFile) > 0 {
 		return l.outFile, nil
+	}
+
+	l.globMu.RLock()
+	globs := l.globs
+	l.globMu.RUnlock()
+	if len(globs) == 0 {
+		return "", ErrNoImages
 	}
 
 	l.optsMu.RLock()
@@ -257,16 +265,16 @@ func (l *Sprite) OutputPath() (string, error) {
 	}
 
 	hasher := md5.New()
-	l.globMu.RLock()
-	if len(l.globs) == 0 {
-		return "", ErrNoImages
-	}
-	seed := pack + strconv.Itoa(padding) + "|" + filepath.ToSlash(path+strings.Join(l.globs, "|"))
-	l.globMu.RUnlock()
+	seed := pack + strconv.Itoa(padding) + "|" +
+		filepath.ToSlash(path+strings.Join(globs, "|"))
 	hasher.Write([]byte(seed))
 	salt := hex.EncodeToString(hasher.Sum(nil))[:6]
-	l.outFile = filepath.Join(path, salt+".png")
-	return l.outFile, nil
+	outFile = filepath.Join(path, salt+".png")
+
+	l.outFileMu.Lock()
+	l.outFile = outFile
+	l.outFileMu.Unlock()
+	return outFile, nil
 }
 
 // Decode accepts a variable number of glob patterns.  The ImageDir
@@ -278,10 +286,12 @@ func (l *Sprite) Decode(rest ...string) error {
 		paths []string
 		rels  []string
 	)
+
 	l.optsMu.RLock()
 	absImageDir, _ := filepath.Abs(l.opts.ImageDir)
 	relImageDir := l.opts.ImageDir
 	l.optsMu.RUnlock()
+
 	for _, r := range rest {
 		matches, err := filepath.Glob(filepath.Join(relImageDir, r))
 		if err != nil {
@@ -307,19 +317,24 @@ func (l *Sprite) Decode(rest ...string) error {
 		rels = append(rels, rel...)
 		paths = append(paths, matches...)
 	}
+
 	// turn paths into relative paths to the files
+	if len(rels) == 0 {
+		return ErrNoImages
+	}
+
 	l.globMu.Lock()
 	l.paths = rels
 	l.globs = paths
 	l.globMu.Unlock()
 
-	l.goImagesMu.Lock()
+	imgs := make([]image.Image, 0, len(paths))
 	for _, path := range paths {
 		f, err := os.Open(path)
 		if err != nil {
 			return err
 		}
-		goimg, _, err := image.Decode(f)
+		img, _, err := image.Decode(f)
 		if err != nil {
 			ext := filepath.Ext(path)
 			if !CanDecode(ext) {
@@ -328,15 +343,15 @@ func (l *Sprite) Decode(rest ...string) error {
 				return fmt.Errorf("Error processing: %s\n%s", path, err)
 			}
 		}
-		l.GoImages = append(l.GoImages, goimg)
+		imgs = append(imgs, img)
 	}
-	l.len = len(l.GoImages)
+
+	l.goImagesMu.Lock()
+	l.imgs = imgs
+	l.len = len(imgs)
 	l.goImagesMu.Unlock()
 
-	if len(l.paths) == 0 {
-		return ErrNoImages
-	}
-	l.queue <- work{pos: l.Dimensions(), imgs: l.GoImages}
+	l.queue <- work{pos: l.Dimensions(), imgs: imgs}
 	return nil
 }
 
@@ -422,15 +437,15 @@ func (l *Sprite) PackVertical(pos int) Pos {
 	if pos == numimages {
 		y -= padding
 	}
+	l.goImagesMu.RLock()
 	for i := 1; i <= pos; i++ {
-		l.goImagesMu.RLock()
-		rect = l.GoImages[i-1].Bounds()
-		l.goImagesMu.RUnlock()
+		rect = l.imgs[i-1].Bounds()
 		y += rect.Dy()
 		if pos == numimages {
 			x = int(math.Max(float64(x), float64(rect.Dx())))
 		}
 	}
+	l.goImagesMu.RUnlock()
 
 	return Pos{
 		x, y,
@@ -457,7 +472,7 @@ func (l *Sprite) PackHorizontal(pos int) Pos {
 	}
 	for i := 1; i <= pos; i++ {
 		l.goImagesMu.RLock()
-		rect = l.GoImages[i-1].Bounds()
+		rect = l.imgs[i-1].Bounds()
 		l.goImagesMu.RUnlock()
 		x += rect.Dx()
 		if pos == numimages {
@@ -487,10 +502,16 @@ func (l *Sprite) export() (*os.File, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	os.MkdirAll(filepath.Dir(opath), 0755)
 	l.optsMu.RLock()
-	abs := filepath.Join(l.opts.GenImgDir, filepath.Base(opath))
+	abs, err := filepath.Abs(filepath.Join(l.opts.GenImgDir,
+		filepath.Base(opath)))
 	l.optsMu.RUnlock()
+
+	err = os.MkdirAll(filepath.Dir(abs), 0755)
+	if err != nil {
+		return nil, "", err
+	}
+
 	fo, err := os.Create(abs)
 	if err != nil {
 		if _, err := os.Stat(abs); err == nil {
@@ -503,8 +524,8 @@ func (l *Sprite) export() (*os.File, string, error) {
 
 // Export returns the output path of the combined sprite and flushes
 // the sprite to disk. This method does not block on disk I/O. See Wait
-func (s *Sprite) Export() (path string, err error) {
-	of, path, err := s.export()
+func (s *Sprite) Export() (abs string, err error) {
+	of, abs, err := s.export()
 	if err != nil {
 		return
 	}

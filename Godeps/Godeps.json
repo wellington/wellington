@@ -37,8 +37,8 @@
 		},
 		{
 			"ImportPath": "github.com/wellington/spritewell",
-			"Comment": "v0.4.0-40-g1865832",
-			"Rev": "186583237eeca2896978f3dc1cecc184b306f44f"
+			"Comment": "v0.4.0-41-gd9b4d50",
+			"Rev": "d9b4d50f39c52044ac26f509092b1a89f3623b74"
 		},
 		{
 			"ImportPath": "gopkg.in/fsnotify.v1",
