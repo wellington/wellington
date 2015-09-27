@@ -71,11 +71,11 @@ func ImageHeight(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) e
 		glob = infs[0].(string)
 		name = infs[1].(string)
 	}
-	imgs := sw.ImageList{
+	imgs := sw.New(&sw.Options{
 		ImageDir:  ctx.ImageDir,
 		BuildDir:  ctx.BuildDir,
 		GenImgDir: ctx.GenImgDir,
-	}
+	})
 
 	payload, ok := ctx.Payload.(sw.Imager)
 	if !ok {
@@ -90,7 +90,6 @@ func ImageHeight(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) e
 			imgs = hit
 		} else {
 			imgs.Decode(name)
-			imgs.Combine()
 			images.Lock()
 			images.M[name] = imgs
 			images.Unlock()
@@ -145,11 +144,11 @@ func ImageWidth(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) er
 		glob = infs[0].(string)
 		name = infs[1].(string)
 	}
-	imgs := sw.ImageList{
+	imgs := sw.New(&sw.Options{
 		ImageDir:  ctx.ImageDir,
 		BuildDir:  ctx.BuildDir,
 		GenImgDir: ctx.GenImgDir,
-	}
+	})
 
 	payload, ok := ctx.Payload.(sw.Imager)
 	if !ok {
@@ -165,7 +164,6 @@ func ImageWidth(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) er
 			imgs = hit
 		} else {
 			imgs.Decode(name)
-			imgs.Combine()
 			images.Lock()
 			images.M[name] = imgs
 			images.Unlock()

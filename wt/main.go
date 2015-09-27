@@ -351,8 +351,7 @@ func Run(cmd *cobra.Command, files []string) {
 			wg.Add(1)
 			sassPaths[i] = filepath.Dir(f)
 			go func(f string, gba wt.BuildArgs, pMap *wt.SafePartialMap) {
-				ppMap := wt.NewPartialMap()
-				err := wt.LoadAndBuild(f, gba, ppMap)
+				err := wt.LoadAndBuild(f, gba, pMap)
 				defer wg.Done()
 				if err != nil {
 					log.Println(err)
@@ -360,14 +359,13 @@ func Run(cmd *cobra.Command, files []string) {
 				}
 			}(f, gba, pMap)
 		}
-		defer wg.Wait()
 	} else {
 		for i, f := range files {
 			wg.Add(1)
 			sassPaths[i] = filepath.Dir(f)
-			ppMap := wt.NewPartialMap()
-			err := wt.LoadAndBuild(f, gba, ppMap)
-			defer wg.Done()
+			// ppMap := wt.NewPartialMap()
+			err := wt.LoadAndBuild(f, gba, pMap)
+			wg.Done()
 			if err != nil {
 				log.Println(err)
 				os.Exit(1)
@@ -394,5 +392,35 @@ func Run(cmd *cobra.Command, files []string) {
 				fmt.Println("error", err)
 			}
 		}
+	} else {
+		wg.Wait()
+
+		// Before shutting down, check that every sprite has been
+		// flushed to disk.
+		flush := time.Now()
+		img := sync.WaitGroup{}
+		pMap.RLock()
+		// It's not currently possible to wait on Image. This is often
+		// to inline images, so it shouldn't be a factor...
+		/*for _, s := range gba.Payload.Image().M {
+			img.Add(1)
+			err := s.Wait()
+			img.Done()
+			if err != nil {
+				log.Printf("error writing image: %s\n", err)
+			}
+		}*/
+		for _, s := range gba.Payload.Sprite().M {
+			img.Add(1)
+			err := s.Wait()
+			img.Done()
+			if err != nil {
+				log.Printf("error writing sprite: %s\n", err)
+			}
+		}
+		img.Wait()
+		_ = flush
+		// log.Println("Extra time spent flushing images to disk: ", time.Since(flush))
+		pMap.RUnlock()
 	}
 }
