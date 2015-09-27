@@ -14,22 +14,18 @@ Wellington adds spriting to the lightning fast [libsass](http://libsass.org/). N
 
 Benchmarks
 ```
-# Vanilla Sass from sass-spec
-wt vanilla_css_huge.scss        0.10s user 0.01s system 98% cpu 0.120 total
-compass vanilla_css_huge.scss   0.27s user 0.04s system 98% cpu 0.315 total
-# 2.7x speedup
+# 40,000 line of code Sass project with 1200 images
+wt         4.462s
+compass   73.800s
+# 16.5x faster!
 ```
 
-```
-# 40,000 line of code Sass project
-wt        14.935s
-compass   73.800s
-# 5x speedup!
-```
+For more benchmarks, see [realbench](https://github.com/wellington/realbench#results-early-2015-macbook-pro)
 
 #### What it does
 
-wt is a Sass preprocessor that compiles Sass to CSS. wt supports many image operations not supported by the Sass lanaguge. It can take a directory of images, compose them into a sprite, and create CSS valid references to those images.
+wt is a Sass preprocessor tool geared towards projects written in Sass. It focuses on tasks that make working on a Sass site friendlier and much faster. wt extends the Sass language to include spriting and image operations not currently possible in the core language.
+
 ```
 $images: sprite-map("sprites/*.png");
 div {
