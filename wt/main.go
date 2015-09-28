@@ -158,7 +158,7 @@ func main() {
 }
 
 // Run is the main entrypoint for the cli.
-func Run(cmd *cobra.Command, files []string) {
+func Run(cmd *cobra.Command, paths []string) {
 
 	start := time.Now()
 
@@ -199,7 +199,7 @@ func Run(cmd *cobra.Command, files []string) {
 		}()
 	}
 
-	for _, v := range files {
+	for _, v := range paths {
 		if strings.HasPrefix(v, "-") {
 			log.Fatalf("Please specify flags before other arguments: %s", v)
 		}
@@ -311,20 +311,20 @@ func Run(cmd *cobra.Command, files []string) {
 		pat := filepath.Join(includes, "**/*.scss")
 		rotFiles, _ := filepath.Glob(rot)
 		patFiles, _ := filepath.Glob(pat)
-		files = append(rotFiles, patFiles...)
+		paths = append(rotFiles, patFiles...)
 		// Probably a better way to do this, but I'm impatient
 
-		clean := make([]string, 0, len(files))
+		clean := make([]string, 0, len(paths))
 
-		for _, file := range files {
-			if !strings.HasPrefix(filepath.Base(file), "_") {
-				clean = append(clean, file)
+		for _, p := range paths {
+			if !strings.HasPrefix(filepath.Base(p), "_") {
+				clean = append(clean, p)
 			}
 		}
-		files = clean
+		paths = clean
 	}
 
-	if len(files) == 0 && len(config) == 0 {
+	if !watch && len(paths) == 0 && len(config) == 0 {
 
 		// Read from stdin
 		fmt.Println("Reading from stdin, -h for help")
@@ -345,9 +345,9 @@ func Run(cmd *cobra.Command, files []string) {
 	}
 
 	var wg sync.WaitGroup
-	sassPaths := make([]string, len(files))
+	sassPaths := make([]string, len(paths))
 	if multi {
-		for i, f := range files {
+		for i, f := range paths {
 			wg.Add(1)
 			sassPaths[i] = filepath.Dir(f)
 			go func(f string, gba wt.BuildArgs, pMap *wt.SafePartialMap) {
@@ -360,9 +360,14 @@ func Run(cmd *cobra.Command, files []string) {
 			}(f, gba, pMap)
 		}
 	} else {
-		for i, f := range files {
+		for i, f := range paths {
+			// Hacky way to check if this is a directory
+			dir := filepath.Dir(f)
+			sassPaths[i] = dir
+			if dir == f {
+				continue
+			}
 			wg.Add(1)
-			sassPaths[i] = filepath.Dir(f)
 			// ppMap := wt.NewPartialMap()
 			err := wt.LoadAndBuild(f, gba, pMap)
 			wg.Done()
@@ -375,10 +380,12 @@ func Run(cmd *cobra.Command, files []string) {
 	}
 
 	if watch {
-		w := wt.NewWatcher()
-		w.PartialMap = pMap
-		w.Dirs = sassPaths
-		w.BArgs = gba
+		w := wt.NewWatcher(&wt.WatchOptions{
+			// TODO: not currently used
+			PartialMap: pMap,
+			Dirs:       sassPaths,
+			BArgs:      gba,
+		})
 		w.Watch()
 
 		fmt.Println("File watcher started use `ctrl+d` to exit")

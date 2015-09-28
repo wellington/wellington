@@ -48,22 +48,25 @@ func NewBuildArgs() BuildArgs {
 // GlobalBuildArgs contains build args that apply to all sass files.
 type Watcher struct {
 	FileWatcher *fsnotify.Watcher
-	PartialMap  *SafePartialMap
-	Dirs        []string
-	BArgs       BuildArgs
+	opts        *WatchOptions
+}
+
+type WatchOptions struct {
+	PartialMap *SafePartialMap
+	Dirs       []string
+	BArgs      BuildArgs
 }
 
 // NewWatcher returns a new watcher pointer
-func NewWatcher() *Watcher {
+func NewWatcher(opts *WatchOptions) *Watcher {
 	var fswatcher *fsnotify.Watcher
 	fswatcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	w := &Watcher{
+		opts:        opts,
 		FileWatcher: fswatcher,
-		PartialMap:  NewPartialMap(),
 	}
 
 	return w
@@ -101,10 +104,10 @@ func (p *SafePartialMap) AddRelation(mainfile string, subfile string) {
 // SW object that begins monitoring for file changes and triggering
 // top level sass rebuilds.
 func (w *Watcher) Watch() error {
-	if w.PartialMap == nil {
-		w.PartialMap = NewPartialMap()
+	if w.opts.PartialMap == nil {
+		w.opts.PartialMap = NewPartialMap()
 	}
-	if len(w.Dirs) == 0 {
+	if len(w.opts.Dirs) == 0 {
 		return errors.New("No directories to watch")
 	}
 	err := w.watchFiles()
@@ -118,8 +121,9 @@ func (w *Watcher) Watch() error {
 func (w *Watcher) watchFiles() error {
 	var err error
 	//Watch the dirs of all sass partials
-	w.PartialMap.RLock()
-	for k := range w.PartialMap.M {
+	w.opts.PartialMap.RLock()
+	fmt.Printf("% #v\n", w.opts.PartialMap.M)
+	for k := range w.opts.PartialMap.M {
 		dir := filepath.Dir(k)
 		_, err = os.Stat(dir)
 		if !os.IsNotExist(err) && filepath.IsAbs(dir) {
@@ -129,11 +133,11 @@ func (w *Watcher) watchFiles() error {
 			}
 		}
 	}
-	w.PartialMap.RUnlock()
+	w.opts.PartialMap.RUnlock()
 
 	//Watch the dirs of all top level files
-	for k := range w.Dirs {
-		err := w.watch(w.Dirs[k])
+	for k := range w.opts.Dirs {
+		err := w.watch(w.opts.Dirs[k])
 		if err != nil {
 			return err
 		}
@@ -182,7 +186,7 @@ func (w *Watcher) rebuild(eventFileName string) error {
 	// 		return err
 	// 	}
 	// }
-	w.PartialMap.RLock()
+	w.opts.PartialMap.RLock()
 	go func(paths []string) {
 		rebuildMu.RLock()
 		if rebuildChan != nil {
@@ -191,7 +195,7 @@ func (w *Watcher) rebuild(eventFileName string) error {
 		rebuildMu.RUnlock()
 		for i := range paths {
 			// TODO: do this in a new goroutine
-			err := LoadAndBuild(paths[i], w.BArgs, w.PartialMap)
+			err := LoadAndBuild(paths[i], w.opts.BArgs, w.opts.PartialMap)
 			if err != nil {
 				log.Println(err)
 				if errChan != nil {
@@ -199,8 +203,8 @@ func (w *Watcher) rebuild(eventFileName string) error {
 				}
 			}
 		}
-	}(w.PartialMap.M[eventFileName])
-	w.PartialMap.RUnlock()
+	}(w.opts.PartialMap.M[eventFileName])
+	w.opts.PartialMap.RUnlock()
 	return nil
 }
 
