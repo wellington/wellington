@@ -83,7 +83,7 @@ func TestNewBuild_dir(t *testing.T) {
 
 }
 
-func ExampleBuild() {
+func ExampleLoadAndBuild() {
 	err := LoadAndBuild("test/sass/file.scss", &BuildArgs{}, NewPartialMap())
 	if err != nil {
 		log.Fatal(err)
