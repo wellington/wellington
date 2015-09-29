@@ -45,6 +45,9 @@ func isImportable(name string) bool {
 func recursePath(path string) ([]string, error) {
 	var paths []string
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if info == nil {
+			return fmt.Errorf("invalid file found: %s", path)
+		}
 		if !info.IsDir() && isImportable(info.Name()) {
 			paths = append(paths, path)
 		}
