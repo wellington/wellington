@@ -51,12 +51,14 @@ type Watcher struct {
 	opts        *WatchOptions
 }
 
+// WatchOptions containers the necessary parameters to run the file watcher
 type WatchOptions struct {
 	PartialMap *SafePartialMap
 	Paths      []string
 	BArgs      *BuildArgs
 }
 
+// NewWatchOptions returns a new WatchOptions
 func NewWatchOptions() *WatchOptions {
 	return &WatchOptions{
 		PartialMap: NewPartialMap(),

@@ -13,6 +13,9 @@ import (
 	libsass "github.com/wellington/go-libsass"
 )
 
+// BuildOptions holds a set of read only arguments to the builder.
+// Channels from this are used to communicate between the workers
+// and loaders executing builds.
 type BuildOptions struct {
 	wg      sync.WaitGroup
 	closing chan struct{}
@@ -29,6 +32,7 @@ type BuildOptions struct {
 	PartialMap *SafePartialMap
 }
 
+// NewBuild accepts arguments to reate a new Builder
 func NewBuild(paths []string, args *BuildArgs, pMap *SafePartialMap, async bool) *BuildOptions {
 	return &BuildOptions{
 		done:   make(chan error),
