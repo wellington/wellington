@@ -11,4 +11,4 @@ EXPOSE 12345
 VOLUME "/data"
 WORKDIR /data
 
-CMD wt serve --sass-dir /data/sass --images-dir /data/img -b /data/build --gen /data/build/img
+CMD wt compile --images-dir /data/img -b /data/build --gen /data/build/img /data/sass
