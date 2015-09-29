@@ -13,7 +13,9 @@ import (
 func TestRebuild(t *testing.T) {
 	var f *os.File
 	log.SetOutput(f)
-	wc := NewWatcher()
+	wc := NewWatcher(&WatchOptions{
+		PartialMap: NewPartialMap(),
+	})
 	go func(t *testing.T) {
 		select {
 		case err := <-errChan:
@@ -46,10 +48,12 @@ func TestRebuild_watch(t *testing.T) {
 	rebuildMu.Lock()
 	rebuildChan = make(chan []string, 1)
 	rebuildMu.Unlock()
-
-	w := NewWatcher()
-	w.Dirs = []string{tdir}
-	w.PartialMap.AddRelation("tswif", tfile)
+	pMap := NewPartialMap()
+	pMap.AddRelation("tswif", tfile)
+	w := NewWatcher(&WatchOptions{
+		Paths:      []string{tdir},
+		PartialMap: pMap,
+	})
 	err = w.Watch()
 	if err != nil {
 		t.Fatal(err)
@@ -74,7 +78,7 @@ func TestRebuild_watch(t *testing.T) {
 }
 
 func TestWatch(t *testing.T) {
-	w := NewWatcher()
+	w := NewWatcher(NewWatchOptions())
 	err := w.Watch()
 	if err == nil {
 		t.Error("No errors thrown for nil directories")
@@ -82,8 +86,10 @@ func TestWatch(t *testing.T) {
 	w.FileWatcher.Close()
 
 	watcherChan = make(chan string, 1)
-	w = NewWatcher()
-	w.Dirs = []string{"test"}
+	w = NewWatcher(&WatchOptions{
+		Paths:      []string{"test"},
+		PartialMap: NewPartialMap(),
+	})
 	err = w.Watch()
 
 	// Test file creation event

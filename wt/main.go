@@ -381,9 +381,8 @@ func Run(cmd *cobra.Command, paths []string) {
 
 	if watch {
 		w := wt.NewWatcher(&wt.WatchOptions{
-			// TODO: not currently used
 			PartialMap: pMap,
-			Dirs:       sassPaths,
+			Paths:      sassPaths,
 			BArgs:      gba,
 		})
 		w.Watch()

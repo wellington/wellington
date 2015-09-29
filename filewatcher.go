@@ -53,8 +53,14 @@ type Watcher struct {
 
 type WatchOptions struct {
 	PartialMap *SafePartialMap
-	Dirs       []string
+	Paths      []string
 	BArgs      BuildArgs
+}
+
+func NewWatchOptions() *WatchOptions {
+	return &WatchOptions{
+		PartialMap: NewPartialMap(),
+	}
 }
 
 // NewWatcher returns a new watcher pointer
@@ -63,6 +69,9 @@ func NewWatcher(opts *WatchOptions) *Watcher {
 	fswatcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
+	}
+	if opts == nil {
+		opts = &WatchOptions{}
 	}
 	w := &Watcher{
 		opts:        opts,
@@ -107,8 +116,8 @@ func (w *Watcher) Watch() error {
 	if w.opts.PartialMap == nil {
 		w.opts.PartialMap = NewPartialMap()
 	}
-	if len(w.opts.Dirs) == 0 {
-		return errors.New("No directories to watch")
+	if len(w.opts.Paths) == 0 {
+		return errors.New("No paths to watch")
 	}
 	err := w.watchFiles()
 	if err != nil {
@@ -122,7 +131,7 @@ func (w *Watcher) watchFiles() error {
 	var err error
 	//Watch the dirs of all sass partials
 	w.opts.PartialMap.RLock()
-	fmt.Printf("% #v\n", w.opts.PartialMap.M)
+
 	for k := range w.opts.PartialMap.M {
 		dir := filepath.Dir(k)
 		_, err = os.Stat(dir)
@@ -136,8 +145,8 @@ func (w *Watcher) watchFiles() error {
 	w.opts.PartialMap.RUnlock()
 
 	//Watch the dirs of all top level files
-	for k := range w.opts.Dirs {
-		err := w.watch(w.opts.Dirs[k])
+	for k := range w.opts.Paths {
+		err := w.watch(w.opts.Paths[k])
 		if err != nil {
 			return err
 		}
