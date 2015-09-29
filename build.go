@@ -26,10 +26,10 @@ type BuildOptions struct {
 	status chan error
 	queue  chan string
 
-	Async      bool
-	Paths      []string
-	BArgs      *BuildArgs
-	PartialMap *SafePartialMap
+	async      bool
+	paths      []string
+	bArgs      *BuildArgs
+	partialMap *SafePartialMap
 }
 
 // NewBuild accepts arguments to reate a new Builder
@@ -41,19 +41,22 @@ func NewBuild(paths []string, args *BuildArgs, pMap *SafePartialMap, async bool)
 		queue:   make(chan string),
 		closing: make(chan struct{}),
 
-		Paths:      paths,
-		BArgs:      args,
-		PartialMap: pMap,
-		Async:      async,
+		paths:      paths,
+		bArgs:      args,
+		partialMap: pMap,
+		async:      async,
 	}
 }
+
+// ErrParitalMap when no partial map is found
+var ErrPartialMap = errors.New("No partial map found")
 
 // Build compiles all valid Sass files found in the passed paths.
 // It will block until all files are compiled.
 func (b *BuildOptions) Build() error {
 
-	if b.PartialMap == nil {
-		return errors.New("No partial map found")
+	if b.partialMap == nil {
+		return ErrPartialMap
 	}
 
 	b.wg.Add(1)
@@ -68,7 +71,7 @@ func (b *BuildOptions) Build() error {
 }
 
 func (b *BuildOptions) loadWork() {
-	for _, path := range b.Paths {
+	for _, path := range b.paths {
 		b.queue <- path
 	}
 	close(b.queue)
@@ -98,7 +101,7 @@ func (b *BuildOptions) doBuild() {
 }
 
 func (b *BuildOptions) build(path string) error {
-	return LoadAndBuild(path, b.BArgs, b.PartialMap)
+	return LoadAndBuild(path, b.bArgs, b.partialMap)
 }
 
 // Close shuts down the builder ensuring all go routines have properly

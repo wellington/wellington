@@ -3,8 +3,8 @@ package wellington
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"strings"
 	"testing"
@@ -36,31 +36,39 @@ func TestCompileStdin_imports(t *testing.T) {
 
 }
 
-func TestBuild_file(t *testing.T) {
-	oo := os.Stdout
+func TestNewBuild(t *testing.T) {
+	b := NewBuild([]string{"test/sass/error.scss"}, &BuildArgs{}, nil, false)
+	if b == nil {
+		t.Fatal("build is nil")
+	}
 
-	r, w, _ := os.Pipe()
-	os.Stdout = w
+	err := b.Build()
+	if err != ErrPartialMap {
+		t.Errorf("got: %s wanted: %s", err, ErrPartialMap)
+	}
+	b.Close()
+
+	b = NewBuild([]string{"test/sass/file.scss"}, &BuildArgs{}, NewPartialMap(), false)
+
+	err = b.Build()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	err = b.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func ExampleBuild() {
 	err := LoadAndBuild("test/sass/file.scss", &BuildArgs{}, NewPartialMap())
 	if err != nil {
-		t.Error(err)
+		log.Fatal(err)
 	}
-	outC := make(chan string)
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		outC <- buf.String()
-	}()
 
-	w.Close()
-	os.Stdout = oo
-	out := <-outC
-	e := `div {
-  color: black; }
-`
-	if e != out {
-		t.Errorf("got:\n%s\nwanted:\n%s", out, e)
-	}
+	// Output:
+	// div {
+	//   color: black; }
 }
 
 func TestBuild_error(t *testing.T) {
