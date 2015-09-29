@@ -343,44 +343,22 @@ func Run(cmd *cobra.Command, paths []string) {
 		}
 		return
 	}
+	sassPaths := paths
+	bOpts := &wt.BuildOptions{
+		Async:      multi,
+		Paths:      paths,
+		BArgs:      gba,
+		PartialMap: pMap,
+	}
 
-	var wg sync.WaitGroup
-	sassPaths := make([]string, len(paths))
-	if multi {
-		for i, f := range paths {
-			wg.Add(1)
-			sassPaths[i] = filepath.Dir(f)
-			go func(f string, gba wt.BuildArgs, pMap *wt.SafePartialMap) {
-				err := wt.LoadAndBuild(f, gba, pMap)
-				defer wg.Done()
-				if err != nil {
-					log.Println(err)
-					os.Exit(1)
-				}
-			}(f, gba, pMap)
-		}
-	} else {
-		for i, f := range paths {
-			// Hacky way to check if this is a directory
-			dir := filepath.Dir(f)
-			sassPaths[i] = dir
-			if dir == f {
-				continue
-			}
-			wg.Add(1)
-			// ppMap := wt.NewPartialMap()
-			err := wt.LoadAndBuild(f, gba, pMap)
-			wg.Done()
-			if err != nil {
-				log.Println(err)
-				os.Exit(1)
-			}
-		}
-
+	err := bOpts.Build()
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	if watch {
 		w := wt.NewWatcher(&wt.WatchOptions{
+
 			PartialMap: pMap,
 			Paths:      sassPaths,
 			BArgs:      gba,
@@ -399,7 +377,6 @@ func Run(cmd *cobra.Command, paths []string) {
 			}
 		}
 	} else {
-		wg.Wait()
 
 		// Before shutting down, check that every sprite has been
 		// flushed to disk.

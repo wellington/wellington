@@ -1,9 +1,6 @@
 package wellington
 
-import (
-	"fmt"
-	"testing"
-)
+import "testing"
 
 func TestPath_recurse(t *testing.T) {
 
@@ -18,7 +15,6 @@ func TestPath_recurse(t *testing.T) {
 	if e := 15; len(paths) != e {
 		t.Errorf("got: %d wanted: %d", len(paths), e)
 	}
-	fmt.Println(paths)
 }
 
 func TestPath_files(t *testing.T) {

@@ -7,10 +7,95 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/fatih/color"
 	libsass "github.com/wellington/go-libsass"
 )
+
+type BuildOptions struct {
+	wg      sync.WaitGroup
+	closing chan struct{}
+
+	workwg sync.WaitGroup
+	err    error
+	done   chan error
+	status chan error
+	queue  chan string
+
+	Async      bool
+	Paths      []string
+	BArgs      BuildArgs
+	PartialMap *SafePartialMap
+}
+
+// Build compiles all valid Sass files found in the passed paths.
+// If not async, this call will block until all files are compiled.
+func (b *BuildOptions) Build() error {
+	b.done = make(chan error)
+	b.queue = make(chan string)
+	b.closing = make(chan struct{})
+
+	if b.PartialMap == nil {
+		return errors.New("No partial map found")
+	}
+
+	b.wg.Add(1)
+	go func() {
+		defer b.wg.Done()
+		b.doBuild()
+	}()
+	b.wg.Add(1)
+	go func() {
+		defer b.wg.Done()
+		b.workwg.Wait()
+		close(b.done)
+	}()
+
+	go b.loadWork()
+
+	return <-b.done
+}
+
+func (b *BuildOptions) loadWork() {
+	for _, path := range b.Paths {
+		b.queue <- path
+	}
+}
+
+func (b *BuildOptions) doBuild() {
+	var err error
+	for {
+		if err != nil {
+			return
+		}
+		select {
+		case <-b.closing:
+			return
+		case path := <-b.queue:
+			b.workwg.Add(1)
+			go func() {
+				err = b.build(path)
+				b.workwg.Done()
+				if err != nil {
+					b.done <- err
+				}
+			}()
+		}
+	}
+}
+
+func (b *BuildOptions) build(path string) error {
+	return LoadAndBuild(path, b.BArgs, b.PartialMap)
+}
+
+// Close shuts down the builder ensuring all go routines have properly
+// closed before returning.
+func (b *BuildOptions) Close() error {
+	close(b.closing)
+	b.wg.Wait()
+	return nil
+}
 
 var inputFileTypes = []string{".scss", ".sass"}
 
@@ -19,12 +104,22 @@ var inputFileTypes = []string{".scss", ".sass"}
 func LoadAndBuild(path string, gba BuildArgs, pMap *SafePartialMap) error {
 	var files []string
 	// file detected!
-	if filepath.Dir(path) != path {
+	if isImportable(path) {
 		return loadAndBuild(path, gba, pMap)
 	}
-	_ = files
-	// Expand directory to all non-partial sass files
 
+	// Expand directory to all non-partial sass files
+	files, err := recursePath(path)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		err = loadAndBuild(file, gba, pMap)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -91,7 +186,7 @@ func loadAndBuild(sassFile string, gba BuildArgs, partialMap *SafePartialMap) er
 		partialMap.AddRelation(ctx.MainFile, inc)
 	}
 
-	fmt.Printf("Rebuilt: %s\n", sassFile)
+	go fmt.Printf("Rebuilt: %s\n", sassFile)
 	return nil
 }
 
