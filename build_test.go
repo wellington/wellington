@@ -12,6 +12,11 @@ import (
 	"github.com/wellington/go-libsass"
 )
 
+func init() {
+	testch = make(chan struct{})
+	close(testch)
+}
+
 func TestCompileStdin_imports(t *testing.T) {
 
 	in := bytes.NewBufferString(`@import "compass";
@@ -37,6 +42,7 @@ func TestCompileStdin_imports(t *testing.T) {
 }
 
 func TestNewBuild(t *testing.T) {
+
 	b := NewBuild([]string{"test/sass/error.scss"}, &BuildArgs{}, nil, false)
 	if b == nil {
 		t.Fatal("build is nil")
@@ -47,17 +53,34 @@ func TestNewBuild(t *testing.T) {
 		t.Errorf("got: %s wanted: %s", err, ErrPartialMap)
 	}
 	b.Close()
+}
 
-	b = NewBuild([]string{"test/sass/file.scss"}, &BuildArgs{}, NewPartialMap(), false)
+func TestNewBuild_two(t *testing.T) {
+	tdir, _ := ioutil.TempDir("", "testnewbuild_two")
+	bb := NewBuild([]string{"test/sass/file.scss"},
+		&BuildArgs{BuildDir: tdir}, NewPartialMap(), false)
 
-	err = b.Build()
-	if err == nil {
-		t.Fatal("expected error")
-	}
-	err = b.Close()
+	err := bb.Build()
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	if err != nil {
+		t.Error(err)
+	}
+
+}
+
+func TestNewBuild_dir(t *testing.T) {
+	tdir, _ := ioutil.TempDir("", "testnewbuild_two")
+	bb := NewBuild([]string{"test/sass"},
+		&BuildArgs{BuildDir: tdir}, NewPartialMap(), false)
+
+	err := bb.Build()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
 }
 
 func ExampleBuild() {

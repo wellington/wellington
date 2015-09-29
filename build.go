@@ -13,6 +13,8 @@ import (
 	libsass "github.com/wellington/go-libsass"
 )
 
+var testch chan struct{}
+
 // BuildOptions holds a set of read only arguments to the builder.
 // Channels from this are used to communicate between the workers
 // and loaders executing builds.
@@ -225,7 +227,11 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 	}
 	out.Close()
 	go func(sassFile string) {
-		fmt.Printf("Rebuilt: %s\n", sassFile)
+		select {
+		case <-testch:
+		default:
+			fmt.Printf("Rebuilt: %s\n", sassFile)
+		}
 	}(sassFile)
 	return nil
 }
