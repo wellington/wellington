@@ -137,7 +137,8 @@ func (b *BuildArgs) getOut(path string) (io.WriteCloser, string, error) {
 	return out, fout, nil
 }
 
-// LoadAndBuild kicks off parser and compiling
+// LoadAndBuild kicks off parser and compiling. It expands directories
+// to recursively locate Sass files
 // TODO: make this function testable
 func LoadAndBuild(path string, gba *BuildArgs, pMap *SafePartialMap) error {
 	var files []string
