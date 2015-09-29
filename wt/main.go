@@ -344,12 +344,8 @@ func Run(cmd *cobra.Command, paths []string) {
 		return
 	}
 	sassPaths := paths
-	bOpts := &wt.BuildOptions{
-		Async:      multi,
-		Paths:      paths,
-		BArgs:      gba,
-		PartialMap: pMap,
-	}
+
+	bOpts := wt.NewBuild(paths, &gba, pMap, multi)
 
 	err := bOpts.Build()
 	if err != nil {
@@ -361,7 +357,7 @@ func Run(cmd *cobra.Command, paths []string) {
 
 			PartialMap: pMap,
 			Paths:      sassPaths,
-			BArgs:      gba,
+			BArgs:      &gba,
 		})
 		w.Watch()
 

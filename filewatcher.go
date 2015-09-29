@@ -54,7 +54,7 @@ type Watcher struct {
 type WatchOptions struct {
 	PartialMap *SafePartialMap
 	Paths      []string
-	BArgs      BuildArgs
+	BArgs      *BuildArgs
 }
 
 func NewWatchOptions() *WatchOptions {

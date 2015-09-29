@@ -25,16 +25,28 @@ type BuildOptions struct {
 
 	Async      bool
 	Paths      []string
-	BArgs      BuildArgs
+	BArgs      *BuildArgs
 	PartialMap *SafePartialMap
 }
 
+func NewBuild(paths []string, args *BuildArgs, pMap *SafePartialMap, async bool) *BuildOptions {
+	return &BuildOptions{
+		done:   make(chan error),
+		status: make(chan error),
+
+		queue:   make(chan string),
+		closing: make(chan struct{}),
+
+		Paths:      paths,
+		BArgs:      args,
+		PartialMap: pMap,
+		Async:      async,
+	}
+}
+
 // Build compiles all valid Sass files found in the passed paths.
-// If not async, this call will block until all files are compiled.
+// It will block until all files are compiled.
 func (b *BuildOptions) Build() error {
-	b.done = make(chan error)
-	b.queue = make(chan string)
-	b.closing = make(chan struct{})
 
 	if b.PartialMap == nil {
 		return errors.New("No partial map found")
@@ -44,12 +56,6 @@ func (b *BuildOptions) Build() error {
 	go func() {
 		defer b.wg.Done()
 		b.doBuild()
-	}()
-	b.wg.Add(1)
-	go func() {
-		defer b.wg.Done()
-		b.workwg.Wait()
-		close(b.done)
 	}()
 
 	go b.loadWork()
@@ -61,26 +67,28 @@ func (b *BuildOptions) loadWork() {
 	for _, path := range b.Paths {
 		b.queue <- path
 	}
+	close(b.queue)
 }
 
 func (b *BuildOptions) doBuild() {
-	var err error
 	for {
-		if err != nil {
-			return
-		}
 		select {
 		case <-b.closing:
 			return
 		case path := <-b.queue:
+			if len(path) == 0 {
+				b.workwg.Wait()
+				b.done <- nil
+				return
+			}
 			b.workwg.Add(1)
-			go func() {
-				err = b.build(path)
-				b.workwg.Done()
+			go func(path string) {
+				err := b.build(path)
+				defer b.workwg.Done()
 				if err != nil {
 					b.done <- err
 				}
-			}()
+			}(path)
 		}
 	}
 }
@@ -99,13 +107,47 @@ func (b *BuildOptions) Close() error {
 
 var inputFileTypes = []string{".scss", ".sass"}
 
+func (b *BuildArgs) getOut(path string) (io.WriteCloser, string, error) {
+	var (
+		out  io.WriteCloser
+		fout string
+	)
+
+	if len(b.BuildDir) == 0 {
+		out = os.Stdout
+		return out, "", nil
+	}
+
+	// Build output file based off build directory and input filename
+	rel, _ := filepath.Rel(b.Includes, filepath.Dir(path))
+	filename := updateFileOutputType(filepath.Base(path))
+	fout = filepath.Join(b.BuildDir, rel, filename)
+
+	dir := filepath.Dir(fout)
+	err := os.MkdirAll(dir, 0755)
+	if err != nil {
+		return nil, "", fmt.Errorf("Failed to create directory: %s",
+			dir)
+	}
+
+	return out, fout, nil
+}
+
 // LoadAndBuild kicks off parser and compiling
 // TODO: make this function testable
-func LoadAndBuild(path string, gba BuildArgs, pMap *SafePartialMap) error {
+func LoadAndBuild(path string, gba *BuildArgs, pMap *SafePartialMap) error {
 	var files []string
+	if len(path) == 0 {
+		return errors.New("invalid path passed")
+	}
+
 	// file detected!
 	if isImportable(path) {
-		return loadAndBuild(path, gba, pMap)
+		out, fout, err := gba.getOut(path)
+		if err != nil {
+			return err
+		}
+		return loadAndBuild(path, gba, pMap, out, fout)
 	}
 
 	// Expand directory to all non-partial sass files
@@ -115,7 +157,11 @@ func LoadAndBuild(path string, gba BuildArgs, pMap *SafePartialMap) error {
 	}
 
 	for _, file := range files {
-		err = loadAndBuild(file, gba, pMap)
+		out, fout, err := gba.getOut(file)
+		if err != nil {
+			return err
+		}
+		err = loadAndBuild(file, gba, pMap, out, fout)
 		if err != nil {
 			return err
 		}
@@ -123,24 +169,13 @@ func LoadAndBuild(path string, gba BuildArgs, pMap *SafePartialMap) error {
 	return nil
 }
 
-func loadAndBuild(sassFile string, gba BuildArgs, partialMap *SafePartialMap) error {
+func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, out io.WriteCloser, fout string) error {
 
 	// If no imagedir specified, assume relative to the input file
 	if gba.Dir == "" {
 		gba.Dir = filepath.Dir(sassFile)
 	}
-	var (
-		out  io.WriteCloser
-		fout string
-	)
-	if gba.BuildDir != "" {
-		// Build output file based off build directory and input filename
-		rel, _ := filepath.Rel(gba.Includes, filepath.Dir(sassFile))
-		filename := updateFileOutputType(filepath.Base(sassFile))
-		fout = filepath.Join(gba.BuildDir, rel, filename)
-	} else {
-		out = os.Stdout
-	}
+
 	ctx := libsass.NewContext()
 	ctx.Payload = gba.Payload
 	ctx.OutputStyle = gba.Style
@@ -158,24 +193,19 @@ func loadAndBuild(sassFile string, gba BuildArgs, partialMap *SafePartialMap) er
 		ctx.IncludePaths = append(ctx.IncludePaths,
 			strings.Split(gba.Includes, ",")...)
 	}
+	// TODO: remove this!
 	fRead, err := os.Open(sassFile)
 	if err != nil {
 		return err
 	}
 	defer fRead.Close()
 	if fout != "" {
-		dir := filepath.Dir(fout)
-		err := os.MkdirAll(dir, 0755)
-		if err != nil {
-			return fmt.Errorf("Failed to create directory: %s", dir)
-		}
 
 		out, err = os.Create(fout)
 		defer out.Close()
 		if err != nil {
 			return fmt.Errorf("Failed to create file: %s", sassFile)
 		}
-		// log.Println("Created:", fout)
 	}
 	err = ctx.FileCompile(sassFile, out)
 	if err != nil {
@@ -185,8 +215,10 @@ func loadAndBuild(sassFile string, gba BuildArgs, partialMap *SafePartialMap) er
 	for _, inc := range ctx.ResolvedImports {
 		partialMap.AddRelation(ctx.MainFile, inc)
 	}
-
-	go fmt.Printf("Rebuilt: %s\n", sassFile)
+	out.Close()
+	go func(sassFile string) {
+		fmt.Printf("Rebuilt: %s\n", sassFile)
+	}(sassFile)
 	return nil
 }
 

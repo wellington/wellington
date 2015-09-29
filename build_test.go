@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -40,7 +41,7 @@ func TestLoadAndBuild(t *testing.T) {
 
 	r, w, _ := os.Pipe()
 	os.Stdout = w
-	err := LoadAndBuild("test/sass/file.scss", BuildArgs{}, NewPartialMap())
+	err := LoadAndBuild("test/sass/file.scss", &BuildArgs{}, NewPartialMap())
 	if err != nil {
 		t.Error(err)
 	}
@@ -73,7 +74,7 @@ func TestLandB_error(t *testing.T) {
 		os.Stdout = oo
 	}()
 	os.Stdout = w
-	err := LoadAndBuild("test/sass/error.scss", BuildArgs{}, NewPartialMap())
+	err := LoadAndBuild("test/sass/error.scss", &BuildArgs{}, NewPartialMap())
 	qs := fmt.Sprintf("%q", err.Error())
 
 	e := `Invalid CSS after \"div {\": expected \"}\", was \"\"`
@@ -91,66 +92,56 @@ func TestLandB_updateFile(t *testing.T) {
 }
 
 func TestLoadAndBuild_args(t *testing.T) {
-	oo := os.Stdout
-
 	r, w, _ := os.Pipe()
-	os.Stdout = w
-	err := LoadAndBuild("test/sass/file.scss",
-		BuildArgs{
-			BuildDir: "test/build",
-			Includes: "test",
-		},
-		NewPartialMap(),
-	)
-	if err != nil {
-		t.Error(err)
+
+	bArgs := &BuildArgs{
+		Includes: "test",
 	}
-	outC := make(chan string)
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		outC <- buf.String()
-	}()
 
-	w.Close()
-	os.Stdout = oo
-	out := <-outC
+	err := loadAndBuild("test/sass/file.scss", bArgs,
+		NewPartialMap(), w, "")
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	e := `Rebuilt: test/sass/file.scss
+	bs, err := ioutil.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	e := `div {
+  color: black; }
 `
-	if e != out {
-		t.Errorf("got:\n%s\nwanted:\n%s", out, e)
+	if e != string(bs) {
+		t.Errorf("got:\n%s\nwanted:\n%s", string(bs), e)
 	}
 }
 
 func TestLoadAndBuild_comply(t *testing.T) {
-	stdout := os.Stdout
 	r, w, _ := os.Pipe()
-	os.Stdout = w
-	err := LoadAndBuild("test/compass/top.scss",
-		BuildArgs{
-			BuildDir: "test/build",
+
+	err := loadAndBuild("test/compass/top.scss",
+		&BuildArgs{
 			Includes: "test",
 		},
-		NewPartialMap(),
-	)
+		NewPartialMap(), w, "")
+
+	bs, err := ioutil.ReadAll(r)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
-	outC := make(chan string)
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		outC <- buf.String()
-	}()
 
-	w.Close()
-	os.Stdout = stdout
-	out := <-outC
+	e := `one {
+  color: red; }
 
-	e := `Rebuilt: test/compass/top.scss
+two {
+  color: blue; }
+
+three {
+  color: purple; }
 `
-	if e != out {
-		t.Errorf("got:\n%s\nwanted:\n%s", out, e)
+
+	if e != string(bs) {
+		t.Errorf("got:\n%s\nwanted:\n%s", string(bs), e)
 	}
 }
