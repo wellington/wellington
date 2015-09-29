@@ -36,7 +36,7 @@ func TestCompileStdin_imports(t *testing.T) {
 
 }
 
-func TestLoadAndBuild(t *testing.T) {
+func TestBuild_file(t *testing.T) {
 	oo := os.Stdout
 
 	r, w, _ := os.Pipe()
@@ -55,26 +55,25 @@ func TestLoadAndBuild(t *testing.T) {
 	w.Close()
 	os.Stdout = oo
 	out := <-outC
-
 	e := `div {
   color: black; }
-Rebuilt: test/sass/file.scss
 `
 	if e != out {
 		t.Errorf("got:\n%s\nwanted:\n%s", out, e)
 	}
 }
 
-func TestLandB_error(t *testing.T) {
+func TestBuild_error(t *testing.T) {
 
-	oo := os.Stdout
-	var w *os.File
-	defer func() {
-		w.Close()
-		os.Stdout = oo
-	}()
-	os.Stdout = w
-	err := LoadAndBuild("test/sass/error.scss", &BuildArgs{}, NewPartialMap())
+	_, w, _ := os.Pipe()
+
+	err := loadAndBuild("test/sass/error.scss", &BuildArgs{},
+		NewPartialMap(), w, "")
+
+	if err == nil {
+		t.Fatal("no error thrown")
+	}
+
 	qs := fmt.Sprintf("%q", err.Error())
 
 	e := `Invalid CSS after \"div {\": expected \"}\", was \"\"`
@@ -83,15 +82,7 @@ func TestLandB_error(t *testing.T) {
 	}
 }
 
-func TestLandB_updateFile(t *testing.T) {
-	s := "file.scss"
-	ren := updateFileOutputType(s)
-	if e := "file.css"; e != ren {
-		t.Errorf("got: %s wanted: %s", ren, e)
-	}
-}
-
-func TestLoadAndBuild_args(t *testing.T) {
+func TestBuild_args(t *testing.T) {
 	r, w, _ := os.Pipe()
 
 	bArgs := &BuildArgs{
@@ -117,7 +108,7 @@ func TestLoadAndBuild_args(t *testing.T) {
 	}
 }
 
-func TestLoadAndBuild_comply(t *testing.T) {
+func TestBuild_comply(t *testing.T) {
 	r, w, _ := os.Pipe()
 
 	err := loadAndBuild("test/compass/top.scss",
@@ -143,5 +134,13 @@ three {
 
 	if e != string(bs) {
 		t.Errorf("got:\n%s\nwanted:\n%s", string(bs), e)
+	}
+}
+
+func TestUpdateFileOutputType(t *testing.T) {
+	s := "file.scss"
+	ren := updateFileOutputType(s)
+	if e := "file.css"; e != ren {
+		t.Errorf("got: %s wanted: %s", ren, e)
 	}
 }
