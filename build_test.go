@@ -3,13 +3,19 @@ package wellington
 import (
 	"bytes"
 	"fmt"
-	"io"
+	"io/ioutil"
+	"log"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/wellington/go-libsass"
 )
+
+func init() {
+	testch = make(chan struct{})
+	close(testch)
+}
 
 func TestCompileStdin_imports(t *testing.T) {
 
@@ -35,45 +41,70 @@ func TestCompileStdin_imports(t *testing.T) {
 
 }
 
-func TestLoadAndBuild(t *testing.T) {
-	oo := os.Stdout
+func TestNewBuild(t *testing.T) {
 
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-	err := LoadAndBuild("test/sass/file.scss", BuildArgs{}, NewPartialMap())
+	b := NewBuild([]string{"test/sass/error.scss"}, &BuildArgs{}, nil, false)
+	if b == nil {
+		t.Fatal("build is nil")
+	}
+
+	err := b.Build()
+	if err != ErrPartialMap {
+		t.Errorf("got: %s wanted: %s", err, ErrPartialMap)
+	}
+	b.Close()
+}
+
+func TestNewBuild_two(t *testing.T) {
+	tdir, _ := ioutil.TempDir("", "testnewbuild_two")
+	bb := NewBuild([]string{"test/sass/file.scss"},
+		&BuildArgs{BuildDir: tdir}, NewPartialMap(), false)
+
+	err := bb.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	if err != nil {
 		t.Error(err)
 	}
-	outC := make(chan string)
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		outC <- buf.String()
-	}()
 
-	w.Close()
-	os.Stdout = oo
-	out := <-outC
-
-	e := `div {
-  color: black; }
-Rebuilt: test/sass/file.scss
-`
-	if e != out {
-		t.Errorf("got:\n%s\nwanted:\n%s", out, e)
-	}
 }
 
-func TestLandB_error(t *testing.T) {
+func TestNewBuild_dir(t *testing.T) {
+	tdir, _ := ioutil.TempDir("", "testnewbuild_two")
+	bb := NewBuild([]string{"test/sass"},
+		&BuildArgs{BuildDir: tdir}, NewPartialMap(), false)
 
-	oo := os.Stdout
-	var w *os.File
-	defer func() {
-		w.Close()
-		os.Stdout = oo
-	}()
-	os.Stdout = w
-	err := LoadAndBuild("test/sass/error.scss", BuildArgs{}, NewPartialMap())
+	err := bb.Build()
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+}
+
+func ExampleLoadAndBuild() {
+	err := LoadAndBuild("test/sass/file.scss", &BuildArgs{}, NewPartialMap())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Output:
+	// div {
+	//   color: black; }
+}
+
+func TestBuild_error(t *testing.T) {
+
+	_, w, _ := os.Pipe()
+
+	err := loadAndBuild("test/sass/error.scss", &BuildArgs{},
+		NewPartialMap(), w, "")
+
+	if err == nil {
+		t.Fatal("no error thrown")
+	}
+
 	qs := fmt.Sprintf("%q", err.Error())
 
 	e := `Invalid CSS after \"div {\": expected \"}\", was \"\"`
@@ -82,75 +113,65 @@ func TestLandB_error(t *testing.T) {
 	}
 }
 
-func TestLandB_updateFile(t *testing.T) {
+func TestBuild_args(t *testing.T) {
+	r, w, _ := os.Pipe()
+
+	bArgs := &BuildArgs{
+		Includes: "test",
+	}
+
+	err := loadAndBuild("test/sass/file.scss", bArgs,
+		NewPartialMap(), w, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	bs, err := ioutil.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	e := `div {
+  color: black; }
+`
+	if e != string(bs) {
+		t.Errorf("got:\n%s\nwanted:\n%s", string(bs), e)
+	}
+}
+
+func TestBuild_comply(t *testing.T) {
+	r, w, _ := os.Pipe()
+
+	err := loadAndBuild("test/compass/top.scss",
+		&BuildArgs{
+			Includes: "test",
+		},
+		NewPartialMap(), w, "")
+
+	bs, err := ioutil.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	e := `one {
+  color: red; }
+
+two {
+  color: blue; }
+
+three {
+  color: purple; }
+`
+
+	if e != string(bs) {
+		t.Errorf("got:\n%s\nwanted:\n%s", string(bs), e)
+	}
+}
+
+func TestUpdateFileOutputType(t *testing.T) {
 	s := "file.scss"
 	ren := updateFileOutputType(s)
 	if e := "file.css"; e != ren {
 		t.Errorf("got: %s wanted: %s", ren, e)
-	}
-}
-
-func TestLoadAndBuild_args(t *testing.T) {
-	oo := os.Stdout
-
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-	err := LoadAndBuild("test/sass/file.scss",
-		BuildArgs{
-			BuildDir: "test/build",
-			Includes: "test",
-		},
-		NewPartialMap(),
-	)
-	if err != nil {
-		t.Error(err)
-	}
-	outC := make(chan string)
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		outC <- buf.String()
-	}()
-
-	w.Close()
-	os.Stdout = oo
-	out := <-outC
-
-	e := `Rebuilt: test/sass/file.scss
-`
-	if e != out {
-		t.Errorf("got:\n%s\nwanted:\n%s", out, e)
-	}
-}
-
-func TestLoadAndBuild_comply(t *testing.T) {
-	stdout := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-	err := LoadAndBuild("test/compass/top.scss",
-		BuildArgs{
-			BuildDir: "test/build",
-			Includes: "test",
-		},
-		NewPartialMap(),
-	)
-	if err != nil {
-		t.Error(err)
-	}
-	outC := make(chan string)
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		outC <- buf.String()
-	}()
-
-	w.Close()
-	os.Stdout = stdout
-	out := <-outC
-
-	e := `Rebuilt: test/compass/top.scss
-`
-	if e != out {
-		t.Errorf("got:\n%s\nwanted:\n%s", out, e)
 	}
 }
