@@ -2,19 +2,20 @@ package wellington
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 	"testing"
 
+	"github.com/fatih/color"
 	"github.com/wellington/go-libsass"
 )
 
 func init() {
 	testch = make(chan struct{})
 	close(testch)
+	color.NoColor = true
 }
 
 func TestCompileStdin_imports(t *testing.T) {
@@ -83,8 +84,11 @@ func TestNewBuild_dir(t *testing.T) {
 
 }
 
-func ExampleLoadAndBuild() {
-	err := LoadAndBuild("test/sass/file.scss", &BuildArgs{}, NewPartialMap())
+func ExampleNewBuild() {
+	b := NewBuild([]string{"test/sass/file.scss"},
+		&BuildArgs{}, NewPartialMap(), false)
+
+	err := b.Build()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -105,11 +109,9 @@ func TestBuild_error(t *testing.T) {
 		t.Fatal("no error thrown")
 	}
 
-	qs := fmt.Sprintf("%q", err.Error())
-
-	e := `Invalid CSS after \"div {\": expected \"}\", was \"\"`
-	if !strings.Contains(qs, e) {
-		t.Fatalf("Error contains invalid text:\n%s", qs)
+	e := `Invalid CSS after "div {": expected "}", was ""`
+	if !strings.HasSuffix(err.Error(), e) {
+		t.Fatalf("Error contains invalid text:\n%s", err)
 	}
 }
 
