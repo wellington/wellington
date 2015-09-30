@@ -177,20 +177,27 @@ func LoadAndBuild(path string, gba *BuildArgs, pMap *SafePartialMap) error {
 func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, out io.WriteCloser, fout string) error {
 
 	defer func() {
-		// How can this be removed?
-		if out != os.Stdout {
-			out.Close()
+		// Complicated logic to avoid inspecting os.Stdout which would
+		// race against testing package
+		if closer, ok := out.(*io.PipeWriter); ok {
+			fmt.Printf("closing % #v\n", closer)
+			closer.Close()
+		} else if closer, ok := out.(*os.File); ok {
+			closer.Close()
+		} else {
+			fmt.Printf("failed % #v\n", out)
 		}
 	}()
+	imageDir := gba.Dir
 	// If no imagedir specified, assume relative to the input file
-	if gba.Dir == "" {
-		gba.Dir = filepath.Dir(sassFile)
+	if len(imageDir) == 0 {
+		imageDir = filepath.Dir(sassFile)
 	}
 
 	ctx := libsass.NewContext()
 	ctx.Payload = gba.Payload
 	ctx.OutputStyle = gba.Style
-	ctx.ImageDir = gba.Dir
+	ctx.ImageDir = imageDir
 	ctx.FontDir = gba.Font
 	// Assumption that output is a file
 	ctx.BuildDir = filepath.Dir(fout)
