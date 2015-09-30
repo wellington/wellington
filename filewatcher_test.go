@@ -18,7 +18,7 @@ func TestRebuild(t *testing.T) {
 	})
 	go func(t *testing.T) {
 		select {
-		case err := <-errChan:
+		case err := <-wc.errChan:
 			if err == nil {
 				t.Fatal(err)
 			}

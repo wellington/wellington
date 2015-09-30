@@ -48,6 +48,7 @@ func NewBuildArgs() BuildArgs {
 type Watcher struct {
 	FileWatcher *fsnotify.Watcher
 	opts        *WatchOptions
+	errChan     chan error
 }
 
 // WatchOptions containers the necessary parameters to run the file watcher
@@ -77,7 +78,16 @@ func NewWatcher(opts *WatchOptions) *Watcher {
 	w := &Watcher{
 		opts:        opts,
 		FileWatcher: fswatcher,
+		errChan:     make(chan error),
 	}
+	go func() {
+		for {
+			select {
+			case err := <-w.errChan:
+				log.Println("watcher: build error:", err)
+			}
+		}
+	}()
 
 	return w
 }
@@ -182,7 +192,6 @@ func (w *Watcher) startWatching() {
 
 var rebuildMu sync.RWMutex
 var rebuildChan chan ([]string)
-var errChan chan error
 
 // rebuild is notified about sass file updates and looks
 // for the file in the partial map.  It also checks
@@ -201,10 +210,7 @@ func (w *Watcher) rebuild(eventFileName string) error {
 			// TODO: do this in a new goroutine
 			err := LoadAndBuild(paths[i], w.opts.BArgs, w.opts.PartialMap)
 			if err != nil {
-				log.Println("error rebuilding:", err)
-				if errChan != nil {
-					errChan <- err
-				}
+				w.errChan <- err
 			}
 		}
 	}(w.opts.PartialMap.M[eventFileName])

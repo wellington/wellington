@@ -122,7 +122,9 @@ func (b *BuildArgs) getOut(path string) (io.WriteCloser, string, error) {
 		out  io.WriteCloser
 		fout string
 	)
-
+	if b == nil {
+		return nil, "", errors.New("build args is nil")
+	}
 	if len(b.BuildDir) == 0 {
 		out = os.Stdout
 		return out, "", nil
@@ -174,6 +176,12 @@ func LoadAndBuild(path string, gba *BuildArgs, pMap *SafePartialMap) error {
 
 func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, out io.WriteCloser, fout string) error {
 
+	defer func() {
+		// How can this be removed?
+		if out != os.Stdout {
+			out.Close()
+		}
+	}()
 	// If no imagedir specified, assume relative to the input file
 	if gba.Dir == "" {
 		gba.Dir = filepath.Dir(sassFile)
@@ -204,7 +212,6 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 	defer fRead.Close()
 	if fout != "" {
 		out, err = os.Create(fout)
-		out.Close()
 		if err != nil {
 			return fmt.Errorf("Failed to create file: %s", sassFile)
 		}
