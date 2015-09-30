@@ -2,7 +2,6 @@ package wellington
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -174,7 +173,7 @@ func (w *Watcher) startWatching() {
 				}
 			case err := <-w.FileWatcher.Errors:
 				if err != nil {
-					fmt.Println("error:", err)
+					log.Println("filewatcher error:", err)
 				}
 			}
 		}
@@ -190,13 +189,7 @@ var errChan chan error
 // for whether the file is a non-partial, no _ at beginning,
 // and requests the file be rebuilt directly.
 func (w *Watcher) rebuild(eventFileName string) error {
-	// Top level file modified, rebuild it directly
-	// if !strings.HasPrefix(filepath.Base(eventFileName), "_") {
-	// 	err := LoadAndBuild(eventFileName, w.BArgs, w.PartialMap)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
+
 	w.opts.PartialMap.RLock()
 	go func(paths []string) {
 		rebuildMu.RLock()
@@ -208,7 +201,7 @@ func (w *Watcher) rebuild(eventFileName string) error {
 			// TODO: do this in a new goroutine
 			err := LoadAndBuild(paths[i], w.opts.BArgs, w.opts.PartialMap)
 			if err != nil {
-				log.Println(err)
+				log.Println("error rebuilding:", err)
 				if errChan != nil {
 					errChan <- err
 				}

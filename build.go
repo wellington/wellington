@@ -73,7 +73,8 @@ func (b *BuildOptions) Build() error {
 }
 
 func (b *BuildOptions) loadWork() {
-	for _, path := range b.paths {
+	paths := pathsToFiles(b.paths, true)
+	for _, path := range paths {
 		b.queue <- path
 	}
 	close(b.queue)
@@ -146,7 +147,6 @@ func (b *BuildArgs) getOut(path string) (io.WriteCloser, string, error) {
 // to recursively locate Sass files
 // TODO: make this function testable
 func LoadAndBuild(path string, gba *BuildArgs, pMap *SafePartialMap) error {
-	var files []string
 	if len(path) == 0 {
 		return errors.New("invalid path passed")
 	}
@@ -160,22 +160,15 @@ func LoadAndBuild(path string, gba *BuildArgs, pMap *SafePartialMap) error {
 		return loadAndBuild(path, gba, pMap, out, fout)
 	}
 
-	// Expand directory to all non-partial sass files
-	files, err := recursePath(path)
+	out, fout, err := gba.getOut(path)
+	if err != nil {
+		return err
+	}
+	err = loadAndBuild(path, gba, pMap, out, fout)
 	if err != nil {
 		return err
 	}
 
-	for _, file := range files {
-		out, fout, err := gba.getOut(file)
-		if err != nil {
-			return err
-		}
-		err = loadAndBuild(file, gba, pMap, out, fout)
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -210,13 +203,13 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 	}
 	defer fRead.Close()
 	if fout != "" {
-
 		out, err = os.Create(fout)
-		defer out.Close()
+		out.Close()
 		if err != nil {
 			return fmt.Errorf("Failed to create file: %s", sassFile)
 		}
 	}
+
 	err = ctx.FileCompile(sassFile, out)
 	if err != nil {
 		return errors.New(color.RedString("%s", err))
@@ -225,7 +218,7 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 	for _, inc := range ctx.ResolvedImports {
 		partialMap.AddRelation(ctx.MainFile, inc)
 	}
-	out.Close()
+
 	go func(sassFile string) {
 		select {
 		case <-testch:
