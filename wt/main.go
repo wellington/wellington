@@ -82,10 +82,8 @@ func flags(set *pflag.FlagSet) {
 
 	set.BoolVarP(&comments, "comment", "", true, "Turn on source comments")
 
-	set.BoolVarP(&watch, "watch", "w", false, "File watcher that will rebuild css on file changes")
-
 	set.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
-	set.BoolVarP(&multi, "multi", "", false, "Enable multi-threaded operation")
+	set.BoolVarP(&multi, "multi", "", true, "Enable multi-threaded operation")
 }
 
 var compileCmd = &cobra.Command{
@@ -110,10 +108,7 @@ var httpCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Starts a http server that will convert Sass to CSS",
 	Long:  ``,
-	Run: func(cmd *cobra.Command, args []string) {
-		ishttp = true
-		Run(cmd, args)
-	},
+	Run:   Serve,
 }
 
 func init() {
@@ -144,7 +139,7 @@ func AddCommands() {
 
 var wtCmd = &cobra.Command{
 	Use:   "wt",
-	Short: "wt builds Sass",
+	Short: "wt is a Sass project tool",
 	Run:   Run,
 }
 
@@ -194,19 +189,10 @@ func parseBuildArgs() *wt.BuildArgs {
 	return gba
 }
 
-// Run is the main entrypoint for the cli.
-func Run(cmd *cobra.Command, paths []string) {
-
-	start := time.Now()
-
-	defer func() {
-		diff := float64(time.Since(start).Nanoseconds()) / float64(time.Millisecond)
-		log.Printf("Compilation took: %sms\n",
-			strconv.FormatFloat(diff, 'f', 3, 32))
-	}()
+func globalRun(paths []string) (*wt.SafePartialMap, *wt.BuildArgs) {
 
 	if argExit() {
-		return
+		return nil, nil
 	}
 
 	// Profiling code
@@ -241,8 +227,8 @@ func Run(cmd *cobra.Command, paths []string) {
 	}
 
 	pMap := wt.NewPartialMap()
-
 	gba := parseBuildArgs()
+
 	if debug {
 		fmt.Printf("      Font  Dir: %s\n", gba.Font)
 		fmt.Printf("      Image Dir: %s\n", gba.ImageDir)
@@ -252,20 +238,56 @@ func Run(cmd *cobra.Command, paths []string) {
 		fmt.Println("===================================")
 	}
 
-	if ishttp {
-		if len(gba.Gen) == 0 {
-			log.Fatal("Must pass an image build directory to use HTTP")
-		}
-		http.Handle("/build/", wt.FileHandler(gba.Gen))
-		log.Println("Web server started on :12345")
-		http.HandleFunc("/", wt.HTTPHandler(wt.NewContext(gba)))
-		err := http.ListenAndServe(":12345", nil)
-		if err != nil {
-			log.Fatal("ListenAndServe: ", err)
-		}
+	return pMap, gba
 
-		return
+}
+
+func Compile(cmd *cobra.Command, paths []string) {
+
+	start := time.Now()
+
+	defer func() {
+		diff := float64(time.Since(start).Nanoseconds()) / float64(time.Millisecond)
+		log.Printf("Compilation took: %sms\n",
+			strconv.FormatFloat(diff, 'f', 3, 32))
+	}()
+
+}
+
+func Serve(cmd *cobra.Command, paths []string) {
+	start := time.Now()
+	defer func() {
+		diff := float64(time.Since(start).Nanoseconds()) / float64(time.Millisecond)
+		log.Printf("Compilation took: %sms\n",
+			strconv.FormatFloat(diff, 'f', 3, 32))
+	}()
+
+	pMap, gba := globalRun(paths)
+	_ = pMap
+	if len(gba.Gen) == 0 {
+		log.Fatal("Must pass an image build directory to use HTTP")
 	}
+	http.Handle("/build/", wt.FileHandler(gba.Gen))
+	log.Println("Web server started on :12345")
+	http.HandleFunc("/", wt.HTTPHandler(wt.NewContext(gba)))
+	err := http.ListenAndServe(":12345", nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
+
+}
+
+// Run is the main entrypoint for the cli.
+func Run(cmd *cobra.Command, paths []string) {
+
+	start := time.Now()
+	defer func() {
+		diff := float64(time.Since(start).Nanoseconds()) / float64(time.Millisecond)
+		log.Printf("Compilation took: %sms\n",
+			strconv.FormatFloat(diff, 'f', 3, 32))
+	}()
+
+	pMap, gba := globalRun(paths)
 
 	if !watch && len(paths) == 0 && len(config) == 0 {
 
