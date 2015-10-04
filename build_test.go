@@ -165,7 +165,7 @@ func TestBuild_error(t *testing.T) {
 	if err == nil {
 		t.Fatal("no error thrown")
 	}
-
+	w.Close()
 	e := `Invalid CSS after "div {": expected "}", was ""`
 	if !strings.HasSuffix(err.Error(), e) {
 		t.Fatalf("Error contains invalid text:\n%s", err)
@@ -184,7 +184,7 @@ func TestBuild_args(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	w.Close()
 	bs, err := ioutil.ReadAll(r)
 	if err != nil {
 		t.Fatal(err)
@@ -206,7 +206,7 @@ func TestBuild_comply(t *testing.T) {
 			Includes: "test",
 		},
 		NewPartialMap(), w, "")
-
+	w.Close()
 	bs, err := ioutil.ReadAll(r)
 	if err != nil {
 		t.Fatal(err)
