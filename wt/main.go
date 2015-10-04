@@ -221,7 +221,7 @@ func parseBuildArgs() *wt.BuildArgs {
 	}
 
 	gba := &wt.BuildArgs{
-		Dir:      dir,
+		ImageDir: dir,
 		BuildDir: buildDir,
 		Includes: includes,
 		Font:     font,
@@ -298,7 +298,7 @@ func Run(cmd *cobra.Command, paths []string) {
 	gba := parseBuildArgs()
 	if debug {
 		fmt.Printf("      Font  Dir: %s\n", gba.Font)
-		fmt.Printf("      Image Dir: %s\n", gba.Dir)
+		fmt.Printf("      Image Dir: %s\n", gba.ImageDir)
 		fmt.Printf("      Build Dir: %s\n", gba.BuildDir)
 		fmt.Printf("Build Image Dir: %s\n", gba.Gen)
 		fmt.Printf(" Include Dir(s): %s\n", gba.Includes)
@@ -348,6 +348,7 @@ func Run(cmd *cobra.Command, paths []string) {
 		in := os.Stdin
 
 		var pout bytes.Buffer
+		ctx := wt.NewContext(gba)
 		_, err := wt.StartParser(ctx, in, &pout, wt.NewPartialMap())
 		if err != nil {
 			log.Println(err)

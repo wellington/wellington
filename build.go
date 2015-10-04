@@ -21,8 +21,8 @@ var testch chan struct{}
 // the parser on any file changes.
 type BuildArgs struct {
 	// Imgs, Sprites spritewell.SafeImageMap
-	Payload types.Payloader
-	Dir     string
+	Payload  types.Payloader
+	ImageDir string
 
 	// BuildDir is the base build directory used. When recursive
 	// file matching is involved, this directory will be used as the
@@ -33,7 +33,6 @@ type BuildArgs struct {
 	Gen      string
 	Style    int
 	Comments bool
-	WDir     string
 }
 
 func (b *BuildArgs) Init() {
@@ -172,7 +171,7 @@ func (b *BuildArgs) getOut(path string) (io.WriteCloser, string, error) {
 		return nil, "", err
 	}
 
-	return out, "", nil
+	return out, dir, nil
 }
 
 // LoadAndBuild kicks off parser and compiling. It expands directories
@@ -185,18 +184,18 @@ func LoadAndBuild(path string, gba *BuildArgs, pMap *SafePartialMap) error {
 
 	// file detected!
 	if isImportable(path) {
-		out, fout, err := gba.getOut(path)
+		out, bdir, err := gba.getOut(path)
 		if err != nil {
 			return err
 		}
-		return loadAndBuild(path, gba, pMap, out, fout)
+		return loadAndBuild(path, gba, pMap, out, bdir)
 	}
 
-	out, fout, err := gba.getOut(path)
+	out, bdir, err := gba.getOut(path)
 	if err != nil {
 		return err
 	}
-	err = loadAndBuild(path, gba, pMap, out, fout)
+	err = loadAndBuild(path, gba, pMap, out, bdir)
 	if err != nil {
 		return err
 	}
@@ -208,17 +207,8 @@ func NewContext(gba *BuildArgs) *libsass.Context {
 	ctx := libsass.NewContext()
 	ctx.Payload = gba.Payload
 	ctx.OutputStyle = gba.Style
-	imageDir := gba.Dir
-	// If no imagedir specified, assume relative to the input file
-	// if len(imageDir) == 0 {
-	// 	imageDir = filepath.Dir(sassFile)
-	// }
-	if len(gba.Dir) == 0 {
-		gba.Dir = gba.WDir
-	}
-	ctx.ImageDir = imageDir
+	ctx.ImageDir = gba.ImageDir
 	ctx.FontDir = gba.Font
-	// Assumption that output is a file
 
 	// Ahem... build directory is inferred in loadAndBuild
 	// ctx.BuildDir = filepath.Dir(fout)
@@ -238,7 +228,7 @@ func NewContext(gba *BuildArgs) *libsass.Context {
 	return ctx
 }
 
-func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, out io.WriteCloser, fout string) error {
+func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, out io.WriteCloser, buildDir string) error {
 	defer func() {
 		// Complicated logic to avoid inspecting os.Stdout which would
 		// race against testing package
@@ -259,13 +249,13 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 	}
 	fRead.Close()
 
-	// if fout != "" {
-	// 	out, err = os.Create(fout)
-	// 	if err != nil {
-	// 		return fmt.Errorf("Failed to create file: %s", sassFile)
-	// 	}
-	// }
 	ctx := NewContext(gba)
+	// Adjust directories if necessary
+	if len(ctx.ImageDir) == 0 {
+		ctx.ImageDir = filepath.Dir(sassFile)
+	}
+	ctx.BuildDir = buildDir
+
 	err = ctx.FileCompile(sassFile, out)
 	if err != nil {
 		return errors.New(color.RedString("%s", err))
