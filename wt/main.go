@@ -291,7 +291,7 @@ func Run(cmd *cobra.Command, paths []string) {
 
 	bOpts := wt.NewBuild(paths, gba, pMap, multi)
 
-	err := bOpts.Build()
+	err := bOpts.Run()
 	if err != nil {
 		log.Fatal(err)
 	}

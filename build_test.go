@@ -50,7 +50,7 @@ func TestNewBuild(t *testing.T) {
 		t.Fatal("build is nil")
 	}
 
-	err := b.Build()
+	err := b.Run()
 	if err != ErrPartialMap {
 		t.Errorf("got: %s wanted: %s", err, ErrPartialMap)
 	}
@@ -62,7 +62,7 @@ func TestNewBuild_two(t *testing.T) {
 	bb := NewBuild([]string{"test/sass/file.scss"},
 		&BuildArgs{BuildDir: tdir}, NewPartialMap(), false)
 
-	err := bb.Build()
+	err := bb.Run()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +98,7 @@ func TestNewBuild_dir(t *testing.T) {
 		false)
 	os.RemoveAll(filepath.Join(tdir, "*"))
 
-	err := bb.Build()
+	err := bb.Run()
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -145,7 +145,7 @@ func ExampleNewBuild() {
 	b := NewBuild([]string{"test/sass/file.scss"},
 		&BuildArgs{}, NewPartialMap(), false)
 
-	err := b.Build()
+	err := b.Run()
 	if err != nil {
 		log.Fatal(err)
 	}

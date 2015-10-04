@@ -40,10 +40,10 @@ func (b *BuildArgs) Init() {
 	b.Payload = newPayload()
 }
 
-// BuildOptions holds a set of read only arguments to the builder.
+// Build holds a set of read only arguments to the builder.
 // Channels from this are used to communicate between the workers
 // and loaders executing builds.
-type BuildOptions struct {
+type Build struct {
 	wg      sync.WaitGroup
 	closing chan struct{}
 
@@ -60,8 +60,8 @@ type BuildOptions struct {
 }
 
 // NewBuild accepts arguments to reate a new Builder
-func NewBuild(paths []string, args *BuildArgs, pMap *SafePartialMap, async bool) *BuildOptions {
-	return &BuildOptions{
+func NewBuild(paths []string, args *BuildArgs, pMap *SafePartialMap, async bool) *Build {
+	return &Build{
 		done:   make(chan error),
 		status: make(chan error),
 
@@ -80,7 +80,7 @@ var ErrPartialMap = errors.New("No partial map found")
 
 // Build compiles all valid Sass files found in the passed paths.
 // It will block until all files are compiled.
-func (b *BuildOptions) Build() error {
+func (b *Build) Run() error {
 
 	if b.partialMap == nil {
 		return ErrPartialMap
@@ -97,7 +97,7 @@ func (b *BuildOptions) Build() error {
 	return <-b.done
 }
 
-func (b *BuildOptions) loadWork() {
+func (b *Build) loadWork() {
 	paths := pathsToFiles(b.paths, true)
 	for _, path := range paths {
 		b.queue <- path
@@ -105,7 +105,7 @@ func (b *BuildOptions) loadWork() {
 	close(b.queue)
 }
 
-func (b *BuildOptions) doBuild() {
+func (b *Build) doBuild() {
 	for {
 		select {
 		case <-b.closing:
@@ -128,13 +128,13 @@ func (b *BuildOptions) doBuild() {
 	}
 }
 
-func (b *BuildOptions) build(path string) error {
+func (b *Build) build(path string) error {
 	return LoadAndBuild(path, b.bArgs, b.partialMap)
 }
 
 // Close shuts down the builder ensuring all go routines have properly
 // closed before returning.
-func (b *BuildOptions) Close() error {
+func (b *Build) Close() error {
 	close(b.closing)
 	b.wg.Wait()
 	return nil
@@ -232,7 +232,7 @@ func NewContext(gba *BuildArgs) *libsass.Context {
 
 func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, out io.WriteCloser, buildDir string) error {
 	defer func() {
-		// Builddir lets us know if we should closer out. If no buildDir,
+		// BuildDir lets us know if we should closer out. If no buildDir,
 		// specified out == os.Stdout and do not close. If buildDir != "",
 		// then out must be something we should close.
 		// This is important, since out can be many things and inspecting
@@ -240,7 +240,6 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 		if len(buildDir) > 0 {
 			out.Close()
 		}
-
 	}()
 
 	ctx := NewContext(gba)
@@ -262,11 +261,11 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 		partialMap.AddRelation(sassFile, inc)
 	}
 
-	go func(sassFile string) {
+	go func(file string) {
 		select {
 		case <-testch:
 		default:
-			fmt.Printf("Rebuilt: %s\n", sassFile)
+			fmt.Printf("Rebuilt: %s\n", file)
 		}
 	}(sassFile)
 	return nil
