@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -70,6 +71,22 @@ func TestNewBuild_two(t *testing.T) {
 		t.Error(err)
 	}
 
+	matches, err := filepath.Glob(filepath.Join(tdir, "test", "*.css"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e := 0; len(matches) != e {
+		t.Errorf("got: %d wanted: %d", len(matches), e)
+	}
+
+	matches, err = filepath.Glob(filepath.Join(tdir, "test", "sass", "*.css"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e := 1; len(matches) != e {
+		t.Errorf("got: %d wanted: %d", len(matches), e)
+	}
+
 }
 
 func TestNewBuild_dir(t *testing.T) {
@@ -82,6 +99,21 @@ func TestNewBuild_dir(t *testing.T) {
 		t.Fatal("expected error")
 	}
 
+	matches, err := filepath.Glob(filepath.Join(tdir, "test", "*.css"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e := 0; len(matches) != e {
+		t.Errorf("got: %d wanted: %d", len(matches), e)
+	}
+
+	matches, err = filepath.Glob(filepath.Join(tdir, "test", "sass", "*.css"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e := 6; len(matches) != e {
+		t.Errorf("got: %d wanted: %d", len(matches), e)
+	}
 }
 
 func ExampleNewBuild() {
