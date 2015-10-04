@@ -261,13 +261,14 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 		partialMap.AddRelation(sassFile, inc)
 	}
 
-	go func(file string) {
-		select {
-		case <-testch:
-		default:
-			fmt.Printf("Rebuilt: %s\n", file)
-		}
-	}(sassFile)
+	// TODO: moves this method to *Build and wait on it to finish
+	// go func(file string) {
+	select {
+	case <-testch:
+	default:
+		fmt.Printf("Rebuilt: %s\n", sassFile)
+	}
+	// }(sassFile)
 	return nil
 }
 
