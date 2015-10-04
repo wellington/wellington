@@ -2,6 +2,7 @@ package wellington
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -173,8 +174,12 @@ var rebuildChan chan ([]string)
 // for whether the file is a non-partial, no _ at beginning,
 // and requests the file be rebuilt directly.
 func (w *Watcher) rebuild(eventFileName string) error {
-
 	w.opts.PartialMap.RLock()
+	paths, ok := w.opts.PartialMap.M[eventFileName]
+	if !ok {
+		return fmt.Errorf("partial map lookup failed: %s", eventFileName)
+	}
+	w.opts.PartialMap.RUnlock()
 	go func(paths []string) {
 		rebuildMu.RLock()
 		if rebuildChan != nil {
@@ -188,8 +193,7 @@ func (w *Watcher) rebuild(eventFileName string) error {
 				w.errChan <- err
 			}
 		}
-	}(w.opts.PartialMap.M[eventFileName])
-	w.opts.PartialMap.RUnlock()
+	}(paths)
 	return nil
 }
 

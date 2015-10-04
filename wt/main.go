@@ -241,19 +241,6 @@ func Run(cmd *cobra.Command, paths []string) {
 	}
 
 	pMap := wt.NewPartialMap()
-	// FIXME: Copy pasta with LoadAndBuild
-	// ctx := libsass.NewContext()
-	// ctx.Payload = gba.Payload
-	// ctx.OutputStyle = gba.Style
-	// ctx.BuildDir = gba.BuildDir
-	// ctx.ImageDir = gba.Dir
-	// ctx.FontDir = gba.Font
-	// ctx.GenImgDir = gba.Gen
-	// ctx.Comments = gba.Comments
-	// ctx.HTTPPath = httpPath
-	// ctx.IncludePaths = []string{gba.Includes}
-	// wt.InitializeContext(ctx)
-	// ctx.Imports.Init()
 
 	gba := parseBuildArgs()
 	if debug {
@@ -311,10 +298,9 @@ func Run(cmd *cobra.Command, paths []string) {
 
 	if watch {
 		w := wt.NewWatcher(&wt.WatchOptions{
-
-			PartialMap: pMap,
 			Paths:      sassPaths,
 			BArgs:      gba,
+			PartialMap: pMap,
 		})
 		w.Watch()
 

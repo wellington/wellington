@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -192,6 +193,7 @@ func LoadAndBuild(path string, gba *BuildArgs, pMap *SafePartialMap) error {
 	}
 
 	out, bdir, err := gba.getOut(path)
+	log.Println(out, bdir)
 	if err != nil {
 		return err
 	}
@@ -230,39 +232,34 @@ func NewContext(gba *BuildArgs) *libsass.Context {
 
 func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, out io.WriteCloser, buildDir string) error {
 	defer func() {
-		// Complicated logic to avoid inspecting os.Stdout which would
-		// race against testing package
-		if closer, ok := out.(*io.PipeWriter); ok {
-			fmt.Printf("closing % #v\n", closer)
-			closer.Close()
-		} else if closer, ok := out.(*os.File); ok {
-			closer.Close()
-		} else {
-			fmt.Printf("failed % #v\n", out)
+		// Builddir lets us know if we should closer out. If no buildDir,
+		// specified out == os.Stdout and do not close. If buildDir != "",
+		// then out must be something we should close.
+		// This is important, since out can be many things and inspecting
+		// them could be race unsafe.
+		if len(buildDir) > 0 {
+			out.Close()
 		}
+
 	}()
 
-	// TODO: remove this!
-	fRead, err := os.Open(sassFile)
-	if err != nil {
-		return err
-	}
-	fRead.Close()
-
 	ctx := NewContext(gba)
+	// FIXME: moves this elsewhere or make it so it doesn't need to be set
 	// Adjust directories if necessary
 	if len(ctx.ImageDir) == 0 {
 		ctx.ImageDir = filepath.Dir(sassFile)
 	}
 	ctx.BuildDir = buildDir
 
-	err = ctx.FileCompile(sassFile, out)
+	err := ctx.FileCompile(sassFile, out)
 	if err != nil {
 		return errors.New(color.RedString("%s", err))
 	}
 
+	// After building, go-libsass collects a list of files used to build
+	// this file. Add these to the partial map and move on.
 	for _, inc := range ctx.ResolvedImports {
-		partialMap.AddRelation(ctx.MainFile, inc)
+		partialMap.AddRelation(sassFile, inc)
 	}
 
 	go func(sassFile string) {
