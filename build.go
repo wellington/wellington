@@ -11,9 +11,34 @@ import (
 
 	"github.com/fatih/color"
 	libsass "github.com/wellington/go-libsass"
+	"github.com/wellington/wellington/types"
 )
 
 var testch chan struct{}
+
+// BuildArgs holds universal arguments for a build that the parser
+// uses during the initial build and the filewatcher passes back to
+// the parser on any file changes.
+type BuildArgs struct {
+	// Imgs, Sprites spritewell.SafeImageMap
+	Payload types.Payloader
+	Dir     string
+
+	// BuildDir is the base build directory used. When recursive
+	// file matching is involved, this directory will be used as the
+	// parent.
+	BuildDir string
+	Includes string
+	Font     string
+	Gen      string
+	Style    int
+	Comments bool
+	WDir     string
+}
+
+func (b *BuildArgs) Init() {
+	b.Payload = newPayload()
+}
 
 // BuildOptions holds a set of read only arguments to the builder.
 // Channels from this are used to communicate between the workers
@@ -136,13 +161,18 @@ func (b *BuildArgs) getOut(path string) (io.WriteCloser, string, error) {
 	fout = filepath.Join(b.BuildDir, rel, filename)
 
 	dir := filepath.Dir(fout)
+	// FIXME: do this once per Build instead of every file
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
 		return nil, "", fmt.Errorf("Failed to create directory: %s",
 			dir)
 	}
+	out, err = os.Create(fout)
+	if err != nil {
+		return nil, "", err
+	}
 
-	return out, fout, nil
+	return out, "", nil
 }
 
 // LoadAndBuild kicks off parser and compiling. It expands directories
@@ -174,8 +204,41 @@ func LoadAndBuild(path string, gba *BuildArgs, pMap *SafePartialMap) error {
 	return nil
 }
 
-func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, out io.WriteCloser, fout string) error {
+func NewContext(gba *BuildArgs) *libsass.Context {
+	ctx := libsass.NewContext()
+	ctx.Payload = gba.Payload
+	ctx.OutputStyle = gba.Style
+	imageDir := gba.Dir
+	// If no imagedir specified, assume relative to the input file
+	// if len(imageDir) == 0 {
+	// 	imageDir = filepath.Dir(sassFile)
+	// }
+	if len(gba.Dir) == 0 {
+		gba.Dir = gba.WDir
+	}
+	ctx.ImageDir = imageDir
+	ctx.FontDir = gba.Font
+	// Assumption that output is a file
 
+	// Ahem... build directory is inferred in loadAndBuild
+	// ctx.BuildDir = filepath.Dir(fout)
+	ctx.BuildDir = gba.BuildDir
+	ctx.GenImgDir = gba.Gen
+	// ctx.MainFile = sassFile
+	ctx.Comments = gba.Comments
+
+	// This needs to happen at start of context
+	// ctx.IncludePaths = []string{filepath.Dir(sassFile)}
+
+	ctx.Imports.Init()
+	if gba.Includes != "" {
+		ctx.IncludePaths = append(ctx.IncludePaths,
+			strings.Split(gba.Includes, ",")...)
+	}
+	return ctx
+}
+
+func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, out io.WriteCloser, fout string) error {
 	defer func() {
 		// Complicated logic to avoid inspecting os.Stdout which would
 		// race against testing package
@@ -188,42 +251,21 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 			fmt.Printf("failed % #v\n", out)
 		}
 	}()
-	imageDir := gba.Dir
-	// If no imagedir specified, assume relative to the input file
-	if len(imageDir) == 0 {
-		imageDir = filepath.Dir(sassFile)
-	}
 
-	ctx := libsass.NewContext()
-	ctx.Payload = gba.Payload
-	ctx.OutputStyle = gba.Style
-	ctx.ImageDir = imageDir
-	ctx.FontDir = gba.Font
-	// Assumption that output is a file
-	ctx.BuildDir = filepath.Dir(fout)
-	ctx.GenImgDir = gba.Gen
-	ctx.MainFile = sassFile
-	ctx.Comments = gba.Comments
-	ctx.IncludePaths = []string{filepath.Dir(sassFile)}
-
-	ctx.Imports.Init()
-	if gba.Includes != "" {
-		ctx.IncludePaths = append(ctx.IncludePaths,
-			strings.Split(gba.Includes, ",")...)
-	}
 	// TODO: remove this!
 	fRead, err := os.Open(sassFile)
 	if err != nil {
 		return err
 	}
-	defer fRead.Close()
-	if fout != "" {
-		out, err = os.Create(fout)
-		if err != nil {
-			return fmt.Errorf("Failed to create file: %s", sassFile)
-		}
-	}
+	fRead.Close()
 
+	// if fout != "" {
+	// 	out, err = os.Create(fout)
+	// 	if err != nil {
+	// 		return fmt.Errorf("Failed to create file: %s", sassFile)
+	// 	}
+	// }
+	ctx := NewContext(gba)
 	err = ctx.FileCompile(sassFile, out)
 	if err != nil {
 		return errors.New(color.RedString("%s", err))

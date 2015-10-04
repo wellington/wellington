@@ -157,67 +157,32 @@ func main() {
 	wtCmd.Execute()
 }
 
-// Run is the main entrypoint for the cli.
-func Run(cmd *cobra.Command, paths []string) {
-
-	start := time.Now()
+func argExit() bool {
 
 	if showVersion {
 		fmt.Printf("   libsass: %s\n", libsass.Version())
 		fmt.Printf("Wellington: %s\n", version.Version)
-		os.Exit(0)
+		return true
 	}
 
 	if showHelp {
 		fmt.Println("Please specify input filepath.")
 		fmt.Println("\nAvailable options:")
 		//flag.PrintDefaults()
-		os.Exit(0)
+		return true
 	}
+	return false
 
-	defer func() {
-		diff := float64(time.Since(start).Nanoseconds()) / float64(time.Millisecond)
-		log.Printf("Compilation took: %sms\n",
-			strconv.FormatFloat(diff, 'f', 3, 32))
-	}()
+}
 
-	// Profiling code
-	if cpuprofile != "" {
-		f, err := os.Create(cpuprofile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Println("Starting profiler")
-		pprof.StartCPUProfile(f)
-		defer func() {
-			pprof.StopCPUProfile()
-			err := f.Close()
-			if err != nil {
-				log.Fatal(err)
-			}
-			log.Println("Stopping Profiller")
-		}()
-	}
-
-	for _, v := range paths {
-		if strings.HasPrefix(v, "-") {
-			log.Fatalf("Please specify flags before other arguments: %s", v)
-		}
-	}
-
-	if gen != "" {
-		err := os.MkdirAll(gen, 0755)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
+func parseBuildArgs() *wt.BuildArgs {
 	style, ok := libsass.Style[style]
 
 	if !ok {
 		style = libsass.NESTED_STYLE
 	}
 
+	// This is garbage, remove it
 	if len(config) > 0 {
 		cfg, err := cfg.Parse(config)
 		if err != nil {
@@ -255,29 +220,82 @@ func Run(cmd *cobra.Command, paths []string) {
 		}
 	}
 
-	gba := wt.NewBuildArgs()
+	gba := &wt.BuildArgs{
+		Dir:      dir,
+		BuildDir: buildDir,
+		Includes: includes,
+		Font:     font,
+		Style:    style,
+		Gen:      gen,
+		Comments: comments,
+	}
+	gba.Init()
 
-	gba.Dir = dir
-	gba.BuildDir = buildDir
-	gba.Includes = includes
-	gba.Font = font
-	gba.Style = style
-	gba.Gen = gen
-	gba.Comments = comments
+	return gba
+}
+
+// Run is the main entrypoint for the cli.
+func Run(cmd *cobra.Command, paths []string) {
+
+	start := time.Now()
+
+	defer func() {
+		diff := float64(time.Since(start).Nanoseconds()) / float64(time.Millisecond)
+		log.Printf("Compilation took: %sms\n",
+			strconv.FormatFloat(diff, 'f', 3, 32))
+	}()
+
+	if argExit() {
+		return
+	}
+
+	// Profiling code
+	if cpuprofile != "" {
+		f, err := os.Create(cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println("Starting profiler")
+		pprof.StartCPUProfile(f)
+		defer func() {
+			pprof.StopCPUProfile()
+			err := f.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
+			log.Println("Stopping Profiller")
+		}()
+	}
+
+	for _, v := range paths {
+		if strings.HasPrefix(v, "-") {
+			log.Fatalf("Please specify flags before other arguments: %s", v)
+		}
+	}
+
+	if gen != "" {
+		err := os.MkdirAll(gen, 0755)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 
 	pMap := wt.NewPartialMap()
 	// FIXME: Copy pasta with LoadAndBuild
-	ctx := libsass.NewContext()
-	ctx.Payload = gba.Payload
-	ctx.OutputStyle = gba.Style
-	ctx.BuildDir = gba.BuildDir
-	ctx.ImageDir = gba.Dir
-	ctx.FontDir = gba.Font
-	ctx.GenImgDir = gba.Gen
-	ctx.Comments = gba.Comments
-	ctx.HTTPPath = httpPath
-	ctx.IncludePaths = []string{gba.Includes}
+	// ctx := libsass.NewContext()
+	// ctx.Payload = gba.Payload
+	// ctx.OutputStyle = gba.Style
+	// ctx.BuildDir = gba.BuildDir
+	// ctx.ImageDir = gba.Dir
+	// ctx.FontDir = gba.Font
+	// ctx.GenImgDir = gba.Gen
+	// ctx.Comments = gba.Comments
+	// ctx.HTTPPath = httpPath
+	// ctx.IncludePaths = []string{gba.Includes}
+	// wt.InitializeContext(ctx)
+	// ctx.Imports.Init()
 
+	gba := parseBuildArgs()
 	if debug {
 		fmt.Printf("      Font  Dir: %s\n", gba.Font)
 		fmt.Printf("      Image Dir: %s\n", gba.Dir)
@@ -286,8 +304,6 @@ func Run(cmd *cobra.Command, paths []string) {
 		fmt.Printf(" Include Dir(s): %s\n", gba.Includes)
 		fmt.Println("===================================")
 	}
-	wt.InitializeContext(ctx)
-	ctx.Imports.Init()
 
 	if ishttp {
 		if len(gba.Gen) == 0 {
@@ -295,7 +311,7 @@ func Run(cmd *cobra.Command, paths []string) {
 		}
 		http.Handle("/build/", wt.FileHandler(gba.Gen))
 		log.Println("Web server started on :12345")
-		http.HandleFunc("/", wt.HTTPHandler(ctx))
+		http.HandleFunc("/", wt.HTTPHandler(wt.NewContext(gba)))
 		err := http.ListenAndServe(":12345", nil)
 		if err != nil {
 			log.Fatal("ListenAndServe: ", err)
@@ -345,7 +361,7 @@ func Run(cmd *cobra.Command, paths []string) {
 	}
 	sassPaths := paths
 
-	bOpts := wt.NewBuild(paths, &gba, pMap, multi)
+	bOpts := wt.NewBuild(paths, gba, pMap, multi)
 
 	err := bOpts.Build()
 	if err != nil {
@@ -357,7 +373,7 @@ func Run(cmd *cobra.Command, paths []string) {
 
 			PartialMap: pMap,
 			Paths:      sassPaths,
-			BArgs:      &gba,
+			BArgs:      gba,
 		})
 		w.Watch()
 
