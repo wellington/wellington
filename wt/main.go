@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"runtime/pprof"
 	"strconv"
 	"strings"
@@ -21,7 +20,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	libsass "github.com/wellington/go-libsass"
-	"github.com/wellington/wellington/cfg"
 	"github.com/wellington/wellington/version"
 
 	wt "github.com/wellington/wellington"
@@ -182,44 +180,6 @@ func parseBuildArgs() *wt.BuildArgs {
 		style = libsass.NESTED_STYLE
 	}
 
-	// This is garbage, remove it
-	if len(config) > 0 {
-		cfg, err := cfg.Parse(config)
-		if err != nil {
-			log.Fatal(err)
-		}
-		// Manually walk through known variables looking for matches
-		// These do not override the cli flags
-		if p, ok := cfg["css_dir"]; ok && len(buildDir) == 0 {
-			buildDir = p
-		}
-
-		if p, ok := cfg["images_dir"]; ok && len(dir) == 0 {
-			dir = p
-		}
-
-		if p, ok := cfg["sass_dir"]; ok && len(includes) == 0 {
-			includes = p
-		}
-
-		if p, ok := cfg["generated_images_dir"]; ok && len(gen) == 0 {
-			gen = p
-		}
-
-		// As of yet, unsupported
-		if p, ok := cfg["http_path"]; ok {
-			_ = p
-		}
-
-		if p, ok := cfg["http_generated_images_path"]; ok {
-			_ = p
-		}
-
-		if p, ok := cfg["fonts_dir"]; ok {
-			font = p
-		}
-	}
-
 	gba := &wt.BuildArgs{
 		ImageDir: dir,
 		BuildDir: buildDir,
@@ -318,26 +278,6 @@ func Run(cmd *cobra.Command, paths []string) {
 		}
 
 		return
-	}
-
-	// Only inject files when a config is passed. Otherwise,
-	// assume we are waiting for input from stdin
-	if len(includes) > 0 && len(config) > 0 {
-		rot := filepath.Join(includes, "*.scss")
-		pat := filepath.Join(includes, "**/*.scss")
-		rotFiles, _ := filepath.Glob(rot)
-		patFiles, _ := filepath.Glob(pat)
-		paths = append(rotFiles, patFiles...)
-		// Probably a better way to do this, but I'm impatient
-
-		clean := make([]string, 0, len(paths))
-
-		for _, p := range paths {
-			if !strings.HasPrefix(filepath.Base(p), "_") {
-				clean = append(clean, p)
-			}
-		}
-		paths = clean
 	}
 
 	if !watch && len(paths) == 0 && len(config) == 0 {
