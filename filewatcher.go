@@ -103,6 +103,7 @@ func (w *Watcher) Watch() error {
 	if w.opts.PartialMap == nil {
 		w.opts.PartialMap = NewPartialMap()
 	}
+
 	if len(w.opts.Paths) == 0 {
 		return errors.New("No paths to watch")
 	}
