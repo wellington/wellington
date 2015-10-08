@@ -93,6 +93,7 @@ func TestNewBuild_dir(t *testing.T) {
 	tdir, _ := ioutil.TempDir("", "testnewbuild_two")
 	bb := NewBuild([]string{"test/sass"},
 		&BuildArgs{BuildDir: tdir}, NewPartialMap(), false)
+	os.RemoveAll(filepath.Join(tdir, "test"))
 
 	err := bb.Build()
 	if err == nil {
