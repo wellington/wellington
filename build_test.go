@@ -93,7 +93,7 @@ func TestNewBuild_dir(t *testing.T) {
 	tdir, _ := ioutil.TempDir("", "testnewbuild_two")
 	bb := NewBuild([]string{"test/sass"},
 		&BuildArgs{BuildDir: tdir}, NewPartialMap(), false)
-	os.RemoveAll(filepath.Join(tdir, "test"))
+	os.RemoveAll(filepath.Join(tdir, "*"))
 
 	err := bb.Build()
 	if err == nil {
@@ -108,11 +108,31 @@ func TestNewBuild_dir(t *testing.T) {
 		t.Errorf("got: %d wanted: %d", len(matches), e)
 	}
 
-	matches, err = filepath.Glob(filepath.Join(tdir, "test", "sass", "*.css"))
+	bb = NewBuild([]string{"test/subdir"},
+		&BuildArgs{BuildDir: tdir}, NewPartialMap(), false)
+	os.RemoveAll(filepath.Join(tdir, "test"))
+
+	err = bb.Build()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if e := 6; len(matches) != e {
+
+	path := filepath.Join(tdir, "test", "subdir", "*.css")
+	matches, err = filepath.Glob(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e := 1; len(matches) != e {
+		t.Errorf("matches: % #v\n", matches)
+		t.Errorf("got: %d wanted: %d", len(matches), e)
+	}
+
+	path = filepath.Join(tdir, "test", "subdir", "sub", "*.css")
+	matches, err = filepath.Glob(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e := 1; len(matches) != e {
 		t.Errorf("matches: % #v\n", matches)
 		t.Errorf("got: %d wanted: %d", len(matches), e)
 	}
