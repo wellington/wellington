@@ -113,6 +113,7 @@ func TestNewBuild_dir(t *testing.T) {
 		t.Fatal(err)
 	}
 	if e := 6; len(matches) != e {
+		t.Errorf("matches: % #v\n", matches)
 		t.Errorf("got: %d wanted: %d", len(matches), e)
 	}
 }
