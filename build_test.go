@@ -43,9 +43,24 @@ func TestCompileStdin_imports(t *testing.T) {
 
 }
 
+func BenchmarkNewBuild(b *testing.B) {
+	ins := []string{"test/sass/file.scss"}
+	pmap := NewPartialMap()
+	args := &BuildArgs{}
+	// run the Fib function b.N times
+	for n := 0; n < b.N; n++ {
+		bld := NewBuild(ins, args, pmap)
+		err := bld.Run()
+		if err != nil {
+			b.Fatal(err)
+		}
+		bld.Close()
+	}
+}
+
 func TestNewBuild(t *testing.T) {
 
-	b := NewBuild([]string{"test/sass/error.scss"}, &BuildArgs{}, nil, false)
+	b := NewBuild([]string{"test/sass/error.scss"}, &BuildArgs{}, nil)
 	if b == nil {
 		t.Fatal("build is nil")
 	}
@@ -60,7 +75,7 @@ func TestNewBuild(t *testing.T) {
 func TestNewBuild_two(t *testing.T) {
 	tdir, _ := ioutil.TempDir("", "testnewbuild_two")
 	bb := NewBuild([]string{"test/sass/file.scss"},
-		&BuildArgs{BuildDir: tdir}, NewPartialMap(), false)
+		&BuildArgs{BuildDir: tdir}, NewPartialMap())
 
 	err := bb.Run()
 	if err != nil {
@@ -94,8 +109,7 @@ func TestNewBuild_dir(t *testing.T) {
 	bb := NewBuild(
 		[]string{"test/sass"},
 		&BuildArgs{BuildDir: tdir},
-		NewPartialMap(),
-		false)
+		NewPartialMap())
 	os.RemoveAll(filepath.Join(tdir, "*"))
 
 	err := bb.Run()
@@ -143,7 +157,7 @@ func TestNewBuild_dir(t *testing.T) {
 
 func ExampleNewBuild() {
 	b := NewBuild([]string{"test/sass/file.scss"},
-		&BuildArgs{}, NewPartialMap(), false)
+		&BuildArgs{}, NewPartialMap())
 
 	err := b.Run()
 	if err != nil {

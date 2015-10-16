@@ -36,6 +36,7 @@ type BuildArgs struct {
 	Comments bool
 }
 
+// Init initializes the payload, this should really go away
 func (b *BuildArgs) Init() {
 	b.Payload = newPayload()
 }
@@ -53,14 +54,13 @@ type Build struct {
 	status chan error
 	queue  chan string
 
-	async      bool
 	paths      []string
 	bArgs      *BuildArgs
 	partialMap *SafePartialMap
 }
 
 // NewBuild accepts arguments to reate a new Builder
-func NewBuild(paths []string, args *BuildArgs, pMap *SafePartialMap, async bool) *Build {
+func NewBuild(paths []string, args *BuildArgs, pMap *SafePartialMap) *Build {
 	return &Build{
 		done:   make(chan error),
 		status: make(chan error),
@@ -71,7 +71,6 @@ func NewBuild(paths []string, args *BuildArgs, pMap *SafePartialMap, async bool)
 		paths:      paths,
 		bArgs:      args,
 		partialMap: pMap,
-		async:      async,
 	}
 }
 

@@ -243,7 +243,7 @@ func globalRun(paths []string) (*wt.SafePartialMap, *wt.BuildArgs) {
 func Watch(cmd *cobra.Command, paths []string) {
 
 	pMap, gba := globalRun(paths)
-	bOpts := wt.NewBuild(paths, gba, pMap, multi)
+	bOpts := wt.NewBuild(paths, gba, pMap)
 
 	err := bOpts.Run()
 	if err != nil {
@@ -329,7 +329,7 @@ func run(paths []string, pMap *wt.SafePartialMap, gba *wt.BuildArgs) {
 		return
 	}
 
-	bOpts := wt.NewBuild(paths, gba, pMap, multi)
+	bOpts := wt.NewBuild(paths, gba, pMap)
 
 	err := bOpts.Run()
 	if err != nil {
