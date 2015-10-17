@@ -2,42 +2,18 @@ package wellington
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"sync"
 
-	"github.com/wellington/wellington/types"
 	"gopkg.in/fsnotify.v1"
 )
 
 // Sets the default size of the slice holding the top level files for a
 // sass partial in SafePartialMap.M
 const MaxTopLevel int = 20
-
-// BuildArgs holds universal arguments for a build that the parser
-// uses during the initial build and the filewatcher passes back to
-// the parser on any file changes.
-type BuildArgs struct {
-	// Imgs, Sprites spritewell.SafeImageMap
-	Payload  types.Payloader
-	Dir      string
-	BuildDir string
-	Includes string
-	Font     string
-	Gen      string
-	Style    int
-	Comments bool
-}
-
-// NewBuildArgs creates a BuildArgs and initializes Cache maps for
-// sprites and images
-func NewBuildArgs() BuildArgs {
-	bArgs := BuildArgs{
-		Payload: newPayload(),
-	}
-	return bArgs
-}
 
 // Watcher holds all data needed to kick off a build of the css when a
 // file changes.
@@ -127,6 +103,7 @@ func (w *Watcher) Watch() error {
 	if w.opts.PartialMap == nil {
 		w.opts.PartialMap = NewPartialMap()
 	}
+
 	if len(w.opts.Paths) == 0 {
 		return errors.New("No paths to watch")
 	}
@@ -198,8 +175,12 @@ var rebuildChan chan ([]string)
 // for whether the file is a non-partial, no _ at beginning,
 // and requests the file be rebuilt directly.
 func (w *Watcher) rebuild(eventFileName string) error {
-
 	w.opts.PartialMap.RLock()
+	paths, ok := w.opts.PartialMap.M[eventFileName]
+	if !ok {
+		return fmt.Errorf("partial map lookup failed: %s", eventFileName)
+	}
+	w.opts.PartialMap.RUnlock()
 	go func(paths []string) {
 		rebuildMu.RLock()
 		if rebuildChan != nil {
@@ -213,8 +194,7 @@ func (w *Watcher) rebuild(eventFileName string) error {
 				w.errChan <- err
 			}
 		}
-	}(w.opts.PartialMap.M[eventFileName])
-	w.opts.PartialMap.RUnlock()
+	}(paths)
 	return nil
 }
 

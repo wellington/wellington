@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"runtime/pprof"
 	"strconv"
 	"strings"
@@ -21,7 +20,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	libsass "github.com/wellington/go-libsass"
-	"github.com/wellington/wellington/cfg"
 	"github.com/wellington/wellington/version"
 
 	wt "github.com/wellington/wellington"
@@ -84,10 +82,8 @@ func flags(set *pflag.FlagSet) {
 
 	set.BoolVarP(&comments, "comment", "", true, "Turn on source comments")
 
-	set.BoolVarP(&watch, "watch", "w", false, "File watcher that will rebuild css on file changes")
-
 	set.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
-	set.BoolVarP(&multi, "multi", "", false, "Enable multi-threaded operation")
+	set.BoolVarP(&multi, "multi", "", true, "Enable multi-threaded operation")
 }
 
 var compileCmd = &cobra.Command{
@@ -95,27 +91,21 @@ var compileCmd = &cobra.Command{
 	Short: "Compile Sass stylesheets to CSS",
 	Long: `Fast compilation of Sass stylesheets to CSS. For usage consult
 the documentation at https://github.com/wellington/wellington#wellington`,
-	Run: Run,
+	Run: Compile,
 }
 
 var watchCmd = &cobra.Command{
 	Use:   "watch",
 	Short: "Watch Sass files for changes and rebuild CSS",
 	Long:  ``,
-	Run: func(cmd *cobra.Command, args []string) {
-		watch = true
-		Run(cmd, args)
-	},
+	Run:   Watch,
 }
 
 var httpCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Starts a http server that will convert Sass to CSS",
 	Long:  ``,
-	Run: func(cmd *cobra.Command, args []string) {
-		ishttp = true
-		Run(cmd, args)
-	},
+	Run:   Serve,
 }
 
 func init() {
@@ -146,8 +136,8 @@ func AddCommands() {
 
 var wtCmd = &cobra.Command{
 	Use:   "wt",
-	Short: "wt builds Sass",
-	Run:   Run,
+	Short: "wt is a Sass project tool",
+	Run:   Compile,
 }
 
 func main() {
@@ -157,29 +147,50 @@ func main() {
 	wtCmd.Execute()
 }
 
-// Run is the main entrypoint for the cli.
-func Run(cmd *cobra.Command, paths []string) {
-
-	start := time.Now()
+func argExit() bool {
 
 	if showVersion {
 		fmt.Printf("   libsass: %s\n", libsass.Version())
 		fmt.Printf("Wellington: %s\n", version.Version)
-		os.Exit(0)
+		return true
 	}
 
 	if showHelp {
 		fmt.Println("Please specify input filepath.")
 		fmt.Println("\nAvailable options:")
 		//flag.PrintDefaults()
-		os.Exit(0)
+		return true
+	}
+	return false
+
+}
+
+func parseBuildArgs() *wt.BuildArgs {
+	style, ok := libsass.Style[style]
+
+	if !ok {
+		style = libsass.NESTED_STYLE
 	}
 
-	defer func() {
-		diff := float64(time.Since(start).Nanoseconds()) / float64(time.Millisecond)
-		log.Printf("Compilation took: %sms\n",
-			strconv.FormatFloat(diff, 'f', 3, 32))
-	}()
+	gba := &wt.BuildArgs{
+		ImageDir: dir,
+		BuildDir: buildDir,
+		Includes: includes,
+		Font:     font,
+		Style:    style,
+		Gen:      gen,
+		Comments: comments,
+	}
+	gba.Init()
+
+	return gba
+}
+
+func globalRun(paths []string) (*wt.SafePartialMap, *wt.BuildArgs) {
+
+	if argExit() {
+		return nil, nil
+	}
 
 	// Profiling code
 	if cpuprofile != "" {
@@ -212,126 +223,100 @@ func Run(cmd *cobra.Command, paths []string) {
 		}
 	}
 
-	style, ok := libsass.Style[style]
-
-	if !ok {
-		style = libsass.NESTED_STYLE
-	}
-
-	if len(config) > 0 {
-		cfg, err := cfg.Parse(config)
-		if err != nil {
-			log.Fatal(err)
-		}
-		// Manually walk through known variables looking for matches
-		// These do not override the cli flags
-		if p, ok := cfg["css_dir"]; ok && len(buildDir) == 0 {
-			buildDir = p
-		}
-
-		if p, ok := cfg["images_dir"]; ok && len(dir) == 0 {
-			dir = p
-		}
-
-		if p, ok := cfg["sass_dir"]; ok && len(includes) == 0 {
-			includes = p
-		}
-
-		if p, ok := cfg["generated_images_dir"]; ok && len(gen) == 0 {
-			gen = p
-		}
-
-		// As of yet, unsupported
-		if p, ok := cfg["http_path"]; ok {
-			_ = p
-		}
-
-		if p, ok := cfg["http_generated_images_path"]; ok {
-			_ = p
-		}
-
-		if p, ok := cfg["fonts_dir"]; ok {
-			font = p
-		}
-	}
-
-	gba := wt.NewBuildArgs()
-
-	gba.Dir = dir
-	gba.BuildDir = buildDir
-	gba.Includes = includes
-	gba.Font = font
-	gba.Style = style
-	gba.Gen = gen
-	gba.Comments = comments
-
 	pMap := wt.NewPartialMap()
-	// FIXME: Copy pasta with LoadAndBuild
-	ctx := libsass.NewContext()
-	ctx.Payload = gba.Payload
-	ctx.OutputStyle = gba.Style
-	ctx.BuildDir = gba.BuildDir
-	ctx.ImageDir = gba.Dir
-	ctx.FontDir = gba.Font
-	ctx.GenImgDir = gba.Gen
-	ctx.Comments = gba.Comments
-	ctx.HTTPPath = httpPath
-	ctx.IncludePaths = []string{gba.Includes}
+	gba := parseBuildArgs()
 
 	if debug {
 		fmt.Printf("      Font  Dir: %s\n", gba.Font)
-		fmt.Printf("      Image Dir: %s\n", gba.Dir)
+		fmt.Printf("      Image Dir: %s\n", gba.ImageDir)
 		fmt.Printf("      Build Dir: %s\n", gba.BuildDir)
 		fmt.Printf("Build Image Dir: %s\n", gba.Gen)
 		fmt.Printf(" Include Dir(s): %s\n", gba.Includes)
 		fmt.Println("===================================")
 	}
-	wt.InitializeContext(ctx)
-	ctx.Imports.Init()
 
-	if ishttp {
-		if len(gba.Gen) == 0 {
-			log.Fatal("Must pass an image build directory to use HTTP")
-		}
-		http.Handle("/build/", wt.FileHandler(gba.Gen))
-		log.Println("Web server started on :12345")
-		http.HandleFunc("/", wt.HTTPHandler(ctx))
-		err := http.ListenAndServe(":12345", nil)
+	return pMap, gba
+
+}
+
+// Watch accepts a set of paths starting a recursive file watcher
+func Watch(cmd *cobra.Command, paths []string) {
+
+	pMap, gba := globalRun(paths)
+	bOpts := wt.NewBuild(paths, gba, pMap)
+
+	err := bOpts.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	w := wt.NewWatcher(&wt.WatchOptions{
+		Paths:      paths,
+		BArgs:      gba,
+		PartialMap: pMap,
+	})
+	err = w.Watch()
+	if err != nil {
+		log.Fatal("filewatcher error: ", err)
+	}
+
+	fmt.Println("File watcher started use `ctrl+d` to exit")
+	in := bufio.NewReader(os.Stdin)
+	for {
+		_, err := in.ReadString(' ')
 		if err != nil {
-			log.Fatal("ListenAndServe: ", err)
-		}
-
-		return
-	}
-
-	// Only inject files when a config is passed. Otherwise,
-	// assume we are waiting for input from stdin
-	if len(includes) > 0 && len(config) > 0 {
-		rot := filepath.Join(includes, "*.scss")
-		pat := filepath.Join(includes, "**/*.scss")
-		rotFiles, _ := filepath.Glob(rot)
-		patFiles, _ := filepath.Glob(pat)
-		paths = append(rotFiles, patFiles...)
-		// Probably a better way to do this, but I'm impatient
-
-		clean := make([]string, 0, len(paths))
-
-		for _, p := range paths {
-			if !strings.HasPrefix(filepath.Base(p), "_") {
-				clean = append(clean, p)
+			if err == io.EOF {
+				os.Exit(0)
 			}
+			fmt.Println("error", err)
 		}
-		paths = clean
+	}
+}
+
+// Serve starts a web server accepting POST calls and return CSS
+func Serve(cmd *cobra.Command, paths []string) {
+
+	_, gba := globalRun(paths)
+	if len(gba.Gen) == 0 {
+		log.Fatal("Must pass an image build directory to use HTTP")
+	}
+	http.Handle("/build/", wt.FileHandler(gba.Gen))
+	log.Println("Web server started on :12345")
+	http.HandleFunc("/", wt.HTTPHandler(wt.NewContext(gba)))
+	err := http.ListenAndServe(":12345", nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
 	}
 
-	if !watch && len(paths) == 0 && len(config) == 0 {
+}
 
-		// Read from stdin
+// Compile handles compile files and stdin operations.
+func Compile(cmd *cobra.Command, paths []string) {
+
+	start := time.Now()
+
+	defer func() {
+		diff := float64(time.Since(start).Nanoseconds()) /
+			float64(time.Millisecond)
+		log.Printf("Compilation took: %sms\n",
+			strconv.FormatFloat(diff, 'f', 3, 32))
+	}()
+	pMap, gba := globalRun(paths)
+	run(paths, pMap, gba)
+}
+
+// Run is the main entrypoint for the cli.
+func run(paths []string, pMap *wt.SafePartialMap, gba *wt.BuildArgs) {
+
+	// No paths given, read from stdin and wait
+	if len(paths) == 0 && len(config) == 0 {
+
 		fmt.Println("Reading from stdin, -h for help")
 		out := os.Stdout
 		in := os.Stdin
 
 		var pout bytes.Buffer
+		ctx := wt.NewContext(gba)
 		_, err := wt.StartParser(ctx, in, &pout, wt.NewPartialMap())
 		if err != nil {
 			log.Println(err)
@@ -343,63 +328,39 @@ func Run(cmd *cobra.Command, paths []string) {
 		}
 		return
 	}
-	sassPaths := paths
 
-	bOpts := wt.NewBuild(paths, &gba, pMap, multi)
+	bOpts := wt.NewBuild(paths, gba, pMap)
 
-	err := bOpts.Build()
+	err := bOpts.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if watch {
-		w := wt.NewWatcher(&wt.WatchOptions{
+	// FIXME: move this to a Payload.Close() method
 
-			PartialMap: pMap,
-			Paths:      sassPaths,
-			BArgs:      &gba,
-		})
-		w.Watch()
-
-		fmt.Println("File watcher started use `ctrl+d` to exit")
-		in := bufio.NewReader(os.Stdin)
-		for {
-			_, err := in.ReadString(' ')
-			if err != nil {
-				if err == io.EOF {
-					os.Exit(0)
-				}
-				fmt.Println("error", err)
-			}
+	// Before shutting down, check that every sprite has been
+	// flushed to disk.
+	img := sync.WaitGroup{}
+	pMap.RLock()
+	// It's not currently possible to wait on Image. This is often
+	// to inline images, so it shouldn't be a factor...
+	// for _, s := range gba.Payload.Image().M {
+	// 	img.Add(1)
+	// 	err := s.Wait()
+	// 	img.Done()
+	// 	if err != nil {
+	// 		log.Printf("error writing image: %s\n", err)
+	// 	}
+	// }
+	for _, s := range gba.Payload.Sprite().M {
+		img.Add(1)
+		err := s.Wait()
+		img.Done()
+		if err != nil {
+			log.Printf("error writing sprite: %s\n", err)
 		}
-	} else {
-
-		// Before shutting down, check that every sprite has been
-		// flushed to disk.
-		flush := time.Now()
-		img := sync.WaitGroup{}
-		pMap.RLock()
-		// It's not currently possible to wait on Image. This is often
-		// to inline images, so it shouldn't be a factor...
-		/*for _, s := range gba.Payload.Image().M {
-			img.Add(1)
-			err := s.Wait()
-			img.Done()
-			if err != nil {
-				log.Printf("error writing image: %s\n", err)
-			}
-		}*/
-		for _, s := range gba.Payload.Sprite().M {
-			img.Add(1)
-			err := s.Wait()
-			img.Done()
-			if err != nil {
-				log.Printf("error writing sprite: %s\n", err)
-			}
-		}
-		img.Wait()
-		_ = flush
-		// log.Println("Extra time spent flushing images to disk: ", time.Since(flush))
-		pMap.RUnlock()
 	}
+	img.Wait()
+	pMap.RUnlock()
+
 }

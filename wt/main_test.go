@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,17 +16,28 @@ func init() {
 
 }
 
+func TestWatch(t *testing.T) {
+	t.Skip()
+	tdir, err := ioutil.TempDir("", "TestWatch")
+	if err != nil {
+		t.Fatal(err)
+	}
+	wtCmd.ResetFlags()
+
+	watch = true
+	wtCmd.SetArgs([]string{
+		"--dir", tdir,
+		"watch",
+	})
+	main()
+
+}
+
 func TestStdin_import(t *testing.T) {
 	wtCmd.ResetFlags()
-	fh, err := os.Open("../test/sass/import.scss")
-	if err != nil {
-		t.Error(err)
-	}
 
-	oldStd := os.Stdin
 	oldOut := os.Stdout
 
-	os.Stdin = fh
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 	pwd, err := os.Getwd()
@@ -34,7 +46,9 @@ func TestStdin_import(t *testing.T) {
 	}
 
 	includeDir := filepath.Join(pwd, "..", "test", "sass")
-	wtCmd.SetArgs([]string{"-p", includeDir})
+	wtCmd.SetArgs([]string{
+		"-p", includeDir,
+		"compile", "../test/sass/import.scss"})
 	main()
 
 	outC := make(chan string)
@@ -46,7 +60,6 @@ func TestStdin_import(t *testing.T) {
 	}()
 
 	w.Close()
-	os.Stdin = oldStd
 	os.Stdout = oldOut
 
 	out := <-outC
@@ -56,7 +69,7 @@ func TestStdin_import(t *testing.T) {
   font-size: 10pt; }
 `
 
-	if !bytes.Contains([]byte(e), []byte(e)) {
+	if !bytes.Contains([]byte(out), []byte(e)) {
 		t.Errorf("got:\n%s\nwanted:\n%s", out, e)
 	}
 
@@ -64,19 +77,16 @@ func TestStdin_import(t *testing.T) {
 
 func TestStdin_sprite(t *testing.T) {
 	wtCmd.ResetFlags()
-	fh, err := os.Open("../test/sass/sprite.scss")
-	if err != nil {
-		t.Error(err)
-	}
 
 	oldStd := os.Stdin
 	oldOut := os.Stdout
 
-	os.Stdin = fh
 	r, w, _ := os.Pipe()
 	os.Stdout = w
-	wtCmd.SetArgs([]string{"--dir", "../test/img",
-		"--gen", "../test/img/build"})
+	wtCmd.SetArgs([]string{
+		"--dir", "../test/img",
+		"--gen", "../test/img/build",
+		"compile", "../test/sass/sprite.scss"})
 	main()
 
 	outC := make(chan string)
@@ -96,9 +106,10 @@ func TestStdin_sprite(t *testing.T) {
 	e := `div {
   height: 139px;
   width: 96px;
-  background: url("../test/img/build/91300a.png") 0px 0px; }
+  background: url("../test/img/build/f0a220.png") 0px 0px; }
 `
-	if !bytes.Contains([]byte(e), []byte(e)) {
+
+	if !bytes.Contains([]byte(out), []byte(e)) {
 		t.Errorf("got:\n%s\nwanted:\n%s", out, e)
 	}
 

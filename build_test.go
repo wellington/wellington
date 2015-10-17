@@ -43,14 +43,29 @@ func TestCompileStdin_imports(t *testing.T) {
 
 }
 
+func BenchmarkNewBuild(b *testing.B) {
+	ins := []string{"test/sass/file.scss"}
+	pmap := NewPartialMap()
+	args := &BuildArgs{}
+	// run the Fib function b.N times
+	for n := 0; n < b.N; n++ {
+		bld := NewBuild(ins, args, pmap)
+		err := bld.Run()
+		if err != nil {
+			b.Fatal(err)
+		}
+		bld.Close()
+	}
+}
+
 func TestNewBuild(t *testing.T) {
 
-	b := NewBuild([]string{"test/sass/error.scss"}, &BuildArgs{}, nil, false)
+	b := NewBuild([]string{"test/sass/error.scss"}, &BuildArgs{}, nil)
 	if b == nil {
 		t.Fatal("build is nil")
 	}
 
-	err := b.Build()
+	err := b.Run()
 	if err != ErrPartialMap {
 		t.Errorf("got: %s wanted: %s", err, ErrPartialMap)
 	}
@@ -60,9 +75,9 @@ func TestNewBuild(t *testing.T) {
 func TestNewBuild_two(t *testing.T) {
 	tdir, _ := ioutil.TempDir("", "testnewbuild_two")
 	bb := NewBuild([]string{"test/sass/file.scss"},
-		&BuildArgs{BuildDir: tdir}, NewPartialMap(), false)
+		&BuildArgs{BuildDir: tdir}, NewPartialMap())
 
-	err := bb.Build()
+	err := bb.Run()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,11 +106,13 @@ func TestNewBuild_two(t *testing.T) {
 
 func TestNewBuild_dir(t *testing.T) {
 	tdir, _ := ioutil.TempDir("", "testnewbuild_two")
-	bb := NewBuild([]string{"test/sass"},
-		&BuildArgs{BuildDir: tdir}, NewPartialMap(), false)
+	bb := NewBuild(
+		[]string{"test/sass"},
+		&BuildArgs{BuildDir: tdir},
+		NewPartialMap())
 	os.RemoveAll(filepath.Join(tdir, "*"))
 
-	err := bb.Build()
+	err := bb.Run()
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -109,10 +126,10 @@ func TestNewBuild_dir(t *testing.T) {
 	}
 
 	bb = NewBuild([]string{"test/subdir"},
-		&BuildArgs{BuildDir: tdir}, NewPartialMap(), false)
+		&BuildArgs{BuildDir: tdir}, NewPartialMap())
 	os.RemoveAll(filepath.Join(tdir, "test"))
 
-	err = bb.Build()
+	err = bb.Run()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,9 +157,9 @@ func TestNewBuild_dir(t *testing.T) {
 
 func ExampleNewBuild() {
 	b := NewBuild([]string{"test/sass/file.scss"},
-		&BuildArgs{}, NewPartialMap(), false)
+		&BuildArgs{}, NewPartialMap())
 
-	err := b.Build()
+	err := b.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -162,7 +179,7 @@ func TestBuild_error(t *testing.T) {
 	if err == nil {
 		t.Fatal("no error thrown")
 	}
-
+	w.Close()
 	e := `Invalid CSS after "div {": expected "}", was ""`
 	if !strings.HasSuffix(err.Error(), e) {
 		t.Fatalf("Error contains invalid text:\n%s", err)
@@ -181,7 +198,7 @@ func TestBuild_args(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	w.Close()
 	bs, err := ioutil.ReadAll(r)
 	if err != nil {
 		t.Fatal(err)
@@ -203,7 +220,7 @@ func TestBuild_comply(t *testing.T) {
 			Includes: "test",
 		},
 		NewPartialMap(), w, "")
-
+	w.Close()
 	bs, err := ioutil.ReadAll(r)
 	if err != nil {
 		t.Fatal(err)
