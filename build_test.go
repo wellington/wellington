@@ -126,10 +126,10 @@ func TestNewBuild_dir(t *testing.T) {
 	}
 
 	bb = NewBuild([]string{"test/subdir"},
-		&BuildArgs{BuildDir: tdir}, NewPartialMap(), false)
+		&BuildArgs{BuildDir: tdir}, NewPartialMap())
 	os.RemoveAll(filepath.Join(tdir, "test"))
 
-	err = bb.Build()
+	err = bb.Run()
 	if err != nil {
 		t.Fatal(err)
 	}
