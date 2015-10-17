@@ -77,7 +77,7 @@ func NewBuild(paths []string, args *BuildArgs, pMap *SafePartialMap) *Build {
 // ErrParitalMap when no partial map is found
 var ErrPartialMap = errors.New("No partial map found")
 
-// Build compiles all valid Sass files found in the passed paths.
+// Run compiles all valid Sass files found in the passed paths.
 // It will block until all files are compiled.
 func (b *Build) Run() error {
 
@@ -204,6 +204,8 @@ func LoadAndBuild(path string, gba *BuildArgs, pMap *SafePartialMap) error {
 	return nil
 }
 
+// NewContext creates a libsass.Context from BuildArgs. This is helpful
+// for bypassing the builder provides in this package.
 func NewContext(gba *BuildArgs) *libsass.Context {
 	ctx := libsass.NewContext()
 	ctx.Payload = gba.Payload
