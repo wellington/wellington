@@ -252,6 +252,19 @@ func SassContextGetErrorStatus(goctx SassContext) int {
 	return int(C.sass_context_get_error_status(goctx))
 }
 
+// SassOptionGetSourceMapFile retrieves the source map file
+func SassOptionGetSourceMapFile(goopts SassOptions) string {
+	p := C.sass_option_get_source_map_file(goopts)
+	return C.GoString(p)
+}
+
+// SassContextGetSourceMapString retrieves the contents of a
+// source map
+func SassContextGetSourceMapString(goctx SassContext) string {
+	s := C.sass_context_get_source_map_string(goctx)
+	return C.GoString(s)
+}
+
 // SassOptionSetPrecision sets the precision of floating point math
 // ie. 3.2222px. This is currently bugged and does not work.
 func SassOptionSetPrecision(goopts SassOptions, i int) {
@@ -273,16 +286,20 @@ func SassOptionSetIncludePath(goopts SassOptions, path string) {
 	C.sass_option_set_include_path(goopts, C.CString(path))
 }
 
-func SassOptionSetSourceMapEmbed() {
-
+func SassOptionSetSourceMapEmbed(goopts SassOptions, b bool) {
+	C.sass_option_set_source_map_embed(goopts, C.bool(b))
 }
 
-func SassOptionSetSourceMapContents() {
-
+func SassOptionSetSourceMapContents(goopts SassOptions, b bool) {
+	C.sass_option_set_source_map_contents(goopts, C.bool(b))
 }
 
-func SassOptionSetOmitSourceMapURL() {
+func SassOptionSetSourceMapFile(goopts SassOptions, path string) {
+	C.sass_option_set_source_map_file(goopts, C.CString(path))
+}
 
+func SassOptionSetOmitSourceMapURL(goopts SassOptions, b bool) {
+	C.sass_option_set_omit_source_map_url(goopts, C.bool(b))
 }
 
 type SassImportEntry C.Sass_Import_Entry

@@ -5,7 +5,7 @@ libsass
 
 
 
-Libsass provides Go bindings for the speedy [sass/libsass](github.com/sass/libsass) project.
+Libsass provides Go bindings for the speedy [sass/libsass](http://github.com/sass/libsass) project.
 
 To build, setup Go
 
