@@ -32,6 +32,12 @@ func TestFromBuildArgs(t *testing.T) {
 
 }
 
+// InitializeContext sets up some data structures necessary
+// to use wellington
+func InitializeContext(ctx *libsass.Context) {
+	ctx.Payload = newPayload()
+}
+
 func TestCompileStdin_imports(t *testing.T) {
 
 	in := bytes.NewBufferString(`@import "compass";
