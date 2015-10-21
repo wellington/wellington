@@ -243,24 +243,55 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 		}
 	}()
 
-	ctx := NewContext(gba)
-	// FIXME: moves this elsewhere or make it so it doesn't need to be set
-	// Adjust directories if necessary
-	if len(ctx.ImageDir) == 0 {
-		ctx.ImageDir = filepath.Dir(sassFile)
+	// FIXME: move this elsewhere or make it so it doesn't need to be set
+	imgdir := gba.ImageDir
+	if len(imgdir) == 0 {
+		imgdir = filepath.Dir(sassFile)
 	}
-	ctx.BuildDir = buildDir
 
-	err := ctx.FileCompile(sassFile, out)
+	if len(gba.Includes) > 0 {
+		fmt.Println("includes!", gba.Includes)
+	}
+	comp, err := libsass.New(out, nil,
+		// Options overriding defaults
+		libsass.Path(sassFile),
+		libsass.ImgDir(imgdir),
+		libsass.BuildDir(buildDir),
+		libsass.Payload(gba.Payload),
+		libsass.Comments(gba.Comments),
+		libsass.OutputStyle(gba.Style),
+		libsass.FontDir(gba.Font),
+		libsass.ImgBuildDir(gba.Gen),
+		libsass.IncludePaths(strings.Split(gba.Includes, ",")),
+	)
+	// Start Sass transformation
+	err = comp.Run()
 	if err != nil {
 		return errors.New(color.RedString("%s", err))
 	}
 
-	// After building, go-libsass collects a list of files used to build
-	// this file. Add these to the partial map and move on.
-	for _, inc := range ctx.ResolvedImports {
+	for _, inc := range comp.Imports() {
 		partialMap.AddRelation(sassFile, inc)
 	}
+
+	// ctx := NewContext(gba)
+	// // FIXME: moves this elsewhere or make it so it doesn't need to be set
+	// // Adjust directories if necessary
+	// if len(ctx.ImageDir) == 0 {
+	// 	ctx.ImageDir = filepath.Dir(sassFile)
+	// }
+	// ctx.BuildDir = buildDir
+
+	// err := ctx.FileCompile(sassFile, out)
+	// if err != nil {
+	// 	return errors.New(color.RedString("%s", err))
+	// }
+
+	// // After building, go-libsass collects a list of files used to build
+	// // this file. Add these to the partial map and move on.
+	// for _, inc := range ctx.ResolvedImports {
+	// 	partialMap.AddRelation(sassFile, inc)
+	// }
 
 	// TODO: moves this method to *Build and wait on it to finish
 	// go func(file string) {

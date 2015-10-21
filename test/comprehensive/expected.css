@@ -1,0 +1,15 @@
+div {
+  background: url("../test/img/build/f0a220.png") 0px -139px; }
+
+div {
+  background-file: "../img/*.png0, 140";
+  background-position: 0px, -139px; }
+
+div {
+  background: url('../test/img/IgotImage.png');
+  height: 140px;
+  width: 96px; }
+
+div.inline {
+  background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAMAAAAoyzS7AAAAA1BMVEX/TQBcNTh/AAAAAXRSTlMz/za5cAAAAA5JREFUeJxiYgAEAAD//wAGAAP60FmuAAAAAElFTkSuQmCC"); }
+Rebuilt: ../test/comprehensive/compreh.scss

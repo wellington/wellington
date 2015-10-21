@@ -118,3 +118,43 @@ func TestStdin_sprite(t *testing.T) {
 func TestFile(t *testing.T) {
 	// TODO: Tests for file importing here
 }
+
+func TestFile_comprehensive(t *testing.T) {
+	wtCmd.ResetFlags()
+
+	oldStd := os.Stdin
+	oldOut := os.Stdout
+
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	wtCmd.SetArgs([]string{
+		"--dir", "../test/img",
+		"--gen", "../test/img/build",
+		"--comment=false",
+		"compile", "../test/comprehensive/compreh.scss"})
+	main()
+
+	outC := make(chan bytes.Buffer)
+
+	go func() {
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		outC <- buf
+	}()
+
+	w.Close()
+	os.Stdin = oldStd
+	os.Stdout = oldOut
+
+	out := <-outC
+
+	e, err := ioutil.ReadFile("../test/comprehensive/expected.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if bytes.Compare(out.Bytes(), e) != 0 {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), string(e))
+	}
+
+}
