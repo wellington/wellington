@@ -3,14 +3,13 @@ package wellington
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"log"
 	"net/http"
 	"path/filepath"
 	"strconv"
 	"time"
 
-	libsass "github.com/wellington/go-libsass"
 	"github.com/wellington/wellington/version"
 )
 
@@ -36,50 +35,53 @@ type Response struct {
 	Version  string    `json:"version"`
 }
 
+func setDefaultHeaders(w http.ResponseWriter, r *http.Request) {
+	// Set headers
+	if origin := r.Header.Get("Origin"); origin != "" {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+	}
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+}
+
 // HTTPHandler starts a CORS enabled web server that takes as input
 // Sass and outputs CSS.
-func HTTPHandler(ctx *libsass.Context) func(w http.ResponseWriter, r *http.Request) {
+func HTTPHandler(gba *BuildArgs) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+		setDefaultHeaders(w, r)
 		var (
 			pout bytes.Buffer
-			buf  bytes.Buffer
 		)
 		start := time.Now()
 		resp := Response{
 			Start:   start,
 			Version: version.Version,
 		}
-		// Set headers
-		if origin := r.Header.Get("Origin"); origin != "" {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-		}
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		_, err := StartParser(ctx, r.Body, &pout, NewPartialMap())
-		if err != nil {
-			enc := json.NewEncoder(w)
+
+		var err error
+		enc := json.NewEncoder(w)
+		defer func() {
+			resp.Contents = pout.String()
 			resp.Elapsed = strconv.FormatFloat(float64(
 				time.Since(start).Nanoseconds())/float64(time.Millisecond),
 				'f', 3, 32) + "ms"
-			resp.Contents = ""
-			resp.Error = fmt.Sprintf("%s", err)
-			enc.Encode(resp)
-			return
-		}
-		err = ctx.Compile(&pout, &buf)
-		defer func() {
-			enc := json.NewEncoder(w)
-			errString := ""
 			if err != nil {
-				errString = err.Error()
+				resp.Error = err.Error()
 			}
-			resp.Elapsed = strconv.FormatFloat(float64(
-				time.Since(start).Nanoseconds())/(1000*1000),
-				'f', 3, 32) + "ms"
-			resp.Contents = buf.String()
-			resp.Error = errString
 			enc.Encode(resp)
 		}()
+		if r.Body == nil {
+			err = errors.New("request is empty")
+			return
+		}
+		defer r.Body.Close()
+
+		comp, err := FromBuildArgs(&pout, r.Body, gba)
+		if err != nil {
+			resp.Contents = ""
+			return
+		}
+		err = comp.Run()
 	}
 }

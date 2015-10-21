@@ -9,8 +9,6 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
-
-	libsass "github.com/wellington/go-libsass"
 )
 
 func decResp(t *testing.T, r io.Reader) Response {
@@ -57,8 +55,8 @@ func TestFileHandler(t *testing.T) {
 }
 
 func TestHTTPHandler(t *testing.T) {
-	ctx := libsass.NewContext()
-	hh := http.HandlerFunc(HTTPHandler(ctx))
+	gba := &BuildArgs{}
+	hh := http.HandlerFunc(HTTPHandler(gba))
 	req, err := http.NewRequest("GET", "", nil)
 	req.Header.Set("Origin", "http://foo.com")
 	if err != nil {
@@ -72,7 +70,7 @@ func TestHTTPHandler(t *testing.T) {
 	}
 
 	resp := decResp(t, w.Body)
-	if e := "input is empty"; resp.Error != e {
+	if e := "request is empty"; resp.Error != e {
 		t.Errorf("got: %s wanted: %s", resp, e)
 	}
 
@@ -112,8 +110,7 @@ func TestHTTPHandler(t *testing.T) {
 }
 
 func TestHTTPHandler_error(t *testing.T) {
-	ctx := libsass.NewContext()
-	hh := http.HandlerFunc(HTTPHandler(ctx))
+	hh := http.HandlerFunc(HTTPHandler(&BuildArgs{}))
 	// nil causes panic, is this a problem?
 	req, err := http.NewRequest("GET", "",
 		bytes.NewBufferString(`div { p { color: darken(); } };`))

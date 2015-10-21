@@ -79,15 +79,23 @@ func TestStdin_sprite(t *testing.T) {
 	wtCmd.ResetFlags()
 
 	oldStd := os.Stdin
-	oldOut := os.Stdout
+	var oldOut *os.File
+	oldOut = os.Stdout
 
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 	wtCmd.SetArgs([]string{
 		"--dir", "../test/img",
 		"--gen", "../test/img/build",
-		"compile", "../test/sass/sprite.scss"})
-	main()
+		"compile"})
+
+	var err error
+	os.Stdin, err = os.Open("../test/sass/sprite.scss")
+	if err != nil {
+		t.Fatal(err)
+	}
+	root()
+	wtCmd.Execute()
 
 	outC := make(chan string)
 

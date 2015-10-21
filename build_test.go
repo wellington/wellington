@@ -19,6 +19,19 @@ func init() {
 	color.NoColor = true
 }
 
+func TestFromBuildArgs(t *testing.T) {
+	_, err := FromBuildArgs(nil, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = FromBuildArgs(nil, nil, &BuildArgs{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+}
+
 func TestCompileStdin_imports(t *testing.T) {
 
 	in := bytes.NewBufferString(`@import "compass";
