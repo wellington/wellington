@@ -74,7 +74,7 @@ func NewBuild(paths []string, args *BuildArgs, pMap *SafePartialMap) *Build {
 	}
 }
 
-// ErrParitalMap when no partial map is found
+// ErrPartialMap when no partial map is found
 var ErrPartialMap = errors.New("No partial map found")
 
 // Run compiles all valid Sass files found in the passed paths.
