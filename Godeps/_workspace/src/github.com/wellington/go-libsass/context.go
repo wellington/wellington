@@ -16,6 +16,10 @@ import (
 // Context handles the interactions with libsass.  Context
 // exposes libsass options that are available.
 type Context struct {
+	options    libs.SassOptions
+	context    libs.SassContext
+	includeMap bool
+
 	// Options
 	OutputStyle  int
 	Precision    int
@@ -97,8 +101,7 @@ func (ctx *Context) Init(goopts libs.SassOptions) libs.SassOptions {
 	if ctx.Precision == 0 {
 		ctx.Precision = 5
 	}
-
-	Mixins(ctx)
+	ctx.options = goopts
 	ctx.Headers.Bind(goopts)
 	ctx.Imports.Bind(goopts)
 	ctx.Funcs.Bind(goopts)
@@ -117,8 +120,15 @@ func (ctx *Context) FileCompile(path string, out io.Writer) error {
 	//os.PathListSeparator
 	incs := strings.Join(ctx.IncludePaths, string(os.PathListSeparator))
 	libs.SassOptionSetIncludePath(goopts, incs)
+
+	// libs.SassOptionSetSourceMapContents(goopts, true)
+	if ctx.includeMap {
+		libs.SassOptionSetSourceMapFile(goopts, "boom.map")
+	}
+
 	libs.SassFileContextSetOptions(gofc, goopts)
 	gocc := libs.SassFileContextGetContext(gofc)
+	ctx.context = gocc
 	gocompiler := libs.SassMakeFileCompiler(gofc)
 	libs.SassCompilerParse(gocompiler)
 	ctx.ResolvedImports = libs.GetImportList(gocc)
@@ -158,12 +168,18 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 
 	godc := libs.SassMakeDataContext(string(bs))
 	goopts := libs.SassDataContextGetOptions(godc)
+	libs.SassOptionSetSourceComments(goopts, true)
+
 	ctx.Init(goopts)
 	libs.SassDataContextSetOptions(godc, goopts)
 	goctx := libs.SassDataContextGetContext(godc)
+	ctx.context = goctx
 	gocompiler := libs.SassMakeDataCompiler(godc)
 	libs.SassCompilerParse(gocompiler)
 	libs.SassCompilerExecute(gocompiler)
+	if ctx.includeMap {
+		libs.SassOptionSetSourceMapEmbed(goopts, true)
+	}
 	defer libs.SassDeleteCompiler(gocompiler)
 
 	goout := libs.SassContextGetOutputString(goctx)

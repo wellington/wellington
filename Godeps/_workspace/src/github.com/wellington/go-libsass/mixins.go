@@ -1,7 +1,7 @@
 package libsass
 
 // Mixins registers the default list of supported mixins
-func Mixins(ctx *Context) {
+func init() {
 	RegisterHeader(`@mixin sprite-dimensions($map, $name) {
   $file: sprite-file($map, $name);
   height: image-height($file);

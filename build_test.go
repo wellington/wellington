@@ -19,6 +19,25 @@ func init() {
 	color.NoColor = true
 }
 
+func TestFromBuildArgs(t *testing.T) {
+	_, err := FromBuildArgs(nil, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = FromBuildArgs(nil, nil, &BuildArgs{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+}
+
+// InitializeContext sets up some data structures necessary
+// to use wellington
+func InitializeContext(ctx *libsass.Context) {
+	ctx.Payload = newPayload()
+}
+
 func TestCompileStdin_imports(t *testing.T) {
 
 	in := bytes.NewBufferString(`@import "compass";

@@ -2,7 +2,7 @@ package libsass
 
 import (
 	"bytes"
-	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"testing"
@@ -137,9 +137,7 @@ func ExampleContext_Compile() {
 			  background: foo();
 			}`)
 
-	var out bytes.Buffer
 	ctx := NewContext()
-	//Customs: []string{"foo()"},
 
 	ctx.Funcs.Add(Func{
 		Sign: "foo()",
@@ -150,13 +148,12 @@ func ExampleContext_Compile() {
 		},
 		Ctx: &ctx,
 	})
-	err := ctx.Compile(in, &out)
+	err := ctx.Compile(in, os.Stdout)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
-	fmt.Print(out.String())
-	// // Output:
+	// Output:
 	// div {
 	//   color: 0;
 	//   background: no-repeat; }

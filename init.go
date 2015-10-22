@@ -1,15 +1,6 @@
 package wellington
 
-import (
-	libsass "github.com/wellington/go-libsass"
-	"github.com/wellington/spritewell"
-)
-
-// InitializeContext sets up some data structures necessary
-// to use wellington
-func InitializeContext(ctx *libsass.Context) {
-	ctx.Payload = newPayload()
-}
+import "github.com/wellington/spritewell"
 
 type payload struct {
 	s *spritewell.SafeImageMap

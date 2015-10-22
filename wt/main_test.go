@@ -2,12 +2,16 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/wellington/wellington"
 )
 
 func init() {
@@ -31,6 +35,43 @@ func TestWatch(t *testing.T) {
 	})
 	main()
 
+}
+
+func TestHTTP(t *testing.T) {
+	wtCmd.SetArgs([]string{
+		"serve",
+	})
+
+	// No way to shut this down
+	go main()
+
+	req, err := http.NewRequest("POST", "http://localhost:12345",
+		bytes.NewBufferString(`div { p { color: red; } }`))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.Body == nil {
+		t.Fatal("no response")
+	}
+	bs, _ := ioutil.ReadAll(resp.Body)
+
+	var r wellington.Response
+	err = json.Unmarshal(bs, &r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	e := "/* line 1, stdin */\ndiv p {\n  color: red; }\n"
+	if e != r.Contents {
+		t.Errorf("got:\n%s\nwanted:\n%s", r.Contents, e)
+	}
 }
 
 func TestStdin_import(t *testing.T) {
@@ -79,15 +120,23 @@ func TestStdin_sprite(t *testing.T) {
 	wtCmd.ResetFlags()
 
 	oldStd := os.Stdin
-	oldOut := os.Stdout
+	var oldOut *os.File
+	oldOut = os.Stdout
 
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 	wtCmd.SetArgs([]string{
 		"--dir", "../test/img",
 		"--gen", "../test/img/build",
-		"compile", "../test/sass/sprite.scss"})
-	main()
+		"compile"})
+
+	var err error
+	os.Stdin, err = os.Open("../test/sass/sprite.scss")
+	if err != nil {
+		t.Fatal(err)
+	}
+	root()
+	wtCmd.Execute()
 
 	outC := make(chan string)
 
@@ -117,4 +166,44 @@ func TestStdin_sprite(t *testing.T) {
 
 func TestFile(t *testing.T) {
 	// TODO: Tests for file importing here
+}
+
+func TestFile_comprehensive(t *testing.T) {
+	wtCmd.ResetFlags()
+
+	oldStd := os.Stdin
+	oldOut := os.Stdout
+
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	wtCmd.SetArgs([]string{
+		"--dir", "../test/img",
+		"--gen", "../test/img/build",
+		"--comment=false",
+		"compile", "../test/comprehensive/compreh.scss"})
+	main()
+
+	outC := make(chan bytes.Buffer)
+
+	go func() {
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		outC <- buf
+	}()
+
+	w.Close()
+	os.Stdin = oldStd
+	os.Stdout = oldOut
+
+	out := <-outC
+
+	e, err := ioutil.ReadFile("../test/comprehensive/expected.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if bytes.Compare(out.Bytes(), e) != 0 {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), string(e))
+	}
+
 }

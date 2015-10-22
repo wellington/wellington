@@ -74,7 +74,7 @@ func NewBuild(paths []string, args *BuildArgs, pMap *SafePartialMap) *Build {
 	}
 }
 
-// ErrParitalMap when no partial map is found
+// ErrPartialMap when no partial map is found
 var ErrPartialMap = errors.New("No partial map found")
 
 // Run compiles all valid Sass files found in the passed paths.
@@ -204,31 +204,25 @@ func LoadAndBuild(path string, gba *BuildArgs, pMap *SafePartialMap) error {
 	return nil
 }
 
-// NewContext creates a libsass.Context from BuildArgs. This is helpful
-// for bypassing the builder provides in this package.
-func NewContext(gba *BuildArgs) *libsass.Context {
-	ctx := libsass.NewContext()
-	ctx.Payload = gba.Payload
-	ctx.OutputStyle = gba.Style
-	ctx.ImageDir = gba.ImageDir
-	ctx.FontDir = gba.Font
-
-	// Ahem... build directory is inferred in loadAndBuild
-	// ctx.BuildDir = filepath.Dir(fout)
-	ctx.BuildDir = gba.BuildDir
-	ctx.GenImgDir = gba.Gen
-	// ctx.MainFile = sassFile
-	ctx.Comments = gba.Comments
-
-	// This needs to happen at start of context
-	// ctx.IncludePaths = []string{filepath.Dir(sassFile)}
-
-	ctx.Imports.Init()
-	if gba.Includes != "" {
-		ctx.IncludePaths = append(ctx.IncludePaths,
-			strings.Split(gba.Includes, ",")...)
+// FromBuildArgs creates a compiler from BuildArgs
+func FromBuildArgs(dst io.Writer, src io.Reader, gba *BuildArgs) (libsass.Compiler, error) {
+	if gba == nil {
+		return libsass.New(dst, src)
 	}
-	return ctx
+
+	comp, err := libsass.New(dst, src,
+		// Options overriding defaults
+		// libsass.Path(sassFile), what path should be provided?
+		libsass.ImgDir(gba.ImageDir),
+		libsass.ImgBuildDir(gba.Gen),
+		libsass.BuildDir(gba.BuildDir),
+		libsass.Payload(gba.Payload),
+		libsass.Comments(gba.Comments),
+		libsass.OutputStyle(gba.Style),
+		libsass.FontDir(gba.Font),
+		libsass.IncludePaths(strings.Split(gba.Includes, ",")),
+	)
+	return comp, err
 }
 
 func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, out io.WriteCloser, buildDir string) error {
@@ -243,22 +237,31 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 		}
 	}()
 
-	ctx := NewContext(gba)
-	// FIXME: moves this elsewhere or make it so it doesn't need to be set
-	// Adjust directories if necessary
-	if len(ctx.ImageDir) == 0 {
-		ctx.ImageDir = filepath.Dir(sassFile)
+	// FIXME: move this elsewhere or make it so it doesn't need to be set
+	imgdir := gba.ImageDir
+	if len(imgdir) == 0 {
+		imgdir = filepath.Dir(sassFile)
 	}
-	ctx.BuildDir = buildDir
 
-	err := ctx.FileCompile(sassFile, out)
+	comp, err := libsass.New(out, nil,
+		// Options overriding defaults
+		libsass.Path(sassFile),
+		libsass.ImgDir(imgdir),
+		libsass.BuildDir(buildDir),
+		libsass.Payload(gba.Payload),
+		libsass.Comments(gba.Comments),
+		libsass.OutputStyle(gba.Style),
+		libsass.FontDir(gba.Font),
+		libsass.ImgBuildDir(gba.Gen),
+		libsass.IncludePaths(strings.Split(gba.Includes, ",")),
+	)
+	// Start Sass transformation
+	err = comp.Run()
 	if err != nil {
 		return errors.New(color.RedString("%s", err))
 	}
 
-	// After building, go-libsass collects a list of files used to build
-	// this file. Add these to the partial map and move on.
-	for _, inc := range ctx.ResolvedImports {
+	for _, inc := range comp.Imports() {
 		partialMap.AddRelation(sassFile, inc)
 	}
 

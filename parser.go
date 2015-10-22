@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"path/filepath"
 
 	libsass "github.com/wellington/go-libsass"
 	// TODO: Remove dot imports
@@ -93,27 +92,4 @@ func (p *Parser) Start(r io.Reader, pkgdir string) ([]byte, error) {
 	p.Output = buf.Bytes() //[]byte(p.Input)
 
 	return p.Output, nil
-}
-
-// StartParser accepts build arguments
-// TODO: Should this be called StartParser or NewParser?
-// TODO: Should this function create the partialMap or is this
-// the right way to inject one?
-func StartParser(ctx *libsass.Context, in io.Reader, out io.Writer, partialMap *SafePartialMap) (*Parser, error) {
-	// Run the sprite_sass parser prior to passing to libsass
-	parser := NewParser()
-
-	parser.ImageDir = ctx.ImageDir
-	parser.Includes = ctx.IncludePaths
-	parser.BuildDir = ctx.BuildDir
-	parser.MainFile = ctx.MainFile
-	parser.Imports = *ctx.Imports
-
-	// Save reference to parser in context
-	bs, err := parser.Start(in, filepath.Dir(ctx.MainFile))
-	if err != nil {
-		return parser, err
-	}
-	out.Write(bs)
-	return parser, err
 }

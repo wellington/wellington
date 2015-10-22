@@ -4,7 +4,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -280,9 +279,11 @@ func Serve(cmd *cobra.Command, paths []string) {
 	if len(gba.Gen) == 0 {
 		log.Fatal("Must pass an image build directory to use HTTP")
 	}
+
 	http.Handle("/build/", wt.FileHandler(gba.Gen))
 	log.Println("Web server started on :12345")
-	http.HandleFunc("/", wt.HTTPHandler(wt.NewContext(gba)))
+
+	http.HandleFunc("/", wt.HTTPHandler(gba))
 	err := http.ListenAndServe(":12345", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
@@ -294,13 +295,13 @@ func Serve(cmd *cobra.Command, paths []string) {
 func Compile(cmd *cobra.Command, paths []string) {
 
 	start := time.Now()
-
 	defer func() {
 		diff := float64(time.Since(start).Nanoseconds()) /
 			float64(time.Millisecond)
 		log.Printf("Compilation took: %sms\n",
 			strconv.FormatFloat(diff, 'f', 3, 32))
 	}()
+
 	pMap, gba := globalRun(paths)
 	run(paths, pMap, gba)
 }
@@ -309,20 +310,16 @@ func Compile(cmd *cobra.Command, paths []string) {
 func run(paths []string, pMap *wt.SafePartialMap, gba *wt.BuildArgs) {
 
 	// No paths given, read from stdin and wait
-	if len(paths) == 0 && len(config) == 0 {
+	if len(paths) == 0 {
 
 		fmt.Println("Reading from stdin, -h for help")
 		out := os.Stdout
 		in := os.Stdin
-
-		var pout bytes.Buffer
-		ctx := wt.NewContext(gba)
-		_, err := wt.StartParser(ctx, in, &pout, wt.NewPartialMap())
+		comp, err := wt.FromBuildArgs(out, in, gba)
 		if err != nil {
-			log.Println(err)
+			log.Fatal(err)
 		}
-		err = ctx.Compile(&pout, out)
-
+		err = comp.Run()
 		if err != nil {
 			color.Red(err.Error())
 		}

@@ -1,0 +1,20 @@
+$images: sprite-map("../img/*.png");
+
+div {
+    background: sprite($images, "140");
+}
+
+div {
+    background-file: quote(sprite-file($images, "140"));
+    background-position: sprite-position($images, "140");
+}
+
+div {
+    background: image-url("IgotImage.png");
+    height: image-height(sprite-file($images, "140"));
+    width: image-width(sprite-file($images, "140"));
+}
+
+div.inline {
+  background: inline-image("pixel/1x1.png", true);
+}

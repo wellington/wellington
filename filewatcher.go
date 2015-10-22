@@ -11,8 +11,8 @@ import (
 	"gopkg.in/fsnotify.v1"
 )
 
-// Sets the default size of the slice holding the top level files for a
-// sass partial in SafePartialMap.M
+// MaxTopLevel sets the default size of the slice holding the top level
+// files for a sass partial in SafePartialMap.M
 const MaxTopLevel int = 20
 
 // Watcher holds all data needed to kick off a build of the css when a

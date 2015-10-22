@@ -12,7 +12,7 @@ func TestPath_recurse(t *testing.T) {
 	// This is going to be a really annoying test, should setup a special
 	// directory to test this.
 	paths = pathsToFiles([]string{"test"}, true)
-	if e := 17; len(paths) != e {
+	if e := 18; len(paths) != e {
 		t.Errorf("got: %d wanted: %d", len(paths), e)
 	}
 }
