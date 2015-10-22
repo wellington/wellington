@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -128,7 +127,21 @@ func (b *Build) doBuild() {
 }
 
 func (b *Build) build(path string) error {
-	return LoadAndBuild(path, b.bArgs, b.partialMap)
+
+	if len(path) == 0 {
+		return errors.New("invalid path given")
+	}
+
+	if !isImportable(path) {
+		return errors.New("file is does not end in .sass or .scss")
+	}
+
+	out, bdir, err := b.bArgs.getOut(path)
+	if err != nil {
+		return err
+	}
+
+	return loadAndBuild(path, b.bArgs, b.partialMap, out, bdir)
 }
 
 // Close shuts down the builder ensuring all go routines have properly
@@ -192,7 +205,6 @@ func LoadAndBuild(path string, gba *BuildArgs, pMap *SafePartialMap) error {
 	}
 
 	out, bdir, err := gba.getOut(path)
-	log.Println(out, bdir)
 	if err != nil {
 		return err
 	}
@@ -270,7 +282,7 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 	select {
 	case <-testch:
 	default:
-		fmt.Printf("Rebuilt: %s\n", sassFile)
+
 	}
 	// }(sassFile)
 	return nil

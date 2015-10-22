@@ -192,6 +192,8 @@ func (w *Watcher) rebuild(eventFileName string) error {
 			err := LoadAndBuild(paths[i], w.opts.BArgs, w.opts.PartialMap)
 			if err != nil {
 				w.errChan <- err
+			} else {
+				fmt.Printf("Rebuilt: %s\n", paths[i])
 			}
 		}
 	}(paths)
