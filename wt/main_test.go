@@ -2,12 +2,16 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/wellington/wellington"
 )
 
 func init() {
@@ -31,6 +35,43 @@ func TestWatch(t *testing.T) {
 	})
 	main()
 
+}
+
+func TestHTTP(t *testing.T) {
+	wtCmd.SetArgs([]string{
+		"serve",
+	})
+
+	// No way to shut this down
+	go main()
+
+	req, err := http.NewRequest("POST", "http://localhost:12345",
+		bytes.NewBufferString(`div { p { color: red; } }`))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.Body == nil {
+		t.Fatal("no response")
+	}
+	bs, _ := ioutil.ReadAll(resp.Body)
+
+	var r wellington.Response
+	err = json.Unmarshal(bs, &r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	e := "/* line 1, stdin */\ndiv p {\n  color: red; }\n"
+	if e != r.Contents {
+		t.Errorf("got:\n%s\nwanted:\n%s", r.Contents, e)
+	}
 }
 
 func TestStdin_import(t *testing.T) {
