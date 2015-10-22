@@ -283,19 +283,8 @@ func Serve(cmd *cobra.Command, paths []string) {
 	http.Handle("/build/", wt.FileHandler(gba.Gen))
 	log.Println("Web server started on :12345")
 
-	out := os.Stdout
-	in := os.Stdin
-	comp, err := wt.FromBuildArgs(out, in, gba)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = comp.Run()
-	if err != nil {
-		color.Red(err.Error())
-	}
-
 	http.HandleFunc("/", wt.HTTPHandler(gba))
-	err = http.ListenAndServe(":12345", nil)
+	err := http.ListenAndServe(":12345", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}

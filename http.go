@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/wellington/wellington/version"
@@ -50,22 +49,19 @@ func setDefaultHeaders(w http.ResponseWriter, r *http.Request) {
 func HTTPHandler(gba *BuildArgs) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		setDefaultHeaders(w, r)
-		var (
-			pout bytes.Buffer
-		)
 		start := time.Now()
 		resp := Response{
 			Start:   start,
 			Version: version.Version,
 		}
-
-		var err error
+		var (
+			err  error
+			pout bytes.Buffer
+		)
 		enc := json.NewEncoder(w)
 		defer func() {
 			resp.Contents = pout.String()
-			resp.Elapsed = strconv.FormatFloat(float64(
-				time.Since(start).Nanoseconds())/float64(time.Millisecond),
-				'f', 3, 32) + "ms"
+			resp.Elapsed = time.Since(start).String()
 			if err != nil {
 				resp.Error = err.Error()
 			}
