@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"runtime/pprof"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -296,10 +295,7 @@ func Compile(cmd *cobra.Command, paths []string) {
 
 	start := time.Now()
 	defer func() {
-		diff := float64(time.Since(start).Nanoseconds()) /
-			float64(time.Millisecond)
-		log.Printf("Compilation took: %sms\n",
-			strconv.FormatFloat(diff, 'f', 3, 32))
+		log.Printf("Compilation took: %s\n", time.Since(start))
 	}()
 
 	pMap, gba := globalRun(paths)
