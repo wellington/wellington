@@ -202,5 +202,13 @@ func TestWatch_comprehensive(t *testing.T) {
 		"watch", "../test/comprehensive/compreh.scss",
 	})
 	main()
+	_, err := os.Stat("../test/build/testwatch/compreh.css")
+	if err != nil {
+		t.Fatal(err)
+	}
 
+	_, err = os.Stat("../test/build/testwatch/img/5905b8.png")
+	if err != nil {
+		t.Fatal(err)
+	}
 }

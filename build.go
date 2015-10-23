@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -75,7 +74,6 @@ type work struct {
 // NewBuild accepts arguments to reate a new Builder
 func NewBuild(paths []string, args *BuildArgs, pMap *SafePartialMap) *Build {
 	if args.Payload == nil {
-		log.Printf("init payload! % #v\n", args.Payload)
 		args.init()
 	}
 	return &Build{
@@ -185,10 +183,8 @@ func (b *BuildArgs) getOut(path string) (io.WriteCloser, string, error) {
 		out = os.Stdout
 		return out, "", nil
 	}
-	fmt.Printf("BLD % #v\n", b)
-	fmt.Println("~~>", path, b.Includes, filepath.Dir(path))
-	// Build output file based off build directory and input filename
-	rel, _ := filepath.Rel(b.Includes, filepath.Dir(path))
+
+	rel := relative(b.paths, path)
 	filename := updateFileOutputType(filepath.Base(path))
 	fout = filepath.Join(b.BuildDir, rel, filename)
 
@@ -203,7 +199,6 @@ func (b *BuildArgs) getOut(path string) (io.WriteCloser, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	fmt.Println("writing to", dir)
 	return out, dir, nil
 }
 

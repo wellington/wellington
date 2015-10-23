@@ -15,6 +15,9 @@ func relative(paths []string, file string) string {
 		file = filepath.Dir(file)
 	}
 	for _, path := range paths {
+		if len(filepath.Ext(path)) > 0 {
+			path = filepath.Dir(path)
+		}
 		rel, err := filepath.Rel(path, file)
 		if err == nil {
 			return rel

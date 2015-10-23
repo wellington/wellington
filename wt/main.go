@@ -236,9 +236,7 @@ func globalRun(paths []string) (*wt.SafePartialMap, *wt.BuildArgs) {
 
 // Watch accepts a set of paths starting a recursive file watcher
 func Watch(cmd *cobra.Command, paths []string) {
-	log.Println("watch")
 	pMap, gba := globalRun(paths)
-	log.Printf("% #v\n", gba)
 	var err error
 	bOpts := wt.NewBuild(paths, gba, pMap)
 	err = bOpts.Run()
