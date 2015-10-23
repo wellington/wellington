@@ -31,3 +31,28 @@ func TestPath_files(t *testing.T) {
 		t.Errorf("got: %d wanted: %d", len(paths), e)
 	}
 }
+
+func TestRelative(t *testing.T) {
+	paths := []string{"../test/sass", "test/sass", "/tmp"}
+	var r string
+	r = relative(paths, "test/sass/file.scss")
+	if e := `.`; r != e {
+		t.Errorf("got: %s wanted: %s", r, e)
+	}
+
+	r = relative(paths, "test/sass/subdir/file.scss")
+	if e := `subdir`; r != e {
+		t.Errorf("got: %s wanted: %s", r, e)
+	}
+
+	r = relative(paths, "../test/sass/subdir/file.scss")
+	if e := `subdir`; r != e {
+		t.Errorf("got: %s wanted: %s", r, e)
+	}
+
+	r = relative(paths, "/tmp/sass/file.scss")
+	if e := `sass`; r != e {
+		t.Errorf("got: %s wanted: %s", r, e)
+	}
+
+}
