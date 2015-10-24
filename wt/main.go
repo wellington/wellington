@@ -243,11 +243,14 @@ func Watch(cmd *cobra.Command, paths []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	w := wt.NewWatcher(&wt.WatchOptions{
+	w, err := wt.NewWatcher(&wt.WatchOptions{
 		Paths:      paths,
 		BArgs:      gba,
 		PartialMap: pMap,
 	})
+	if err != nil {
+		log.Fatal("failed to start watcher: ", err)
+	}
 	err = w.Watch()
 	if err != nil {
 		log.Fatal("filewatcher error: ", err)

@@ -13,9 +13,12 @@ import (
 func TestRebuild(t *testing.T) {
 	var f *os.File
 	log.SetOutput(f)
-	wc := NewWatcher(&WatchOptions{
+	wc, err := NewWatcher(&WatchOptions{
 		PartialMap: NewPartialMap(),
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	go func(t *testing.T) {
 		select {
 		case err := <-wc.errChan:
@@ -50,10 +53,13 @@ func TestRebuild_watch(t *testing.T) {
 	rebuildMu.Unlock()
 	pMap := NewPartialMap()
 	pMap.AddRelation("tswif", tfile)
-	w := NewWatcher(&WatchOptions{
+	w, err := NewWatcher(&WatchOptions{
 		Paths:      []string{tdir},
 		PartialMap: pMap,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	err = w.Watch()
 	if err != nil {
 		t.Fatal(err)
@@ -78,18 +84,24 @@ func TestRebuild_watch(t *testing.T) {
 }
 
 func TestWatch(t *testing.T) {
-	w := NewWatcher(NewWatchOptions())
-	err := w.Watch()
+	w, err := NewWatcher(NewWatchOptions())
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = w.Watch()
 	if err == nil {
 		t.Error("No errors thrown for nil directories")
 	}
 	w.FileWatcher.Close()
 
 	watcherChan = make(chan string, 1)
-	w = NewWatcher(&WatchOptions{
+	w, err = NewWatcher(&WatchOptions{
 		Paths:      []string{"test"},
 		PartialMap: NewPartialMap(),
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	err = w.Watch()
 
 	// Test file creation event
@@ -129,7 +141,17 @@ func TestWatch(t *testing.T) {
 
 	f.WriteString("data")
 	f.Sync()
+}
 
+func TestWatch_errors(t *testing.T) {
+	w, err := NewWatcher(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if w.opts == nil {
+		t.Fatal("unexpected nil")
+	}
 }
 
 func TestAppendUnique(t *testing.T) {
