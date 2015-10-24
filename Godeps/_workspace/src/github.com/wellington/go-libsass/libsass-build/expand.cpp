@@ -550,9 +550,13 @@ namespace Sass {
             dynamic_cast<Parent_Selector*>((*sel->head())[0])))
         {
           Compound_Selector* hh = SASS_MEMORY_NEW(ctx.mem, Compound_Selector, (*extender)[i]->pstate());
+          hh->media_block((*extender)[i]->media_block());
           Complex_Selector* ssel = SASS_MEMORY_NEW(ctx.mem, Complex_Selector, (*extender)[i]->pstate());
+          ssel->media_block((*extender)[i]->media_block());
           if (sel->has_line_feed()) ssel->has_line_feed(true);
-          *hh << SASS_MEMORY_NEW(ctx.mem, Parent_Selector, (*extender)[i]->pstate());
+          Parent_Selector* ps = SASS_MEMORY_NEW(ctx.mem, Parent_Selector, (*extender)[i]->pstate());
+          ps->media_block((*extender)[i]->media_block());
+          *hh << ps;
           ssel->tail(sel);
           ssel->head(hh);
           sel = ssel;
@@ -621,11 +625,18 @@ namespace Sass {
     Env* env = environment();
     // convert @content directives into mixin calls to the underlying thunk
     if (!env->has("@content[m]")) return 0;
+    if (block_stack.back()->is_root()) {
+      selector_stack.push_back(0);
+    }
     Mixin_Call* call = SASS_MEMORY_NEW(ctx.mem, Mixin_Call,
                                        c->pstate(),
                                        "@content",
                                        SASS_MEMORY_NEW(ctx.mem, Arguments, c->pstate()));
-    return call->perform(this);
+    Statement* stm = call->perform(this);
+    if (block_stack.back()->is_root()) {
+      selector_stack.pop_back();
+    }
+    return stm;
   }
 
   // produce an error if something is not implemented

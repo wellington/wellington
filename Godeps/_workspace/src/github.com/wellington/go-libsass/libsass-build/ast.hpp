@@ -66,7 +66,7 @@ namespace Sass {
   //////////////////////////////////////////////////////////
   // Abstract base class for all abstract syntax tree nodes.
   //////////////////////////////////////////////////////////
-  class AST_Node {
+  class AST_Node : public Memory_Object {
     ADD_PROPERTY(ParserState, pstate)
   public:
     AST_Node(ParserState pstate)
@@ -191,6 +191,7 @@ namespace Sass {
     T last()                { return elements_.back(); }
     T first()               { return elements_.front(); }
     T& operator[](size_t i) { return elements_[i]; }
+    virtual const T& at(size_t i) const { return elements_.at(i); }
     const T& operator[](size_t i) const { return elements_[i]; }
     Vectorized& operator<<(T element)
     {
@@ -1926,6 +1927,10 @@ namespace Sass {
     {
       return Constants::Specificity_Attr;
     }
+    bool operator==(const Simple_Selector& rhs) const;
+    bool operator==(const Attribute_Selector& rhs) const;
+    bool operator<(const Simple_Selector& rhs) const;
+    bool operator<(const Attribute_Selector& rhs) const;
     ATTACH_OPERATIONS()
   };
 
@@ -2040,7 +2045,7 @@ namespace Sass {
       return length() == 1 && (*this)[0]->is_universal();
     }
 
-    Complex_Selector* to_complex(Memory_Manager<AST_Node>& mem);
+    Complex_Selector* to_complex(Memory_Manager& mem);
     Compound_Selector* unify_with(Compound_Selector* rhs, Context& ctx);
     // virtual Selector_Placeholder* find_placeholder();
     virtual bool has_parent_ref();
@@ -2113,7 +2118,10 @@ namespace Sass {
                      Compound_Selector* h = 0,
                      Complex_Selector* t = 0,
                      String* r = 0)
-    : Selector(pstate), combinator_(c), head_(h), tail_(t), reference_(r)
+    : Selector(pstate),
+      combinator_(c),
+      head_(h), tail_(t),
+      reference_(r)
     {
       if ((h && h->has_reference())   || (t && t->has_reference()))   has_reference(true);
       if ((h && h->has_placeholder()) || (t && t->has_placeholder())) has_placeholder(true);
@@ -2125,9 +2133,10 @@ namespace Sass {
       if ((!head_ || !head_->length() || head_->is_empty_reference()) &&
           combinator() == Combinator::ANCESTOR_OF)
       {
+        if (!tail_) return 0;
         tail_->has_line_feed_ = this->has_line_feed_;
         // tail_->has_line_break_ = this->has_line_break_;
-        return tail_ ? tail_->skip_empty_reference() : 0;
+        return tail_->skip_empty_reference();
       }
       return this;
     }
@@ -2247,6 +2256,7 @@ namespace Sass {
     Selector_List(ParserState pstate, size_t s = 0)
     : Selector(pstate), Vectorized<Complex_Selector*>(s), wspace_(0)
     { }
+    std::string type() { return "list"; }
     // remove parent selector references
     // basically unwraps parsed selectors
     void remove_parent_selectors();
@@ -2272,6 +2282,8 @@ namespace Sass {
     Selector_List* cloneFully(Context&) const; // clones Compound_Selector*s
     virtual bool operator==(const Selector& rhs) const;
     virtual bool operator==(const Selector_List& rhs) const;
+    // Selector Lists can be compared to comma lists
+    virtual bool operator==(const Expression& rhs) const;
     ATTACH_OPERATIONS()
   };
 

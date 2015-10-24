@@ -188,8 +188,7 @@ namespace Sass {
       Expression* exp = ARG(argname, Expression);
       if (exp->concrete_type() == Expression::NULL_VAL) {
         std::stringstream msg;
-        msg << argname << ": null is not a valid selector: it must be a string,\n";
-        msg << "a list of strings, or a list of lists of strings for `" << function_name(sig) << "'";
+        msg << argname << ": null is not a string for `" << function_name(sig) << "'";
         error(msg.str(), pstate);
       }
       std::string exp_src = exp->perform(&to_string) + "{";
@@ -1189,12 +1188,13 @@ namespace Sass {
     Signature length_sig = "length($list)";
     BUILT_IN(length)
     {
+      if (Selector_List* sl = dynamic_cast<Selector_List*>(env["$list"])) {
+        return SASS_MEMORY_NEW(ctx.mem, Number, pstate, (double)sl->length());
+      }
       Expression* v = ARG("$list", Expression);
       if (v->concrete_type() == Expression::MAP) {
         Map* map = dynamic_cast<Map*>(env["$list"]);
-        return SASS_MEMORY_NEW(ctx.mem, Number,
-     pstate,
-     (double)(map ? map->length() : 1));
+        return SASS_MEMORY_NEW(ctx.mem, Number, pstate, (double)(map ? map->length() : 1));
       }
       if (v->concrete_type() == Expression::SELECTOR) {
         if (Compound_Selector* h = dynamic_cast<Compound_Selector*>(v)) {
@@ -1215,9 +1215,19 @@ namespace Sass {
     Signature nth_sig = "nth($list, $n)";
     BUILT_IN(nth)
     {
-      Map* m = dynamic_cast<Map*>(env["$list"]);
-      List* l = dynamic_cast<List*>(env["$list"]);
       Number* n = ARG("$n", Number);
+      Map* m = dynamic_cast<Map*>(env["$list"]);
+      if (Selector_List* sl = dynamic_cast<Selector_List*>(env["$list"])) {
+        size_t len = m ? m->length() : sl->length();
+        bool empty = m ? m->empty() : sl->empty();
+        if (empty) error("argument `$list` of `" + std::string(sig) + "` must not be empty", pstate);
+        double index = std::floor(n->value() < 0 ? len + n->value() : n->value() - 1);
+        if (index < 0 || index > len - 1) error("index out of bounds for `" + std::string(sig) + "`", pstate);
+        // return (*sl)[static_cast<int>(index)];
+        Listize listize(ctx);
+        return (*sl)[static_cast<int>(index)]->perform(&listize);
+      }
+      List* l = dynamic_cast<List*>(env["$list"]);
       if (n->value() == 0) error("argument `$n` of `" + std::string(sig) + "` must be non-zero", pstate);
       // if the argument isn't a list, then wrap it in a singleton list
       if (!m && !l) {
@@ -1308,6 +1318,10 @@ namespace Sass {
     {
       List* l = dynamic_cast<List*>(env["$list"]);
       Expression* v = ARG("$val", Expression);
+      if (Selector_List* sl = dynamic_cast<Selector_List*>(env["$list"])) {
+        Listize listize(ctx);
+        l = dynamic_cast<List*>(sl->perform(&listize));
+      }
       String_Constant* sep = ARG("$separator", String_Constant);
       if (!l) {
         l = SASS_MEMORY_NEW(ctx.mem, List, pstate, 1);
@@ -1580,16 +1594,17 @@ namespace Sass {
       size_t param_size = params ? params->length() : 0;
       for (size_t i = 0, L = arglist->length(); i < L; ++i) {
         Expression* expr = arglist->value_at_index(i);
-        Parameter* p = param_size > i ? (*params)[i] : 0;
-        if (List* list = dynamic_cast<List*>(expr)) {
-          if (p && !p->is_rest_parameter()) expr = (*list)[0];
+        if (params && params->has_rest_parameter()) {
+          Parameter* p = param_size > i ? (*params)[i] : 0;
+          List* list = dynamic_cast<List*>(expr);
+          if (list && p && !p->is_rest_parameter()) expr = (*list)[0];
         }
         if (arglist->is_arglist()) {
           Argument* arg = dynamic_cast<Argument*>((*arglist)[i]);
           *args << SASS_MEMORY_NEW(ctx.mem, Argument,
                                    pstate,
                                    expr,
-                                   "",
+                                   arg ? arg->name() : "",
                                    arg ? arg->is_rest_argument() : false,
                                    arg ? arg->is_keyword_argument() : false);
         } else {
@@ -1881,12 +1896,8 @@ namespace Sass {
     BUILT_IN(is_superselector)
     {
       To_String to_string(&ctx, false);
-      Expression*  ex_sup = ARG("$super", Expression);
-      Expression*  ex_sub = ARG("$sub", Expression);
-      std::string sup_src = ex_sup->perform(&to_string) + "{";
-      std::string sub_src = ex_sub->perform(&to_string) + "{";
-      Selector_List* sel_sup = Parser::parse_selector(sup_src.c_str(), ctx);
-      Selector_List* sel_sub = Parser::parse_selector(sub_src.c_str(), ctx);
+      Selector_List*  sel_sup = ARGSEL("$super", Selector_List, p_contextualize);
+      Selector_List*  sel_sub = ARGSEL("$sub", Selector_List, p_contextualize);
       bool result = sel_sup->is_superselector_of(sel_sub);
       return SASS_MEMORY_NEW(ctx.mem, Boolean, pstate, result);
     }

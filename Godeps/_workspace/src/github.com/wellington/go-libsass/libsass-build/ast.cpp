@@ -205,6 +205,10 @@ namespace Sass {
 
   bool Simple_Selector::operator== (const Simple_Selector& rhs) const
   {
+    const Attribute_Selector* ll = dynamic_cast<const Attribute_Selector*>(this);
+    const Attribute_Selector* rr = dynamic_cast<const Attribute_Selector*>(&rhs);
+    if (ll && rr) return *ll == *rr;
+
     if (is_ns_eq(ns(), rhs.ns()))
     { return name() == rhs.name(); }
     return ns() == rhs.ns();
@@ -212,6 +216,10 @@ namespace Sass {
 
   bool Simple_Selector::operator< (const Simple_Selector& rhs) const
   {
+    const Attribute_Selector* ll = dynamic_cast<const Attribute_Selector*>(this);
+    const Attribute_Selector* rr = dynamic_cast<const Attribute_Selector*>(&rhs);
+    if (ll && rr) return *ll < *rr;
+
     if (is_ns_eq(ns(), rhs.ns()))
     { return name() < rhs.name(); }
     return ns() < rhs.ns();
@@ -225,6 +233,16 @@ namespace Sass {
     else if (const Compound_Selector* ls = dynamic_cast<const Compound_Selector*>(&rhs)) { return *this == *ls; }
     // no compare method
     return this == &rhs;
+  }
+
+  // Selector lists can be compared to comma lists
+  bool Selector_List::operator==(const Expression& rhs) const
+  {
+    // solve the double dispatch problem by using RTTI information via dynamic cast
+    if (const List* ls = dynamic_cast<const List*>(&rhs)) { return *this == *ls; }
+    if (const Selector* ls = dynamic_cast<const Selector*>(&rhs)) { return *this == *ls; }
+    // compare invalid (maybe we should error?)
+    return false;
   }
 
   bool Selector_List::operator== (const Selector_List& rhs) const
@@ -250,10 +268,10 @@ namespace Sass {
       // skip nulls
       if (!l) ++i;
       else if (!r) ++n;
-      // do the check now
+      // do the check
       else if (*l != *r)
       { return false; }
-      // advance now
+      // advance
       ++i; ++n;
     }
     // no mismatch
@@ -423,6 +441,47 @@ namespace Sass {
     return Simple_Selector::unify_with(rhs, ctx);
   }
 
+  bool Attribute_Selector::operator< (const Attribute_Selector& rhs) const
+  {
+    if (is_ns_eq(ns(), rhs.ns())) {
+      if (name() == rhs.name()) {
+        if (matcher() == rhs.matcher()) {
+          return value() < rhs.value();
+        } else { return matcher() < rhs.matcher(); }
+      } else { return name() < rhs.name(); }
+    }
+    else return false;
+  }
+
+  bool Attribute_Selector::operator< (const Simple_Selector& rhs) const
+  {
+    if (const Attribute_Selector* w = dynamic_cast<const Attribute_Selector*>(&rhs))
+    {
+      return *this < *w;
+    }
+    if (is_ns_eq(ns(), rhs.ns()))
+    { return name() < rhs.name(); }
+    return ns() < rhs.ns();
+  }
+
+  bool Attribute_Selector::operator== (const Attribute_Selector& rhs) const
+  {
+    if (is_ns_eq(ns(), rhs.ns()) && name() == rhs.name())
+    { return matcher() == rhs.matcher() && value() == rhs.value(); }
+    else return false;
+  }
+
+  bool Attribute_Selector::operator== (const Simple_Selector& rhs) const
+  {
+    if (const Attribute_Selector* w = dynamic_cast<const Attribute_Selector*>(&rhs))
+    {
+      return *this == *w;
+    }
+    if (is_ns_eq(ns(), rhs.ns()))
+    { return name() == rhs.name(); }
+    return ns() == rhs.ns();
+  }
+
   bool Wrapped_Selector::operator== (const Wrapped_Selector& rhs) const
   {
     if (is_ns_eq(ns(), rhs.ns()) && name() == rhs.name())
@@ -585,7 +644,7 @@ namespace Sass {
   }
 
   // create complex selector (ancestor of) from compound selector
-  Complex_Selector* Compound_Selector::to_complex(Memory_Manager<AST_Node>& mem)
+  Complex_Selector* Compound_Selector::to_complex(Memory_Manager& mem)
   {
     // create an intermediate complex selector
     return SASS_MEMORY_NEW(mem, Complex_Selector,
@@ -1072,6 +1131,7 @@ namespace Sass {
   Complex_Selector* Complex_Selector::clone(Context& ctx) const
   {
     Complex_Selector* cpy = SASS_MEMORY_NEW(ctx.mem, Complex_Selector, *this);
+    cpy->media_block(this->media_block());
     if (tail()) cpy->tail(tail()->clone(ctx));
     return cpy;
   }
@@ -1094,12 +1154,14 @@ namespace Sass {
   Compound_Selector* Compound_Selector::clone(Context& ctx) const
   {
     Compound_Selector* cpy = SASS_MEMORY_NEW(ctx.mem, Compound_Selector, *this);
+    cpy->media_block(this->media_block());
     return cpy;
   }
 
   Selector_List* Selector_List::clone(Context& ctx) const
   {
     Selector_List* cpy = SASS_MEMORY_NEW(ctx.mem, Selector_List, *this);
+    cpy->media_block(this->media_block());
     return cpy;
   }
 

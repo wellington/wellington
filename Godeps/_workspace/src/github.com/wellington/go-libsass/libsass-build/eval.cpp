@@ -258,7 +258,6 @@ namespace Sass {
       }
     }
     else {
-      bool arglist = list->is_arglist();
       for (size_t i = 0, L = list->length(); i < L; ++i) {
         Expression* e = (*list)[i];
         // unwrap value if the expression is an argument
@@ -267,7 +266,6 @@ namespace Sass {
         if (List* scalars = dynamic_cast<List*>(e)) {
           if (variables.size() == 1) {
             Expression* var = scalars;
-            if (arglist) var = (*scalars)[0];
             env->set_local(variables[0], var);
           } else {
             for (size_t j = 0, K = variables.size(); j < K; ++j) {
@@ -332,7 +330,7 @@ namespace Sass {
       To_C to_c;
       union Sass_Value* c_args = sass_make_list(1, SASS_COMMA);
       sass_list_set_value(c_args, 0, message->perform(&to_c));
-      union Sass_Value* c_val = c_func(c_args, c_function, ctx.c_options);
+      union Sass_Value* c_val = c_func(c_args, c_function, ctx.c_compiler);
       sass_delete_value(c_args);
       sass_delete_value(c_val);
       return 0;
@@ -365,7 +363,7 @@ namespace Sass {
       To_C to_c;
       union Sass_Value* c_args = sass_make_list(1, SASS_COMMA);
       sass_list_set_value(c_args, 0, message->perform(&to_c));
-      union Sass_Value* c_val = c_func(c_args, c_function, ctx.c_options);
+      union Sass_Value* c_val = c_func(c_args, c_function, ctx.c_compiler);
       sass_delete_value(c_args);
       sass_delete_value(c_val);
       return 0;
@@ -395,7 +393,7 @@ namespace Sass {
       To_C to_c;
       union Sass_Value* c_args = sass_make_list(1, SASS_COMMA);
       sass_list_set_value(c_args, 0, message->perform(&to_c));
-      union Sass_Value* c_val = c_func(c_args, c_function, ctx.c_options);
+      union Sass_Value* c_val = c_func(c_args, c_function, ctx.c_compiler);
       sass_delete_value(c_args);
       sass_delete_value(c_val);
       return 0;
@@ -690,7 +688,7 @@ namespace Sass {
         Expression* arg = static_cast<Expression*>(node);
         sass_list_set_value(c_args, i, arg->perform(&to_c));
       }
-      union Sass_Value* c_val = c_func(c_args, c_function, ctx.c_options);
+      union Sass_Value* c_val = c_func(c_args, c_function, ctx.c_compiler);
       if (sass_value_get_tag(c_val) == SASS_ERROR) {
         error("error in C function " + c->name() + ": " + sass_error_get_message(c_val), c->pstate(), backtrace());
       } else if (sass_value_get_tag(c_val) == SASS_WARNING) {
@@ -763,7 +761,7 @@ namespace Sass {
       value = SASS_MEMORY_NEW(ctx.mem, Null, value->pstate());
     }
     else if (value->concrete_type() == Expression::SELECTOR) {
-      value = value->perform(this)->perform(&listize);
+      value = value->perform(this); // ->perform(&listize);
     }
 
     // std::cerr << "\ttype is now: " << typeid(*value).name() << std::endl << std::endl;
@@ -1162,7 +1160,7 @@ namespace Sass {
     return *l < *r;
   }
 
-  Value* Eval::op_numbers(Memory_Manager<AST_Node>& mem, enum Sass_OP op, const Number& l, const Number& r, bool compressed, int precision)
+  Value* Eval::op_numbers(Memory_Manager& mem, enum Sass_OP op, const Number& l, const Number& r, bool compressed, int precision)
   {
     double lv = l.value();
     double rv = r.value();
@@ -1213,7 +1211,7 @@ namespace Sass {
     return v;
   }
 
-  Value* Eval::op_number_color(Memory_Manager<AST_Node>& mem, enum Sass_OP op, const Number& l, const Color& rh, bool compressed, int precision)
+  Value* Eval::op_number_color(Memory_Manager& mem, enum Sass_OP op, const Number& l, const Color& rh, bool compressed, int precision)
   {
     Color r(rh);
     r.disp("");
@@ -1247,7 +1245,7 @@ namespace Sass {
     return SASS_MEMORY_NEW(mem, Color, rh);
   }
 
-  Value* Eval::op_color_number(Memory_Manager<AST_Node>& mem, enum Sass_OP op, const Color& l, const Number& r, bool compressed, int precision)
+  Value* Eval::op_color_number(Memory_Manager& mem, enum Sass_OP op, const Color& l, const Number& r, bool compressed, int precision)
   {
     double rv = r.value();
     if (op == Sass_OP::DIV && !rv) error("division by zero", r.pstate());
@@ -1259,7 +1257,7 @@ namespace Sass {
                            l.a());
   }
 
-  Value* Eval::op_colors(Memory_Manager<AST_Node>& mem, enum Sass_OP op, const Color& l, const Color& r, bool compressed, int precision)
+  Value* Eval::op_colors(Memory_Manager& mem, enum Sass_OP op, const Color& l, const Color& r, bool compressed, int precision)
   {
     if (l.a() != r.a()) {
       error("alpha channels must be equal when combining colors", r.pstate());
@@ -1275,7 +1273,7 @@ namespace Sass {
                            l.a());
   }
 
-  Value* Eval::op_strings(Memory_Manager<AST_Node>& mem, enum Sass_OP op, Value& lhs, Value& rhs, bool compressed, int precision)
+  Value* Eval::op_strings(Memory_Manager& mem, enum Sass_OP op, Value& lhs, Value& rhs, bool compressed, int precision)
   {
     Expression::Concrete_Type ltype = lhs.concrete_type();
     Expression::Concrete_Type rtype = rhs.concrete_type();
@@ -1324,8 +1322,8 @@ namespace Sass {
       case Sass_OP::DIV: sep = "/"; break;
       default:                         break;
     }
-    if (ltype == Expression::NULL_VAL) error("invalid null operation: \"null plus "+quote(unquote(rstr), '"')+"\".", lhs.pstate());
-    if (rtype == Expression::NULL_VAL) error("invalid null operation: \""+quote(unquote(lstr), '"')+" plus null\".", rhs.pstate());
+    if (ltype == Expression::NULL_VAL) error("Invalid null operation: \"null plus "+quote(unquote(rstr), '"')+"\".", lhs.pstate());
+    if (rtype == Expression::NULL_VAL) error("Invalid null operation: \""+quote(unquote(lstr), '"')+" plus null\".", rhs.pstate());
 
     if ( (ltype == Expression::STRING || sep == "") &&
          (sep != "/" || !rqstr || !rqstr->quote_mark())
@@ -1340,7 +1338,7 @@ namespace Sass {
     return SASS_MEMORY_NEW(mem, String_Constant, lhs.pstate(), (lstr) + sep + quote(rstr));
   }
 
-  Expression* cval_to_astnode(Memory_Manager<AST_Node>& mem, union Sass_Value* v, Context& ctx, Backtrace* backtrace, ParserState pstate)
+  Expression* cval_to_astnode(Memory_Manager& mem, union Sass_Value* v, Context& ctx, Backtrace* backtrace, ParserState pstate)
   {
     using std::strlen;
     using std::strcpy;
@@ -1395,6 +1393,7 @@ namespace Sass {
   {
     std::vector<Selector_List*> rv;
     Selector_List* sl = SASS_MEMORY_NEW(ctx.mem, Selector_List, s->pstate());
+    sl->media_block(s->media_block());
     for (size_t i = 0, iL = s->length(); i < iL; ++i) {
       rv.push_back(operator()((*s)[i]));
     }

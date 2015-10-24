@@ -39,8 +39,6 @@ namespace Sass {
     size_t ia = 0, LA = as->length();
     while (ia < LA) {
       Argument* a = (*as)[ia];
-      // this is only needed for selectors
-      a->value(a->value()->perform(&listize));
       if (ip >= LP) {
         // skip empty rest arguments
         if (a->is_rest_argument()) {
@@ -107,7 +105,7 @@ namespace Sass {
             (*arglist) << SASS_MEMORY_NEW(ctx.mem, Argument,
                                           key->pstate(),
                                           argmap->at(key),
-                                          name,
+                                          "$" + name,
                                           false,
                                           false);
           }

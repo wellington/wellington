@@ -29,7 +29,7 @@ func TestCompiler_stdin(t *testing.T) {
 func TestCompiler_path(t *testing.T) {
 	var dst bytes.Buffer
 
-	comp, err := New(&dst, nil, SetPath("test/scss/basic.scss"))
+	comp, err := New(&dst, nil, Path("test/scss/basic.scss"))
 	if err != nil {
 		t.Fatal(err)
 	}
