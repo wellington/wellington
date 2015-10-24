@@ -292,11 +292,15 @@ func Serve(cmd *cobra.Command, paths []string) {
 // Compile handles compile files and stdin operations.
 func Compile(cmd *cobra.Command, paths []string) {
 	start := time.Now()
+	pMap, gba := globalRun(paths)
+	if gba == nil {
+		return
+	}
+
 	defer func() {
 		log.Printf("Compilation took: %s\n", time.Since(start))
 	}()
 
-	pMap, gba := globalRun(paths)
 	run(paths, pMap, gba)
 }
 
