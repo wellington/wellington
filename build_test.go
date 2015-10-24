@@ -219,7 +219,7 @@ func TestBuild_args(t *testing.T) {
 	r, w, _ := os.Pipe()
 
 	bArgs := &BuildArgs{
-		Includes: "test",
+		Includes: []string{"test"},
 	}
 
 	err := loadAndBuild("test/sass/file.scss", bArgs,
@@ -246,7 +246,7 @@ func TestBuild_comply(t *testing.T) {
 
 	err := loadAndBuild("test/compass/top.scss",
 		&BuildArgs{
-			Includes: "test",
+			Includes: []string{"test"},
 		},
 		NewPartialMap(), w, "")
 	w.Close()

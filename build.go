@@ -32,7 +32,7 @@ type BuildArgs struct {
 	// file matching is involved, this directory will be used as the
 	// parent.
 	BuildDir string
-	Includes string
+	Includes []string
 	Font     string
 	Gen      string
 	Style    int
@@ -248,7 +248,7 @@ func FromBuildArgs(dst io.Writer, src io.Reader, gba *BuildArgs) (libsass.Compil
 		libsass.Comments(gba.Comments),
 		libsass.OutputStyle(gba.Style),
 		libsass.FontDir(gba.Font),
-		libsass.IncludePaths(strings.Split(gba.Includes, ",")),
+		libsass.IncludePaths(gba.Includes),
 	)
 	return comp, err
 }
@@ -281,7 +281,7 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 		libsass.OutputStyle(gba.Style),
 		libsass.FontDir(gba.Font),
 		libsass.ImgBuildDir(gba.Gen),
-		libsass.IncludePaths(strings.Split(gba.Includes, ",")),
+		libsass.IncludePaths(gba.Includes),
 	)
 	// Start Sass transformation
 	err = comp.Run()

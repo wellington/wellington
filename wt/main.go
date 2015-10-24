@@ -168,11 +168,12 @@ func parseBuildArgs(paths []string) *wt.BuildArgs {
 	if !ok {
 		style = libsass.NESTED_STYLE
 	}
-
+	incs := strings.Split(includes, ",")
+	incs = append(incs, paths...)
 	gba := &wt.BuildArgs{
 		ImageDir: dir,
 		BuildDir: buildDir,
-		Includes: includes,
+		Includes: incs,
 		Font:     font,
 		Style:    style,
 		Gen:      gen,
