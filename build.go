@@ -183,11 +183,9 @@ func (b *BuildArgs) getOut(path string) (io.WriteCloser, string, error) {
 		out = os.Stdout
 		return out, "", nil
 	}
-
 	rel := relative(b.paths, path)
 	filename := updateFileOutputType(filepath.Base(path))
 	fout = filepath.Join(b.BuildDir, rel, filename)
-
 	dir := filepath.Dir(fout)
 	// FIXME: do this once per Build instead of every file
 	err := os.MkdirAll(dir, 0755)
