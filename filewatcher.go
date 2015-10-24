@@ -42,11 +42,11 @@ func NewWatchOptions() *WatchOptions {
 }
 
 // NewWatcher returns a new watcher pointer
-func NewWatcher(opts *WatchOptions) *Watcher {
+func NewWatcher(opts *WatchOptions) (*Watcher, error) {
 	var fswatcher *fsnotify.Watcher
 	fswatcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	if opts == nil {
 		opts = &WatchOptions{}
@@ -56,6 +56,8 @@ func NewWatcher(opts *WatchOptions) *Watcher {
 		FileWatcher: fswatcher,
 		errChan:     make(chan error),
 	}
+	// FIXME: this will leak routines, but watcher should only be
+	// called once
 	go func() {
 		for {
 			select {
@@ -65,7 +67,7 @@ func NewWatcher(opts *WatchOptions) *Watcher {
 		}
 	}()
 
-	return w
+	return w, nil
 }
 
 // SafePartialMap is a thread safe map of partial sass files to top

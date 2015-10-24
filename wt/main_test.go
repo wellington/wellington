@@ -20,23 +20,6 @@ func init() {
 
 }
 
-func TestWatch(t *testing.T) {
-	t.Skip()
-	tdir, err := ioutil.TempDir("", "TestWatch")
-	if err != nil {
-		t.Fatal(err)
-	}
-	wtCmd.ResetFlags()
-
-	watch = true
-	wtCmd.SetArgs([]string{
-		"--dir", tdir,
-		"watch",
-	})
-	main()
-
-}
-
 func TestHTTP(t *testing.T) {
 	wtCmd.SetArgs([]string{
 		"serve",
@@ -135,8 +118,7 @@ func TestStdin_sprite(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	root()
-	wtCmd.Execute()
+	main()
 
 	outC := make(chan string)
 
@@ -206,4 +188,27 @@ func TestFile_comprehensive(t *testing.T) {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), string(e))
 	}
 
+}
+
+func TestWatch_comprehensive(t *testing.T) {
+	os.RemoveAll("../test/build/testwatch")
+	wtCmd.ResetFlags()
+
+	wtCmd.SetArgs([]string{
+		"--dir", "../test/img",
+		"-b", "../test/build/testwatch",
+		"--gen", "../test/build/testwatch/img",
+		"--comment=false",
+		"watch", "../test/comprehensive/compreh.scss",
+	})
+	main()
+	_, err := os.Stat("../test/build/testwatch/compreh.css")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = os.Stat("../test/build/testwatch/img/5905b8.png")
+	if err != nil {
+		t.Fatal(err)
+	}
 }

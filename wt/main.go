@@ -141,7 +141,6 @@ var wtCmd = &cobra.Command{
 func main() {
 	AddCommands()
 	root()
-
 	wtCmd.Execute()
 }
 
@@ -163,23 +162,24 @@ func argExit() bool {
 
 }
 
-func parseBuildArgs() *wt.BuildArgs {
+func parseBuildArgs(paths []string) *wt.BuildArgs {
 	style, ok := libsass.Style[style]
 
 	if !ok {
 		style = libsass.NESTED_STYLE
 	}
-
+	incs := strings.Split(includes, ",")
+	incs = append(incs, paths...)
 	gba := &wt.BuildArgs{
 		ImageDir: dir,
 		BuildDir: buildDir,
-		Includes: includes,
+		Includes: incs,
 		Font:     font,
 		Style:    style,
 		Gen:      gen,
 		Comments: comments,
 	}
-	gba.Init()
+	gba.WithPaths(paths)
 
 	return gba
 }
@@ -222,8 +222,7 @@ func globalRun(paths []string) (*wt.SafePartialMap, *wt.BuildArgs) {
 	}
 
 	pMap := wt.NewPartialMap()
-	gba := parseBuildArgs()
-
+	gba := parseBuildArgs(paths)
 	if debug {
 		fmt.Printf("      Font  Dir: %s\n", gba.Font)
 		fmt.Printf("      Image Dir: %s\n", gba.ImageDir)
@@ -232,27 +231,27 @@ func globalRun(paths []string) (*wt.SafePartialMap, *wt.BuildArgs) {
 		fmt.Printf(" Include Dir(s): %s\n", gba.Includes)
 		fmt.Println("===================================")
 	}
-
 	return pMap, gba
 
 }
 
 // Watch accepts a set of paths starting a recursive file watcher
 func Watch(cmd *cobra.Command, paths []string) {
-
 	pMap, gba := globalRun(paths)
+	var err error
 	bOpts := wt.NewBuild(paths, gba, pMap)
-
-	err := bOpts.Run()
+	err = bOpts.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	w := wt.NewWatcher(&wt.WatchOptions{
+	w, err := wt.NewWatcher(&wt.WatchOptions{
 		Paths:      paths,
 		BArgs:      gba,
 		PartialMap: pMap,
 	})
+	if err != nil {
+		log.Fatal("failed to start watcher: ", err)
+	}
 	err = w.Watch()
 	if err != nil {
 		log.Fatal("filewatcher error: ", err)
@@ -292,7 +291,6 @@ func Serve(cmd *cobra.Command, paths []string) {
 
 // Compile handles compile files and stdin operations.
 func Compile(cmd *cobra.Command, paths []string) {
-
 	start := time.Now()
 	defer func() {
 		log.Printf("Compilation took: %s\n", time.Since(start))

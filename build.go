@@ -20,6 +20,10 @@ var testch chan struct{}
 // uses during the initial build and the filewatcher passes back to
 // the parser on any file changes.
 type BuildArgs struct {
+	// paths are the initial directories passed to a build
+	// This is required to output files
+	paths []string
+
 	// Imgs, Sprites spritewell.SafeImageMap
 	Payload  types.Payloader
 	ImageDir string
@@ -28,15 +32,20 @@ type BuildArgs struct {
 	// file matching is involved, this directory will be used as the
 	// parent.
 	BuildDir string
-	Includes string
+	Includes []string
 	Font     string
 	Gen      string
 	Style    int
 	Comments bool
 }
 
+// WithPaths creates a new BuildArgs with paths applied
+func (b *BuildArgs) WithPaths(paths []string) {
+	b.paths = paths
+}
+
 // Init initializes the payload, this should really go away
-func (b *BuildArgs) Init() {
+func (b *BuildArgs) init() {
 	b.Payload = newPayload()
 }
 
@@ -51,20 +60,27 @@ type Build struct {
 	err    error
 	done   chan error
 	status chan error
-	queue  chan string
+	queue  chan work
 
 	paths      []string
 	bArgs      *BuildArgs
 	partialMap *SafePartialMap
 }
 
+type work struct {
+	file string
+}
+
 // NewBuild accepts arguments to reate a new Builder
 func NewBuild(paths []string, args *BuildArgs, pMap *SafePartialMap) *Build {
+	if args.Payload == nil {
+		args.init()
+	}
 	return &Build{
 		done:   make(chan error),
 		status: make(chan error),
 
-		queue:   make(chan string),
+		queue:   make(chan work),
 		closing: make(chan struct{}),
 
 		paths:      paths,
@@ -96,9 +112,9 @@ func (b *Build) Run() error {
 }
 
 func (b *Build) loadWork() {
-	paths := pathsToFiles(b.paths, true)
-	for _, path := range paths {
-		b.queue <- path
+	files := pathsToFiles(b.paths, true)
+	for _, file := range files {
+		b.queue <- work{file: file}
 	}
 	close(b.queue)
 }
@@ -108,7 +124,8 @@ func (b *Build) doBuild() {
 		select {
 		case <-b.closing:
 			return
-		case path := <-b.queue:
+		case work := <-b.queue:
+			path := work.file
 			if len(path) == 0 {
 				b.workwg.Wait()
 				b.done <- nil
@@ -166,12 +183,9 @@ func (b *BuildArgs) getOut(path string) (io.WriteCloser, string, error) {
 		out = os.Stdout
 		return out, "", nil
 	}
-
-	// Build output file based off build directory and input filename
-	rel, _ := filepath.Rel(b.Includes, filepath.Dir(path))
+	rel := relative(b.paths, path)
 	filename := updateFileOutputType(filepath.Base(path))
 	fout = filepath.Join(b.BuildDir, rel, filename)
-
 	dir := filepath.Dir(fout)
 	// FIXME: do this once per Build instead of every file
 	err := os.MkdirAll(dir, 0755)
@@ -183,7 +197,6 @@ func (b *BuildArgs) getOut(path string) (io.WriteCloser, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-
 	return out, dir, nil
 }
 
@@ -221,6 +234,9 @@ func FromBuildArgs(dst io.Writer, src io.Reader, gba *BuildArgs) (libsass.Compil
 	if gba == nil {
 		return libsass.New(dst, src)
 	}
+	if gba.Payload == nil {
+		gba.init()
+	}
 
 	comp, err := libsass.New(dst, src,
 		// Options overriding defaults
@@ -232,7 +248,7 @@ func FromBuildArgs(dst io.Writer, src io.Reader, gba *BuildArgs) (libsass.Compil
 		libsass.Comments(gba.Comments),
 		libsass.OutputStyle(gba.Style),
 		libsass.FontDir(gba.Font),
-		libsass.IncludePaths(strings.Split(gba.Includes, ",")),
+		libsass.IncludePaths(gba.Includes),
 	)
 	return comp, err
 }
@@ -265,7 +281,7 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 		libsass.OutputStyle(gba.Style),
 		libsass.FontDir(gba.Font),
 		libsass.ImgBuildDir(gba.Gen),
-		libsass.IncludePaths(strings.Split(gba.Includes, ",")),
+		libsass.IncludePaths(gba.Includes),
 	)
 	// Start Sass transformation
 	err = comp.Run()
