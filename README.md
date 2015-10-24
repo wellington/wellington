@@ -15,9 +15,9 @@ Wellington adds spriting to the lightning fast [libsass](http://libsass.org/). N
 Benchmarks
 ```
 # 40,000 line of code Sass project with 1200 images
-wt         4.462s
+wt         3.679s
 compass   73.800s
-# 16.5x faster!
+# 20x faster!
 ```
 
 For more benchmarks, see [realbench](https://github.com/wellington/realbench#results-early-2015-macbook-pro)
