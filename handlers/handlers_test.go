@@ -231,6 +231,47 @@ div {
 	}
 }
 
+type mockImg struct {
+	r io.ReadCloser
+}
+
+func (m mockImg) Do(s string) (io.ReadCloser, error) {
+	return m.r, nil
+}
+
+func TestCompile_HTTP_InlineImage(t *testing.T) {
+	oldImageResolver := imgResolver
+	defer func() {
+		imgResolver = oldImageResolver
+	}()
+
+	f, err := os.Open("../test/img/pixel/1x1.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// overwrite the defaultimageresolver
+	imgResolver = mockImg{r: f}
+
+	in := bytes.NewBufferString(`div {
+  background: #602d6c no-repeat inline-image("http://example.com/pixel/1x1.png");
+}`)
+
+	ctx := libsass.NewContext()
+	initCtx(ctx)
+
+	var out bytes.Buffer
+	err = ctx.Compile(in, &out)
+	if err != nil {
+		t.Error(err)
+	}
+	exp := `div {
+  background: #602d6c no-repeat url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAMAAAAoyzS7AAAAA1BMVEX/TQBcNTh/AAAAAXRSTlMz/za5cAAAAA5JREFUeJxiYgAEAAD//wAGAAP60FmuAAAAAElFTkSuQmCC"); }
+`
+	if exp != out.String() {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), exp)
+	}
+}
+
 func TestFuncImageHeight(t *testing.T) {
 	in := bytes.NewBufferString(`div {
     height: image-height("139");
@@ -336,33 +377,6 @@ div {
 `
 	if e != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
-	}
-}
-
-func TestInlineHandler(t *testing.T) {
-
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "ok")
-	}
-
-	req, err := inlineHandler("http://example.com/image.png")
-	if err != nil {
-		t.Error(err)
-	}
-
-	w := httptest.NewRecorder()
-	handler(w, req)
-
-	go func() {
-		time.Sleep(1 * time.Millisecond)
-		t.Error("Timeout without returning")
-	}()
-	if e := 200; w.Code != e {
-		t.Errorf("got: %d wanted: %d", w.Code, e)
-	}
-
-	if e := "ok"; w.Body.String() != e {
-		t.Errorf("got: %s wanted: %s", w.Body.String(), e)
 	}
 }
 
@@ -635,14 +649,16 @@ func BenchmarkSprite(b *testing.B) {
 	// fmt.Println(s)
 }
 
-func TestHttpInline(t *testing.T) {
-	e := []byte("Hello, client")
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write(e)
+func TestImgResolver(t *testing.T) {
+
+	e := "Hello, client"
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,
+		r *http.Request) {
+		w.Write([]byte(e))
 	}))
 	defer ts.Close()
 
-	r, err := httpInlineImage(ts.URL)
+	r, err := imgResolver.Do(ts.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -653,8 +669,32 @@ func TestHttpInline(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if bytes.Compare(bs, e) != 0 {
-		t.Fatalf("got: %s was: %s", string(bs), string(e))
+	if string(bs) != string(e) {
+		t.Fatalf("got: %s was: %s", bs, e)
 	}
 
+	// Test some failure conditions
+	_, err = imgResolver.Do("/data/img")
+	if err == nil {
+		t.Fatal(err)
+	}
+
+	e = `invalid image URL: /data/img`
+	if err.Error() != e {
+		t.Errorf("got: %s wanted: %s", err, e)
+	}
+
+	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,
+		r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+
+	_, err = imgResolver.Do(ts.URL)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	if e := "could not resolve image: 500"; err.Error() != e {
+		t.Errorf("got: %s wanted: %s", err, e)
+	}
 }

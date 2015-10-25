@@ -193,34 +193,40 @@ func ImageWidth(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) er
 	return err
 }
 
-func inlineHandler(name string) (*http.Request, error) {
-
-	u, err := url.Parse(name)
-	if err != nil || u.Scheme == "" {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", name, nil)
-	if err != nil {
-		return nil, err
-	}
-	return req, nil
+// Resolver interface returns a ReadCloser from a path
+type Resolver interface {
+	Do(string) (io.ReadCloser, error)
 }
 
-func httpInlineImage(url string) (io.ReadCloser, error) {
-	req, err := inlineHandler(url)
-	if err != nil || req == nil {
-		return nil, err
+// img implements Resolver for http urls
+type img struct {
+}
+
+func (g img) Do(name string) (io.ReadCloser, error) {
+	// Check for valid URL
+	u, err := url.Parse(name)
+	if err != nil || len(u.Scheme) == 0 {
+		return nil, fmt.Errorf("invalid image URL: %s", name)
 	}
+
+	// No point in check this error, we already are more aggressive
+	// about error checking by validating scheme exists
+	req, _ := http.NewRequest("GET", name, nil)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("errors")
 		return nil, err
+	}
+
+	if resp.StatusCode >= http.StatusBadRequest {
+		resp.Body.Close()
+		return nil, fmt.Errorf("could not resolve image: %d", resp.StatusCode)
 	}
 
 	return resp.Body, nil
 }
+
+var imgResolver Resolver = img{}
 
 // InlineImage returns a base64 encoded png from the input image
 func InlineImage(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error {
@@ -235,24 +241,21 @@ func InlineImage(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) e
 		return setErrorAndReturn(err, rsv)
 	}
 
-	f, err = os.Open(filepath.Join(ctx.ImageDir, name))
-	defer f.Close()
-	if err != nil {
-		r, err := httpInlineImage(name)
-		if err != nil {
-			return setErrorAndReturn(err, rsv)
-		}
-		f = r
-		if r != nil {
-			defer r.Close()
-		}
+	// check for valid URL. If true, attempt to resolve image.
+	// This is really going to slow down compilation think about
+	// writing data to disk instead of inlining.
+	u, err := url.Parse(name)
+	if err == nil && len(u.Scheme) > 0 {
+		f, err = imgResolver.Do(u.String())
+	} else {
+		f, err = os.Open(filepath.Join(ctx.ImageDir, name))
 	}
-
 	if err != nil {
 		return setErrorAndReturn(err, rsv)
 	}
-	var buf bytes.Buffer
+	defer f.Close()
 
+	var buf bytes.Buffer
 	err = sw.Inline(f, &buf, encode)
 	if err != nil {
 		return setErrorAndReturn(err, rsv)
