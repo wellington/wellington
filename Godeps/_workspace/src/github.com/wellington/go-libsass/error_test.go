@@ -45,7 +45,7 @@ func TestError_JSON(t *testing.T) {
 	err := ctx.Compile(in, out)
 
 	e := `Error > stdin:2
-Invalid CSS after "...  height: 10px;": expected "}", was ""
+Invalid CSS after "  height: 10px;": expected "}", was ""
 div {
   height: 10px;
 `
