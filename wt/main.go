@@ -4,15 +4,19 @@ package main
 
 import (
 	"bufio"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"runtime/pprof"
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/net/http2"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -278,15 +282,37 @@ func Serve(cmd *cobra.Command, paths []string) {
 		log.Fatal("Must pass an image build directory to use HTTP")
 	}
 
-	http.Handle("/build/", wt.FileHandler(gba.Gen))
-	log.Println("Web server started on :12345")
-
-	http.HandleFunc("/", wt.HTTPHandler(gba))
-	err := http.ListenAndServe(":12345", nil)
+	addr := ":12345"
+	lis, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
+		log.Fatalf("failed to listen on: %s", addr)
 	}
 
+	certFile := "./server.crt"
+	keyFile := "./server.key"
+	_, _ = certFile, keyFile
+	mux := http.NewServeMux()
+	mux.Handle("/build/", wt.FileHandler(gba.Gen))
+	mux.HandleFunc("/", wt.HTTPHandler(gba))
+	log.Println("Web server started on :12345")
+
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	cfg := &tls.Config{
+		// InsecureSkipVerify: true,
+		ClientAuth:   tls.NoClientCert,
+		Certificates: []tls.Certificate{cert},
+	}
+
+	svr := &http.Server{Handler: mux, TLSConfig: cfg}
+	// http2 client only works with TLS
+
+	// Enable HTTP2 https://http2.golang.org/
+	http2.ConfigureServer(svr, &http2.Server{})
+	tlsLis := tls.NewListener(lis, svr.TLSConfig)
+	log.Fatal(svr.Serve(tlsLis))
 }
 
 // Compile handles compile files and stdin operations.
