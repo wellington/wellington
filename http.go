@@ -20,9 +20,7 @@ func FileHandler(gen string) http.Handler {
 		log.Fatalf("Can not resolve relative path: %s", gen)
 	}
 
-	return http.StripPrefix("/build/",
-		http.FileServer(http.Dir(abs)),
-	)
+	return http.StripPrefix("/build/", http.FileServer(http.Dir(abs)))
 }
 
 // Response is the object returned on HTTP responses from wellington
@@ -48,6 +46,7 @@ func setDefaultHeaders(w http.ResponseWriter, r *http.Request) {
 // Sass and outputs CSS.
 func HTTPHandler(gba *BuildArgs) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
+
 		setDefaultHeaders(w, r)
 		start := time.Now()
 		resp := Response{

@@ -6,6 +6,11 @@
 	],
 	"Deps": [
 		{
+			"ImportPath": "github.com/cpuguy83/go-md2man/md2man",
+			"Comment": "v1.0.4",
+			"Rev": "71acacd42f85e5e82f70a55327789582a5200a90"
+		},
+		{
 			"ImportPath": "github.com/fatih/color",
 			"Comment": "v0.1-5-gf773d4c",
 			"Rev": "f773d4c806cc8e4a5749d6a35e2a4bbcd71443d6"
@@ -19,26 +24,35 @@
 			"Rev": "7fcbc72f853b92b5720db4a6b8482be612daef24"
 		},
 		{
+			"ImportPath": "github.com/russross/blackfriday",
+			"Comment": "v1.2-80-g8cec3a8",
+			"Rev": "8cec3a854e68dba10faabbe31c089abf4a3e57a6"
+		},
+		{
 			"ImportPath": "github.com/shiena/ansicolor",
 			"Rev": "a5e2b567a4dd6cc74545b8a4f27c9d63b9e7735b"
 		},
 		{
+			"ImportPath": "github.com/shurcooL/sanitized_anchor_name",
+			"Rev": "244f5ac324cb97e1987ef901a0081a77bfd8e845"
+		},
+		{
 			"ImportPath": "github.com/spf13/cobra",
-			"Rev": "385fc87e4343efec233811d3d933509e8975d11a"
+			"Rev": "d732ab3a34e6e9e6b5bdac80707c2b6bad852936"
 		},
 		{
 			"ImportPath": "github.com/spf13/pflag",
-			"Rev": "67cbc198fd11dab704b214c1e629a97af392c085"
+			"Rev": "b084184666e02084b8ccb9b704bf0d79c466eb1d"
 		},
 		{
 			"ImportPath": "github.com/wellington/go-libsass",
-			"Comment": "v0.9.0-185-g7967c9e",
-			"Rev": "7967c9eb1f6e329a24a1b44846659e1872c6d5f0"
+			"Comment": "v0.9.0-187-g6dbf7c8",
+			"Rev": "6dbf7c834b2660b98d3fcea17b04c9dd33e18999"
 		},
 		{
 			"ImportPath": "github.com/wellington/spritewell",
-			"Comment": "v0.4.0-41-gd9b4d50",
-			"Rev": "d9b4d50f39c52044ac26f509092b1a89f3623b74"
+			"Comment": "v0.4.0-42-gb96c47b",
+			"Rev": "b96c47b35eac71339cf73c2a89a9559fb26fd8c3"
 		},
 		{
 			"ImportPath": "gopkg.in/fsnotify.v1",

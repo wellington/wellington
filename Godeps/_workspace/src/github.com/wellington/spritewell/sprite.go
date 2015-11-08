@@ -24,6 +24,7 @@ import (
 	"image/png"
 )
 
+var ErrNoPattern = errors.New("no glob pattern provided")
 var ErrNoImages = errors.New("no images matched for pattern")
 
 var formats = []string{".png", ".gif", ".jpg"}
@@ -248,7 +249,7 @@ func (l *Sprite) OutputPath() (string, error) {
 	globs := l.globs
 	l.globMu.RUnlock()
 	if len(globs) == 0 {
-		return "", ErrNoImages
+		return "", ErrNoPattern
 	}
 
 	l.optsMu.RLock()
@@ -568,6 +569,6 @@ func writeToDisk(of *os.File, buf *bytes.Buffer) error {
 	if n == 0 {
 		return fmt.Errorf("failed to write file: %s", of.Name())
 	}
-	log.Print("Created sprite: ", of.Name())
+	// log.Print("Created sprite: ", of.Name())
 	return nil
 }
