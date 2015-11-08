@@ -16,8 +16,6 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/net/http2"
-
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -310,9 +308,9 @@ func Serve(cmd *cobra.Command, paths []string) {
 	// http2 client only works with TLS
 
 	// Enable HTTP2 https://http2.golang.org/
-	http2.ConfigureServer(svr, &http2.Server{})
-	tlsLis := tls.NewListener(lis, svr.TLSConfig)
-	log.Fatal(svr.Serve(tlsLis))
+	// http2.ConfigureServer(svr, &http2.Server{})
+	lis = tls.NewListener(lis, svr.TLSConfig)
+	log.Fatal(svr.Serve(lis))
 }
 
 // Compile handles compile files and stdin operations.

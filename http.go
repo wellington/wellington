@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -47,8 +46,6 @@ func setDefaultHeaders(w http.ResponseWriter, r *http.Request) {
 // Sass and outputs CSS.
 func HTTPHandler(gba *BuildArgs) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-
-		fmt.Println("Protocol:", r.Proto)
 
 		setDefaultHeaders(w, r)
 		start := time.Now()
