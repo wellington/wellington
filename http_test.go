@@ -125,7 +125,7 @@ func TestHTTPHandler_error(t *testing.T) {
 	}
 
 	e := `Error > stdin:1
-required parameter $color is missing in call to function darken
+required parameter $color is missing in call to Function darken
 div { p { color: darken(); } };
 `
 	resp := decResp(t, w.Body)

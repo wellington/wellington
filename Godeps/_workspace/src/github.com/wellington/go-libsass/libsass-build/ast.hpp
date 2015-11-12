@@ -10,6 +10,7 @@
 #include <typeinfo>
 #include <algorithm>
 #include <unordered_map>
+#include "sass/base.h"
 
 #ifdef __clang__
 
@@ -537,26 +538,32 @@ namespace Sass {
   // necessary to store a list of each in an Import node.
   ////////////////////////////////////////////////////////////////////////////
   class Import : public Statement {
-    std::vector<std::string>         files_;
-    std::vector<Expression*>    urls_;
-    ADD_PROPERTY(List*, media_queries);
+    std::vector<Expression*> urls_;
+    std::vector<Include>     incs_;
+    ADD_PROPERTY(List*,      media_queries);
   public:
     Import(ParserState pstate)
     : Statement(pstate),
-      files_(std::vector<std::string>()),
       urls_(std::vector<Expression*>()),
+      incs_(std::vector<Include>()),
       media_queries_(0)
     { statement_type(IMPORT); }
-    std::vector<std::string>&      files()    { return files_; }
-    std::vector<Expression*>& urls()     { return urls_; }
+    std::vector<Expression*>& urls() { return urls_; }
+    std::vector<Include>& incs() { return incs_; }
     ATTACH_OPERATIONS()
   };
 
+  // not yet resolved single import
+  // so far we only know requested name
   class Import_Stub : public Statement {
-    ADD_PROPERTY(std::string, file_name)
+    Include resource_;
   public:
-    Import_Stub(ParserState pstate, std::string f)
-    : Statement(pstate), file_name_(f)
+    std::string abs_path() { return resource_.abs_path; };
+    std::string imp_path() { return resource_.imp_path; };
+    Include resource() { return resource_; };
+
+    Import_Stub(ParserState pstate, Include res)
+    : Statement(pstate), resource_(res)
     { statement_type(IMPORT_STUB); }
     ATTACH_OPERATIONS()
   };
@@ -622,6 +629,10 @@ namespace Sass {
     If(ParserState pstate, Expression* pred, Block* con, Block* alt = 0)
     : Has_Block(pstate, con), predicate_(pred), alternative_(alt)
     { statement_type(IF); }
+    virtual bool has_content()
+    {
+      return Has_Block::has_content() || (alternative_ && alternative_->has_content());
+    }
     ATTACH_OPERATIONS()
   };
 
@@ -880,9 +891,9 @@ namespace Sass {
   //////////////////////////////////////////////////////////////////////////
   class Binary_Expression : public Expression {
   private:
-    ADD_PROPERTY(enum Sass_OP, type)
-    ADD_PROPERTY(Expression*, left)
-    ADD_PROPERTY(Expression*, right)
+    ADD_HASHED(enum Sass_OP, type)
+    ADD_HASHED(Expression*, left)
+    ADD_HASHED(Expression*, right)
     size_t hash_;
   public:
     Binary_Expression(ParserState pstate,
@@ -949,8 +960,8 @@ namespace Sass {
   public:
     enum Type { PLUS, MINUS, NOT };
   private:
-    ADD_PROPERTY(Type, type)
-    ADD_PROPERTY(Expression*, operand)
+    ADD_HASHED(Type, type)
+    ADD_HASHED(Expression*, operand)
     size_t hash_;
   public:
     Unary_Expression(ParserState pstate, Type t, Expression* o)
@@ -994,8 +1005,8 @@ namespace Sass {
   // Individual argument objects for mixin and function calls.
   ////////////////////////////////////////////////////////////
   class Argument : public Expression {
-    ADD_PROPERTY(Expression*, value)
-    ADD_PROPERTY(std::string, name)
+    ADD_HASHED(Expression*, value)
+    ADD_HASHED(std::string, name)
     ADD_PROPERTY(bool, is_rest_argument)
     ADD_PROPERTY(bool, is_keyword_argument)
     size_t hash_;
@@ -1061,8 +1072,8 @@ namespace Sass {
   // Function calls.
   //////////////////
   class Function_Call : public Expression {
-    ADD_PROPERTY(std::string, name)
-    ADD_PROPERTY(Arguments*, arguments)
+    ADD_HASHED(std::string, name)
+    ADD_HASHED(Arguments*, arguments)
     ADD_PROPERTY(void*, cookie)
     size_t hash_;
   public:
@@ -1157,8 +1168,8 @@ namespace Sass {
   public:
     enum Type { NUMBER, PERCENTAGE, DIMENSION, HEX };
   private:
-    ADD_PROPERTY(Type, type)
-    ADD_PROPERTY(std::string, value)
+    ADD_HASHED(Type, type)
+    ADD_HASHED(std::string, value)
     size_t hash_;
   public:
     Textual(ParserState pstate, Type t, std::string val)
@@ -1196,7 +1207,7 @@ namespace Sass {
   // Numbers, percentages, dimensions, and colors.
   ////////////////////////////////////////////////
   class Number : public Value {
-    ADD_PROPERTY(double, value)
+    ADD_HASHED(double, value)
     ADD_PROPERTY(bool, zero)
     std::vector<std::string> numerator_units_;
     std::vector<std::string> denominator_units_;
@@ -1222,6 +1233,10 @@ namespace Sass {
     {
       if (hash_ == 0) {
         hash_ = std::hash<double>()(value_);
+        for (const auto numerator : numerator_units())
+          hash_combine(hash_, std::hash<std::string>()(numerator));
+        for (const auto denominator : denominator_units())
+          hash_combine(hash_, std::hash<std::string>()(denominator));
       }
       return hash_;
     }
@@ -1237,10 +1252,10 @@ namespace Sass {
   // Colors.
   //////////
   class Color : public Value {
-    ADD_PROPERTY(double, r)
-    ADD_PROPERTY(double, g)
-    ADD_PROPERTY(double, b)
-    ADD_PROPERTY(double, a)
+    ADD_HASHED(double, r)
+    ADD_HASHED(double, g)
+    ADD_HASHED(double, b)
+    ADD_HASHED(double, a)
     ADD_PROPERTY(bool, sixtuplet)
     ADD_PROPERTY(std::string, disp)
     size_t hash_;
@@ -1301,7 +1316,7 @@ namespace Sass {
   // Booleans.
   ////////////
   class Boolean : public Value {
-    ADD_PROPERTY(bool, value)
+    ADD_HASHED(bool, value)
     size_t hash_;
   public:
     Boolean(ParserState pstate, bool val)
@@ -1380,7 +1395,7 @@ namespace Sass {
   class String_Constant : public String {
     ADD_PROPERTY(char, quote_mark)
     ADD_PROPERTY(bool, can_compress_whitespace)
-    ADD_PROPERTY(std::string, value)
+    ADD_HASHED(std::string, value)
   protected:
     size_t hash_;
   public:
@@ -1756,6 +1771,7 @@ namespace Sass {
     virtual unsigned long specificity() {
       return Constants::Specificity_Universal;
     }
+    virtual std::string to_string(bool compressed = false, int precision = 5) const = 0;
   };
   inline Selector::~Selector() { }
 
@@ -1770,6 +1786,7 @@ namespace Sass {
     Selector_Schema(ParserState pstate, String* c)
     : Selector(pstate), contents_(c), at_root_(false)
     { }
+    virtual std::string to_string(bool compressed = false, int precision = 5) const;
     ATTACH_OPERATIONS()
   };
 
@@ -1838,6 +1855,8 @@ namespace Sass {
     inline bool operator!=(const Simple_Selector& rhs) const { return !(*this == rhs); }
 
     bool operator<(const Simple_Selector& rhs) const;
+    // default implementation should work for most of the simple selectors (otherwise overload)
+    virtual std::string to_string(bool compressed = false, int precision = 5) const { return this->ns_name(); };
     ATTACH_OPERATIONS();
   };
   inline Simple_Selector::~Simple_Selector() { }
@@ -1861,6 +1880,7 @@ namespace Sass {
     }
     std::string type() { return "selector"; }
     static std::string type_name() { return "selector"; }
+    virtual std::string to_string(bool compressed = false, int precision = 5) const;
     ATTACH_OPERATIONS()
   };
 
@@ -1873,6 +1893,7 @@ namespace Sass {
     : Simple_Selector(pstate, n)
     { has_placeholder(true); }
     // virtual Selector_Placeholder* find_placeholder();
+    virtual ~Selector_Placeholder() {};
     ATTACH_OPERATIONS()
   };
 
@@ -1931,6 +1952,7 @@ namespace Sass {
     bool operator==(const Attribute_Selector& rhs) const;
     bool operator<(const Simple_Selector& rhs) const;
     bool operator<(const Attribute_Selector& rhs) const;
+    virtual std::string to_string(bool compressed = false, int precision = 5) const;
     ATTACH_OPERATIONS()
   };
 
@@ -2005,6 +2027,7 @@ namespace Sass {
     }
     bool operator==(const Simple_Selector& rhs) const;
     bool operator==(const Wrapped_Selector& rhs) const;
+    virtual std::string to_string(bool compressed = false, int precision = 5) const;
     ATTACH_OPERATIONS()
   };
 
@@ -2091,6 +2114,7 @@ namespace Sass {
     Compound_Selector* clone(Context&) const; // does not clone the Simple_Selector*s
 
     Compound_Selector* minus(Compound_Selector* rhs, Context& ctx);
+    virtual std::string to_string(bool compressed = false, int precision = 5) const;
     ATTACH_OPERATIONS()
   };
 
@@ -2239,6 +2263,7 @@ namespace Sass {
     Complex_Selector* clone(Context&) const;      // does not clone Compound_Selector*s
     Complex_Selector* cloneFully(Context&) const; // clones Compound_Selector*s
     // std::vector<Compound_Selector*> to_vector();
+    virtual std::string to_string(bool compressed = false, int precision = 5) const;
     ATTACH_OPERATIONS()
   };
 
@@ -2284,6 +2309,7 @@ namespace Sass {
     virtual bool operator==(const Selector_List& rhs) const;
     // Selector Lists can be compared to comma lists
     virtual bool operator==(const Expression& rhs) const;
+    virtual std::string to_string(bool compressed = false, int precision = 5) const;
     ATTACH_OPERATIONS()
   };
 

@@ -169,12 +169,12 @@ func TestFunc_customarity(t *testing.T) {
 	if err == nil {
 		t.Error("No error thrown for incorrect arity")
 	}
-
-	if e := "function foo only takes 0 arguments; given 2"; e != ctx.err.Message {
+	e := "wrong number of arguments (2 for 0) for `foo'"
+	if e != ctx.err.Message {
 		t.Errorf("wanted:\n%s\ngot:\n%s\n", e, ctx.err.Message)
 	}
-	e := `Error > stdin:3
-function foo only takes 0 arguments; given 2
+	e = `Error > stdin:3
+wrong number of arguments (2 for 0) for ` + "`" + `foo'
 div {
   color: red(blue);
   background: foo(1pt, 2cm);

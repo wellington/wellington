@@ -2,7 +2,6 @@ package libsass
 
 import (
 	"bytes"
-	"strings"
 	"testing"
 )
 
@@ -141,8 +140,8 @@ div.branch {
 		t.Fatal("No error thrown for missing import")
 	}
 	e := `Error > stdin:1
-file to import not found or unreadable: branch
-Current dir: ` + `
+File to import not found or unreadable: branch
+Parent style sheet: stdin
 @import "branch";
 div.branch {
   @extend %branch;
@@ -153,8 +152,7 @@ div.branch {
 `
 	if e != err.Error() {
 		t.Fatalf("got:\n%s\nwanted:\n%s",
-			strings.Replace(err.Error(), " ", "*", -1),
-			strings.Replace(e, " ", "*", -1))
+			err.Error(), e)
 	}
 
 }
@@ -177,8 +175,8 @@ div.branch {
 	err := ctx.Compile(in, &out)
 
 	e := `Error > stdin:1
-file to import not found or unreadable: branch
-Current dir: ` + `
+File to import not found or unreadable: branch
+Parent style sheet: stdin
 @import "branch";
 div.branch {
   @extend %branch;

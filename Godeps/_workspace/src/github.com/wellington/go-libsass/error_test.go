@@ -45,7 +45,7 @@ func TestError_JSON(t *testing.T) {
 	err := ctx.Compile(in, out)
 
 	e := `Error > stdin:2
-Invalid CSS after "...  height: 10px;": expected "}", was ""
+Invalid CSS after "  height: 10px;": expected "}", was ""
 div {
   height: 10px;
 `
@@ -118,13 +118,14 @@ func TestError_import(t *testing.T) {
 	if err == nil {
 		t.Error("No error returned")
 	}
-	e := ErrorMap{2, "file to import not found or unreadable: fail\nCurrent dir: "}
+	e := ErrorMap{2, `File to import not found or unreadable: fail
+Parent style sheet: stdin`}
 	if e.line != ctx.err.Line {
 		t.Errorf("wanted:\n%d\ngot:\n%d", e.line, ctx.err.Line)
 	}
 
 	if e.message != ctx.err.Message {
-		t.Errorf("wanted:\n%s\ngot:\n%s", e.message, ctx.err.Message)
+		t.Errorf("wanted:%s\ngot:%s", e.message, ctx.err.Message)
 	}
 
 }
