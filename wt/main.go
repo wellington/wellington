@@ -35,7 +35,6 @@ var (
 	timeB                         bool
 	config                        string
 	debug                         bool
-	multi                         bool
 
 	// unused
 	noLineComments bool
@@ -54,34 +53,42 @@ func init() {
 
 func flags(set *pflag.FlagSet) {
 	// Unused cli args
+	set.StringVarP(&buildDir, "build", "b", "",
+		"Path to target directory to place generated CSS, relative paths inside project directory are preserved")
+	set.BoolVarP(&comments, "comment", "", true, "Turn on source comments")
+	set.BoolVar(&debug, "debug", false, "Show detailed debug information")
+
+	set.StringVarP(&dir, "dir", "d", "",
+		"Path to locate images for spriting and image functions")
+	set.StringVar(&dir, "images-dir", "", "Compass backwards compat, use -d instead")
+
+	set.StringVar(&font, "font", ".",
+		"Path to directory containing fonts")
+	set.StringVar(&gen, "gen", ".",
+		"Path to place generated images")
+
+	set.StringVarP(&includes, "proj", "p", "",
+		"Path to directory containing Sass stylesheets")
 	set.BoolVar(&noLineComments, "no-line-comments", false, "UNSUPPORTED: Disable line comments")
 	set.BoolVar(&relativeAssets, "relative-assets", false, "UNSUPPORTED: Make compass asset helpers generate relative urls to assets.")
 
 	set.BoolVarP(&showVersion, "version", "v", false, "Show the app version")
-	//wtCmd.PersistentFlags().BoolVarP(&showHelp, "help", "h", false, "this help")
-	set.BoolVar(&debug, "debug", false, "Show detailed debug information")
-	set.StringVar(&dir, "images-dir", "", "Compass Image Directory")
-	set.StringVarP(&dir, "dir", "d", "", "Compass Image Directory")
-	set.StringVar(&jsDir, "javascripts-dir", "", "Compass JS Directory")
+	set.StringVarP(&style, "style", "s", "nested",
+		`nested style of output CSS
+                        available options: nested, expanded, compact, compressed`)
 	set.BoolVar(&timeB, "time", false, "Retrieve timing information")
 
-	set.StringVarP(&buildDir, "build", "b", "", "Target directory for generated CSS, relative paths from sass-dir are preserved")
-	set.StringVar(&buildDir, "css-dir", "", "Location of CSS files")
+	var nothing string
+	set.StringVar(&nothing, "css-dir", "",
+		"Compass backwards compat, does nothing. Reference locations relative to Sass project directory")
+	set.StringVar(&jsDir, "javascripts-dir", "",
+		"Compass backwards compat, ignored")
+	set.StringVar(&includes, "sass-dir", "",
+		"Compass backwards compat, use -p instead")
+	set.StringVarP(&config, "config", "c", "",
+		"Temporarily disabled: Location of the config file")
 
-	set.StringVar(&gen, "gen", ".", "Generated images directory")
-
-	set.StringVar(&includes, "sass-dir", "", "Compass Sass Directory")
-	set.StringVarP(&includes, "proj", "p", "", "Project directory")
-
-	set.StringVar(&font, "font", ".", "Font Directory")
-	set.StringVarP(&style, "style", "s", "nested", "CSS nested style")
-
-	set.StringVarP(&config, "config", "c", "", "Location of the config file")
-
-	set.BoolVarP(&comments, "comment", "", true, "Turn on source comments")
-
-	set.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
-	set.BoolVarP(&multi, "multi", "", true, "Enable multi-threaded operation")
+	set.StringVar(&cpuprofile, "cpuprofile", "", "Go runtime cpu profilling for debugging")
 }
 
 var compileCmd = &cobra.Command{
@@ -134,7 +141,7 @@ func AddCommands() {
 
 var wtCmd = &cobra.Command{
 	Use:   "wt",
-	Short: "wt is a Sass project tool",
+	Short: "wt is a Sass project tool made to handle large projects. It uses the libSass compiler for efficiency and speed.",
 	Run:   Compile,
 }
 

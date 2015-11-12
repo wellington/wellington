@@ -43,6 +43,48 @@ div {
   background: url("genimg/sprites-wehqi.png") 0px 0px;
 }
 ```
+
+#### Available commands
+
+```bash
+$ wt -h
+
+wt is a Sass project tool made to handle large projects. It uses the libSass compiler for efficiency and speed.
+
+Usage:
+  wt [flags]
+  wt [command]
+
+Available Commands:
+  serve       Starts a http server that will convert Sass to CSS
+  compile     Compile Sass stylesheets to CSS
+  watch       Watch Sass files for changes and rebuild CSS
+
+Flags:
+  -b, --build="": Path to target directory to place generated CSS, relative paths inside project directory are preserved
+      --comment[=true]: Turn on source comments
+  -c, --config="": Temporarily disabled: Location of the config file
+      --cpuprofile="": Go runtime cpu profilling for debugging
+      --css-dir="": Compass backwards compat, does nothing. Reference locations relative to Sass project directory
+      --debug[=false]: Show detailed debug information
+  -d, --dir="": Path to locate images for spriting and image functions
+      --font=".": Path to directory containing fonts
+      --gen=".": Path to place generated images
+      --images-dir="": Compass backwards compat, use -d instead
+      --javascripts-dir="": Compass backwards compat, ignored
+      --no-line-comments[=false]: UNSUPPORTED: Disable line comments
+  -p, --proj="": Path to directory containing Sass stylesheets
+      --relative-assets[=false]: UNSUPPORTED: Make compass asset helpers generate relative urls to assets.
+      --sass-dir="": Compass backwards compat, use -p instead
+  -s, --style="nested": nested style of output CSS
+                        available options: nested, expanded, compact, compressed
+      --time[=false]: Retrieve timing information
+  -v, --version[=false]: Show the app version
+
+Use "wt [command] --help" for more information about a command.
+```
+
+
 #### Try before you buy
 
 You can try out Wellington on Codepen, fork the [Wellington Playground](http://codepen.io/pen/def?fork=KwggLx)! This live example has images you can use, or you can bring your Sass.
