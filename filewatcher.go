@@ -85,17 +85,25 @@ func NewPartialMap() *SafePartialMap {
 	return spm
 }
 
+func (p *SafePartialMap) Add(key string, paths []string) {
+	p.Lock()
+	defer p.Unlock()
+	p.M[key] = paths
+}
+
+// Get is a thread-safe way to access the partial map
+func (p *SafePartialMap) Get(key string) ([]string, bool) {
+	p.RLock()
+	defer p.RUnlock()
+	pm, ok := p.M[key]
+	return pm, ok
+}
+
 // AddRelation links a partial Sass file with the top level file by
 // adding a thread safe entry into partialMap.M.
 func (p *SafePartialMap) AddRelation(mainfile string, subfile string) {
-	p.Lock()
-	//check to see if the map exists, if not initialize the top level map
-	if _, ok := p.M[subfile]; !ok {
-		p.M[subfile] = make([]string, 0, MaxTopLevel)
-	}
-
-	p.M[subfile] = appendUnique(p.M[subfile], mainfile)
-	p.Unlock()
+	existing, _ := p.Get(subfile)
+	p.Add(subfile, appendUnique(existing, mainfile))
 }
 
 // Watch is the main entry point into filewatcher and sets up the
@@ -121,7 +129,6 @@ func (w *Watcher) watchFiles() error {
 	var err error
 	//Watch the dirs of all sass partials
 	w.opts.PartialMap.RLock()
-
 	for k := range w.opts.PartialMap.M {
 		dir := filepath.Dir(k)
 		_, err = os.Stat(dir)
@@ -133,14 +140,6 @@ func (w *Watcher) watchFiles() error {
 		}
 	}
 	w.opts.PartialMap.RUnlock()
-
-	//Watch the dirs of all top level files
-	for k := range w.opts.Paths {
-		err := w.watch(w.opts.Paths[k])
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -158,7 +157,10 @@ func (w *Watcher) startWatching() {
 					return
 				}
 				if event.Op&fsnotify.Write == fsnotify.Write {
-					w.rebuild(event.Name)
+					err := w.rebuild(event.Name)
+					if err != nil {
+						log.Println("rebuild error:", err)
+					}
 				}
 			case err := <-w.FileWatcher.Errors:
 				if err != nil {
@@ -177,12 +179,11 @@ var rebuildChan chan ([]string)
 // for whether the file is a non-partial, no _ at beginning,
 // and requests the file be rebuilt directly.
 func (w *Watcher) rebuild(eventFileName string) error {
-	w.opts.PartialMap.RLock()
-	paths, ok := w.opts.PartialMap.M[eventFileName]
+	paths, ok := w.opts.PartialMap.Get(eventFileName)
 	if !ok {
 		return fmt.Errorf("partial map lookup failed: %s", eventFileName)
 	}
-	w.opts.PartialMap.RUnlock()
+
 	go func(paths []string) {
 		rebuildMu.RLock()
 		if rebuildChan != nil {
