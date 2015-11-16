@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
+	libsass "github.com/wellington/go-libsass"
 	"github.com/wellington/wellington/version"
 )
 
@@ -46,7 +47,7 @@ func setDefaultHeaders(w http.ResponseWriter, r *http.Request) {
 
 // HTTPHandler starts a CORS enabled web server that takes as input
 // Sass and outputs CSS.
-func HTTPHandler(gba *BuildArgs) func(w http.ResponseWriter, r *http.Request) {
+func HTTPHandler(gba *BuildArgs, httpPath string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		setDefaultHeaders(w, r)
 		start := time.Now()
@@ -78,6 +79,7 @@ func HTTPHandler(gba *BuildArgs) func(w http.ResponseWriter, r *http.Request) {
 			resp.Contents = ""
 			return
 		}
+		comp.Options(libsass.HTTPPath(httpPath))
 		err = comp.Run()
 	}
 }

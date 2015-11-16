@@ -124,6 +124,7 @@ func Sprite(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error 
 	path, err := imgs.OutputPath()
 
 	// FIXME: path directory can not be trusted, rebuild this from the context
+	fmt.Printf("% #v\n", ctx)
 	if ctx.HTTPPath == "" {
 		ctxPath, _ := filepath.Rel(ctx.BuildDir, ctx.GenImgDir)
 		path = strings.Join([]string{ctxPath, filepath.Base(path)}, "/")
