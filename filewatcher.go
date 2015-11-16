@@ -85,6 +85,7 @@ func NewPartialMap() *SafePartialMap {
 	return spm
 }
 
+// Add places a path in the partial map
 func (p *SafePartialMap) Add(key string, paths []string) {
 	p.Lock()
 	defer p.Unlock()
