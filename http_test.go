@@ -120,27 +120,13 @@ func TestHTTPHandler_spritepath(t *testing.T) {
 	}
 	gba := &BuildArgs{
 		BuildDir: tdir,
+		Gen:      filepath.Join(tdir, "im"),
 	}
 	u := "http://foo.com"
 	hh := http.HandlerFunc(HTTPHandler(gba, u))
-	req, err := http.NewRequest("GET", "", nil)
-	req.Header.Set("Origin", u)
-	if err != nil {
-		t.Error(err)
-	}
 	w := httptest.NewRecorder()
-	hh.ServeHTTP(w, req)
 
-	if e := 200; w.Code != e {
-		t.Errorf("got: %d wanted: %d", w.Code, e)
-	}
-
-	resp := decResp(t, w.Body)
-	if e := "request is empty"; resp.Error != e {
-		t.Errorf("got: %s wanted: %s", resp, e)
-	}
-
-	req, err = http.NewRequest("GET", "",
+	req, err := http.NewRequest("POST", "",
 		bytes.NewBufferString(`$m: sprite-map("test/img/*.png");
 div {
   file: sprite($m, "140");
@@ -155,11 +141,16 @@ div {
 		t.Errorf("got: %d wanted: %d", w.Code, e)
 	}
 	e := `div {
-  file: url("http://foo.com/build/8222b6.png") 0px -139px; }
+  file: url("http://foo.com/build/20185e.png") 0px -139px; }
 `
-	resp = decResp(t, w.Body)
+
+	resp := decResp(t, w.Body)
 	if resp.Contents != e {
 		t.Errorf("got: %s wanted: %s", resp.Contents, e)
+	}
+
+	if len(resp.Error) > 0 {
+		t.Fatal(resp.Error)
 	}
 
 	ehead := map[string][]string{
