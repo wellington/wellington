@@ -152,6 +152,10 @@ Build a Docker Container. The wt container is 33.6 MB in size, but builds in a m
 
 Please use pull requests for contributing code.  [CircleCI](https://circleci.com/gh/wellington/wellington) will automatically test and lint your contributions.  Thanks for helping!
 
+### Getting Help
+
+Ask questions in the QA forum on [Google Group](https://groups.google.com/forum/#!forum/wellington-development)
+
 ### License
 
 Wellington is licensed under MIT.
