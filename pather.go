@@ -10,6 +10,9 @@ import (
 // relative takes the input paths and file one that file
 // can be made relative to. This creates a relative path useful for
 // writing out build files
+//
+// It is expected that a file is part of one of the path directories.
+// Otherwise, it will not match any of them.
 func relative(paths []string, file string) string {
 	if len(filepath.Ext(file)) > 0 {
 		file = filepath.Dir(file)
@@ -17,6 +20,9 @@ func relative(paths []string, file string) string {
 	for _, path := range paths {
 		if len(filepath.Ext(path)) > 0 {
 			path = filepath.Dir(path)
+		}
+		if !strings.HasPrefix(file, path) {
+			continue
 		}
 		rel, err := filepath.Rel(path, file)
 		if err == nil {

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
@@ -76,6 +77,10 @@ func NewBuild(paths []string, args *BuildArgs, pMap *SafePartialMap) *Build {
 	if args.Payload == nil {
 		args.init()
 	}
+
+	// paths should be sorted, so that the most specific relative path is
+	// used for relative build path in build directory
+	sort.Sort(sort.StringSlice(paths))
 	return &Build{
 		done:   make(chan error),
 		status: make(chan error),
