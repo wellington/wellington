@@ -84,6 +84,10 @@ Flags:
 Use "wt [command] --help" for more information about a command.
 ```
 
+#### Use with Grunt or Gulp
+
+See the [Grunt example](https://github.com/wellington/grunt-wellington/tree/master/examples/watch)
+See the [Gulp Example](https://github.com/wellington/wellington/tree/master/examples/gulp)
 
 #### Try before you buy
 
