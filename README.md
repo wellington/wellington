@@ -117,25 +117,10 @@ Install Go and add $GOPATH/bin to your $PATH. [Detailed instructions](https://go
 
 ```
 go get -u github.com/wellington/wellington
-cd $GOPATH/src/github.com/wellington/wellington
-
-make
 
 # You should not have wt in your path
 wt -h
 ```
-
-It's a good idea to export `PKG_CONFIG_PATH` so that pkg-config can find `libsass.pc`. Otherwise, `go ...` commands will fail.
-
-```
-export PKG_CONFIG_PATH=$GOPATH/src/github.com/wellington/libsass/lib/pkgconfig
-```
-
-Set your fork as the origin.
-
-    cd $GOPATH/src/github.com/wellington/wellington
-	git remote rm origin
-	git remote add origin git@github.com:username/wellington.git
 
 Testing
 
@@ -144,6 +129,12 @@ Testing
 Profiling
 
 	make profile
+
+Set your fork as the origin.
+
+    cd $GOPATH/src/github.com/wellington/wellington
+	git remote rm origin
+	git remote add origin git@github.com:username/wellington.git
 
 Build a Docker Container. The wt container is 33.6 MB in size, but builds in a much larger container 844.7 MB.
 
