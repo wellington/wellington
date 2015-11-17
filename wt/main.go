@@ -288,7 +288,7 @@ func Serve(cmd *cobra.Command, paths []string) {
 	http.Handle("/build/", wt.FileHandler(gba.Gen))
 	log.Println("Web server started on :12345")
 
-	http.HandleFunc("/", wt.HTTPHandler(gba))
+	http.HandleFunc("/", wt.HTTPHandler(gba, httpPath))
 	err := http.ListenAndServe(":12345", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)

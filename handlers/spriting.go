@@ -90,6 +90,7 @@ func SpriteFile(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) er
 // Sprite returns the source and background position for an image in the
 // spritesheet.
 func Sprite(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error {
+
 	ctx := v.(*libsass.Context)
 	var glob, name string
 	var offsetX, offsetY libs.SassNumber
@@ -122,10 +123,16 @@ func Sprite(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error 
 	}
 
 	path, err := imgs.OutputPath()
-
+	if err != nil {
+		return setErrorAndReturn(err, rsv)
+	}
 	// FIXME: path directory can not be trusted, rebuild this from the context
 	if ctx.HTTPPath == "" {
-		ctxPath, _ := filepath.Rel(ctx.BuildDir, ctx.GenImgDir)
+		ctxPath, err := filepath.Rel(ctx.BuildDir, ctx.GenImgDir)
+		if err != nil {
+			fmt.Println("error", err)
+			return setErrorAndReturn(err, rsv)
+		}
 		path = strings.Join([]string{ctxPath, filepath.Base(path)}, "/")
 	} else {
 		u, err := url.Parse(ctx.HTTPPath)

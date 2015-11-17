@@ -9,6 +9,8 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
+
+	_ "github.com/wellington/wellington/handlers"
 )
 
 func decResp(t *testing.T, r io.Reader) Response {
@@ -56,9 +58,10 @@ func TestFileHandler(t *testing.T) {
 
 func TestHTTPHandler(t *testing.T) {
 	gba := &BuildArgs{}
-	hh := http.HandlerFunc(HTTPHandler(gba))
+	u := "http://foo.com"
+	hh := http.HandlerFunc(HTTPHandler(gba, u))
 	req, err := http.NewRequest("GET", "", nil)
-	req.Header.Set("Origin", "http://foo.com")
+	req.Header.Set("Origin", u)
 	if err != nil {
 		t.Error(err)
 	}
@@ -109,8 +112,65 @@ func TestHTTPHandler(t *testing.T) {
 
 }
 
+func TestHTTPHandler_spritepath(t *testing.T) {
+	// TODO: maybe just check that compiler has the correct HTTPPath
+	tdir, err := ioutil.TempDir("", "spritepath")
+	if err != nil {
+		t.Fatal(err)
+	}
+	gba := &BuildArgs{
+		BuildDir: tdir,
+		Gen:      filepath.Join(tdir, "im"),
+	}
+	u := "http://foo.com"
+	hh := http.HandlerFunc(HTTPHandler(gba, u))
+	w := httptest.NewRecorder()
+
+	req, err := http.NewRequest("POST", "",
+		bytes.NewBufferString(`$m: sprite-map("test/img/*.png");
+div {
+  file: sprite($m, "140");
+}`))
+	if err != nil {
+		t.Error(err)
+	}
+	w.Body.Reset()
+	hh.ServeHTTP(w, req)
+
+	if e := 200; w.Code != e {
+		t.Errorf("got: %d wanted: %d", w.Code, e)
+	}
+	e := `div {
+  file: url("http://foo.com/build/20185e.png") 0px -139px; }
+`
+
+	resp := decResp(t, w.Body)
+	if resp.Contents != e {
+		t.Errorf("got: %s wanted: %s", resp.Contents, e)
+	}
+
+	if len(resp.Error) > 0 {
+		t.Fatal(resp.Error)
+	}
+
+	ehead := map[string][]string{
+		"Access-Control-Allow-Origin":      []string{"http://foo.com"},
+		"Access-Control-Allow-Methods":     []string{"POST, GET, OPTIONS, PUT, DELETE"},
+		"Access-Control-Allow-Headers":     []string{"Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token"},
+		"Access-Control-Allow-Credentials": []string{"true"},
+	}
+
+	for i, h := range w.Header() {
+
+		if ehead[i][0] != h[0] {
+			t.Errorf("got:\n%q\nwanted:\n%q", h, ehead[i])
+		}
+	}
+
+}
+
 func TestHTTPHandler_error(t *testing.T) {
-	hh := http.HandlerFunc(HTTPHandler(&BuildArgs{}))
+	hh := http.HandlerFunc(HTTPHandler(&BuildArgs{}, ""))
 	// nil causes panic, is this a problem?
 	req, err := http.NewRequest("GET", "",
 		bytes.NewBufferString(`div { p { color: darken(); } };`))

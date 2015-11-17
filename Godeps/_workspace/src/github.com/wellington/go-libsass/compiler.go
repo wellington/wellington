@@ -8,6 +8,7 @@ import (
 type Compiler interface {
 	Run() error
 	Imports() []string
+	Options(...options) error
 }
 
 func OutputStyle(style int) options {
@@ -43,6 +44,16 @@ func IncludePaths(includes []string) options {
 	}
 }
 
+// HTTPPath prefixes all sprites and generated images with this uri.
+// Enabling wellington to serve images when used in HTTP mode
+func HTTPPath(u string) options {
+	return func(c *Sass) error {
+		c.httpPath = u
+		c.ctx.HTTPPath = u
+		return nil
+	}
+}
+
 // SourceMap behaves differently depending on compiler used. For
 // compile, it will embed sourcemap into the source. For file compile,
 // it will include a separate file with the source map.
@@ -67,6 +78,7 @@ func FontDir(path string) options {
 func BasePath(basePath string) options {
 	return func(c *Sass) error {
 		c.httpPath = basePath
+		// FIXME: remove from context
 		c.ctx.HTTPPath = basePath
 		return nil
 	}
@@ -118,7 +130,7 @@ func BuildDir(path string) options {
 
 type options func(*Sass) error
 
-func New(dst io.Writer, src io.Reader, options ...options) (Compiler, error) {
+func New(dst io.Writer, src io.Reader, opts ...options) (Compiler, error) {
 
 	c := &Sass{
 		dst: dst,
@@ -128,14 +140,7 @@ func New(dst io.Writer, src io.Reader, options ...options) (Compiler, error) {
 	c.ctx.in = src
 	c.ctx.out = dst
 
-	for _, opt := range options {
-		err := opt(c)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return c, nil
+	return c, c.Options(opts...)
 }
 
 // Sass implements compiler interface for Sass and Scss stylesheets. To
@@ -163,6 +168,16 @@ func (c *Sass) run() error {
 		return c.ctx.FileCompile(c.srcFile, c.dst)
 	}
 	return c.ctx.Compile(c.src, c.dst)
+}
+
+func (c *Sass) Options(opts ...options) error {
+	for _, opt := range opts {
+		err := opt(c)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Run starts transforming S[c|a]ss to CSS
