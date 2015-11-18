@@ -150,8 +150,6 @@ func (w *Watcher) startWatching() {
 	go func() {
 		for {
 			select {
-			default:
-				// only called when w.FileWatcher.Events is set to nil.
 			case event := <-w.FileWatcher.Events:
 				if watcherChan != nil {
 					watcherChan <- event.Name
