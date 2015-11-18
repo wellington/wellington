@@ -72,6 +72,7 @@ func testSprite(ctx *libsass.Context) {
 
 func setupCtx(r io.Reader, out io.Writer /*, cookies ...libsass.Cookie*/) (*libsass.Context, libsass.SassValue, error) {
 	var usv libsass.SassValue
+
 	ctx := libsass.NewContext()
 	initCtx(ctx)
 	ctx.OutputStyle = libsass.NESTED_STYLE
@@ -83,20 +84,7 @@ func setupCtx(r io.Reader, out io.Writer /*, cookies ...libsass.Cookie*/) (*libs
 	ctx.Out = ""
 
 	testSprite(ctx)
-	/*cc := make(chan libsass.SassValue, len(cookies))
-	// If callbacks were made, add them to the context
-	// and create channels for communicating with them.
-	if len(cookies) > 0 {
-		cs := make([]libsass.Cookie, len(cookies))
-		for i, c := range cookies {
-			cs[i] = libsass.Cookie{
-				Sign: c.Sign,
-				Fn:   wrapCallback(c.Fn, cc),
-				Ctx:  ctx,
-			}
-		}
-		usv = <-cc
-	}*/
+
 	done := make(chan struct{})
 	go func() {
 		select {
@@ -113,35 +101,40 @@ func setupCtx(r io.Reader, out io.Writer /*, cookies ...libsass.Cookie*/) (*libs
 }
 
 func TestFuncImageURL(t *testing.T) {
-	ctx := libsass.NewContext()
-	ctx.BuildDir = "test/build"
-	ctx.ImageDir = "test/img"
+	comp, err := libsass.New(nil, nil,
+		libsass.BuildDir("test/build"),
+		libsass.ImgDir("test/img"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := libsass.NewCompilerContext(comp)
 
 	usv, _ := libsass.Marshal([]string{"image.png"})
-	var rsv libsass.SassValue
-	ImageURL(ctx, usv, &rsv)
+	rsv, err := ImageURL(ctx, usv)
+	if err != nil {
+		t.Fatal(err)
+	}
 	var path string
-	libsass.Unmarshal(rsv, &path)
+	err = libsass.Unmarshal(*rsv, &path)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if e := "url('../img/image.png')"; e != path {
 		t.Errorf("got: %s wanted: %s", path, e)
 	}
 
 	// Test sending invalid date to imageURL
 	usv, _ = libsass.Marshal(libs.SassNumber{Value: 1, Unit: "px"})
-	_ = usv
-	var errusv libsass.SassValue
-	// TODO: we can read go error now
-	ImageURL(ctx, usv, &errusv)
-	var s string
-	merr := libsass.Unmarshal(errusv, &s)
-	if merr != nil {
-		t.Error(merr)
+	_, err = ImageURL(ctx, usv)
+	if err == nil {
+		t.Fatal("error is nil")
 	}
 
 	e := "Invalid Sass type expected: slice got: libs.SassNumber value: 1px"
 
-	if e != s {
-		t.Errorf("got:\n%s\nwanted:\n%s", s, e)
+	if e != err.Error() {
+		t.Errorf("got: %s wanted: %s", err, e)
 	}
 
 }

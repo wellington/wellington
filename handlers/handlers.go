@@ -12,6 +12,8 @@ import (
 	"reflect"
 	"strings"
 
+	"golang.org/x/net/context"
+
 	libsass "github.com/wellington/go-libsass"
 	"github.com/wellington/go-libsass/libs"
 	sw "github.com/wellington/spritewell"
@@ -19,31 +21,32 @@ import (
 
 func init() {
 
-	libsass.RegisterHandler("image-url($name)", ImageURL)
+	libsass.RegisterSassFunc("image-url($name)", ImageURL)
 	libsass.RegisterHandler("image-height($path)", ImageHeight)
 	libsass.RegisterHandler("image-width($path)", ImageWidth)
 	libsass.RegisterHandler("inline-image($path, $encode: false)", InlineImage)
 }
 
-// ImageURL handles calls to resolve a local image from the
+// ImageURL handles calls to resolve the path to a local image from the
 // built css file path.
-func ImageURL(v interface{}, csv libsass.SassValue, rsv *libsass.SassValue) error {
-	ctx := v.(*libsass.Context)
+func ImageURL(ctx context.Context, csv libsass.SassValue) (*libsass.SassValue, error) {
+	comp, err := libsass.CompFromCtx(ctx)
+	if err != nil {
+		return nil, libsass.ErrCompilerNotFound
+	}
+	libctx := comp.Context()
 	var path []string
-	err := libsass.Unmarshal(csv, &path)
+	err = libsass.Unmarshal(csv, &path)
 	// This should create and throw a sass error
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return nil, err
 	}
-	url := strings.Join([]string{ctx.RelativeImage(), path[0]}, "/")
+	url := strings.Join([]string{libctx.RelativeImage(), path[0]}, "/")
 	res, err := libsass.Marshal(fmt.Sprintf("url('%s')", url))
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return nil, err
 	}
-	if rsv != nil {
-		*rsv = res
-	}
-	return nil
+	return &res, nil
 }
 
 // ImageHeight takes a file path (or sprite glob) and returns the
