@@ -70,6 +70,37 @@ func testSprite(ctx *libsass.Context) {
 
 }
 
+func setupComp(r io.Reader, out io.Writer) (libsass.Compiler, libsass.SassValue, error) {
+	var usv libsass.SassValue
+
+	comp, err := libsass.New(out, r,
+		libsass.OutputStyle(libsass.NESTED_STYLE),
+		libsass.BuildDir("../test/build"),
+		libsass.ImgDir("../test/img"),
+		libsass.FontDir("../test/font"),
+		libsass.ImgBuildDir("../test/build/img"),
+	)
+
+	if err != nil {
+		panic(err)
+	}
+	testSprite(comp.Context())
+
+	done := make(chan struct{})
+	go func() {
+		select {
+		case <-time.After(1 * time.Second):
+			log.Fatal("timeout")
+		case <-done:
+			return
+		}
+	}()
+
+	err = comp.Run()
+	close(done)
+	return comp, usv, err
+}
+
 func setupCtx(r io.Reader, out io.Writer /*, cookies ...libsass.Cookie*/) (*libsass.Context, libsass.SassValue, error) {
 	var usv libsass.SassValue
 
@@ -343,7 +374,7 @@ div {
     background: image-url("139.png");
 }`)
 	var out bytes.Buffer
-	_, _, err := setupCtx(in, &out)
+	comp, _, err := setupComp(in, &out)
 	if err != nil {
 		t.Error(err)
 	}
@@ -353,6 +384,13 @@ div {
 	if e != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
 	}
+	out.Reset()
+	comp.Option(libsass.CacheBust(true))
+	err = comp.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(out.String())
 }
 
 func TestRegInlineImage(t *testing.T) {
