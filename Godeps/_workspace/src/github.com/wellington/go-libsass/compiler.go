@@ -8,10 +8,26 @@ import (
 type Compiler interface {
 	Run() error
 	Imports() []string
-	Options(...options) error
+	Option(...option) error
+
+	ImgDir() string
+	CacheBust() bool
+
+	// Context() is deprecated, provided here as a bridge to the future
+	Context() *Context
 }
 
-func OutputStyle(style int) options {
+// CacheBust append timestamps to static assets to prevent caching
+func CacheBust(t bool) option {
+	return func(c *Sass) error {
+		c.cachebust = t
+		return nil
+	}
+}
+
+// OutputStyle controls the presentation of the CSS available option:
+// nested, expanded, compact, compressed
+func OutputStyle(style int) option {
 	return func(c *Sass) error {
 		c.ctx.OutputStyle = style
 		return nil
@@ -20,7 +36,7 @@ func OutputStyle(style int) options {
 
 // Precision specifies the number of points beyond the decimal place is
 // preserved during math calculations.
-func Precision(prec int) options {
+func Precision(prec int) option {
 	return func(c *Sass) error {
 		c.ctx.Precision = prec
 		return nil
@@ -28,7 +44,7 @@ func Precision(prec int) options {
 }
 
 // Comments toggles whether comments should be included in the output
-func Comments(b bool) options {
+func Comments(b bool) option {
 	return func(c *Sass) error {
 		c.ctx.Comments = b
 		return nil
@@ -36,7 +52,7 @@ func Comments(b bool) options {
 }
 
 // IncludePaths adds additional directories to search for Sass files
-func IncludePaths(includes []string) options {
+func IncludePaths(includes []string) option {
 	return func(c *Sass) error {
 		c.includePaths = includes
 		c.ctx.IncludePaths = includes
@@ -46,7 +62,7 @@ func IncludePaths(includes []string) options {
 
 // HTTPPath prefixes all sprites and generated images with this uri.
 // Enabling wellington to serve images when used in HTTP mode
-func HTTPPath(u string) options {
+func HTTPPath(u string) option {
 	return func(c *Sass) error {
 		c.httpPath = u
 		c.ctx.HTTPPath = u
@@ -57,7 +73,7 @@ func HTTPPath(u string) options {
 // SourceMap behaves differently depending on compiler used. For
 // compile, it will embed sourcemap into the source. For file compile,
 // it will include a separate file with the source map.
-func SourceMap(b bool) options {
+func SourceMap(b bool) option {
 	return func(c *Sass) error {
 		c.ctx.includeMap = b
 		return nil
@@ -65,7 +81,7 @@ func SourceMap(b bool) options {
 }
 
 // FontDir specifies where to find fonts
-func FontDir(path string) options {
+func FontDir(path string) option {
 	return func(c *Sass) error {
 		c.ctx.FontDir = path
 		return nil
@@ -75,7 +91,7 @@ func FontDir(path string) options {
 // BasePath sets the internal path provided to handlers requiring
 // a base path for http calls. This is useful for hosted solutions that
 // need to provided absolute paths to assets.
-func BasePath(basePath string) options {
+func BasePath(basePath string) option {
 	return func(c *Sass) error {
 		c.httpPath = basePath
 		// FIXME: remove from context
@@ -87,7 +103,7 @@ func BasePath(basePath string) options {
 // Path specifies a file to read instead of using the provided
 // io.Reader. This activates file compiling that includes line numbers
 // in the resulting output.
-func Path(path string) options {
+func Path(path string) option {
 	return func(c *Sass) error {
 		c.srcFile = path
 		c.ctx.MainFile = path
@@ -95,9 +111,9 @@ func Path(path string) options {
 	}
 }
 
-// annoying options for handlers to work
+// annoying option for handlers to work
 
-func Payload(load interface{}) options {
+func Payload(load interface{}) option {
 	return func(c *Sass) error {
 		c.ctx.Payload = load
 		return nil
@@ -105,7 +121,7 @@ func Payload(load interface{}) options {
 }
 
 // ImgBuildDir specifies where to place images
-func ImgBuildDir(path string) options {
+func ImgBuildDir(path string) option {
 	return func(c *Sass) error {
 		c.ctx.GenImgDir = path
 		return nil
@@ -113,7 +129,7 @@ func ImgBuildDir(path string) options {
 }
 
 // ImgDir specifies where to locate images for spriting
-func ImgDir(path string) options {
+func ImgDir(path string) option {
 	return func(c *Sass) error {
 		c.ctx.ImageDir = path
 		return nil
@@ -121,35 +137,40 @@ func ImgDir(path string) options {
 }
 
 // BuildDir only used for spriting, how terrible!
-func BuildDir(path string) options {
+func BuildDir(path string) option {
 	return func(c *Sass) error {
 		c.ctx.BuildDir = path
 		return nil
 	}
 }
 
-type options func(*Sass) error
+type option func(*Sass) error
 
-func New(dst io.Writer, src io.Reader, opts ...options) (Compiler, error) {
+func New(dst io.Writer, src io.Reader, opts ...option) (Compiler, error) {
 
 	c := &Sass{
 		dst: dst,
 		src: src,
 		ctx: NewContext(),
 	}
+
 	c.ctx.in = src
 	c.ctx.out = dst
+	c.ctx.compiler = c
+	err := c.Option(opts...)
 
-	return c, c.Options(opts...)
+	return c, err
 }
 
 // Sass implements compiler interface for Sass and Scss stylesheets. To
-// configure the compiler, use the options method.
+// configure the compiler, use the option method.
 type Sass struct {
-	ctx          *Context
-	dst          io.Writer
-	src          io.Reader
-	srcFile      string
+	ctx     *Context
+	dst     io.Writer
+	src     io.Reader
+	srcFile string
+
+	cachebust    bool
 	httpPath     string
 	includePaths []string
 	imports      []string
@@ -158,6 +179,10 @@ type Sass struct {
 }
 
 var _ Compiler = &Sass{}
+
+func (c *Sass) Context() *Context {
+	return c.ctx
+}
 
 func (c *Sass) run() error {
 	defer func() {
@@ -170,7 +195,17 @@ func (c *Sass) run() error {
 	return c.ctx.Compile(c.src, c.dst)
 }
 
-func (c *Sass) Options(opts ...options) error {
+func (c *Sass) CacheBust() bool {
+	return c.cachebust
+}
+
+// ImgDir returns the Image Directory used for locating images
+func (c *Sass) ImgDir() string {
+	return c.ctx.ImageDir
+}
+
+// Option allows the modifying of internal compiler state
+func (c *Sass) Option(opts ...option) error {
 	for _, opt := range opts {
 		err := opt(c)
 		if err != nil {
