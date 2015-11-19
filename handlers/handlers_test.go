@@ -72,7 +72,6 @@ func testSprite(ctx *libsass.Context) {
 
 func setupComp(r io.Reader, out io.Writer) (libsass.Compiler, libsass.SassValue, error) {
 	var usv libsass.SassValue
-
 	comp, err := libsass.New(out, r,
 		libsass.OutputStyle(libsass.NESTED_STYLE),
 		libsass.BuildDir("../test/build"),
@@ -80,7 +79,6 @@ func setupComp(r io.Reader, out io.Writer) (libsass.Compiler, libsass.SassValue,
 		libsass.FontDir("../test/font"),
 		libsass.ImgBuildDir("../test/build/img"),
 	)
-
 	if err != nil {
 		panic(err)
 	}
@@ -133,15 +131,15 @@ func setupCtx(r io.Reader, out io.Writer /*, cookies ...libsass.Cookie*/) (*libs
 
 func TestFuncImageURL(t *testing.T) {
 	comp, err := libsass.New(nil, nil,
-		libsass.BuildDir("test/build"),
-		libsass.ImgDir("test/img"),
+		libsass.BuildDir("../test/build"),
+		libsass.ImgDir("../test/img"),
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
 	ctx := libsass.NewCompilerContext(comp)
 
-	usv, _ := libsass.Marshal([]string{"image.png"})
+	usv, _ := libsass.Marshal([]string{"139.png"})
 	rsv, err := ImageURL(ctx, usv)
 	if err != nil {
 		t.Fatal(err)
@@ -151,7 +149,7 @@ func TestFuncImageURL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if e := "url('../img/image.png')"; e != path {
+	if e := "url('../img/139.png')"; e != path {
 		t.Errorf("got: %s wanted: %s", path, e)
 	}
 
@@ -369,10 +367,11 @@ div {
 }
 
 func TestRegImageURL(t *testing.T) {
-	in := bytes.NewBufferString(`
+	contents := `
 div {
     background: image-url("139.png");
-}`)
+}`
+	in := bytes.NewBufferString(contents)
 	var out bytes.Buffer
 	comp, _, err := setupComp(in, &out)
 	if err != nil {
@@ -386,11 +385,27 @@ div {
 	}
 	out.Reset()
 	comp.Option(libsass.CacheBust(true))
+
+	in.WriteString(contents)
 	err = comp.Run()
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(out.String())
+	info, err := os.Stat("../test/img/139.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	qry, err := modHash(info)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e = fmt.Sprintf(`div {
+  background: url('../img/139.png%s'); }
+`, qry)
+
+	if e != out.String() {
+		t.Errorf("got: %s\nwanted: %s", out.String(), e)
+	}
 }
 
 func TestRegInlineImage(t *testing.T) {

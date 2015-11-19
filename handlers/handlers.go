@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"errors"
 	"fmt"
 	"io"
@@ -27,6 +28,16 @@ func init() {
 	libsass.RegisterHandler("inline-image($path, $encode: false)", InlineImage)
 }
 
+func modHash(info os.FileInfo) (string, error) {
+	mod := info.ModTime()
+	bs, err := mod.MarshalText()
+	if err != nil {
+		return "", err
+	}
+	ts := sha1.Sum(bs)
+	return "?" + fmt.Sprintf("%x", ts[:4]), nil
+}
+
 // ImageURL handles calls to resolve the path to a local image from the
 // built css file path.
 func ImageURL(ctx context.Context, csv libsass.SassValue) (*libsass.SassValue, error) {
@@ -41,8 +52,30 @@ func ImageURL(ctx context.Context, csv libsass.SassValue) (*libsass.SassValue, e
 	if err != nil {
 		return nil, err
 	}
-	url := strings.Join([]string{libctx.RelativeImage(), path[0]}, "/")
-	res, err := libsass.Marshal(fmt.Sprintf("url('%s')", url))
+
+	if len(path) != 1 {
+		return nil, errors.New("path not found")
+	}
+
+	imgdir := comp.ImgDir()
+
+	var qry string
+	if comp.CacheBust() {
+		fileinfo, err := os.Stat(filepath.Join(imgdir, path[0]))
+		if err != nil {
+			return nil, err
+		}
+		qry, err = modHash(fileinfo)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	url := strings.Join([]string{
+		libctx.RelativeImage(),
+		path[0],
+	}, "/")
+	res, err := libsass.Marshal(fmt.Sprintf("url('%s%s')", url, qry))
 	if err != nil {
 		return nil, err
 	}
