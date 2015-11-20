@@ -11,11 +11,10 @@ import (
 )
 
 func TestFontURLFail(t *testing.T) {
-	r, w, _ := os.Pipe()
-	_ = r
+	var ignore *os.File
 	old := os.Stdout
 	defer func() { os.Stdout = old }()
-	os.Stdout = w
+	os.Stdout = ignore
 	in := bytes.NewBufferString(`@font-face {
   src: font-url("arial.eot");
 }`)
@@ -28,38 +27,54 @@ func TestFontURLFail(t *testing.T) {
 		t.Errorf("got:\n%s\nwanted:\n%s\n", err, e)
 	}
 
-	// Removed this as part of making font-url fail instead of
-	// output garbage
-	//
-	// outC := make(chan string)
-	// go func(r *os.File) {
-	// 	var buf bytes.Buffer
-	// 	io.Copy(&buf, r)
-	// 	outC <- buf.String()
-	// }(r)
-
-	// w.Close()
-	// stdout := <-outC
-
 }
 
-func ExampleFontURL() {
-	in := bytes.NewBufferString(`
+func TestFontURL(t *testing.T) {
+	contents := `
 $path: font-url($raw: true, $path: "arial.eot");
 @font-face {
   src: font-url("arial.eot");
   src: url("#{$path}");
-}`)
-
-	_, _, err := setupCtx(in, os.Stdout)
+}`
+	in := bytes.NewBufferString(contents)
+	var out bytes.Buffer
+	comp, _, err := setupComp(in, &out)
 	if err != nil {
-		fmt.Println(err)
+		t.Fatal(err)
+	}
+	e := `@font-face {
+  src: url("../font/arial.eot");
+  src: url("../font/arial.eot"); }
+`
+
+	if e != out.String() {
+		t.Errorf("got: %s wanted: %s", out.String(), e)
 	}
 
-	// Output:
-	// @font-face {
-	//   src: url("../font/arial.eot");
-	//   src: url("../font/arial.eot"); }
+	comp.Option(libsass.CacheBust(true))
+	in.WriteString(contents)
+	out.Reset()
+	err = comp.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	info, err := os.Stat("../test/font/arial.eot")
+	if err != nil {
+		t.Fatal(err)
+	}
+	qs, err := modHash(info)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	e = fmt.Sprintf(`@font-face {
+  src: url("../font/arial.eot%s");
+  src: url("../font/arial.eot%s"); }
+`, qs, qs)
+	if e != out.String() {
+		t.Errorf("got: %s wanted: %s", out.String(), e)
+	}
 
 }
 
