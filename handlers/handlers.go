@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -26,6 +27,40 @@ func init() {
 	libsass.RegisterHandler("image-height($path)", ImageHeight)
 	libsass.RegisterHandler("image-width($path)", ImageWidth)
 	libsass.RegisterHandler("inline-image($path, $encode: false)", InlineImage)
+
+	libsass.RegisterHandler("perftest-js($value)", PerfTest)
+	libsass.RegisterHandler("timer($time: null)", Timer)
+}
+
+// See https://github.com/eoneill/node-sass-perf-test
+func PerfTest(v interface{}, csv libsass.SassValue, rsv *libsass.SassValue) error {
+	*rsv = csv
+	return nil
+}
+
+var layout = "2006-01-02 15:04:05.999999999 -0700 MST"
+
+func Timer(v interface{}, csv libsass.SassValue, rsv *libsass.SassValue) error {
+	var s string
+	libsass.Unmarshal(csv, &s)
+
+	if len(s) > 0 {
+		past, err := time.Parse(layout, s)
+		if err != nil {
+			return err
+		}
+		dur := time.Since(past)
+		v, err := libsass.Marshal(dur.String())
+		*rsv = v
+		return err
+	}
+
+	now := time.Now()
+	snow := now.String()
+	// No diff, so just pass back the current time
+	inf, err := libsass.Marshal(snow)
+	*rsv = inf
+	return err
 }
 
 func modHash(info os.FileInfo) (string, error) {
