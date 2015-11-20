@@ -79,7 +79,7 @@ func HTTPHandler(gba *BuildArgs, httpPath string) func(w http.ResponseWriter, r 
 			resp.Contents = ""
 			return
 		}
-		comp.Options(libsass.HTTPPath(httpPath))
+		comp.Option(libsass.HTTPPath(httpPath))
 		err = comp.Run()
 	}
 }
