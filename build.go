@@ -32,12 +32,13 @@ type BuildArgs struct {
 	// BuildDir is the base build directory used. When recursive
 	// file matching is involved, this directory will be used as the
 	// parent.
-	BuildDir string
-	Includes []string
-	Font     string
-	Gen      string
-	Style    int
-	Comments bool
+	BuildDir  string
+	Includes  []string
+	Font      string
+	Gen       string
+	Style     int
+	Comments  bool
+	CacheBust bool
 }
 
 // WithPaths creates a new BuildArgs with paths applied
@@ -254,6 +255,7 @@ func FromBuildArgs(dst io.Writer, src io.Reader, gba *BuildArgs) (libsass.Compil
 		libsass.OutputStyle(gba.Style),
 		libsass.FontDir(gba.Font),
 		libsass.IncludePaths(gba.Includes),
+		libsass.CacheBust(gba.CacheBust),
 	)
 	return comp, err
 }

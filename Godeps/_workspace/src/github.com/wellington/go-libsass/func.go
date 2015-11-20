@@ -1,16 +1,82 @@
 package libsass
 
 import (
+	"errors"
 	"fmt"
 	"sync"
+
+	"golang.org/x/net/context"
 
 	"github.com/wellington/go-libsass/libs"
 )
 
 var ghMu sync.RWMutex
 
-// globalHandlers is the list of predefined handlers registered externally
+// globalHandlers is the list of handlers registered externally
 var globalHandlers []handler
+
+// RegisterSassFunc assigns the passed Func to the specified signature sign
+func RegisterSassFunc(sign string, fn SassFunc) {
+	ghMu.Lock()
+	globalHandlers = append(globalHandlers, handler{
+		sign:     sign,
+		callback: SassHandler(fn),
+	})
+	ghMu.Unlock()
+}
+
+type key int
+
+const (
+	compkey key = iota
+)
+
+func NewCompilerContext(c Compiler) context.Context {
+	return context.WithValue(context.TODO(), compkey, c)
+}
+
+var ErrCompilerNotFound = errors.New("compiler not found")
+
+func CompFromCtx(ctx context.Context) (Compiler, error) {
+	v := ctx.Value(compkey)
+	comp, ok := v.(Compiler)
+	if !ok {
+		return comp, ErrCompilerNotFound
+	}
+	return comp, nil
+}
+
+type SassFunc func(ctx context.Context, in SassValue) (*SassValue, error)
+
+func SassHandler(h SassFunc) libs.SassCallback {
+	return func(v interface{}, usv libs.UnionSassValue, rsv *libs.UnionSassValue) error {
+		if *rsv == nil {
+			*rsv = libs.MakeNil()
+		}
+
+		libCtx, ok := v.(*Context)
+		if !ok {
+			return errors.New("libsass Context not found")
+		}
+
+		ctx := NewCompilerContext(libCtx.compiler)
+
+		// Cast to exported Go types
+		req := SassValue{value: usv}
+		res, err := h(ctx, req)
+
+		if err != nil {
+			// Returns the error to libsass Compiler
+			*rsv = libs.MakeError(err.Error())
+			// Returning an error does nothing as libsass is in charge of
+			// reporting error to user
+			return err
+		}
+
+		*rsv = res.Val()
+		return err
+	}
+}
 
 // RegisterHandler sets the passed signature and callback to the
 // handlers array.
@@ -36,11 +102,9 @@ func Handler(h HandlerFunc) libs.SassCallback {
 			*rsv = libs.MakeNil()
 		}
 		req := SassValue{value: usv}
-		res := SassValue{value: *rsv}
+		res := SassValue{}
 		err := h(v, req, &res)
 
-		// FIXME: This shouldn't be happening, handler should assign
-		// to the address properly.
 		if rsv != nil {
 			*rsv = res.Val()
 		}

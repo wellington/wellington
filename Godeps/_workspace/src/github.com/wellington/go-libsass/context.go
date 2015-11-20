@@ -16,6 +16,9 @@ import (
 // Context handles the interactions with libsass.  Context
 // exposes libsass options that are available.
 type Context struct {
+	// TODO: hack to give handlers Access to the Compiler
+	compiler Compiler
+
 	options    libs.SassOptions
 	context    libs.SassContext
 	includeMap bool
@@ -92,6 +95,9 @@ func NewContext() *Context {
 		Headers: NewHeaders(),
 		Imports: NewImports(),
 	}
+	// FIXME: this doesn't actually work for new options being added
+	// to just the compiler
+	c.compiler = &Sass{ctx: c}
 	c.Funcs = NewFuncs(c)
 	return c
 }

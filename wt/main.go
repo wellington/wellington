@@ -35,6 +35,7 @@ var (
 	timeB                         bool
 	config                        string
 	debug                         bool
+	cachebust                     bool
 
 	// unused
 	noLineComments bool
@@ -73,6 +74,7 @@ func flags(set *pflag.FlagSet) {
 	set.BoolVar(&relativeAssets, "relative-assets", false, "UNSUPPORTED: Make compass asset helpers generate relative urls to assets.")
 
 	set.BoolVarP(&showVersion, "version", "v", false, "Show the app version")
+	set.BoolVar(&cachebust, "cachebust", false, "Defeat cache by appending timestamps to static assets")
 	set.StringVarP(&style, "style", "s", "nested",
 		`nested style of output CSS
                         available options: nested, expanded, compact, compressed`)
@@ -178,13 +180,14 @@ func parseBuildArgs(paths []string) *wt.BuildArgs {
 	incs := strings.Split(includes, ",")
 	incs = append(incs, paths...)
 	gba := &wt.BuildArgs{
-		ImageDir: dir,
-		BuildDir: buildDir,
-		Includes: incs,
-		Font:     font,
-		Style:    style,
-		Gen:      gen,
-		Comments: comments,
+		ImageDir:  dir,
+		BuildDir:  buildDir,
+		Includes:  incs,
+		Font:      font,
+		Style:     style,
+		Gen:       gen,
+		Comments:  comments,
+		CacheBust: cachebust,
 	}
 	gba.WithPaths(paths)
 
