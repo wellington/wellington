@@ -74,8 +74,8 @@ push: build
 docker:
 	docker run -e HOST=http://$(shell boot2docker ip):8080 -it -p 8080:12345 -v $(current_dir):/usr/src/myapp -v $(current_dir)/test:/data drewwells/wellington
 
-NONVENDOR = $(shell go list ./... | grep -v /vendor/ | grep -v /examples/)
-DIRS = $(shell go list -f '{{.Dir}}' ./... | grep -v /vendor/)
+IMPORTPATHS = $(shell go list -f '{{.ImportPath}}' ./... | grep -v /vendor/)
+TESTPATHS = $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | grep -v /vendor/)
 
 .PHONY: gover.coverprofile
 gover.coverprofile:
@@ -84,20 +84,21 @@ gover.coverprofile:
 	go get github.com/axw/gocov/gocov
 	go get github.com/mattn/goveralls
 	go get github.com/modocache/gover
-	go get golang.org/x/tools/cmd/goimports
-	go get github.com/golang/lint/golint
 	go get golang.org/x/tools/cmd/cover
-	go list -f 'golint {{.Dir}}' | xargs -L 1 sh -c
-	go list -f '{{if len .TestGoFiles}}"go test -covermode=count -short -coverprofile={{.Dir}}/.coverprofile {{.ImportPath}}"{{end}}' ./... | xargs -L 1 sh -c
-	pwd
+	go list -f '{{if len .TestGoFiles}}"go test -covermode=count -short -coverprofile={{.Dir}}/.coverprofile {{.ImportPath}}"{{end}}' ./... | grep -v /vendor/ | xargs -L 1 sh -c
 	gover . gover.coverprofile
 
 godeptest:
-	godep go test -i -v $(NONVENDOR)
-	godep go test -race -i -v $(NONVENDOR)
-	go list -f '{{if len .TestGoFiles}}"godep go test -v -race {{.ImportPath}}"{{end}}' ./... | xargs -L 1 sh -c
+	godep go test -i -v $(TESTPATHS)
+	godep go test -race -i -v $(TESTPATHS)
+	godep go test -race $(TESTPATHS)
 
-test: godep godeptest
+test: godep lint godeptest
+
+lint:
+	go get github.com/golang/lint/golint
+	go list -f 'golint {{.Dir}}' ./... | grep -v /vendor/ | xargs -L 1 sh -c
+	go vet $(IMPORTPATHS)
 
 cover: gover.coverprofile
 
