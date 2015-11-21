@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"runtime/pprof"
@@ -280,6 +281,9 @@ func Watch(cmd *cobra.Command, paths []string) {
 	}
 }
 
+// lis is exposed so test suite can shut it down
+var lis net.Listener
+
 // Serve starts a web server accepting POST calls and return CSS
 func Serve(cmd *cobra.Command, paths []string) {
 
@@ -291,12 +295,18 @@ func Serve(cmd *cobra.Command, paths []string) {
 	http.Handle("/build/", wt.FileHandler(gba.Gen))
 	log.Println("Web server started on :12345")
 
+	var err error
+	lis, err = net.Listen("tcp", ":12345")
+	if err != nil {
+		log.Fatal("Error listening on :12345", err)
+	}
+
 	http.HandleFunc("/", wt.HTTPHandler(gba, httpPath))
-	err := http.ListenAndServe(":12345", nil)
+	http.Serve(lis, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
-
+	log.Println("Server closed")
 }
 
 // Compile handles compile files and stdin operations.

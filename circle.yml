@@ -4,11 +4,19 @@ machine:
   environment:
     WT_VERSION: $(cat $HOME/$CIRCLE_PROJECT_REPONAME/version.txt)
     PROJECT_ROOT: $HOME/.go_workspace/src/github.com/wellington/wellington
+    REL_PROJECT_ROOT: ../.go_workspace/src/github.com/wellington/wellington
     GO_LIBSASS: "$HOME/.go_workspace/src/github.com/wellington/go-libsass"
     PKG_CONFIG_PATH: "$GO_LIBSASS/lib/pkgconfig"
     GIT_BRANCH: $CIRCLE_BRANCH
-    #deprecated
-    LIBSASS_VERSION: $(cat $HOME/$CIRCLE_PROJECT_REPONAME/.libsass_version)
+    GO15VENDOREXPERIMENT: 1
+  pre:
+    - go version
+    - go version | grep 1.5.1 || sudo rm -rf /usr/local/go
+    - wget https://storage.googleapis.com/golang/go1.5.1.linux-amd64.tar.gz
+    - sudo tar -C /usr/local -xzf go1.5.1.linux-amd64.tar.gz
+    - go version
+general:
+  build_dir: ../.go_workspace/src/github.com/wellington/wellington
 dependencies:
   #cache_directories:
     #- libsass-src
@@ -17,28 +25,30 @@ dependencies:
     - mkdir -p ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}
     - rm -rf ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/*
     - ln -sf ~/${CIRCLE_PROJECT_REPONAME} ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
-    - make godep
-    - godep restore
   override:
-    - go test -i -v       # cache go-libsass
-  post:
-    - go test -i -v -race # cache go-libsass with race detection
+    - echo "deps are vendored don't run go get"
+    - git submodule update --init --recursive
 test:
   override:
-    - cd $PROJECT_ROOT && make test:
+    - make test:
         parallel: true
-  post:
-    - goxc -tasks='xc archive' -bc 'linux' -build-ldflags="-extldflags '-static' -X github.com/wellington/wellington/version.Version $WT_VERSION" -pv $WT_VERSION -arch 'amd64' -d $CIRCLE_ARTIFACTS -n wt -wd wt:
-        parallel: true
-    - cd $PROJECT_ROOT && GIT_BRANCH=$CIRCLE_BRANCH goveralls -coverprofile=profile.cov -service=circleci -repotoken $COVERALLS_TOKEN
-    - cd $PROJECT_ROOT && make build
-
+        timeout: 60
+    - make cover
+    - cat gover.coverprofile
+    - GIT_BRANCH=$CIRCLE_BRANCH goveralls -coverprofile gover.coverprofile -service circleci -repotoken $COVERALLS_TOKEN
 notify:
   webhooks:
     # A list of hook hashes, containing the url field
     # gitter hook
     - url: https://webhooks.gitter.im/e/bf9c8f0282b914859ce2
 deployment:
+  goxc:
+    branch: master
+    commands:
+      - goxc --version
+      - godep goxc -tasks='xc archive' -bc 'linux' -build-ldflags="-extldflags '-static' -X github.com/wellington/wellington/version.Version $WT_VERSION" -pv $WT_VERSION -arch 'amd64' -d $CIRCLE_ARTIFACTS -n wt -wd wt
+      # build docker container
+      - make build
   hub:
     branch: [master]
     commands:

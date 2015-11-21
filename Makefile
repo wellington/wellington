@@ -74,18 +74,33 @@ push: build
 docker:
 	docker run -e HOST=http://$(shell boot2docker ip):8080 -it -p 8080:12345 -v $(current_dir):/usr/src/myapp -v $(current_dir)/test:/data drewwells/wellington
 
-profile.cov:
+IMPORTPATHS = $(shell go list -f '{{.ImportPath}}' ./... | grep -v /vendor/)
+TESTPATHS = $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | grep -v /vendor/ | grep -v /wt$)
+
+.PHONY: gover.coverprofile
+gover.coverprofile:
 	go get golang.org/x/tools/cmd/vet
 	# retrieve lint and test deps
 	go get github.com/axw/gocov/gocov
 	go get github.com/mattn/goveralls
-	go get golang.org/x/tools/cmd/goimports
-	go get github.com/golang/lint/golint
+	go get github.com/modocache/gover
 	go get golang.org/x/tools/cmd/cover
-	scripts/goclean.sh
+	go list -f '{{if len .TestGoFiles}}"go test -covermode=count -short -coverprofile={{.Dir}}/.coverprofile {{.ImportPath}}"{{end}}' ./... | grep -v /vendor/ | grep -v /wt$ | xargs -L 1 sh -c
+	gover . gover.coverprofile
 
-test: godep profile.cov
-	go test -race ./...
+godeptest:
+	godep go test -i -v $(TESTPATHS)
+	godep go test -race -i -v $(TESTPATHS)
+	godep go test -race $(TESTPATHS)
+
+test: godep lint godeptest
+
+lint:
+	go get github.com/golang/lint/golint
+	go list -f 'golint {{.Dir}}' ./... | grep -v /vendor/ | xargs -L 1 sh -c
+	go vet $(IMPORTPATHS)
+
+cover: gover.coverprofile
 
 compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
