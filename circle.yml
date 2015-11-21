@@ -32,8 +32,6 @@ test:
     - make test:
         parallel: true
         timeout: 60
-        pwd:
-          $REL_PROJECT_ROOT
     - make cover:
         pwd:
           $REL_PROJECT_ROOT
