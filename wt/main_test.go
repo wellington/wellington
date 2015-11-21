@@ -9,15 +9,27 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/wellington/wellington"
 )
 
+// Sometimes circleci detects races in these tests. This may prevent it
+var wtCmdMu sync.RWMutex
+
 func init() {
 	s := new(string)
+	wtCmdMu.Lock()
 	wtCmd.PersistentFlags().StringVarP(s, "test", "t", "", "dummy for testing")
+	wtCmdMu.Unlock()
 
+}
+
+func resetFlags() {
+	wtCmdMu.Lock()
+	defer wtCmdMu.Unlock()
+	wtCmd.ResetFlags()
 }
 
 func TestHTTP(t *testing.T) {
@@ -58,7 +70,7 @@ func TestHTTP(t *testing.T) {
 }
 
 func TestStdin_import(t *testing.T) {
-	wtCmd.ResetFlags()
+	resetFlags()
 
 	oldOut := os.Stdout
 
@@ -100,7 +112,7 @@ func TestStdin_import(t *testing.T) {
 }
 
 func TestStdin_sprite(t *testing.T) {
-	wtCmd.ResetFlags()
+	resetFlags()
 
 	oldStd := os.Stdin
 	var oldOut *os.File
@@ -151,7 +163,7 @@ func TestFile(t *testing.T) {
 }
 
 func TestFile_comprehensive(t *testing.T) {
-	wtCmd.ResetFlags()
+	resetFlags()
 
 	oldStd := os.Stdin
 	oldOut := os.Stdout
@@ -192,7 +204,7 @@ func TestFile_comprehensive(t *testing.T) {
 
 func TestWatch_comprehensive(t *testing.T) {
 	os.RemoveAll("../test/build/testwatch")
-	wtCmd.ResetFlags()
+	resetFlags()
 
 	wtCmd.SetArgs([]string{
 		"--dir", "../test/img",
