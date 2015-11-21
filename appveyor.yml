@@ -10,6 +10,7 @@ environment:
   CGO_ENABLED: 1
   GOROOT_BOOTSTRAP: C:\go
   GOROOT: C:\go15\go
+  GO15VENDOREXPRIMENT: 1
 
 install:
   # install nodejs and npm
@@ -44,9 +45,7 @@ install:
       &7z x -oC:\go15 go1.5beta1.windows-amd64.zip > $null
   - dir C:\go15
   - go version
-  - go get github.com/tools/godep
   - go get github.com/laher/goxc
-  - godep restore
 
 build_script:
   - mingw32-make windows
