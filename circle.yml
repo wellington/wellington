@@ -27,6 +27,7 @@ dependencies:
     - ln -sf ~/${CIRCLE_PROJECT_REPONAME} ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
   override:
     - echo "deps are vendored don't run go get"
+    - go get .
 test:
   override:
     - make test:
