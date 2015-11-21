@@ -96,7 +96,9 @@ godeptest:
 	godep go test -race -i -v $(NONVENDOR)
 	godep go test -race $(NONVENDOR)
 
-test: godep godeptest gover.coverprofile
+test: godep godeptest
+
+cover: gover.coverprofile
 
 compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
