@@ -1,3 +1,6 @@
 [submodule "vendor/github.com/wellington/spritewell"]
 	path = vendor/github.com/wellington/spritewell
 	url = git@github.com:wellington/spritewell.git
+[submodule "vendor/github.com/wellington/go-libsass"]
+	path = vendor/github.com/wellington/go-libsass
+	url = git@github.com:wellington/go-libsass.git
