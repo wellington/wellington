@@ -14,6 +14,8 @@ machine:
     - wget https://storage.googleapis.com/golang/go1.5.1.linux-amd64.tar.gz
     - sudo tar -C /usr/local -xzf go1.5.1.linux-amd64.tar.gz
     - go version
+general:
+  build_dir: $PROJECT_ROOT
 dependencies:
   #cache_directories:
     #- libsass-src
@@ -26,7 +28,7 @@ dependencies:
     - echo "deps are vendored don't run go get"
 test:
   override:
-    - cd $PROJECT_ROOT && make test:
+    - make test:
         parallel: true
         timeout: 60
     - cd $PROJECT_ROOT && make cover
