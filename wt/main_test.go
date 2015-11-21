@@ -32,6 +32,16 @@ func resetFlags() {
 	wtCmd.ResetFlags()
 }
 
+var one sync.Once
+
+func testMain() {
+	one.Do(func() {
+		AddCommands()
+		root()
+	})
+	wtCmd.Execute()
+}
+
 func TestHTTP(t *testing.T) {
 	wtCmd.SetArgs([]string{
 		"serve",
@@ -39,7 +49,7 @@ func TestHTTP(t *testing.T) {
 
 	// No way to shut this down
 	go func() {
-		main()
+		testMain()
 	}()
 
 	req, err := http.NewRequest("POST", "http://localhost:12345",
@@ -69,6 +79,8 @@ func TestHTTP(t *testing.T) {
 	if e != r.Contents {
 		t.Errorf("got:\n%s\nwanted:\n%s", r.Contents, e)
 	}
+	// Shutdown HTTP server
+	lis.Close()
 }
 
 func TestStdin_import(t *testing.T) {
