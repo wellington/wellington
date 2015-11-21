@@ -1,4 +1,4 @@
-.PHONY: test build profile.cov
+.PHONY: test build
 current_dir = $(shell pwd)
 rmnpath = $(RMN_BASE_PATH)
 guipath = $(rmnpath)/www/gui
@@ -74,23 +74,29 @@ push: build
 docker:
 	docker run -e HOST=http://$(shell boot2docker ip):8080 -it -p 8080:12345 -v $(current_dir):/usr/src/myapp -v $(current_dir)/test:/data drewwells/wellington
 
-profile.cov:
+NONVENDOR = $(shell go list ./... | grep -v /vendor/ | grep -v /examples/)
+DIRS = $(shell go list -f '{{.Dir}}' ./... | grep -v /vendor/)
+
+.PHONY: gover.coverprofile
+gover.coverprofile:
 	go get golang.org/x/tools/cmd/vet
 	# retrieve lint and test deps
 	go get github.com/axw/gocov/gocov
 	go get github.com/mattn/goveralls
+	go get github.com/modocache/gover
 	go get golang.org/x/tools/cmd/goimports
 	go get github.com/golang/lint/golint
 	go get golang.org/x/tools/cmd/cover
-	scripts/goclean.sh
+	go list -f 'golint {{.Dir}}' | xargs -L 1 sh -c
+	go list -f '{{if len .TestGoFiles}}"go test -covermode=count -short -coverprofile={{.Dir}}/.coverprofile {{.ImportPath}}"{{end}}' ./... | xargs -L 1 sh -c
+	gover
 
-NONVENDOR = $(shell go list ./... | grep -v /vendor/ | grep -v /examples/)
 godeptest:
 	godep go test -i -v $(NONVENDOR)
 	godep go test -race -i -v $(NONVENDOR)
 	godep go test -race $(NONVENDOR)
 
-test: godep godeptest profile.cov
+test: godep godeptest gover.coverprofile
 
 compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
