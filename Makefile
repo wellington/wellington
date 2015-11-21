@@ -75,7 +75,7 @@ docker:
 	docker run -e HOST=http://$(shell boot2docker ip):8080 -it -p 8080:12345 -v $(current_dir):/usr/src/myapp -v $(current_dir)/test:/data drewwells/wellington
 
 IMPORTPATHS = $(shell go list -f '{{.ImportPath}}' ./... | grep -v /vendor/)
-TESTPATHS = $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | grep -v /vendor/)
+TESTPATHS = $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | grep -v /vendor/ | grep -v /wt$)
 
 .PHONY: gover.coverprofile
 gover.coverprofile:
@@ -85,7 +85,7 @@ gover.coverprofile:
 	go get github.com/mattn/goveralls
 	go get github.com/modocache/gover
 	go get golang.org/x/tools/cmd/cover
-	go list -f '{{if len .TestGoFiles}}"go test -covermode=count -short -coverprofile={{.Dir}}/.coverprofile {{.ImportPath}}"{{end}}' ./... | grep -v /vendor/ | xargs -L 1 sh -c
+	go list -f '{{if len .TestGoFiles}}"go test -covermode=count -short -coverprofile={{.Dir}}/.coverprofile {{.ImportPath}}"{{end}}' ./... | grep -v /vendor/ | grep -v /wt$ | xargs -L 1 sh -c
 	gover . gover.coverprofile
 
 godeptest:
