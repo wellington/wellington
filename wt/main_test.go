@@ -32,13 +32,12 @@ func resetFlags() {
 	wtCmd.ResetFlags()
 }
 
-var one sync.Once
-
 func testMain() {
-	one.Do(func() {
-		AddCommands()
-		root()
-	})
+	wtCmdMu.Lock()
+	AddCommands()
+	root()
+	wtCmdMu.Unlock()
+
 	wtCmd.Execute()
 }
 
@@ -99,7 +98,7 @@ func TestStdin_import(t *testing.T) {
 	wtCmd.SetArgs([]string{
 		"-p", includeDir,
 		"compile", "../test/sass/import.scss"})
-	main()
+	testMain()
 
 	outC := make(chan string)
 
