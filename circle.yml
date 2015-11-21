@@ -41,13 +41,11 @@ notify:
     - url: https://webhooks.gitter.im/e/bf9c8f0282b914859ce2
 deployment:
   goxc:
+    branch: master
     commands:
       - goxc --version
       - godep goxc -tasks='xc archive' -bc 'linux' -build-ldflags="-extldflags '-static' -X github.com/wellington/wellington/version.Version $WT_VERSION" -pv $WT_VERSION -arch 'amd64' -d $CIRCLE_ARTIFACTS -n wt -wd wt
-  # container:
-  #   branch: /*/
-  #   commands:
-  #     - cd $PROJECT_ROOT && make build
+      - cd $PROJECT_ROOT && make build
   hub:
     branch: [master]
     commands:

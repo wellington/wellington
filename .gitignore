@@ -1,5 +1,5 @@
 .#*
-.coverprofile
+*.coverprofile
 .libsass_version_*
 node_modules
 .DS_Store
