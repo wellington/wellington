@@ -11,11 +11,11 @@ export PKG_CONFIG_PATH=$(current_dir)/../go-libsass/lib/pkgconfig
 install: deps
 	go install -ldflags "-X github.com/wellington/wellington/version.Version $(wt_ver)" github.com/wellington/wellington/wt
 
-deps: godep
+brew: godep
 	godep restore
-	# [ -d ../go-libsass ] ||	go get github.com/wellington/go-libsass
-	# cd ../go-libsass && ls -l #without this like, $(MAKE) fails, go figure?
-	cd ../go-libsass && $(MAKE) deps
+
+# This is becoming a great tool for managing brew
+deps: brew
 
 $(LASTGOPATH)/bin/goxc:
 	go get github.com/laher/goxc
