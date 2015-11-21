@@ -38,7 +38,11 @@ func TestHTTP(t *testing.T) {
 	})
 
 	// No way to shut this down
-	go main()
+	go func() {
+		wtCmdMu.RLock()
+		defer wtCmdMu.RUnlock()
+		main()
+	}()
 
 	req, err := http.NewRequest("POST", "http://localhost:12345",
 		bytes.NewBufferString(`div { p { color: red; } }`))
