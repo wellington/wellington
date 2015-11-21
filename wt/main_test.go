@@ -38,7 +38,9 @@ func testMain() {
 	root()
 	wtCmdMu.Unlock()
 
+	wtCmdMu.RLock()
 	wtCmd.Execute()
+	wtCmdMu.RUnlock()
 }
 
 func TestHTTP(t *testing.T) {
