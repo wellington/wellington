@@ -94,7 +94,7 @@ gover.coverprofile:
 godeptest:
 	godep go test -i -v $(NONVENDOR)
 	godep go test -race -i -v $(NONVENDOR)
-	godep go test -race $(NONVENDOR)
+	go list -f '{{if len .TestGoFiles}}"godep go test -v -race {{.ImportPath}}"{{end}}' ./... | xargs -L 1 sh -c
 
 test: godep godeptest
 
