@@ -89,7 +89,8 @@ gover.coverprofile:
 	go get golang.org/x/tools/cmd/cover
 	go list -f 'golint {{.Dir}}' | xargs -L 1 sh -c
 	go list -f '{{if len .TestGoFiles}}"go test -covermode=count -short -coverprofile={{.Dir}}/.coverprofile {{.ImportPath}}"{{end}}' ./... | xargs -L 1 sh -c
-	gover
+	pwd
+	gover . gover.coverprofile
 
 godeptest:
 	godep go test -i -v $(NONVENDOR)
