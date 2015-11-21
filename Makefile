@@ -1,4 +1,4 @@
-.PHONY: test build
+.PHONY: test build profile.cov
 current_dir = $(shell pwd)
 rmnpath = $(RMN_BASE_PATH)
 guipath = $(rmnpath)/www/gui
@@ -84,8 +84,13 @@ profile.cov:
 	go get golang.org/x/tools/cmd/cover
 	scripts/goclean.sh
 
-test: godep profile.cov
-	go test -race ./...
+NONVENDOR = $(shell go list ./... | grep -v /vendor/ | grep -v /examples/)
+godeptest:
+	godep go test -i -v $(NONVENDOR)
+	godep go test -race -i -v $(NONVENDOR)
+	godep go test -race $(NONVENDOR)
+
+test: godep godeptest profile.cov
 
 compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
