@@ -44,13 +44,10 @@ deployment:
   goxc:
     branch: /*/
     commands:
-      - godep goxc -tasks='xc archive' -bc 'linux' -build-ldflags="-extldflags '-static' -X github.com/wellington/wellington/version.Version $WT_VERSION" -pv $WT_VERSION -arch 'amd64' -d $CIRCLE_ARTIFACTS -n wt -wd wt:
-        parallel: true
+      - godep goxc -tasks='xc archive' -bc 'linux' -build-ldflags="-extldflags '-static' -X github.com/wellington/wellington/version.Version $WT_VERSION" -pv $WT_VERSION -arch 'amd64' -d $CIRCLE_ARTIFACTS -n wt -wd wt
   container:
-    branch: /*/
     commands:
-      - cd $PROJECT_ROOT && make build:
-        parallel: true
+      - cd $PROJECT_ROOT && make build
   hub:
     branch: [master]
     commands:
