@@ -39,8 +39,6 @@ func TestHTTP(t *testing.T) {
 
 	// No way to shut this down
 	go func() {
-		wtCmdMu.RLock()
-		defer wtCmdMu.RUnlock()
 		main()
 	}()
 
