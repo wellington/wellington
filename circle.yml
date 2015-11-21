@@ -16,7 +16,7 @@ machine:
     - sudo tar -C /usr/local -xzf go1.5.1.linux-amd64.tar.gz
     - go version
 general:
-  build_dir: $REL_PROJECT_ROOT
+  build_dir: ../.go_workspace/src/github.com/wellington/wellington
 dependencies:
   #cache_directories:
     #- libsass-src
