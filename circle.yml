@@ -8,6 +8,8 @@ machine:
     PKG_CONFIG_PATH: "$GO_LIBSASS/lib/pkgconfig"
     GIT_BRANCH: $CIRCLE_BRANCH
     GO15VENDOREXPERIMENT: 1
+  go:
+    verion: 1.5.1
   pre:
     - go version
     - go version | grep 1.5.1 || sudo rm -rf /usr/local/go
