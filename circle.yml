@@ -46,8 +46,7 @@ deployment:
     branch: master
     commands:
       - make goxc
-      - goxc --version
-      - GOPATH=`godep path`:$GOPATH goxc -tasks='xc archive' -bc 'linux' -build-ldflags="-extldflags '-static' -X github.com/wellington/wellington/version.Version $WT_VERSION" -pv $WT_VERSION -arch 'amd64' -d $CIRCLE_ARTIFACTS -n wt -wd wt
+      - goxc -tasks='xc archive' -bc 'linux' -build-ldflags="-extldflags '-static' -X github.com/wellington/wellington/version.Version $WT_VERSION" -pv $WT_VERSION -arch 'amd64' -d $CIRCLE_ARTIFACTS -n wt -wd wt
       # build docker container
       - make build
   hub:
