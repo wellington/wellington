@@ -20,7 +20,9 @@ deps: brew
 $(LASTGOPATH)/bin/goxc:
 	go get github.com/laher/goxc
 
-release: $(LASTGOPATH)/bin/goxc
+goxc: $(LASTGOPATH)/bin/goxc
+
+release: goxc
 	goxc -tasks='xc archive' -build-ldflags "-X github.com/wellington/wellington/version.Version $(wt_ver)" -bc='darwin' -arch='amd64' -wd=wt -d=snapshot -pv $(wt_ver) -n wt
 
 windows:
