@@ -22,7 +22,8 @@ machine:
     - ln -sf ~/${CIRCLE_PROJECT_REPONAME} ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
 general:
   build_dir: ../.go_workspace/src/github.com/wellington/wellington
-  artifacts: ~/${CIRCLE_PROJECT_REPONAME}/snapshot
+  artifacts:
+    - "snapshot"
 dependencies:
   #cache_directories:
     #- libsass-src
