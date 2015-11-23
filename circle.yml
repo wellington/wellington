@@ -47,13 +47,15 @@ notify:
     # gitter hook
     - url: https://webhooks.gitter.im/e/bf9c8f0282b914859ce2
 deployment:
-  goxc:
+  binary:
     branch: [master, feature/circleci]
     commands:
       - make release
       # goxc broken in GO15VENDOREXPERIMENT
       #- goxc -tasks='xc archive' -bc 'linux' -build-ldflags="-extldflags '-static' -X github.com/wellington/wellington/version.Version $WT_VERSION" -pv $WT_VERSION -arch 'amd64' -d $CIRCLE_ARTIFACTS -n wt -wd wt
       # build docker container
+  container:
+    branch: master
       - make build
   hub:
     branch: master
