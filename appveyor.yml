@@ -10,7 +10,7 @@ environment:
   CGO_ENABLED: 1
   GOROOT_BOOTSTRAP: C:\go
   GOROOT: C:\go15\go
-  GO15VENDOREXPRIMENT: 1
+  GO15VENDOREXPERIMENT: 1
 
 install:
   # install nodejs and npm
@@ -45,6 +45,7 @@ install:
       &7z x -oC:\go15 $file > $null
   - dir C:\go15
   - go version
+  - go env
 
 build_script:
   - mingw32-make windows
