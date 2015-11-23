@@ -23,11 +23,16 @@ $(LASTGOPATH)/bin/goxc:
 
 goxc: $(LASTGOPATH)/bin/goxc
 
+darwin:
+	cd wt; go build -ldflags '-X=github.com/wellington/wellington/version.Version $(wt_ver)' -o ../snapshot/$(wt_ver)/$(HOSTOSARCH)/wt
+	tar -cvzf snapshot/$(wt_ver)/wt_$(wt_ver)_$(HOSTOSARCH).tar.gz -C snapshot/v1.0.1/darwin_amd64/ wt
+
+
 release:
 	# disabled goxc, it is incompatible with go vendoring
 	#goxc -tasks='xc archive' -build-ldflags "-X github.com/wellington/wellington/version.Version $(wt_ver)" -bc='darwin' -arch='amd64' -wd=wt -d=snapshot -pv $(wt_ver) -n wt
-	# not windows friendly
-	cd wt; go build -ldflags '-X=github.com/wellington/wellington/version.Version $(wt_ver)' -o ../snapshot/$(wt_ver)/$(HOSTOSARCH)/wt
+	find .
+	cd wt; go build -ldflags '-extldflags "-static" -X=github.com/wellington/wellington/version.Version $(wt_ver)' -o ../snapshot/$(wt_ver)/$(HOSTOSARCH)/wt
 	tar -cvzf snapshot/$(wt_ver)/wt_$(wt_ver)_$(HOSTOSARCH).tar.gz -C snapshot/v1.0.1/darwin_amd64/ wt
 
 windows:
