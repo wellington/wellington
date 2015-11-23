@@ -36,13 +36,13 @@ install:
   - echo %PATH%
   - echo %GOPATH%
   - dir C:\mingw64\bin
-  #retrieve go 1.5
+  #retrieve go 1.5.1
   - ps: |
       $file = "go1.5.1.windows-amd64.zip"
       $url  = "https://storage.googleapis.com/golang/"
       $url += $file
-      Invoke-WebRequest -UserAgent wget -Uri $url -OutFile go1.5beta1.windows-amd64.zip
-      &7z x -oC:\go15 go1.5.1.windows-amd64.zip > $null
+      Invoke-WebRequest -UserAgent wget -Uri $url -OutFile $file
+      &7z x -oC:\go15 $file > $null
   - dir C:\go15
   - go version
 
