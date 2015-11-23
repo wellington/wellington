@@ -48,6 +48,7 @@ install:
   - go env
 
 build_script:
+  - dir /s /b
   - mingw32-make windows
 after_build:
   - 7z a wt_windows_amd64.zip wt.exe
