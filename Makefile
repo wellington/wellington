@@ -113,6 +113,7 @@ lint:
 	go vet $(IMPORTPATHS)
 
 cover: gover.coverprofile
+	go tool cover -html=gover.coverprofile
 
 compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
