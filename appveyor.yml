@@ -10,7 +10,7 @@ environment:
   CGO_ENABLED: 1
   GOROOT_BOOTSTRAP: C:\go
   GOROOT: C:\go15\go
-  GO15VENDOREXPRIMENT: 1
+  GO15VENDOREXPERIMENT: 1
 
 install:
   # install nodejs and npm
@@ -19,7 +19,11 @@ install:
   #- choco install -y mingw
   #- set PATH=C:\tools\mingw64\bin;C:\gopath\bin;%PATH%
 
-
+  - ps: $key = $env:priv_key #just the key contents, copied from notepad, into the environment variable on the UI
+  - ps: $fileContent = "-----BEGIN RSA PRIVATE KEY-----" + "`n"
+  - ps: for ($i = 0; $i -lt $key.Length / 64; $i++) { $min = [math]::min(64, $key.Length - ($i * 64)); $fileContent += $key.substring($i*64, $min) + "`n"; }
+  - ps: $fileContent += "-----END RSA PRIVATE KEY-----" + "`n"
+  - ps: Set-Content c:\users\appveyor\.ssh\id_rsa $fileContent
   - ps: |
       # Install MinGW.
       $url  = "http://sourceforge.net/projects/mingw-w64/files/"
@@ -36,18 +40,20 @@ install:
   - echo %PATH%
   - echo %GOPATH%
   - dir C:\mingw64\bin
-  #retrieve go 1.5
+  #retrieve go 1.5.1
   - ps: |
-      $file = "go1.5beta1.windows-amd64.zip"
+      $file = "go1.5.1.windows-amd64.zip"
       $url  = "https://storage.googleapis.com/golang/"
       $url += $file
-      Invoke-WebRequest -UserAgent wget -Uri $url -OutFile go1.5beta1.windows-amd64.zip
-      &7z x -oC:\go15 go1.5beta1.windows-amd64.zip > $null
+      Invoke-WebRequest -UserAgent wget -Uri $url -OutFile $file
+      &7z x -oC:\go15 $file > $null
   - dir C:\go15
   - go version
-  - go get github.com/laher/goxc
+  - go env
 
 build_script:
+  - dir /s /b
+  - git submodule update --init --recursive
   - mingw32-make windows
 after_build:
   - 7z a wt_windows_amd64.zip wt.exe

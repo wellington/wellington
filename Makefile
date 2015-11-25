@@ -5,6 +5,7 @@ guipath = $(rmnpath)/www/gui
 libsass_ver = $(shell cat \.libsass_version)
 wt_ver = $(shell cat version.txt)
 LASTGOPATH=$(shell python -c "import os; a=os.environ['GOPATH']; print a.split(':')[-1]")
+HOSTOSARCH = $(shell go env GOHOSTOS)_$(shell go env GOHOSTARCH)
 
 export PKG_CONFIG_PATH=$(current_dir)/../go-libsass/lib/pkgconfig
 
@@ -22,8 +23,17 @@ $(LASTGOPATH)/bin/goxc:
 
 goxc: $(LASTGOPATH)/bin/goxc
 
-release: goxc
-	goxc -tasks='xc archive' -build-ldflags "-X github.com/wellington/wellington/version.Version $(wt_ver)" -bc='darwin' -arch='amd64' -wd=wt -d=snapshot -pv $(wt_ver) -n wt
+darwin:
+	cd wt; go build -ldflags '-X=github.com/wellington/wellington/version.Version $(wt_ver)' -o ../snapshot/$(wt_ver)/$(HOSTOSARCH)/wt
+	tar -cvzf snapshot/$(wt_ver)/wt_$(wt_ver)_$(HOSTOSARCH).tar.gz -C snapshot/$(wt_ver)/$(HOSTOSARCH)/ wt
+
+
+release:
+	# disabled goxc, it is incompatible with go vendoring
+	#goxc -tasks='xc archive' -build-ldflags "-X github.com/wellington/wellington/version.Version $(wt_ver)" -bc='darwin' -arch='amd64' -wd=wt -d=snapshot -pv $(wt_ver) -n wt
+	find .
+	cd wt; go build -ldflags '-extldflags "-static" -X=github.com/wellington/wellington/version.Version $(wt_ver)' -o ../snapshot/$(wt_ver)/$(HOSTOSARCH)/wt
+	tar -cvzf snapshot/$(wt_ver)/wt_$(wt_ver)_$(HOSTOSARCH).tar.gz -C snapshot/$(wt_ver)/$(HOSTOSARCH)/ wt
 
 windows:
 	go build -o wt.exe -x -ldflags "-extldflags '-static' -X=github.com/wellington/wellington/version.Version=$(wt_ver)" github.com/wellington/wellington/wt
@@ -103,6 +113,7 @@ lint:
 	go vet $(IMPORTPATHS)
 
 cover: gover.coverprofile
+	go tool cover -html=gover.coverprofile
 
 compass:
 	cd ~/work/rmn && grunt clean && time grunt build_css
