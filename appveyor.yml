@@ -49,6 +49,7 @@ install:
 
 build_script:
   - dir /s /b
+  - git submodule update --init --recursive
   - mingw32-make windows
 after_build:
   - 7z a wt_windows_amd64.zip wt.exe
