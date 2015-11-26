@@ -36,7 +36,7 @@ var (
 	timeB                         bool
 	config                        string
 	debug                         bool
-	cachebust                     bool
+	cachebust                     string
 
 	// unused
 	noLineComments bool
@@ -75,7 +75,7 @@ func flags(set *pflag.FlagSet) {
 	set.BoolVar(&relativeAssets, "relative-assets", false, "UNSUPPORTED: Make compass asset helpers generate relative urls to assets.")
 
 	set.BoolVarP(&showVersion, "version", "v", false, "Show the app version")
-	set.BoolVar(&cachebust, "cachebust", false, "Defeat cache by appending timestamps to static assets")
+	set.StringVar(&cachebust, "cachebust", "", "Defeat cache by appending timestamps to static assets ie. ts, sum, timestamp")
 	set.StringVarP(&style, "style", "s", "nested",
 		`nested style of output CSS
                         available options: nested, expanded, compact, compressed`)

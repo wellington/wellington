@@ -384,7 +384,7 @@ div {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
 	}
 	out.Reset()
-	comp.Option(libsass.CacheBust(true))
+	comp.Option(libsass.CacheBust("ts"))
 
 	in.WriteString(contents)
 	err = comp.Run()
@@ -406,6 +406,23 @@ div {
 	if e != out.String() {
 		t.Errorf("got: %s\nwanted: %s", out.String(), e)
 	}
+
+	out.Reset()
+	comp.Option(libsass.CacheBust("sum"))
+
+	in.WriteString(contents)
+	err = comp.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+	e = `div {
+  background: url('../img/139.png?af4155bb'); }
+`
+
+	if e != out.String() {
+		t.Errorf("got: %s\nwanted: %s", out.String(), e)
+	}
+
 }
 
 func TestRegInlineImage(t *testing.T) {

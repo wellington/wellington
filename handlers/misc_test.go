@@ -51,7 +51,7 @@ $path: font-url($raw: true, $path: "arial.eot");
 		t.Errorf("got: %s wanted: %s", out.String(), e)
 	}
 
-	comp.Option(libsass.CacheBust(true))
+	comp.Option(libsass.CacheBust("ts"))
 	in.WriteString(contents)
 	out.Reset()
 	err = comp.Run()

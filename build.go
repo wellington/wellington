@@ -38,7 +38,7 @@ type BuildArgs struct {
 	Gen       string
 	Style     int
 	Comments  bool
-	CacheBust bool
+	CacheBust string
 }
 
 // WithPaths creates a new BuildArgs with paths applied
