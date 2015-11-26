@@ -68,13 +68,19 @@ func FontURL(ctx context.Context, usv libsass.SassValue) (*libsass.SassValue, er
 	return &csv, err
 }
 
-func sumHash(f io.Reader) (string, error) {
-	hdr := make([]byte, 50*1024)
-	if _, err := f.Read(hdr); err != nil {
+func sumHash(f io.ReadCloser) (string, error) {
+	defer f.Close()
+	hdr := make([]byte, 10*1024)
+	n, err := f.Read(hdr)
+	// File is empty, which is valid...
+	if n == 0 {
+		return "?empty", nil
+	}
+	if err != nil {
 		return "", err
 	}
 	h := crc32.NewIEEE()
-	_, err := h.Write(hdr)
+	_, err = h.Write(hdr)
 	if err != nil {
 		return "", err
 	}
@@ -103,7 +109,7 @@ func qs(method string, abs string) (string, error) {
 		}
 		qry, err = modHash(fileinfo)
 	case "sum":
-		var r io.Reader
+		var r io.ReadCloser
 		r, err := os.Open(abs)
 		if err != nil {
 			return "", err

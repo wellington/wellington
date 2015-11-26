@@ -364,6 +364,35 @@ div {
 	if e != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
 	}
+
+}
+
+func TestImageUrl_bustsmallfile(t *testing.T) {
+	// Ensure cache busting works for files smaller than header buffer
+	contents := `
+div {
+    background: image-url("pixel/1x1.png");
+}`
+	in := bytes.NewBufferString(contents)
+	var out bytes.Buffer
+	comp, _, err := setupComp(in, &out)
+	if err != nil {
+		t.Error(err)
+	}
+	// This is annoying, but no way to configure compiler
+	in.WriteString(contents)
+	out.Reset()
+	comp.Option(libsass.CacheBust("sum"))
+	err = comp.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+	e := `div {
+  background: url('../img/pixel/1x1.png?7b29fcd7'); }
+`
+	if e != out.String() {
+		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
+	}
 }
 
 func TestRegImageURL(t *testing.T) {
@@ -416,7 +445,7 @@ div {
 		t.Fatal(err)
 	}
 	e = `div {
-  background: url('../img/139.png?af4155bb'); }
+  background: url('../img/139.png?194da102'); }
 `
 
 	if e != out.String() {
