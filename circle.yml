@@ -54,12 +54,9 @@ deployment:
       # goxc broken in GO15VENDOREXPERIMENT
       #- goxc -tasks='xc archive' -bc 'linux' -build-ldflags="-extldflags '-static' -X github.com/wellington/wellington/version.Version $WT_VERSION" -pv $WT_VERSION -arch 'amd64' -d $CIRCLE_ARTIFACTS -n wt -wd wt
       # build docker container
-  container:
-    branch: master
-    commands:
-      - make build
   hub:
     branch: master
     commands:
+      - make build
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
       - docker push drewwells/wellington
