@@ -70,7 +70,7 @@ func testSprite(ctx *libsass.Context) {
 
 }
 
-func setupComp(r io.Reader, out io.Writer) (libsass.Compiler, libsass.SassValue, error) {
+func setupComp(t *testing.T, r io.Reader, out io.Writer) (libsass.Compiler, libsass.SassValue, error) {
 	var usv libsass.SassValue
 	comp, err := libsass.New(out, r,
 		libsass.OutputStyle(libsass.NESTED_STYLE),
@@ -80,15 +80,15 @@ func setupComp(r io.Reader, out io.Writer) (libsass.Compiler, libsass.SassValue,
 		libsass.ImgBuildDir("../test/build/img"),
 	)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	testSprite(comp.Context())
 
 	done := make(chan struct{})
 	go func() {
 		select {
-		case <-time.After(1 * time.Second):
-			log.Fatal("timeout")
+		case <-time.After(5 * time.Second):
+			t.Fatal("setupComp timeout")
 		case <-done:
 			return
 		}
@@ -99,7 +99,7 @@ func setupComp(r io.Reader, out io.Writer) (libsass.Compiler, libsass.SassValue,
 	return comp, usv, err
 }
 
-func setupCtx(r io.Reader, out io.Writer /*, cookies ...libsass.Cookie*/) (*libsass.Context, libsass.SassValue, error) {
+func setupCtx(t *testing.T, r io.Reader, out io.Writer /*, cookies ...libsass.Cookie*/) (*libsass.Context, libsass.SassValue, error) {
 	var usv libsass.SassValue
 
 	ctx := libsass.NewContext()
@@ -117,8 +117,8 @@ func setupCtx(r io.Reader, out io.Writer /*, cookies ...libsass.Cookie*/) (*libs
 	done := make(chan struct{})
 	go func() {
 		select {
-		case <-time.After(1 * time.Second):
-			log.Fatal("timeout")
+		case <-time.After(5 * time.Second):
+			t.Fatal("setupCtx timeout")
 		case <-done:
 			return
 		}
@@ -299,7 +299,7 @@ func TestFuncImageHeight(t *testing.T) {
     height: image-height("139");
 }`)
 	var out bytes.Buffer
-	_, _, err := setupCtx(in, &out)
+	_, _, err := setupCtx(t, in, &out)
 
 	if err != nil {
 		t.Error(err)
@@ -318,7 +318,7 @@ func TestRegImageWidth(t *testing.T) {
     height: image-width("139");
 }`)
 	var out bytes.Buffer
-	_, _, err := setupCtx(in, &out)
+	_, _, err := setupCtx(t, in, &out)
 	if err != nil {
 		t.Error(err)
 	}
@@ -336,7 +336,7 @@ div {
   height: image-height(sprite-file($map,"139"));
 }`)
 	var out bytes.Buffer
-	_, _, err := setupCtx(in, &out)
+	_, _, err := setupCtx(t, in, &out)
 	if err != nil {
 		t.Error(err)
 	}
@@ -354,7 +354,7 @@ div {
   width: image-width(sprite-file($map,"139"));
 }`)
 	var out bytes.Buffer
-	_, _, err := setupCtx(in, &out)
+	_, _, err := setupCtx(t, in, &out)
 	if err != nil {
 		t.Error(err)
 	}
@@ -375,7 +375,7 @@ div {
 }`
 	in := bytes.NewBufferString(contents)
 	var out bytes.Buffer
-	comp, _, err := setupComp(in, &out)
+	comp, _, err := setupComp(t, in, &out)
 	if err != nil {
 		t.Error(err)
 	}
@@ -402,7 +402,7 @@ div {
 }`
 	in := bytes.NewBufferString(contents)
 	var out bytes.Buffer
-	comp, _, err := setupComp(in, &out)
+	comp, _, err := setupComp(t, in, &out)
 	if err != nil {
 		t.Error(err)
 	}
@@ -460,7 +460,7 @@ div {
     background: inline-image("pixel/1x1.png");
 }`)
 	var out bytes.Buffer
-	_, _, err := setupCtx(in, &out)
+	_, _, err := setupCtx(t, in, &out)
 	if err != nil {
 		t.Error(err)
 	}
@@ -478,7 +478,7 @@ div {
     background: inline-image("pixel/nofile.png");
 }`)
 	var out bytes.Buffer
-	_, _, err := setupCtx(in, &out)
+	_, _, err := setupCtx(t, in, &out)
 	if err == nil {
 		t.Error("No error thrown for missing file")
 	}
@@ -506,7 +506,7 @@ div {
   background: sprite("nomap", "140");
 }`)
 	var out bytes.Buffer
-	_, _, err := setupCtx(in, &out)
+	_, _, err := setupCtx(t, in, &out)
 	if err == nil {
 		t.Error("no error thrown for invalid map")
 	}
@@ -690,7 +690,7 @@ func TestInlineSVG(t *testing.T) {
 	in.WriteString(`div {
   background-image: inline-image("hexane.svg");
 }`)
-	_, _, err := setupCtx(&in, &out)
+	_, _, err := setupCtx(t, &in, &out)
 	if err != nil {
 		t.Error(err)
 	}
@@ -708,7 +708,7 @@ func TestInlineSVG(t *testing.T) {
 	in.WriteString(`div {
   background-image: inline-image("hexane.svg", $encode: true);
 }`)
-	_, _, err = setupCtx(&in, &out)
+	_, _, err = setupCtx(t, &in, &out)
 	if err != nil {
 		t.Error(err)
 	}
