@@ -109,7 +109,7 @@ func TestWatch(t *testing.T) {
 		select {
 		case <-watcherChan:
 			break
-		case <-time.After(2 * time.Second):
+		case <-time.After(5 * time.Second):
 			fmt.Printf("timeout %d\n", len(watcherChan))
 			t.Error("Timeout without creating file")
 		}
