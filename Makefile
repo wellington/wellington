@@ -72,7 +72,7 @@ copyout:
 container-build:
 	- mkdir build
 	- rm profile.cov
-	docker build -t wt-build .
+	docker build --no-cache -t wt-build .
 	docker run -v $(PWD)/build:/tmp -e EUID=$(shell id -u) -e EGID=$(shell id -g) wt-build sh scripts/copyout.sh
 
 container: container-build
