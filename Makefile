@@ -73,9 +73,9 @@ container-build:
 	- mkdir build
 	- rm profile.cov
 	docker build -t wt-build .
-	docker run -v $(PWD)/build:/tmp -e EUID=$(shell id -u) -e EGID=$(shell id -g) wt-build make copyout
+	docker run -v $(PWD)/build:/tmp -e EUID=$(shell id -u) -e EGID=$(shell id -g) wt-build sh scripts/copyout.sh
 
-build: container-build
+container: container-build
 	cp Dockerfile.scratch build/Dockerfile
 	cd build; docker build -t drewwells/wellington .
 

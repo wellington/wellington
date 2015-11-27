@@ -1,10 +1,10 @@
 FROM gliderlabs/alpine:latest
 
-WORKDIR /usr/src/app
 COPY lib64 /usr/lib
 
 COPY wt /usr/bin/wt
-RUN chmod +x /usr/bin/wt
+# commenting this line cut the image size in half
+# RUN chmod +x /usr/bin/wt
 
 EXPOSE 12345
 
