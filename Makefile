@@ -9,7 +9,7 @@ HOSTOSARCH = $(shell go env GOHOSTOS)_$(shell go env GOHOSTARCH)
 
 export PKG_CONFIG_PATH=$(current_dir)/../go-libsass/lib/pkgconfig
 
-install: deps
+install:
 	go install -ldflags "-X github.com/wellington/wellington/version.Version $(wt_ver)" github.com/wellington/wellington/wt
 
 brew: godep
@@ -27,11 +27,9 @@ darwin:
 	cd wt; go build -ldflags '-X=github.com/wellington/wellington/version.Version $(wt_ver)' -o ../snapshot/$(wt_ver)/$(HOSTOSARCH)/wt
 	tar -cvzf snapshot/$(wt_ver)/wt_$(wt_ver)_$(HOSTOSARCH).tar.gz -C snapshot/$(wt_ver)/$(HOSTOSARCH)/ wt
 
-
 release:
 	# disabled goxc, it is incompatible with go vendoring
 	#goxc -tasks='xc archive' -build-ldflags "-X github.com/wellington/wellington/version.Version $(wt_ver)" -bc='darwin' -arch='amd64' -wd=wt -d=snapshot -pv $(wt_ver) -n wt
-	find .
 	cd wt; go build -ldflags '-extldflags "-static" -X=github.com/wellington/wellington/version.Version $(wt_ver)' -o ../snapshot/$(wt_ver)/$(HOSTOSARCH)/wt
 	tar -cvzf snapshot/$(wt_ver)/wt_$(wt_ver)_$(HOSTOSARCH).tar.gz -C snapshot/$(wt_ver)/$(HOSTOSARCH)/ wt
 
