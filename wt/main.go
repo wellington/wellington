@@ -27,7 +27,9 @@ import (
 )
 
 var (
-	font, dir, gen, includes      string
+	proj                          string
+	includes                      []string
+	font, dir, gen                string
 	mainFile, style               string
 	comments, watch               bool
 	cpuprofile, buildDir          string
@@ -59,21 +61,23 @@ func flags(set *pflag.FlagSet) {
 		"Path to target directory to place generated CSS, relative paths inside project directory are preserved")
 	set.BoolVarP(&comments, "comment", "", false, "Turn on source comments")
 	set.BoolVar(&debug, "debug", false, "Show detailed debug information")
+
 	var nothingb bool
-	set.BoolVar(&nothingb, "debug-info", false, "Compass backwards compat, use debug instead")
+	set.BoolVar(&debug, "debug-info", false, "")
+	set.MarkDeprecated("debug-info", "Use --debug instead")
 
 	set.StringVarP(&dir, "dir", "d", "",
 		"Path to locate images for spriting and image functions")
-	set.StringVar(&dir, "images-dir", "", "Compass backwards compat, use -d instead")
+	set.StringVar(&dir, "images-dir", "", "")
+	set.MarkDeprecated("images-dir", "Use -d instead")
 
-	set.StringVar(&font, "font", ".",
-		"Path to directory containing fonts")
-	set.StringVar(&gen, "gen", ".",
-		"Path to place generated images")
+	set.StringVar(&font, "font", ".", "Path to directory containing fonts")
+	set.StringVar(&gen, "gen", ".", "Path to place generated images")
 
-	set.StringVarP(&includes, "proj", "p", "",
+	set.StringVarP(&proj, "proj", "p", "",
 		"Path to directory containing Sass stylesheets")
 	set.BoolVar(&nothingb, "no-line-comments", false, "UNSUPPORTED: Disable line comments, use comments")
+	set.MarkDeprecated("no-line-comments", "Use --comments instead")
 	set.BoolVar(&relativeAssets, "relative-assets", false, "UNSUPPORTED: Make compass asset helpers generate relative urls to assets.")
 
 	set.BoolVarP(&showVersion, "version", "v", false, "Show the app version")
@@ -81,20 +85,26 @@ func flags(set *pflag.FlagSet) {
 	set.StringVarP(&style, "style", "s", "nested",
 		`nested style of output CSS
                         available options: nested, expanded, compact, compressed`)
-	set.StringVar(&style, "output-style", "nested",
-		`Compass backwards compat, use --style instead`)
+	set.StringVar(&style, "output-style", "nested", "")
+	set.MarkDeprecated("output-style", "Use --style instead")
 	set.BoolVar(&timeB, "time", false, "Retrieve timing information")
 
 	var nothing string
-	set.StringVar(&nothing, "require", "", "Compass backwards compat, does nothing")
-	set.StringVar(&nothing, "environment", "", "Compass backwards compat, does nothing")
-	set.StringVarP(&includes, "", "I", "", "Compass backwards compat, use -p instead")
+	set.StringVar(&nothing, "require", "", "")
+	set.MarkDeprecated("require", "Compass backwards compat, Not supported")
+	set.MarkDeprecated("require", "Not supported")
+	set.StringVar(&nothing, "environment", "", "")
+	set.MarkDeprecated("environment", "Not supported")
+	set.StringSliceVar(&includes, "includes", nil, "Include Sass from additional directories")
+	set.StringSliceVarP(&includes, "", "I", nil, "")
+	set.MarkDeprecated("I", "Compass backwards compat, use --includes instead")
 	set.StringVar(&buildDir, "css-dir", "",
-		"Compass backwards compat, does nothing. Reference locations relative to Sass project directory")
-	set.StringVar(&jsDir, "javascripts-dir", "",
-		"Compass backwards compat, ignored")
-	set.StringVar(&includes, "sass-dir", "",
-		"Compass backwards compat, use -p instead")
+		"Compass backwards compat. Reference locations relative to Sass project directory")
+	set.MarkDeprecated("css-dir", "Use -b instead")
+	set.StringVar(&jsDir, "javascripts-dir", "", "")
+	set.MarkDeprecated("javascripts-dir", "Compass backwards compat, ignored")
+	set.StringSliceVar(&includes, "sass-dir", nil,
+		"Compass backwards compat, use --includes instead")
 	set.StringVarP(&config, "config", "c", "",
 		"Temporarily disabled: Location of the config file")
 
@@ -198,8 +208,12 @@ func parseBuildArgs(paths []string) *wt.BuildArgs {
 		log.Fatal("could not find working directory", err)
 	}
 
-	inc := makeabs(wd, includes)
-	incs := append([]string{inc}, paths...)
+	proj = makeabs(wd, proj)
+
+	incs := make([]string, len(includes))
+	for i := range includes {
+		incs[i] = makeabs(wd, includes[i])
+	}
 
 	dir = makeabs(wd, dir)
 	font = makeabs(wd, font)
@@ -214,7 +228,7 @@ func parseBuildArgs(paths []string) *wt.BuildArgs {
 	gba := &wt.BuildArgs{
 		ImageDir:  dir,
 		BuildDir:  buildDir,
-		Includes:  incs,
+		Includes:  append([]string{proj}, incs...),
 		Font:      font,
 		Style:     style,
 		Gen:       gen,
