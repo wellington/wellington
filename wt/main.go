@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime/pprof"
 	"strings"
 	"sync"
@@ -59,6 +60,8 @@ func flags(set *pflag.FlagSet) {
 		"Path to target directory to place generated CSS, relative paths inside project directory are preserved")
 	set.BoolVarP(&comments, "comment", "", true, "Turn on source comments")
 	set.BoolVar(&debug, "debug", false, "Show detailed debug information")
+	var nothingb bool
+	set.BoolVar(&nothingb, "debug-info", false, "Compass backwards compat, use debug instead")
 
 	set.StringVarP(&dir, "dir", "d", "",
 		"Path to locate images for spriting and image functions")
@@ -79,10 +82,15 @@ func flags(set *pflag.FlagSet) {
 	set.StringVarP(&style, "style", "s", "nested",
 		`nested style of output CSS
                         available options: nested, expanded, compact, compressed`)
+	set.StringVar(&style, "output-style", "nested",
+		`Compass backwards compat, use --style instead`)
 	set.BoolVar(&timeB, "time", false, "Retrieve timing information")
 
 	var nothing string
-	set.StringVar(&nothing, "css-dir", "",
+	set.StringVar(&nothing, "require", "", "Compass backwards compat, does nothing")
+	set.StringVar(&nothing, "environment", "", "Compass backwards compat, does nothing")
+	set.StringVarP(&includes, "", "I", "", "Compass backwards compat, use -p instead")
+	set.StringVar(&buildDir, "css-dir", "",
 		"Compass backwards compat, does nothing. Reference locations relative to Sass project directory")
 	set.StringVar(&jsDir, "javascripts-dir", "",
 		"Compass backwards compat, ignored")
@@ -172,14 +180,34 @@ func argExit() bool {
 
 }
 
+func makeabs(wd string, path string) string {
+	if filepath.IsAbs(path) {
+		fmt.Println("is abs", path)
+		return path
+	}
+	return filepath.Join(wd, path)
+}
+
 func parseBuildArgs(paths []string) *wt.BuildArgs {
 	style, ok := libsass.Style[style]
 
 	if !ok {
 		style = libsass.NESTED_STYLE
 	}
-	incs := strings.Split(includes, ",")
-	incs = append(incs, paths...)
+
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatal("could not find working directory", err)
+	}
+
+	inc := makeabs(wd, includes)
+	incs := append([]string{inc}, paths...)
+
+	dir = makeabs(inc, dir)
+	font = makeabs(inc, font)
+	buildDir = makeabs(wd, buildDir)
+	gen = makeabs(wd, gen)
+
 	gba := &wt.BuildArgs{
 		ImageDir:  dir,
 		BuildDir:  buildDir,
@@ -191,12 +219,12 @@ func parseBuildArgs(paths []string) *wt.BuildArgs {
 		CacheBust: cachebust,
 	}
 	gba.WithPaths(paths)
-
+	fmt.Printf("gba % #v\n", gba)
 	return gba
 }
 
 func globalRun(paths []string) (*wt.SafePartialMap, *wt.BuildArgs) {
-
+	fmt.Printf("paths: %s args: % #v\n", paths, pflag.Args())
 	if argExit() {
 		return nil, nil
 	}
