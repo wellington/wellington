@@ -182,7 +182,6 @@ func argExit() bool {
 
 func makeabs(wd string, path string) string {
 	if filepath.IsAbs(path) {
-		fmt.Println("is abs", path)
 		return path
 	}
 	return filepath.Join(wd, path)
@@ -219,12 +218,11 @@ func parseBuildArgs(paths []string) *wt.BuildArgs {
 		CacheBust: cachebust,
 	}
 	gba.WithPaths(paths)
-	fmt.Printf("gba % #v\n", gba)
 	return gba
 }
 
 func globalRun(paths []string) (*wt.SafePartialMap, *wt.BuildArgs) {
-	fmt.Printf("paths: %s args: % #v\n", paths, pflag.Args())
+	// fmt.Printf("paths: %s args: % #v\n", paths, pflag.Args())
 	if argExit() {
 		return nil, nil
 	}
