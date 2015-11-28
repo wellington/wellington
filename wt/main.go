@@ -40,7 +40,6 @@ var (
 	cachebust                     string
 
 	// unused
-	noLineComments bool
 	relativeAssets bool
 	cssDir         string
 )
@@ -58,7 +57,7 @@ func flags(set *pflag.FlagSet) {
 	// Unused cli args
 	set.StringVarP(&buildDir, "build", "b", "",
 		"Path to target directory to place generated CSS, relative paths inside project directory are preserved")
-	set.BoolVarP(&comments, "comment", "", true, "Turn on source comments")
+	set.BoolVarP(&comments, "comment", "", false, "Turn on source comments")
 	set.BoolVar(&debug, "debug", false, "Show detailed debug information")
 	var nothingb bool
 	set.BoolVar(&nothingb, "debug-info", false, "Compass backwards compat, use debug instead")
@@ -74,7 +73,7 @@ func flags(set *pflag.FlagSet) {
 
 	set.StringVarP(&includes, "proj", "p", "",
 		"Path to directory containing Sass stylesheets")
-	set.BoolVar(&noLineComments, "no-line-comments", false, "UNSUPPORTED: Disable line comments")
+	set.BoolVar(&nothingb, "no-line-comments", false, "UNSUPPORTED: Disable line comments, use comments")
 	set.BoolVar(&relativeAssets, "relative-assets", false, "UNSUPPORTED: Make compass asset helpers generate relative urls to assets.")
 
 	set.BoolVarP(&showVersion, "version", "v", false, "Show the app version")
@@ -202,10 +201,15 @@ func parseBuildArgs(paths []string) *wt.BuildArgs {
 	inc := makeabs(wd, includes)
 	incs := append([]string{inc}, paths...)
 
-	dir = makeabs(inc, dir)
-	font = makeabs(inc, font)
-	buildDir = makeabs(wd, buildDir)
-	gen = makeabs(wd, gen)
+	dir = makeabs(wd, dir)
+	font = makeabs(wd, font)
+	if len(buildDir) > 0 {
+		buildDir = makeabs(wd, buildDir)
+		// If buildDir specified, make relative to that
+		gen = makeabs(buildDir, gen)
+	} else {
+		gen = makeabs(wd, gen)
+	}
 
 	gba := &wt.BuildArgs{
 		ImageDir:  dir,
@@ -261,12 +265,12 @@ func globalRun(paths []string) (*wt.SafePartialMap, *wt.BuildArgs) {
 	pMap := wt.NewPartialMap()
 	gba := parseBuildArgs(paths)
 	if debug {
-		fmt.Printf("      Font  Dir: %s\n", gba.Font)
-		fmt.Printf("      Image Dir: %s\n", gba.ImageDir)
-		fmt.Printf("      Build Dir: %s\n", gba.BuildDir)
-		fmt.Printf("Build Image Dir: %s\n", gba.Gen)
-		fmt.Printf(" Include Dir(s): %s\n", gba.Includes)
-		fmt.Println("===================================")
+		log.Printf("      Font  Dir: %s\n", gba.Font)
+		log.Printf("      Image Dir: %s\n", gba.ImageDir)
+		log.Printf("      Build Dir: %s\n", gba.BuildDir)
+		log.Printf("Build Image Dir: %s\n", gba.Gen)
+		log.Printf(" Include Dir(s): %s\n", gba.Includes)
+		log.Println("===================================")
 	}
 	return pMap, gba
 
