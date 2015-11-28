@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime/pprof"
 	"strings"
 	"sync"
@@ -26,7 +27,9 @@ import (
 )
 
 var (
-	font, dir, gen, includes      string
+	proj                          string
+	includes                      []string
+	font, dir, gen                string
 	mainFile, style               string
 	comments, watch               bool
 	cpuprofile, buildDir          string
@@ -39,7 +42,6 @@ var (
 	cachebust                     string
 
 	// unused
-	noLineComments bool
 	relativeAssets bool
 	cssDir         string
 )
@@ -57,21 +59,25 @@ func flags(set *pflag.FlagSet) {
 	// Unused cli args
 	set.StringVarP(&buildDir, "build", "b", "",
 		"Path to target directory to place generated CSS, relative paths inside project directory are preserved")
-	set.BoolVarP(&comments, "comment", "", true, "Turn on source comments")
+	set.BoolVarP(&comments, "comment", "", false, "Turn on source comments")
 	set.BoolVar(&debug, "debug", false, "Show detailed debug information")
+
+	var nothingb bool
+	set.BoolVar(&debug, "debug-info", false, "")
+	set.MarkDeprecated("debug-info", "Use --debug instead")
 
 	set.StringVarP(&dir, "dir", "d", "",
 		"Path to locate images for spriting and image functions")
-	set.StringVar(&dir, "images-dir", "", "Compass backwards compat, use -d instead")
+	set.StringVar(&dir, "images-dir", "", "")
+	set.MarkDeprecated("images-dir", "Use -d instead")
 
-	set.StringVar(&font, "font", ".",
-		"Path to directory containing fonts")
-	set.StringVar(&gen, "gen", ".",
-		"Path to place generated images")
+	set.StringVar(&font, "font", ".", "Path to directory containing fonts")
+	set.StringVar(&gen, "gen", ".", "Path to place generated images")
 
-	set.StringVarP(&includes, "proj", "p", "",
+	set.StringVarP(&proj, "proj", "p", "",
 		"Path to directory containing Sass stylesheets")
-	set.BoolVar(&noLineComments, "no-line-comments", false, "UNSUPPORTED: Disable line comments")
+	set.BoolVar(&nothingb, "no-line-comments", false, "UNSUPPORTED: Disable line comments, use comments")
+	set.MarkDeprecated("no-line-comments", "Use --comments instead")
 	set.BoolVar(&relativeAssets, "relative-assets", false, "UNSUPPORTED: Make compass asset helpers generate relative urls to assets.")
 
 	set.BoolVarP(&showVersion, "version", "v", false, "Show the app version")
@@ -79,15 +85,26 @@ func flags(set *pflag.FlagSet) {
 	set.StringVarP(&style, "style", "s", "nested",
 		`nested style of output CSS
                         available options: nested, expanded, compact, compressed`)
+	set.StringVar(&style, "output-style", "nested", "")
+	set.MarkDeprecated("output-style", "Use --style instead")
 	set.BoolVar(&timeB, "time", false, "Retrieve timing information")
 
 	var nothing string
-	set.StringVar(&nothing, "css-dir", "",
-		"Compass backwards compat, does nothing. Reference locations relative to Sass project directory")
-	set.StringVar(&jsDir, "javascripts-dir", "",
-		"Compass backwards compat, ignored")
-	set.StringVar(&includes, "sass-dir", "",
-		"Compass backwards compat, use -p instead")
+	set.StringVar(&nothing, "require", "", "")
+	set.MarkDeprecated("require", "Compass backwards compat, Not supported")
+	set.MarkDeprecated("require", "Not supported")
+	set.StringVar(&nothing, "environment", "", "")
+	set.MarkDeprecated("environment", "Not supported")
+	set.StringSliceVar(&includes, "includes", nil, "Include Sass from additional directories")
+	set.StringSliceVarP(&includes, "", "I", nil, "")
+	set.MarkDeprecated("I", "Compass backwards compat, use --includes instead")
+	set.StringVar(&buildDir, "css-dir", "",
+		"Compass backwards compat. Reference locations relative to Sass project directory")
+	set.MarkDeprecated("css-dir", "Use -b instead")
+	set.StringVar(&jsDir, "javascripts-dir", "", "")
+	set.MarkDeprecated("javascripts-dir", "Compass backwards compat, ignored")
+	set.StringSliceVar(&includes, "sass-dir", nil,
+		"Compass backwards compat, use --includes instead")
 	set.StringVarP(&config, "config", "c", "",
 		"Temporarily disabled: Location of the config file")
 
@@ -172,18 +189,46 @@ func argExit() bool {
 
 }
 
+func makeabs(wd string, path string) string {
+	if filepath.IsAbs(path) {
+		return path
+	}
+	return filepath.Join(wd, path)
+}
+
 func parseBuildArgs(paths []string) *wt.BuildArgs {
 	style, ok := libsass.Style[style]
 
 	if !ok {
 		style = libsass.NESTED_STYLE
 	}
-	incs := strings.Split(includes, ",")
-	incs = append(incs, paths...)
+
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatal("could not find working directory", err)
+	}
+
+	proj = makeabs(wd, proj)
+
+	incs := make([]string, len(includes))
+	for i := range includes {
+		incs[i] = makeabs(wd, includes[i])
+	}
+
+	dir = makeabs(wd, dir)
+	font = makeabs(wd, font)
+	if len(buildDir) > 0 {
+		buildDir = makeabs(wd, buildDir)
+		// If buildDir specified, make relative to that
+		gen = makeabs(buildDir, gen)
+	} else {
+		gen = makeabs(wd, gen)
+	}
+
 	gba := &wt.BuildArgs{
 		ImageDir:  dir,
 		BuildDir:  buildDir,
-		Includes:  incs,
+		Includes:  append([]string{proj}, incs...),
 		Font:      font,
 		Style:     style,
 		Gen:       gen,
@@ -191,12 +236,11 @@ func parseBuildArgs(paths []string) *wt.BuildArgs {
 		CacheBust: cachebust,
 	}
 	gba.WithPaths(paths)
-
 	return gba
 }
 
 func globalRun(paths []string) (*wt.SafePartialMap, *wt.BuildArgs) {
-
+	// fmt.Printf("paths: %s args: % #v\n", paths, pflag.Args())
 	if argExit() {
 		return nil, nil
 	}
@@ -235,12 +279,12 @@ func globalRun(paths []string) (*wt.SafePartialMap, *wt.BuildArgs) {
 	pMap := wt.NewPartialMap()
 	gba := parseBuildArgs(paths)
 	if debug {
-		fmt.Printf("      Font  Dir: %s\n", gba.Font)
-		fmt.Printf("      Image Dir: %s\n", gba.ImageDir)
-		fmt.Printf("      Build Dir: %s\n", gba.BuildDir)
-		fmt.Printf("Build Image Dir: %s\n", gba.Gen)
-		fmt.Printf(" Include Dir(s): %s\n", gba.Includes)
-		fmt.Println("===================================")
+		log.Printf("      Font  Dir: %s\n", gba.Font)
+		log.Printf("      Image Dir: %s\n", gba.ImageDir)
+		log.Printf("      Build Dir: %s\n", gba.BuildDir)
+		log.Printf("Build Image Dir: %s\n", gba.Gen)
+		log.Printf(" Include Dir(s): %s\n", gba.Includes)
+		log.Println("===================================")
 	}
 	return pMap, gba
 
