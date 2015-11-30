@@ -72,6 +72,8 @@ func flags(set *pflag.FlagSet) {
 	set.MarkDeprecated("images-dir", "Use -d instead")
 
 	set.StringVar(&font, "font", ".", "Path to directory containing fonts")
+	set.StringVar(&gen, "generated-images-path", "", "")
+	set.MarkDeprecated("generated-images-path", "Use --gen instead")
 	set.StringVar(&gen, "gen", ".", "Path to place generated images")
 
 	set.StringVarP(&proj, "proj", "p", "",
