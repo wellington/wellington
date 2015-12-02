@@ -376,7 +376,7 @@ func run(paths []string, pMap *wt.SafePartialMap, gba *wt.BuildArgs) {
 	// No paths given, read from stdin and wait
 	if len(paths) == 0 {
 
-		fmt.Println("Reading from stdin, -h for help")
+		log.Println("Reading from stdin, -h for help")
 		out := os.Stdout
 		in := os.Stdin
 		comp, err := wt.FromBuildArgs(out, in, gba)
