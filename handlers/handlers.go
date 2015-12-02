@@ -32,8 +32,9 @@ func init() {
 func ImageURL(ctx context.Context, csv libsass.SassValue) (*libsass.SassValue, error) {
 	comp, err := libsass.CompFromCtx(ctx)
 	if err != nil {
-		return nil, libsass.ErrCompilerNotFound
+		return nil, err
 	}
+	pather := comp.(libsass.Pather)
 	libctx := comp.Context()
 	var path []string
 	err = libsass.Unmarshal(csv, &path)
@@ -46,7 +47,7 @@ func ImageURL(ctx context.Context, csv libsass.SassValue) (*libsass.SassValue, e
 		return nil, errors.New("path not found")
 	}
 
-	imgdir := comp.ImgDir()
+	imgdir := pather.ImgDir()
 
 	abspath := filepath.Join(imgdir, path[0])
 	method := comp.CacheBust()

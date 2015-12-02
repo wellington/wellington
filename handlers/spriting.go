@@ -8,13 +8,15 @@ import (
 	"strconv"
 	"strings"
 
+	"golang.org/x/net/context"
+
 	libsass "github.com/wellington/go-libsass"
 	"github.com/wellington/go-libsass/libs"
 	sw "github.com/wellington/spritewell"
 )
 
 func init() {
-	libsass.RegisterHandler("sprite($map, $name, $offsetX: 0px, $offsetY: 0px)", Sprite)
+	libsass.RegisterSassFunc("sprite($map, $name, $offsetX: 0px, $offsetY: 0px)", Sprite)
 	libsass.RegisterHandler("sprite-map($glob, $spacing: 0px)", SpriteMap)
 	libsass.RegisterHandler("sprite-file($map, $name)", SpriteFile)
 	libsass.RegisterHandler("sprite-position($map, $file)", SpritePosition)
@@ -89,23 +91,30 @@ func SpriteFile(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) er
 
 // Sprite returns the source and background position for an image in the
 // spritesheet.
-func Sprite(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error {
+func Sprite(ctx context.Context, usv libsass.SassValue) (rsv *libsass.SassValue, err error) {
 
-	ctx := v.(*libsass.Context)
+	comp, err := libsass.CompFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	pather := comp.(libsass.Pather)
+
 	var glob, name string
 	var offsetX, offsetY libs.SassNumber
-	err := libsass.Unmarshal(usv, &glob, &name, &offsetX, &offsetY)
+	err = libsass.Unmarshal(usv, &glob, &name, &offsetX, &offsetY)
 	if err != nil {
 		if err == libsass.ErrSassNumberNoUnit {
 			err := fmt.Errorf(
 				"Please specify unit for offset ie. (2px)")
-			return setErrorAndReturn(err, rsv)
+			return nil, err
 		}
-		return setErrorAndReturn(err, rsv)
+		return nil, err
 	}
-	payload, ok := ctx.Payload.(sw.Spriter)
-	if !ok {
-		return setErrorAndReturn(errors.New("Context payload not found"), rsv)
+
+	payload, err := comp.Payload()
+	if err != nil {
+		return nil, err
 	}
 	sprites := payload.Sprite()
 	sprites.RLock()
@@ -119,42 +128,46 @@ func Sprite(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error 
 
 		err := fmt.Errorf(
 			"Variable not found matching glob: %s sprite:%s", glob, name)
-		return setErrorAndReturn(err, rsv)
+		return nil, err
 	}
 
 	path, err := imgs.OutputPath()
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return nil, err
 	}
+
+	buildDir := pather.BuildDir()
+	genImgDir := pather.GenImgDir()
+	httpPath := pather.HTTPPath()
+
 	// FIXME: path directory can not be trusted, rebuild this from the context
-	if ctx.HTTPPath == "" {
-		ctxPath, err := filepath.Rel(ctx.BuildDir, ctx.GenImgDir)
+	if len(httpPath) == 0 {
+		ctxPath, err := filepath.Rel(buildDir, genImgDir)
 		if err != nil {
-			fmt.Println("error", err)
-			return setErrorAndReturn(err, rsv)
+			return nil, err
 		}
 		path = strings.Join([]string{ctxPath, filepath.Base(path)}, "/")
 	} else {
-		u, err := url.Parse(ctx.HTTPPath)
+		u, err := url.Parse(httpPath)
 		if err != nil {
-			return setErrorAndReturn(err, rsv)
+			return nil, err
 		}
 		u.Path = strings.Join([]string{u.Path, "build", filepath.Base(path)}, "/")
 		path = u.String()
 	}
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return nil, err
 	}
 
 	if imgs.Lookup(name) == -1 {
-		return setErrorAndReturn(fmt.Errorf("image %s not found\n"+
-			"   try one of these: %v", name, imgs.Paths), rsv)
+		return nil, fmt.Errorf("image %s not found\n"+
+			"   try one of these: %v", name, imgs.Paths)
 	}
 	// This is an odd name for what it does
 	pos := imgs.GetPack(imgs.Lookup(name))
 
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return nil, err
 	}
 
 	x := libs.SassNumber{Unit: "px", Value: float64(-pos.X)}
@@ -168,12 +181,10 @@ func Sprite(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error 
 			path, x, y,
 		))
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return nil, err
 	}
-	if rsv != nil {
-		*rsv = str
-	}
-	return nil
+
+	return &str, nil
 }
 
 // SpriteMap returns a sprite from the passed glob and sprite
