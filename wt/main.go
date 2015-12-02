@@ -226,6 +226,7 @@ func parseBuildArgs(paths []string) *wt.BuildArgs {
 	} else {
 		gen = makeabs(wd, gen)
 	}
+	incs = append(incs, paths...)
 
 	gba := &wt.BuildArgs{
 		ImageDir:  dir,
