@@ -7,8 +7,8 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/fatih/color",
-			"Comment": "v0.1-5-gf773d4c",
-			"Rev": "f773d4c806cc8e4a5749d6a35e2a4bbcd71443d6"
+			"Comment": "v0.1-12-g9aae6aa",
+			"Rev": "9aae6aaa22315390f03959adca2c4d395b02fcef"
 		},
 		{
 			"ImportPath": "github.com/inconshreveable/mousetrap",
@@ -32,8 +32,8 @@
 		},
 		{
 			"ImportPath": "github.com/wellington/go-libsass",
-			"Comment": "v0.9.0-215-gd9441d8",
-			"Rev": "d9441d8d809dea351f2ceb4d2fdb99f47e777c72"
+			"Comment": "v0.9.0-216-g96344b5",
+			"Rev": "96344b539f581a1269c8d30d5acd3a8bf53ed45f"
 		},
 		{
 			"ImportPath": "github.com/wellington/spritewell",
@@ -42,7 +42,7 @@
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
-			"Rev": "59b0df9b1f7abda5aab0495ee54f408daf182ce7"
+			"Rev": "74bd44bb0584f94b166dd892ff9817d4264d359c"
 		},
 		{
 			"ImportPath": "gopkg.in/fsnotify.v1",

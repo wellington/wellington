@@ -9,3 +9,23 @@ type Payloader interface {
 	spritewell.Imager
 	spritewell.Spriter
 }
+
+type payload struct {
+	s *spritewell.SafeImageMap
+	i *spritewell.SafeImageMap
+}
+
+func NewPayload() Payloader {
+	return payload{
+		s: spritewell.NewImageMap(),
+		i: spritewell.NewImageMap(),
+	}
+}
+
+func (p payload) Sprite() *spritewell.SafeImageMap {
+	return p.s
+}
+
+func (p payload) Image() *spritewell.SafeImageMap {
+	return p.i
+}
