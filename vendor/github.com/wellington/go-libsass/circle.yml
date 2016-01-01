@@ -1,0 +1,28 @@
+general:
+  build_dir: ../.go_workspace/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
+machine:
+  environment:
+    CC: gcc
+    CXX: g++
+    GOPATH: /home/ubuntu/.go_workspace
+  post:
+    - mkdir -p ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}
+    - rm -rf ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/*
+    - ln -sf ~/${CIRCLE_PROJECT_REPONAME} ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
+    # https://storage.googleapis.com/golang/go1.6beta1.linux-amd64.tar.gz
+    - sudo rm -rf /usr/local/go
+    - if [ ! -e go1.6beta1.linux-amd64.tar.gz ]; then curl -o go1.6beta1.linux-amd64.tar.gz https://storage.googleapis.com/golang/go1.6beta1.linux-amd64.tar.gz; fi
+    - sudo tar -C /usr/local -xzf go1.6beta1.linux-amd64.tar.gz
+dependencies:
+  cache_directories:
+    - ~/go1.6beta1.linux-amd64.tar.gz
+dependencies:
+  post:
+    - go version
+    - go env
+    - pwd
+    - go get golang.org/x/net/context
+    - go test -i -race $(go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | grep -v /vendor/)
+test:
+  override:
+    - go test -race $(go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | grep -v /vendor/)
