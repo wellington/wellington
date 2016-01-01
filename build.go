@@ -12,7 +12,7 @@ import (
 
 	"github.com/fatih/color"
 	libsass "github.com/wellington/go-libsass"
-	libtypes "github.com/wellington/go-libsass/external/types"
+	"github.com/wellington/wellington/types"
 )
 
 var testch chan struct{}
@@ -26,7 +26,7 @@ type BuildArgs struct {
 	paths []string
 
 	// Imgs, Sprites spritewell.SafeImageMap
-	Payload  libtypes.Payloader
+	Payload  types.Payloader
 	ImageDir string
 
 	// BuildDir is the base build directory used. When recursive
@@ -48,7 +48,7 @@ func (b *BuildArgs) WithPaths(paths []string) {
 
 // Init initializes the payload, this should really go away
 func (b *BuildArgs) init() {
-	b.Payload = libtypes.NewPayload()
+	b.Payload = newPayload()
 }
 
 // Build holds a set of read only arguments to the builder.
