@@ -17,15 +17,18 @@ import (
 	libsass "github.com/wellington/go-libsass"
 	"github.com/wellington/go-libsass/libs"
 	sw "github.com/wellington/spritewell"
+	"github.com/wellington/wellington/payload"
 )
 
 func init() {
 
 	libsass.RegisterSassFunc("image-url($name)", ImageURL)
-	libsass.RegisterHandler("image-height($path)", ImageHeight)
-	libsass.RegisterHandler("image-width($path)", ImageWidth)
+	libsass.RegisterSassFunc("image-height($path)", ImageHeight)
+	libsass.RegisterSassFunc("image-width($path)", ImageWidth)
 	libsass.RegisterHandler("inline-image($path, $encode: false)", InlineImage)
 }
+
+var ErrPayloadNil = errors.New("payload is nil")
 
 // ImageURL handles calls to resolve the path to a local image from the
 // built css file path.
@@ -70,13 +73,17 @@ func ImageURL(ctx context.Context, csv libsass.SassValue) (*libsass.SassValue, e
 
 // ImageHeight takes a file path (or sprite glob) and returns the
 // height in pixels of the image being referenced.
-func ImageHeight(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error {
+func ImageHeight(mainctx context.Context, usv libsass.SassValue) (*libsass.SassValue, error) {
 	var (
 		glob string
 		name string
 	)
-	ctx := v.(*libsass.Context)
-	err := libsass.Unmarshal(usv, &name)
+	comp, err := libsass.CompFromCtx(mainctx)
+	if err != nil {
+		return nil, err
+	}
+	ctx := comp.Context()
+	err = libsass.Unmarshal(usv, &name)
 	// Check for sprite-file override first
 	if err != nil {
 		var inf interface{}
@@ -88,7 +95,7 @@ func ImageHeight(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) e
 		k.Set(reflect.ValueOf(inf))
 
 		if err != nil {
-			return setErrorAndReturn(err, rsv)
+			return nil, err
 		}
 		glob = infs[0].(string)
 		name = infs[1].(string)
@@ -99,33 +106,31 @@ func ImageHeight(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) e
 		GenImgDir: ctx.GenImgDir,
 	})
 
-	payload, ok := ctx.Payload.(sw.Imager)
-	if !ok {
-		return setErrorAndReturn(errors.New("inline payload not available"), rsv)
+	loadctx := comp.Payload()
+	if loadctx == nil {
+		return nil, ErrPayloadNil
 	}
-	images := payload.Image()
+
+	images := payload.Image(loadctx)
+	if images == nil {
+		return nil, errors.New("inline payload not available")
+	}
+
 	if glob == "" {
-		images.RLock()
-		hit, ok := images.M[name]
-		images.RUnlock()
-		if ok {
-			imgs = hit
+		exst := images.Get(name)
+		if exst != nil {
+			imgs = exst
 		} else {
 			imgs.Decode(name)
-			images.Lock()
-			images.M[name] = imgs
-			images.Unlock()
+			// Store images in global cache
+			images.Set(name, imgs)
 		}
 	} else {
-		payload, ok := ctx.Payload.(sw.Spriter)
-		if !ok {
-			return setErrorAndReturn(errors.New("Context payload not found"), rsv)
+		sprites := payload.Sprite(loadctx)
+		imgs = sprites.Get(glob)
+		if imgs == nil {
+			return nil, errors.New("Sprite not found")
 		}
-		sprites := payload.Sprite()
-
-		sprites.RLock()
-		imgs = sprites.M[glob]
-		sprites.RUnlock()
 	}
 	height := imgs.SImageHeight(name)
 	Hheight := libs.SassNumber{
@@ -133,23 +138,21 @@ func ImageHeight(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) e
 		Unit:  "px",
 	}
 	res, err := libsass.Marshal(Hheight)
-	if err != nil {
-		fmt.Println(err)
-	}
-	if rsv != nil {
-		*rsv = res
-	}
-	return nil
+	return &res, err
 }
 
 // ImageWidth takes a file path (or sprite glob) and returns the
 // width in pixels of the image being referenced.
-func ImageWidth(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error {
+func ImageWidth(mainctx context.Context, usv libsass.SassValue) (rsv *libsass.SassValue, err error) {
 	var (
 		glob, name string
 	)
-	ctx := v.(*libsass.Context)
-	err := libsass.Unmarshal(usv, &name)
+	comp, err := libsass.CompFromCtx(mainctx)
+	if err != nil {
+		return
+	}
+	ctx := comp.Context()
+	err = libsass.Unmarshal(usv, &name)
 	// Check for sprite-file override first
 	if err != nil {
 		var inf interface{}
@@ -161,7 +164,7 @@ func ImageWidth(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) er
 		k.Set(reflect.ValueOf(inf))
 
 		if err != nil {
-			return setErrorAndReturn(err, rsv)
+			return
 		}
 		glob = infs[0].(string)
 		name = infs[1].(string)
@@ -172,33 +175,22 @@ func ImageWidth(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) er
 		GenImgDir: ctx.GenImgDir,
 	})
 
-	payload, ok := ctx.Payload.(sw.Imager)
-	if !ok {
-		return setErrorAndReturn(errors.New("inline payload not available"), rsv)
-	}
-	images := payload.Image()
+	loadctx := comp.Payload()
+	var images payload.Payloader
 
-	if glob == "" {
-		images.RLock()
-		hit, ok := images.M[name]
-		images.RUnlock()
-		if ok {
+	if len(glob) == 0 {
+		images = payload.Image(loadctx)
+		hit := images.Get(name)
+		if hit != nil {
 			imgs = hit
 		} else {
 			imgs.Decode(name)
-			images.Lock()
-			images.M[name] = imgs
-			images.Unlock()
+			images.Set(name, imgs)
 		}
 	} else {
-		payload, ok := ctx.Payload.(sw.Spriter)
-		if !ok {
-			return setErrorAndReturn(errors.New("Context payload not found"), rsv)
-		}
-		sprites := payload.Sprite()
-		sprites.RLock()
-		imgs = sprites.M[glob]
-		sprites.RUnlock()
+		// Glob present, look up in sprites
+		sprites := payload.Sprite(loadctx)
+		imgs = sprites.Get(glob)
 	}
 	w := imgs.SImageWidth(name)
 	ww := libs.SassNumber{
@@ -206,13 +198,7 @@ func ImageWidth(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) er
 		Unit:  "px",
 	}
 	res, err := libsass.Marshal(ww)
-	if err != nil {
-		fmt.Println(err)
-	}
-	if rsv != nil {
-		*rsv = res
-	}
-	return err
+	return &res, err
 }
 
 // Resolver interface returns a ReadCloser from a path
