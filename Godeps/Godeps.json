@@ -41,10 +41,6 @@
 			"Rev": "b96c47b35eac71339cf73c2a89a9559fb26fd8c3"
 		},
 		{
-			"ImportPath": "golang.org/x/net/context",
-			"Rev": "74bd44bb0584f94b166dd892ff9817d4264d359c"
-		},
-		{
 			"ImportPath": "gopkg.in/fsnotify.v1",
 			"Comment": "v1.2.0",
 			"Rev": "96c060f6a6b7e0d6f75fddd10efeaca3e5d1bcb0"
