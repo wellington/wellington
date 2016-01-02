@@ -95,6 +95,18 @@ type SafeImageMap struct {
 	M map[string]*Sprite
 }
 
+func (s *SafeImageMap) Get(key string) *Sprite {
+	s.RLock()
+	defer s.RUnlock()
+	return s.M[key]
+}
+
+func (s *SafeImageMap) Set(key string, sprite *Sprite) {
+	s.Lock()
+	defer s.Unlock()
+	s.M[key] = sprite
+}
+
 func NewImageMap() *SafeImageMap {
 	img := SafeImageMap{
 		M: make(map[string]*Sprite)}

@@ -396,6 +396,7 @@ div {
 }
 
 func TestHandle_unknownmap(t *testing.T) {
+	t.Skip("")
 	in := bytes.NewBufferString(`
 $map: sprite-map("*.png");
 div {

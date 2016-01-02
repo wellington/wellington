@@ -32,13 +32,13 @@
 		},
 		{
 			"ImportPath": "github.com/wellington/go-libsass",
-			"Comment": "v0.9.0-216-g96344b5",
-			"Rev": "96344b539f581a1269c8d30d5acd3a8bf53ed45f"
+			"Comment": "v0.9.0-218-gad59af7",
+			"Rev": "ad59af7ad6ff98a461b791e8edd4c5517da7cf94"
 		},
 		{
 			"ImportPath": "github.com/wellington/spritewell",
-			"Comment": "v0.4.0-42-gb96c47b",
-			"Rev": "b96c47b35eac71339cf73c2a89a9559fb26fd8c3"
+			"Comment": "v0.4.0-43-gbd27598",
+			"Rev": "bd27598134c278e977b0076a280be1c39a513d97"
 		},
 		{
 			"ImportPath": "gopkg.in/fsnotify.v1",

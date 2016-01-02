@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"golang.org/x/net/context"
+
 	"github.com/wellington/go-libsass/libs"
 )
 
@@ -65,7 +67,7 @@ type Context struct {
 
 	// Attach additional data to a context for use by custom
 	// handlers/mixins
-	Payload interface{}
+	Payload context.Context
 
 	// Safe place to store memory allocations for C
 	entries *[]libs.ImportEntry

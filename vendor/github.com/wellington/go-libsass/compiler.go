@@ -4,7 +4,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/wellington/go-libsass/external/types"
+	"golang.org/x/net/context"
 )
 
 var (
@@ -46,7 +46,7 @@ type Compiler interface {
 
 	// Payload returns the attached spritewell information attached
 	// to the compiler context
-	Payload() (types.Payloader, error)
+	Payload() context.Context
 
 	// Context is deprecated, provided here as a bridge while refactoring
 	// happens in chunks. Use with caution.
@@ -160,7 +160,7 @@ func Path(path string) option {
 
 // Payload gives access to sprite and image information for handlers
 // to perform spriting functions.
-func Payload(load types.Payloader) option {
+func Payload(load context.Context) option {
 	return func(c *sass) error {
 		c.ctx.Payload = load
 		return nil
@@ -223,7 +223,7 @@ type sass struct {
 	imports      []string
 	cmt          bool
 	// payload is passed around for handlers to have context
-	payload interface{}
+	payload context.Context
 }
 
 var _ Compiler = &sass{}
@@ -275,12 +275,8 @@ func (c *sass) Option(opts ...option) error {
 	return nil
 }
 
-func (c *sass) Payload() (types.Payloader, error) {
-	load, ok := c.ctx.Payload.(types.Payloader)
-	if !ok {
-		return nil, ErrPayloadEmpty
-	}
-	return load, nil
+func (c *sass) Payload() context.Context {
+	return c.ctx.Payload
 }
 
 // Run starts transforming S[c|a]ss to CSS
