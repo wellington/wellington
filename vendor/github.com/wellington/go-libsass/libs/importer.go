@@ -26,62 +26,7 @@ package libs
 //
 // //size_t max_size = UINTMAX_MAX;
 import "C"
-import (
-	"math/rand"
-	"sync"
-	"unsafe"
-)
-
-// globalImports stores []ImportEntry in a place where GC won't
-// delete it
-type SafeMap struct {
-	sync.RWMutex
-	idx int
-	m   map[int]interface{}
-}
-
-func (s *SafeMap) nextidx() int {
-	s.Lock()
-	defer s.Unlock()
-	s.idx++
-	return s.idx
-}
-
-func (s *SafeMap) init() {
-	s.m = make(map[int]interface{})
-}
-
-func (s *SafeMap) get(idx int) interface{} {
-	s.RLock()
-	defer s.RUnlock()
-	return s.m[idx]
-}
-
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-func randString(n int) string {
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
-	}
-	return string(b)
-}
-
-func (s *SafeMap) delete(idx int) {
-	s.Lock()
-	delete(s.m, idx)
-	s.Unlock()
-}
-
-// set accepts an entry and returns an index for it
-func (s *SafeMap) set(ie interface{}) int {
-	idx := s.nextidx()
-	s.Lock()
-	s.m[idx] = ie
-	defer s.Unlock()
-
-	return idx
-}
+import "unsafe"
 
 var globalImports SafeMap
 
@@ -92,8 +37,8 @@ func init() {
 // BindImporter attaches a custom importer Go function to an import in Sass
 func BindImporter(opts SassOptions, entries []ImportEntry) int {
 
-	idx := globalImports.set(entries)
-	ptr := unsafe.Pointer(&idx)
+	idx := globalImports.Set(entries)
+	ptr := unsafe.Pointer(idx)
 
 	imper := C.sass_make_importer(
 		C.Sass_Importer_Fn(C.SassImporterHandler),
@@ -107,10 +52,10 @@ func BindImporter(opts SassOptions, entries []ImportEntry) int {
 		(*C.struct_Sass_Options)(unsafe.Pointer(opts)),
 		impers,
 	)
-	return idx
+	return *idx
 }
 
 func RemoveImporter(idx int) error {
-	delete(globalImports.m, idx)
+	globalImports.Del(idx)
 	return nil
 }

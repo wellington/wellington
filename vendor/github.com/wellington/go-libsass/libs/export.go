@@ -31,7 +31,7 @@ var gobridgeMu sync.Mutex
 func GoBridge(cargs UnionSassValue, cidx C.int) UnionSassValue {
 	// Recover the Cookie struct passed in
 	idx := int(cidx)
-	ck, ok := globalFuncs.get(idx).(Cookie)
+	ck, ok := globalFuncs.Get(idx).(Cookie)
 	if !ok {
 		fmt.Printf("failed to resolve Cookie %p\n", idx)
 		return MakeNil()

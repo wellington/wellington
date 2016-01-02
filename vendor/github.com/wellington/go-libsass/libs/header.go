@@ -1,6 +1,5 @@
 package libs
 
-// #include <stdio.h>
 // #include <string.h>
 // #include "sass/context.h"
 //
@@ -28,13 +27,13 @@ func init() {
 // gc does not delete the pointers necessary to make this happen.
 func BindHeader(opts SassOptions, entries []ImportEntry) int {
 
-	idx := globalHeaders.set(entries)
+	idx := globalHeaders.Set(entries)
 	// ptr := unsafe.Pointer(idx)
 	czero := C.double(0)
 	imper := C.sass_make_importer(
 		C.Sass_Importer_Fn(C.SassHeaders),
 		czero,
-		unsafe.Pointer(&idx),
+		unsafe.Pointer(idx),
 	)
 	impers := C.sass_make_importer_list(1)
 	C.sass_importer_set_list_entry(impers, 0, imper)
@@ -42,10 +41,10 @@ func BindHeader(opts SassOptions, entries []ImportEntry) int {
 	C.sass_option_set_c_headers(
 		(*C.struct_Sass_Options)(unsafe.Pointer(opts)),
 		impers)
-	return idx
+	return *idx
 }
 
 func RemoveHeaders(idx int) error {
-	delete(globalHeaders.m, idx)
+	globalHeaders.Del(idx)
 	return nil
 }

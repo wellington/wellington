@@ -19,9 +19,9 @@ import "unsafe"
 type SassFunc C.Sass_Function_Entry
 
 // SassMakeFunction binds a Go pointer to a Sass function signature
-func SassMakeFunction(signature string, idx int) SassFunc {
+func SassMakeFunction(signature string, idx *int) SassFunc {
 	csign := C.CString(signature)
-	ptr := unsafe.Pointer(&idx)
+	ptr := unsafe.Pointer(idx)
 	fn := C.sass_make_function(
 		csign,
 		C.Sass_Function_Fn(C.CallSassFunction),
@@ -43,10 +43,10 @@ func BindFuncs(opts SassOptions, cookies []Cookie) []int {
 	funcs := make([]SassFunc, len(cookies))
 	ids := make([]int, len(cookies))
 	for i, cookie := range cookies {
-		idx := globalFuncs.set(cookies[i])
+		idx := globalFuncs.Set(cookies[i])
 		fn := SassMakeFunction(cookie.Sign, idx)
 		funcs[i] = fn
-		ids[i] = idx
+		ids[i] = *idx
 	}
 
 	sz := C.size_t(len(funcs))
@@ -60,7 +60,7 @@ func BindFuncs(opts SassOptions, cookies []Cookie) []int {
 
 func RemoveFuncs(ids []int) error {
 	for _, idx := range ids {
-		delete(globalFuncs.m, idx)
+		globalFuncs.Del(idx)
 	}
 	return nil
 }

@@ -38,7 +38,7 @@ type ImportEntry struct {
 //export HeaderBridge
 func HeaderBridge(cint C.int) C.Sass_Import_List {
 	idx := int(cint)
-	entries, ok := globalHeaders.get(idx).([]ImportEntry)
+	entries, ok := globalHeaders.Get(idx).([]ImportEntry)
 	if !ok {
 		fmt.Printf("failed to resolve header slice: %p\n", idx)
 		return C.sass_make_import_list(C.size_t(1))
@@ -83,7 +83,7 @@ func GetEntry(es []ImportEntry, parent string, path string) (string, error) {
 func ImporterBridge(url *C.char, prev *C.char, cidx C.int) C.Sass_Import_List {
 	// Retrieve the index
 	idx := int(cidx)
-	entries, ok := globalImports.get(idx).([]ImportEntry)
+	entries, ok := globalImports.Get(idx).([]ImportEntry)
 	if !ok {
 		fmt.Printf("failed to resolve import slice: %p\n", idx)
 		entries = []ImportEntry{}
