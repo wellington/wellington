@@ -13,11 +13,12 @@ import (
 	libsass "github.com/wellington/go-libsass"
 	"github.com/wellington/go-libsass/libs"
 	sw "github.com/wellington/spritewell"
+	"github.com/wellington/wellington/payload"
 )
 
 func init() {
 	libsass.RegisterSassFunc("sprite($map, $name, $offsetX: 0px, $offsetY: 0px)", Sprite)
-	libsass.RegisterHandler("sprite-map($glob, $spacing: 0px)", SpriteMap)
+	libsass.RegisterSassFunc("sprite-map($glob, $spacing: 0px)", SpriteMap)
 	libsass.RegisterHandler("sprite-file($map, $name)", SpriteFile)
 	libsass.RegisterHandler("sprite-position($map, $file)", SpritePosition)
 }
@@ -112,20 +113,12 @@ func Sprite(ctx context.Context, usv libsass.SassValue) (rsv *libsass.SassValue,
 		return nil, err
 	}
 
-	payload, err := comp.Payload()
-	if err != nil {
-		return nil, err
-	}
-	sprites := payload.Sprite()
-	sprites.RLock()
-	defer sprites.RUnlock()
-	imgs, ok := sprites.M[glob]
-	if !ok {
-		keys := make([]string, 0, len(sprites.M))
-		for i := range sprites.M {
-			keys = append(keys, i)
-		}
+	loadctx := comp.Payload()
 
+	sprites := payload.Sprite(loadctx)
+
+	imgs := sprites.Get(glob)
+	if imgs == nil {
 		err := fmt.Errorf(
 			"Variable not found matching glob: %s sprite:%s", glob, name)
 		return nil, err
@@ -189,14 +182,18 @@ func Sprite(ctx context.Context, usv libsass.SassValue) (rsv *libsass.SassValue,
 
 // SpriteMap returns a sprite from the passed glob and sprite
 // parameters.
-func SpriteMap(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error {
-	ctx := v.(*libsass.Context)
+func SpriteMap(mainctx context.Context, usv libsass.SassValue) (*libsass.SassValue, error) {
 	var glob string
 	var spacing libs.SassNumber
 	err := libsass.Unmarshal(usv, &glob, &spacing)
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return nil, err
 	}
+	comp, err := libsass.CompFromCtx(mainctx)
+	if err != nil {
+		return nil, err
+	}
+	ctx := comp.Context()
 	imgs := sw.New(&sw.Options{
 		ImageDir:  ctx.ImageDir,
 		BuildDir:  ctx.BuildDir,
@@ -209,50 +206,40 @@ func SpriteMap(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) err
 
 	key := glob + strconv.FormatInt(int64(spacing.Value), 10)
 
-	payload, ok := ctx.Payload.(sw.Spriter)
-	if !ok {
-		err := errors.New("context payload not found")
-		return setErrorAndReturn(err, rsv)
-	}
+	loadctx := comp.Payload()
+	sprites := payload.Sprite(loadctx)
 
-	sprites := payload.Sprite()
-
-	// TODO: benchmark a single write lock against this
-	// read lock then write lock
-	sprites.RLock()
-	if _, ok := sprites.M[key]; ok {
-		defer sprites.RUnlock()
-		res, err := libsass.Marshal(key)
-		if err != nil {
-			return setErrorAndReturn(err, rsv)
-		}
-		if rsv != nil {
-			*rsv = res
-		}
-		return nil
-	}
-	sprites.RUnlock()
+	// FIXME: wtf is this?
+	// sprites.RLock()
+	// if _, ok := sprites.M[key]; ok {
+	// 	defer sprites.RUnlock()
+	// 	res, err := libsass.Marshal(key)
+	// 	if err != nil {
+	// 		return setErrorAndReturn(err, rsv)
+	// 	}
+	// 	if rsv != nil {
+	// 		*rsv = res
+	// 	}
+	// 	return nil
+	// }
+	// sprites.RUnlock()
 
 	err = imgs.Decode(glob)
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return nil, err
 	}
 
 	_, err = imgs.Export()
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return nil, err
 	}
 
 	res, err := libsass.Marshal(key)
-	sprites.Lock()
-	sprites.M[key] = imgs
-	sprites.Unlock()
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return nil, err
 	}
 
-	if rsv != nil {
-		*rsv = res
-	}
-	return nil
+	sprites.Set(key, imgs)
+
+	return &res, nil
 }

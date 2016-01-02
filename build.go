@@ -10,9 +10,11 @@ import (
 	"strings"
 	"sync"
 
+	"golang.org/x/net/context"
+
 	"github.com/fatih/color"
 	libsass "github.com/wellington/go-libsass"
-	"github.com/wellington/wellington/types"
+	"github.com/wellington/wellington/payload"
 )
 
 var testch chan struct{}
@@ -25,8 +27,7 @@ type BuildArgs struct {
 	// This is required to output files
 	paths []string
 
-	// Imgs, Sprites spritewell.SafeImageMap
-	Payload  types.Payloader
+	Payload  context.Context
 	ImageDir string
 
 	// BuildDir is the base build directory used. When recursive
@@ -48,7 +49,7 @@ func (b *BuildArgs) WithPaths(paths []string) {
 
 // Init initializes the payload, this should really go away
 func (b *BuildArgs) init() {
-	b.Payload = newPayload()
+	b.Payload = payload.New()
 }
 
 // Build holds a set of read only arguments to the builder.

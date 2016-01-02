@@ -11,6 +11,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/wellington/go-libsass"
+	"github.com/wellington/wellington/payload"
 )
 
 func init() {
@@ -35,7 +36,7 @@ func TestFromBuildArgs(t *testing.T) {
 // InitializeContext sets up some data structures necessary
 // to use wellington
 func InitializeContext(ctx *libsass.Context) {
-	ctx.Payload = newPayload()
+	ctx.Payload = payload.New()
 }
 
 func TestCompileStdin_imports(t *testing.T) {

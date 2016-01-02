@@ -15,35 +15,11 @@ import (
 	libsass "github.com/wellington/go-libsass"
 	"github.com/wellington/go-libsass/libs"
 	"github.com/wellington/spritewell"
+	"github.com/wellington/wellington/payload"
 )
 
 func init() {
 	os.MkdirAll("../test/build/img", 0777)
-}
-
-type testPayload struct {
-	s *spritewell.SafeImageMap
-	i *spritewell.SafeImageMap
-}
-
-func (p testPayload) Sprite() *spritewell.SafeImageMap {
-	return p.s
-}
-
-func (p testPayload) Image() *spritewell.SafeImageMap {
-	return p.i
-}
-
-func newTestPayload() testPayload {
-	return testPayload{
-		s: spritewell.NewImageMap(),
-		i: spritewell.NewImageMap(),
-	}
-}
-
-func initCtx(ctx *libsass.Context) {
-	// Initialize payload on context
-	ctx.Payload = newTestPayload()
 }
 
 func wrapCallback(sc libsass.HandlerFunc, ch chan libsass.SassValue) libs.SassCallback {
@@ -77,6 +53,7 @@ func setupComp(t *testing.T, r io.Reader, out io.Writer) (libsass.Compiler, libs
 		libsass.BuildDir("../test/build"),
 		libsass.ImgDir("../test/img"),
 		libsass.FontDir("../test/font"),
+		libsass.Payload(payload.New()),
 		libsass.ImgBuildDir("../test/build/img"),
 	)
 	if err != nil {
@@ -99,11 +76,16 @@ func setupComp(t *testing.T, r io.Reader, out io.Writer) (libsass.Compiler, libs
 	return comp, usv, err
 }
 
+func oldContext() *libsass.Context {
+	ctx := libsass.NewContext()
+	ctx.Payload = payload.New()
+	return ctx
+}
+
 func setupCtx(t *testing.T, r io.Reader, out io.Writer /*, cookies ...libsass.Cookie*/) (*libsass.Context, libsass.SassValue, error) {
 	var usv libsass.SassValue
 
-	ctx := libsass.NewContext()
-	initCtx(ctx)
+	ctx := oldContext()
 	ctx.OutputStyle = libsass.NESTED_STYLE
 	ctx.IncludePaths = make([]string, 0)
 	ctx.BuildDir = "../test/build"
@@ -168,91 +150,6 @@ func TestFuncImageURL(t *testing.T) {
 
 }
 
-func TestFuncSpriteMap(t *testing.T) {
-	ctx := libsass.NewContext()
-	initCtx(ctx)
-	ctx.BuildDir = "../test/build"
-	ctx.GenImgDir = "../test/build/img"
-	ctx.ImageDir = "../test/img"
-
-	// Add real arguments when sass lists can be [un]marshalled
-	lst := []interface{}{
-		"*.png",
-		libs.SassNumber{Value: 5, Unit: "px"},
-	}
-	usv, _ := libsass.Marshal(lst)
-	var rsv libsass.SassValue
-	SpriteMap(ctx, usv, &rsv)
-	var path string
-	err := libsass.Unmarshal(rsv, &path)
-	if err != nil {
-		t.Error(err)
-	}
-
-	if e := "*.png5"; e != path {
-		t.Errorf("got: %s wanted: %s", path, e)
-	}
-}
-
-func TestCompileSpriteMap(t *testing.T) {
-	in := bytes.NewBufferString(`
-$aritymap: sprite-map("*.png", 0px); // Optional arguments
-$map: sprite-map("*.png"); // One argument
-$paddedmap: sprite-map("*.png", 1px); // One argument
-div {
-width: $map;
-height: $aritymap;
-line-height: $paddedmap;
-}`)
-
-	ctx := libsass.NewContext()
-	initCtx(ctx)
-
-	ctx.BuildDir = "../test/build"
-	ctx.GenImgDir = "../test/build/img"
-	ctx.ImageDir = "../test/img"
-	var out bytes.Buffer
-	err := ctx.Compile(in, &out)
-	if err != nil {
-		t.Error(err)
-	}
-	exp := `div {
-  width: *.png0;
-  height: *.png0;
-  line-height: *.png1; }
-`
-
-	if exp != out.String() {
-		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), exp)
-	}
-}
-
-func TestCompileSpritePaddingMap(t *testing.T) {
-	in := bytes.NewBufferString(`$map: sprite-map("*.png",10px);
-div {
-  content: $map;
-}`)
-
-	ctx := libsass.NewContext()
-	initCtx(ctx)
-
-	ctx.ImageDir = "../test/img"
-	ctx.BuildDir = "../test/build"
-	ctx.GenImgDir = "../test/build/img"
-
-	var out bytes.Buffer
-	err := ctx.Compile(in, &out)
-	if err != nil {
-		t.Error(err)
-	}
-	exp := `div {
-  content: *.png10; }
-`
-	if exp != out.String() {
-		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), exp)
-	}
-}
-
 type mockImg struct {
 	r io.ReadCloser
 }
@@ -278,8 +175,7 @@ func TestCompile_HTTP_InlineImage(t *testing.T) {
   background: #602d6c no-repeat inline-image("http://example.com/pixel/1x1.png");
 }`)
 
-	ctx := libsass.NewContext()
-	initCtx(ctx)
+	ctx := oldContext()
 
 	var out bytes.Buffer
 	err = ctx.Compile(in, &out)
@@ -537,8 +433,8 @@ div {
   background: sprite($map, "140");
 }`)
 
-	ctx := libsass.NewContext()
-	initCtx(ctx)
+	ctx := oldContext()
+
 	ctx.BuildDir = "../test/build"
 	ctx.GenImgDir = "../test/build/img"
 	ctx.ImageDir = "../test/img"
@@ -562,8 +458,7 @@ div {
   background: sprite($map, "140", 10px, 10px);
 }`)
 
-	ctx := libsass.NewContext()
-	initCtx(ctx)
+	ctx := oldContext()
 	ctx.BuildDir = "../test/build"
 	ctx.GenImgDir = "../test/build/img"
 	ctx.ImageDir = "../test/img"
@@ -589,8 +484,7 @@ div {
   background: sprite($map, "140", 0, 0);
 }`)
 
-	ctx := libsass.NewContext()
-	initCtx(ctx)
+	ctx := oldContext()
 	ctx.BuildDir = "../test/build"
 	ctx.GenImgDir = "../test/build/img"
 	ctx.ImageDir = "../test/img"
@@ -626,8 +520,7 @@ div {
   background: sprite($map, "140");
 }`)
 
-	ctx := libsass.NewContext()
-	initCtx(ctx)
+	ctx := oldContext()
 	ctx.IncludePaths = []string{"../test"}
 	ctx.HTTPPath = "http://foo.com"
 	ctx.BuildDir = "../test/build"
@@ -660,8 +553,8 @@ div {
   background: sprite($map, "twitt");
 }`)
 
-	ctx := libsass.NewContext()
-	initCtx(ctx)
+	ctx := oldContext()
+
 	ctx.BuildDir = "../test/build"
 	ctx.GenImgDir = "../test/build/img"
 	ctx.ImageDir = "../test/img"
@@ -722,24 +615,24 @@ func TestInlineSVG(t *testing.T) {
 	}
 }
 
-func BenchmarkSprite(b *testing.B) {
-	ctx := libsass.NewContext()
-	ctx.BuildDir = "context/test/build"
-	ctx.GenImgDir = "context/test/build/img"
-	ctx.ImageDir = "context/test/img"
-	// Add real arguments when sass lists can be [un]marshalled
-	lst := []interface{}{"*.png", libs.SassNumber{Value: 5, Unit: "px"}}
-	usv, _ := libsass.Marshal(lst)
+// func BenchmarkSprite(b *testing.B) {
+// 	ctx := oldContext()
+// 	ctx.BuildDir = "context/test/build"
+// 	ctx.GenImgDir = "context/test/build/img"
+// 	ctx.ImageDir = "context/test/img"
+// 	// Add real arguments when sass lists can be [un]marshalled
+// 	lst := []interface{}{"*.png", libs.SassNumber{Value: 5, Unit: "px"}}
+// 	usv, _ := libsass.Marshal(lst)
 
-	var rsv libsass.SassValue
-	for i := 0; i < b.N; i++ {
-		SpriteMap(ctx, usv, &rsv)
-	}
-	// Debug if needed
-	// var s string
-	// Unmarshal(usv, &s)
-	// fmt.Println(s)
-}
+// 	var rsv libsass.SassValue
+// 	for i := 0; i < b.N; i++ {
+// 		SpriteMap(ctx, usv, &rsv)
+// 	}
+// 	// Debug if needed
+// 	// var s string
+// 	// Unmarshal(usv, &s)
+// 	// fmt.Println(s)
+// }
 
 func TestImgResolver(t *testing.T) {
 
