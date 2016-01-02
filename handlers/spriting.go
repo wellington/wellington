@@ -20,42 +20,52 @@ func init() {
 	libsass.RegisterSassFunc("sprite($map, $name, $offsetX: 0px, $offsetY: 0px)", Sprite)
 	libsass.RegisterSassFunc("sprite-map($glob, $spacing: 0px)", SpriteMap)
 	libsass.RegisterHandler("sprite-file($map, $name)", SpriteFile)
-	libsass.RegisterHandler("sprite-position($map, $file)", SpritePosition)
+	libsass.RegisterSassFunc("sprite-position($map, $file)", SpritePosition)
 }
 
 // SpritePosition returns the position of the image in the sprite-map.
 // This is useful for passing directly to background-position
-func SpritePosition(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error {
-	ctx := v.(*libsass.Context)
-	var glob, name string
-	err := libsass.Unmarshal(usv, &glob, &name)
+func SpritePosition(mainctx context.Context, usv libsass.SassValue) (rsv *libsass.SassValue, err error) {
+	comp, err := libsass.CompFromCtx(mainctx)
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return
 	}
-	payload, ok := ctx.Payload.(sw.Spriter)
-	if !ok {
-		return setErrorAndReturn(errors.New("Context payload not found"), rsv)
+
+	var glob, name string
+	err = libsass.Unmarshal(usv, &glob, &name)
+	if err != nil {
+		return
 	}
-	sprites := payload.Sprite()
-	sprites.RLock()
-	defer sprites.RUnlock()
-	imgs, ok := sprites.M[glob]
-	if !ok {
-		err := fmt.Errorf(
+
+	loadctx := comp.Payload()
+	if loadctx == nil {
+		err = ErrPayloadNil
+		return
+	}
+
+	sprites := payload.Sprite(loadctx)
+	if sprites == nil {
+		err = errors.New("Sprites missing")
+		return
+	}
+
+	imgs := sprites.Get(glob)
+	if imgs == nil {
+		err = fmt.Errorf(
 			"Variable not found matching glob: %s sprite:%s", glob, name)
-		return setErrorAndReturn(err, rsv)
+		return
 	}
 
 	if imgs.Lookup(name) == -1 {
-		return setErrorAndReturn(fmt.Errorf("image %s not found\n"+
-			"   try one of these: %v", name, imgs.Paths), rsv)
+		err = fmt.Errorf("image %s not found\n"+
+			"   try one of these: %v", name, imgs.Paths)
+		return
 	}
 
 	// This is an odd name for what it does
 	pos := imgs.GetPack(imgs.Lookup(name))
-
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return
 	}
 
 	x := libs.SassNumber{Unit: "px", Value: float64(-pos.X)}
@@ -64,15 +74,7 @@ func SpritePosition(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue
 	str, err := libsass.Marshal(
 		[]libs.SassNumber{x, y},
 	)
-
-	if err != nil {
-		return setErrorAndReturn(err, rsv)
-	}
-	if rsv != nil {
-		*rsv = str
-	}
-
-	return nil
+	return &str, err
 }
 
 // SpriteFile proxies the sprite glob and image name through.
