@@ -34,6 +34,7 @@ release:
 	tar -cvzf snapshot/$(wt_ver)/wt_$(wt_ver)_$(HOSTOSARCH).tar.gz -C snapshot/$(wt_ver)/$(HOSTOSARCH)/ wt
 
 windows:
+	go get golang.org/x/net/context
 	go build -o wt.exe -x -ldflags "-extldflags '-static' -X=github.com/wellington/wellington/version.Version=$(wt_ver)" github.com/wellington/wellington/wt
 
 bench:
