@@ -29,6 +29,7 @@ dependencies:
     #- libsass-src
   override:
     - echo "deps are vendored don't run go get"
+    - go get golang.org/x/net/context
     - git submodule update --init --recursive
 test:
   override:
