@@ -78,6 +78,7 @@ func ImageHeight(mainctx context.Context, usv libsass.SassValue) (*libsass.SassV
 		glob string
 		name string
 	)
+
 	comp, err := libsass.CompFromCtx(mainctx)
 	if err != nil {
 		return nil, err
@@ -116,7 +117,7 @@ func ImageHeight(mainctx context.Context, usv libsass.SassValue) (*libsass.SassV
 		return nil, errors.New("inline payload not available")
 	}
 
-	if glob == "" {
+	if len(glob) == 0 {
 		exst := images.Get(name)
 		if exst != nil {
 			imgs = exst

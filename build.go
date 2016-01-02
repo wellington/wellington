@@ -157,7 +157,7 @@ func (b *Build) build(path string) error {
 	}
 
 	if !isImportable(path) {
-		return errors.New("file is does not end in .sass or .scss")
+		return errors.New("file does not end in .sass or .scss")
 	}
 
 	out, bdir, err := b.bArgs.getOut(path)

@@ -35,5 +35,5 @@ func Sprite(ctx context.Context) Payloader {
 }
 
 func Image(ctx context.Context) Payloader {
-	return ctx.Value(spriteKey).(Payloader)
+	return ctx.Value(imageKey).(Payloader)
 }

@@ -417,7 +417,7 @@ func run(paths []string, pMap *wt.SafePartialMap, gba *wt.BuildArgs) {
 	// 	}
 	// }
 	sprites := payload.Sprite(gba.Payload)
-	sprites.ForEach(func(_ string, sprite *spritewell.Sprite) {
+	sprites.ForEach(func(k string, sprite *spritewell.Sprite) {
 		img.Add(1)
 		err := sprite.Wait()
 		img.Done()
