@@ -107,6 +107,14 @@ func (s *SafeImageMap) Set(key string, sprite *Sprite) {
 	s.M[key] = sprite
 }
 
+func (s *SafeImageMap) ForEach(fn func(key string, sprite *Sprite)) {
+	s.RLock()
+	defer s.RUnlock()
+	for k, v := range s.M {
+		fn(k, v)
+	}
+}
+
 func NewImageMap() *SafeImageMap {
 	img := SafeImageMap{
 		M: make(map[string]*Sprite)}

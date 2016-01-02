@@ -20,6 +20,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	libsass "github.com/wellington/go-libsass"
+	"github.com/wellington/spritewell"
+	"github.com/wellington/wellington/payload"
 	"github.com/wellington/wellington/version"
 
 	wt "github.com/wellington/wellington"
@@ -414,14 +416,15 @@ func run(paths []string, pMap *wt.SafePartialMap, gba *wt.BuildArgs) {
 	// 		log.Printf("error writing image: %s\n", err)
 	// 	}
 	// }
-	for _, s := range gba.Payload.Sprite().M {
+	sprites := payload.Sprite(gba.Payload)
+	sprites.ForEach(func(_ string, sprite *spritewell.Sprite) {
 		img.Add(1)
-		err := s.Wait()
+		err := sprite.Wait()
 		img.Done()
 		if err != nil {
 			log.Printf("error writing sprite: %s\n", err)
 		}
-	}
+	})
 	img.Wait()
 	pMap.RUnlock()
 

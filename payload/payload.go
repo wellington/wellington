@@ -27,6 +27,7 @@ func New() context.Context {
 type Payloader interface {
 	Get(key string) *spritewell.Sprite
 	Set(key string, sprite *spritewell.Sprite)
+	ForEach(func(key string, sprite *spritewell.Sprite))
 }
 
 func Sprite(ctx context.Context) Payloader {
