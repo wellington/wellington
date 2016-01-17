@@ -38,7 +38,6 @@ func ImageURL(ctx context.Context, csv libsass.SassValue) (*libsass.SassValue, e
 		return nil, err
 	}
 	pather := comp.(libsass.Pather)
-	libctx := comp.Context()
 	var path []string
 	err = libsass.Unmarshal(csv, &path)
 	// This should create and throw a sass error
@@ -59,9 +58,12 @@ func ImageURL(ctx context.Context, csv libsass.SassValue) (*libsass.SassValue, e
 	if err != nil {
 		return nil, err
 	}
-
+	rel, err := relativeImage(comp.BuildDir(), comp.ImgDir())
+	if err != nil {
+		return nil, err
+	}
 	url := strings.Join([]string{
-		libctx.RelativeImage(),
+		rel,
 		path[0],
 	}, "/")
 	res, err := libsass.Marshal(fmt.Sprintf("url('%s%s')", url, qry))
@@ -69,6 +71,11 @@ func ImageURL(ctx context.Context, csv libsass.SassValue) (*libsass.SassValue, e
 		return nil, err
 	}
 	return &res, nil
+}
+
+func relativeImage(buildDir, imageDir string) (string, error) {
+	rel, err := filepath.Rel(buildDir, imageDir)
+	return filepath.ToSlash(filepath.Clean(rel)), err
 }
 
 // ImageHeight takes a file path (or sprite glob) and returns the
