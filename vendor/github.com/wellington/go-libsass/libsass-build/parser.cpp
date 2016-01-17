@@ -1,3 +1,4 @@
+#include "sass.hpp"
 #include <cstdlib>
 #include <iostream>
 #include <vector>
@@ -19,33 +20,33 @@ namespace Sass {
   using namespace Constants;
   using namespace Prelexer;
 
-  Parser Parser::from_c_str(const char* str, Context& ctx, ParserState pstate)
+  Parser Parser::from_c_str(const char* beg, Context& ctx, ParserState pstate, const char* source)
   {
     Parser p(ctx, pstate);
-    p.source   = str;
-    p.position = p.source;
-    p.end      = str + strlen(str);
+    p.source   = source ? source : beg;
+    p.position = beg ? beg : p.source;
+    p.end      = p.position + strlen(p.position);
     Block* root = SASS_MEMORY_NEW(ctx.mem, Block, pstate);
     p.block_stack.push_back(root);
     root->is_root(true);
     return p;
   }
 
-  Parser Parser::from_c_str(const char* beg, const char* end, Context& ctx, ParserState pstate)
+  Parser Parser::from_c_str(const char* beg, const char* end, Context& ctx, ParserState pstate, const char* source)
   {
     Parser p(ctx, pstate);
-    p.source   = beg;
-    p.position = p.source;
-    p.end      = end;
+    p.source   = source ? source : beg;
+    p.position = beg ? beg : p.source;
+    p.end      = end ? end : p.position + strlen(p.position);
     Block* root = SASS_MEMORY_NEW(ctx.mem, Block, pstate);
     p.block_stack.push_back(root);
     root->is_root(true);
     return p;
   }
 
-  Selector_List* Parser::parse_selector(const char* src, Context& ctx, ParserState pstate)
+  Selector_List* Parser::parse_selector(const char* beg, Context& ctx, ParserState pstate, const char* source)
   {
-    Parser p = Parser::from_c_str(src, ctx, pstate);
+    Parser p = Parser::from_c_str(beg, ctx, pstate, source);
     // ToDo: ruby sass errors on parent references
     // ToDo: remap the source-map entries somehow
     return p.parse_selector_list(false);
@@ -57,12 +58,12 @@ namespace Sass {
            && ! peek_css<exactly<'{'>>(start);
   }
 
-  Parser Parser::from_token(Token t, Context& ctx, ParserState pstate)
+  Parser Parser::from_token(Token t, Context& ctx, ParserState pstate, const char* source)
   {
     Parser p(ctx, pstate);
-    p.source   = t.begin;
-    p.position = p.source;
-    p.end      = t.end;
+    p.source   = source ? source : t.begin;
+    p.position = t.begin ? t.begin : p.source;
+    p.end      = t.end ? t.end : p.position + strlen(p.position);
     Block* root = SASS_MEMORY_NEW(ctx.mem, Block, pstate);
     p.block_stack.push_back(root);
     root->is_root(true);
@@ -177,11 +178,7 @@ namespace Sass {
 
     Block* block = block_stack.back();
 
-    while (lex< block_comment >()) {
-      bool is_important = lexed.begin[2] == '!';
-      String*  contents = parse_interpolated_chunk(lexed);
-      (*block) << SASS_MEMORY_NEW(ctx.mem, Comment, pstate, contents, is_important);
-    }
+    parse_block_comments();
 
     // throw away white-space
     // includes line comments
@@ -203,14 +200,17 @@ namespace Sass {
     else if (lex < kwd_return_directive >(true)) { (*block) << parse_return_directive(); }
 
     // abort if we are in function context and have nothing parsed yet
-    else if (stack.back() == function_def) {
+    else if (stack.back() == Scope::Function) {
       error("Functions can only contain variable declarations and control directives", pstate);
     }
 
     // parse imports to process later
     else if (lex < kwd_import >(true)) {
-      if (stack.back() == mixin_def || stack.back() == function_def) {
-        error("Import directives may not be used within control directives or mixins.", pstate);
+      Scope parent = stack.empty() ? Scope::Rules : stack.back();
+      if (parent != Scope::Function && parent != Scope::Root && parent != Scope::Rules && parent != Scope::Media) {
+        if (! peek_css< uri_prefix >(position)) { // this seems to go in ruby sass 3.4.20
+          error("Import directives may not be used within control directives or mixins.", pstate);
+        }
       }
       Import* imp = parse_import();
       // if it is a url, we only add the statement
@@ -270,7 +270,9 @@ namespace Sass {
       if (peek< exactly<'{'> >()) {
         if (decl->is_indented()) ++ indentation;
         // parse a propset that rides on the declaration's property
+        stack.push_back(Scope::Properties);
         (*block) << SASS_MEMORY_NEW(ctx.mem, Propset, pstate, decl->property(), parse_block());
+        stack.pop_back();
         if (decl->is_indented()) -- indentation;
       }
     }
@@ -298,12 +300,12 @@ namespace Sass {
       else if (lex< uri_prefix >()) {
         Arguments* args = SASS_MEMORY_NEW(ctx.mem, Arguments, pstate);
         Function_Call* result = SASS_MEMORY_NEW(ctx.mem, Function_Call, pstate, "url", args);
+
         if (lex< quoted_string >()) {
           Expression* the_url = parse_string();
           *args << SASS_MEMORY_NEW(ctx.mem, Argument, the_url->pstate(), the_url);
         }
-        else if (lex < uri_value >(false)) { // don't skip comments
-          String* the_url = parse_interpolated_chunk(lexed);
+        else if (String* the_url = parse_url_function_argument()) {
           *args << SASS_MEMORY_NEW(ctx.mem, Argument, the_url->pstate(), the_url);
         }
         else if (peek < skip_over_scopes < exactly < '(' >, exactly < ')' > > >(position)) {
@@ -341,6 +343,10 @@ namespace Sass {
 
   Definition* Parser::parse_definition(Definition::Type which_type)
   {
+    Scope parent = stack.empty() ? Scope::Rules : stack.back();
+    if (parent != Scope::Root && parent != Scope::Rules && parent != Scope::Function) {
+      error("Functions may not be defined within control directives or other mixins.", pstate);
+    }
     std::string which_str(lexed);
     if (!lex< identifier >()) error("invalid name in " + which_str + " definition", pstate);
     std::string name(Util::normalize_underscores(lexed));
@@ -348,8 +354,8 @@ namespace Sass {
     { error("Invalid function name \"" + name + "\".", pstate); }
     ParserState source_position_of_def = pstate;
     Parameters* params = parse_parameters();
-    if (which_type == Definition::MIXIN) stack.push_back(mixin_def);
-    else stack.push_back(function_def);
+    if (which_type == Definition::MIXIN) stack.push_back(Scope::Mixin);
+    else stack.push_back(Scope::Function);
     Block* body = parse_block();
     stack.pop_back();
     Definition* def = SASS_MEMORY_NEW(ctx.mem, Definition, source_position_of_def, name, params, body, which_type);
@@ -431,8 +437,11 @@ namespace Sass {
       bool is_keyword = false;
       Expression* val = parse_space_list();
       val->is_delayed(false);
+      List* l = dynamic_cast<List*>(val);
       if (lex_css< exactly< ellipsis > >()) {
-        if (val->concrete_type() == Expression::MAP) is_keyword = true;
+        if (val->concrete_type() == Expression::MAP || (
+           (l != NULL && l->separator() == SASS_HASH)
+        )) is_keyword = true;
         else is_arglist = true;
       }
       arg = SASS_MEMORY_NEW(ctx.mem, Argument, pstate, val, "", is_arglist, is_keyword);
@@ -474,7 +483,9 @@ namespace Sass {
     if (lookahead.parsable) ruleset->selector(parse_selector_list(is_root));
     else ruleset->selector(parse_selector_schema(lookahead.found));
     // then parse the inner block
+    stack.push_back(Scope::Rules);
     ruleset->block(parse_block());
+    stack.pop_back();
     // update for end position
     ruleset->update_pstate(pstate);
     // inherit is_root from parent block
@@ -501,7 +512,7 @@ namespace Sass {
     // process until end
     while (i < end_of_selector) {
       // try to parse mutliple interpolants
-      if (const char* p = find_first_in_interval< exactly<hash_lbrace> >(i, end_of_selector)) {
+      if (const char* p = find_first_in_interval< exactly<hash_lbrace>, block_comment >(i, end_of_selector)) {
         // accumulate the preceding segment if the position has advanced
         if (i < p) (*schema) << SASS_MEMORY_NEW(ctx.mem, String_Constant, pstate, std::string(i, p));
         // check if the interpolation only contains white-space (error out)
@@ -514,6 +525,7 @@ namespace Sass {
         Expression* interpolant = Parser::from_c_str(p+2, j, ctx, pstate).parse_list();
         // set status on the list expression
         interpolant->is_interpolant(true);
+        // schema->has_interpolants(true);
         // add to the string schema
         (*schema) << interpolant;
         // advance position
@@ -676,14 +688,14 @@ namespace Sass {
       sel->tail(parse_complex_selector(true));
       if (sel->tail()) {
         // ToDo: move this logic below into tail setter
-        if (sel->tail()->has_reference()) sel->has_reference(true);
+        // if (sel->tail()->has_reference()) sel->has_reference(true);
         if (sel->tail()->has_placeholder()) sel->has_placeholder(true);
       }
     }
 
     // add a parent selector if we are not in a root
     // also skip adding parent ref if we only have refs
-    if (!sel->has_reference() && !in_at_root && !in_root) {
+    if (!sel->has_parent_ref() && !in_at_root && !in_root) {
       // create the objects to wrap parent selector reference
       Parent_Selector* parent = SASS_MEMORY_NEW(ctx.mem, Parent_Selector, pstate);
       parent->media_block(last_media_block);
@@ -735,6 +747,18 @@ namespace Sass {
         // this produces a linefeed!?
         seq->has_parent_reference(true);
         (*seq) << SASS_MEMORY_NEW(ctx.mem, Parent_Selector, pstate);
+        // parent selector only allowed at start
+        // upcoming sass may allow also trailing
+        if (seq->length() > 1) {
+          ParserState state(pstate);
+          Simple_Selector* cur = (*seq)[seq->length()-1];
+          Simple_Selector* prev = (*seq)[seq->length()-2];
+          std::string sel(prev->to_string(false, 5));
+          std::string found(cur->to_string(false, 5));
+          if (lex < identifier >()) { found += std::string(lexed); }
+          error("Invalid CSS after \"" + sel + "\": expected \"{\", was \"" + found + "\"\n\n"
+            "\"" + found + "\" may only be used at the beginning of a compound selector.", state);
+        }
       }
       // parse type selector
       else if (lex< re_type_selector >(false))
@@ -901,7 +925,8 @@ namespace Sass {
     Block* block = block_stack.back();
     while (lex< block_comment >()) {
       bool is_important = lexed.begin[2] == '!';
-      String*  contents = parse_interpolated_chunk(lexed);
+      // flag on second param is to skip loosely over comments
+      String*  contents = parse_interpolated_chunk(lexed, true);
       (*block) << SASS_MEMORY_NEW(ctx.mem, Comment, pstate, contents, is_important);
     }
   }
@@ -971,7 +996,7 @@ namespace Sass {
   Expression* Parser::parse_map()
   {
     Expression* key = parse_list();
-    Map* map = SASS_MEMORY_NEW(ctx.mem, Map, pstate, 1);
+    List* map = SASS_MEMORY_NEW(ctx.mem, List, pstate, 0, SASS_HASH);
     if (String_Quoted* str = dynamic_cast<String_Quoted*>(key)) {
       if (!str->quote_mark() && !str->is_delayed()) {
         if (const Color* col = name_to_color(str->value())) {
@@ -984,14 +1009,12 @@ namespace Sass {
     }
 
     // it's not a map so return the lexed value as a list value
-    if (!peek< exactly<':'> >())
+    if (!lex_css< exactly<':'> >())
     { return key; }
-
-    lex< exactly<':'> >();
 
     Expression* value = parse_space_list();
 
-    (*map) << std::make_pair(key, value);
+    (*map) << key << value;
 
     while (lex_css< exactly<','> >())
     {
@@ -1016,7 +1039,7 @@ namespace Sass {
 
       Expression* value = parse_space_list();
 
-      (*map) << std::make_pair(key, value);
+      (*map) << key << value;
     }
 
     ParserState ps = map->pstate();
@@ -1165,34 +1188,38 @@ namespace Sass {
   {
     // parse the left hand side expression
     Expression* lhs = parse_expression();
+    std::vector<Expression*> operands;
+    std::vector<Operand> operators;
     // if it's a singleton, return it (don't wrap it)
-    if (!(peek< alternatives <
+    while (peek< alternatives <
             kwd_eq,
             kwd_neq,
             kwd_gte,
             kwd_gt,
             kwd_lte,
             kwd_lt
-          > >(position)))
-    { return lhs; }
+          > >(position))
+    {
+      // is directly adjancent to expression?
+      bool left_ws = peek < css_comments >();
+      // parse the operator
+      enum Sass_OP op
+      = lex<kwd_eq>()  ? Sass_OP::EQ
+      : lex<kwd_neq>() ? Sass_OP::NEQ
+      : lex<kwd_gte>() ? Sass_OP::GTE
+      : lex<kwd_lte>() ? Sass_OP::LTE
+      : lex<kwd_gt>()  ? Sass_OP::GT
+      : lex<kwd_lt>()  ? Sass_OP::LT
+      // we checked the possibilites on top of fn
+      :                  Sass_OP::EQ;
+      // is directly adjancent to expression?
+      bool right_ws = peek < css_comments >();
+      operators.push_back({ op, left_ws, right_ws });
+      operands.push_back(parse_expression());
+      left_ws = peek < css_comments >();
+    }
     // parse the operator
-    bool left_ws = peek < css_comments >();
-    // parse the operator
-    enum Sass_OP op
-    = lex<kwd_eq>()  ? Sass_OP::EQ
-    : lex<kwd_neq>() ? Sass_OP::NEQ
-    : lex<kwd_gte>() ? Sass_OP::GTE
-    : lex<kwd_lte>() ? Sass_OP::LTE
-    : lex<kwd_gt>()  ? Sass_OP::GT
-    : lex<kwd_lt>()  ? Sass_OP::LT
-    // we checked the possibilites on top of fn
-    :                  Sass_OP::EQ;
-    // parse the right hand side expression
-    bool right_ws = peek < css_comments >();
-    // parse the right hand side expression
-    Expression* rhs = parse_expression();
-    // return binary expression with a left and a right hand side
-    return SASS_MEMORY_NEW(ctx.mem, Binary_Expression, lhs->pstate(), { op, left_ws, right_ws }, lhs, rhs);
+    return fold_operands(lhs, operands, operators);
   }
   // parse_relation
 
@@ -1203,19 +1230,33 @@ namespace Sass {
   // parse addition and subtraction operations
   Expression* Parser::parse_expression()
   {
+    // parses multiple add and subtract operations
+    // NOTE: make sure that identifiers starting with
+    // NOTE: dashes do NOT count as subtract operation
     Expression* lhs = parse_operators();
     // if it's a singleton, return it (don't wrap it)
-    if (!(peek< exactly<'+'> >(position) ||
+    // if it's a singleton, return it (don't wrap it)
+    if (!(peek_css< exactly<'+'> >(position) ||
           // condition is a bit misterious, but some combinations should not be counted as operations
           (peek< no_spaces >(position) && peek< sequence< negate< unsigned_number >, exactly<'-'>, negate< space > > >(position)) ||
           (peek< sequence< negate< unsigned_number >, exactly<'-'>, negate< unsigned_number > > >(position))) ||
-          peek< identifier >(position))
+          peek< sequence < zero_plus < exactly <'-' > >, identifier > >(position))
     { return lhs; }
 
     std::vector<Expression*> operands;
     std::vector<Operand> operators;
     bool left_ws = peek < css_comments >();
-    while (lex< exactly<'+'> >() || lex< sequence< negate< digit >, exactly<'-'> > >()) {
+    while (
+      lex_css< exactly<'+'> >() ||
+
+      (
+      ! peek_css< sequence < zero_plus < exactly <'-' > >, identifier > >(position)
+      && lex_css< sequence< negate< digit >, exactly<'-'> > >()
+      )
+
+    ) {
+
+
       bool right_ws = peek < css_comments >();
       operators.push_back({ lexed.to_string() == "+" ? Sass_OP::ADD : Sass_OP::SUB, left_ws, right_ws });
       operands.push_back(parse_operators());
@@ -1231,18 +1272,16 @@ namespace Sass {
   {
     Expression* factor = parse_factor();
     // if it's a singleton, return it (don't wrap it)
-    if (!peek_css< class_char< static_ops > >()) return factor;
-    // parse more factors and operators
     std::vector<Expression*> operands; // factors
     std::vector<Operand> operators; // ops
     // lex operations to apply to lhs
-    bool left_ws = peek < css_comments >();
+    const char* left_ws = peek < css_comments >();
     while (lex_css< class_char< static_ops > >()) {
-      bool right_ws = peek < css_comments >();
+      const char* right_ws = peek < css_comments >();
       switch(*lexed.begin) {
-        case '*': operators.push_back({ Sass_OP::MUL, left_ws, right_ws }); break;
-        case '/': operators.push_back({ Sass_OP::DIV, left_ws, right_ws }); break;
-        case '%': operators.push_back({ Sass_OP::MOD, left_ws, right_ws }); break;
+        case '*': operators.push_back({ Sass_OP::MUL, left_ws != 0, right_ws != 0 }); break;
+        case '/': operators.push_back({ Sass_OP::DIV, left_ws != 0, right_ws != 0 }); break;
+        case '%': operators.push_back({ Sass_OP::MOD, left_ws != 0, right_ws != 0 }); break;
         default: throw std::runtime_error("unknown static op parsed"); break;
       }
       operands.push_back(parse_factor());
@@ -1265,18 +1304,21 @@ namespace Sass {
       // lex the expected closing parenthesis
       if (!lex_css< exactly<')'> >()) error("unclosed parenthesis", pstate);
       // expression can be evaluated
-      value->is_delayed(false);
+      // make sure wrapped lists and division expressions are non-delayed within parentheses
       // make sure wrapped lists and division expressions are non-delayed within parentheses
       if (value->concrete_type() == Expression::LIST) {
-        List* l = static_cast<List*>(value);
-        if (!l->empty()) (*l)[0]->is_delayed(false);
+        // List* l = static_cast<List*>(value);
+        // if (!l->empty()) (*l)[0]->is_delayed(false);
       } else if (typeid(*value) == typeid(Binary_Expression)) {
         Binary_Expression* b = static_cast<Binary_Expression*>(value);
-        Binary_Expression* lhs = static_cast<Binary_Expression*>(b->left());
-        if (lhs && lhs->type() == Sass_OP::DIV) lhs->is_delayed(false);
+        if (b && b->type() == Sass_OP::DIV) b->set_delayed(false);
       }
       return value;
     }
+    // string may be interpolated
+    // if (lex< quoted_string >()) {
+    //   return parse_string();
+    // }
     else if (peek< ie_property >()) {
       return parse_ie_property();
     }
@@ -1337,6 +1379,17 @@ namespace Sass {
     if (lex< kwd_important >())
     { return SASS_MEMORY_NEW(ctx.mem, String_Constant, pstate, "!important"); }
 
+    // parse `10%4px` into separated items and not a schema
+    if (lex< sequence < percentage, lookahead < number > > >())
+    { return SASS_MEMORY_NEW(ctx.mem, Textual, pstate, Textual::PERCENTAGE, lexed); }
+
+    if (lex< sequence < number, lookahead< sequence < op, number > > > >())
+    { return SASS_MEMORY_NEW(ctx.mem, Textual, pstate, Textual::NUMBER, lexed); }
+
+    // string may be interpolated
+    if (lex< sequence < quoted_string, lookahead < exactly <'-'> > > >())
+    { return parse_string(); }
+
     if (const char* stop = peek< value_schema >())
     { return parse_value_schema(stop); }
 
@@ -1368,7 +1421,8 @@ namespace Sass {
     { return SASS_MEMORY_NEW(ctx.mem, String_Quoted, pstate, lexed); }
 
     // also handle the 10em- foo special case
-    if (lex< sequence< dimension, optional< sequence< exactly<'-'>, negate< digit > > > > >())
+    // alternatives < exactly < '.' >, .. > -- `1.5em-.75em` is split into a list, not a binary expression
+    if (lex< sequence< dimension, optional< sequence< exactly<'-'>, lookahead< alternatives < space > > > > > >())
     { return SASS_MEMORY_NEW(ctx.mem, Textual, pstate, Textual::DIMENSION, lexed); }
 
     if (lex< sequence< static_component, one_plus< strict_identifier > > >())
@@ -1384,7 +1438,7 @@ namespace Sass {
     if (lex< sequence< exactly<'%'>, optional< percentage > > >())
     { return SASS_MEMORY_NEW(ctx.mem, String_Constant, pstate, lexed); }
 
-    error("error reading values after " + lexed.to_string(), pstate);
+    css_error("Invalid CSS", " after ", ": expected expression (e.g. 1px, bold), was ");
 
     // unreachable statement
     return 0;
@@ -1396,7 +1450,9 @@ namespace Sass {
   {
     const char* i = chunk.begin;
     // see if there any interpolants
-    const char* p = find_first_in_interval< exactly<hash_lbrace> >(i, chunk.end);
+    const char* p = constant ? find_first_in_interval< exactly<hash_lbrace> >(i, chunk.end) :
+                    find_first_in_interval< exactly<hash_lbrace>, block_comment >(i, chunk.end);
+
     if (!p) {
       String_Quoted* str_quoted = SASS_MEMORY_NEW(ctx.mem, String_Quoted, pstate, std::string(i, chunk.end));
       if (!constant && str_quoted->quote_mark()) str_quoted->quote_mark('*');
@@ -1405,8 +1461,10 @@ namespace Sass {
     }
 
     String_Schema* schema = SASS_MEMORY_NEW(ctx.mem, String_Schema, pstate);
+    schema->is_interpolant(true);
     while (i < chunk.end) {
-      p = find_first_in_interval< exactly<hash_lbrace> >(i, chunk.end);
+      p = constant ? find_first_in_interval< exactly<hash_lbrace> >(i, chunk.end) :
+          find_first_in_interval< exactly<hash_lbrace>, block_comment >(i, chunk.end);
       if (p) {
         if (i < p) {
           // accumulate the preceding segment if it's nonempty
@@ -1420,7 +1478,7 @@ namespace Sass {
         const char* j = skip_over_scopes< exactly<hash_lbrace>, exactly<rbrace> >(p + 2, chunk.end); // find the closing brace
         if (j) { --j;
           // parse the interpolant and accumulate it
-          Expression* interp_node = Parser::from_token(Token(p+2, j), ctx, pstate).parse_list();
+          Expression* interp_node = Parser::from_token(Token(p+2, j), ctx, pstate, source).parse_list();
           interp_node->is_interpolant(true);
           (*schema) << interp_node;
           i = j;
@@ -1472,14 +1530,14 @@ namespace Sass {
     Token str(lexed);
     const char* i = str.begin;
     // see if there any interpolants
-    const char* p = find_first_in_interval< exactly<hash_lbrace> >(str.begin, str.end);
+    const char* p = find_first_in_interval< exactly<hash_lbrace>, block_comment >(str.begin, str.end);
     if (!p) {
       return SASS_MEMORY_NEW(ctx.mem, String_Quoted, pstate, std::string(str.begin, str.end));
     }
 
     String_Schema* schema = SASS_MEMORY_NEW(ctx.mem, String_Schema, pstate);
     while (i < str.end) {
-      p = find_first_in_interval< exactly<hash_lbrace> >(i, str.end);
+      p = find_first_in_interval< exactly<hash_lbrace>, block_comment >(i, str.end);
       if (p) {
         if (i < p) {
           (*schema) << SASS_MEMORY_NEW(ctx.mem, String_Constant, pstate, std::string(i, p)); // accumulate the preceding segment if it's nonempty
@@ -1490,7 +1548,7 @@ namespace Sass {
         const char* j = skip_over_scopes< exactly<hash_lbrace>, exactly<rbrace> >(p+2, str.end); // find the closing brace
         if (j) {
           // parse the interpolant and accumulate it
-          Expression* interp_node = Parser::from_token(Token(p+2, j), ctx, pstate).parse_list();
+          Expression* interp_node = Parser::from_token(Token(p+2, j), ctx, pstate, source).parse_list();
           interp_node->is_interpolant(true);
           (*schema) << interp_node;
           i = j;
@@ -1538,9 +1596,14 @@ namespace Sass {
 
     const char* e = 0;
     size_t num_items = 0;
+    bool need_space = false;
     while (position < stop) {
       // parse space between tokens
       if (lex< spaces >() && num_items) {
+        need_space = true;
+      }
+      if (need_space) {
+        need_space = false;
         (*schema) << SASS_MEMORY_NEW(ctx.mem, String_Constant, pstate, " ");
       }
       if ((e = peek< re_functional >()) && e < stop) {
@@ -1552,28 +1615,35 @@ namespace Sass {
         if (peek< exactly< rbrace > >()) {
           css_error("Invalid CSS", " after ", ": expected expression (e.g. 1px, bold), was ");
         }
+        Expression* ex = 0;
         if (lex< re_static_expression >()) {
-          (*schema) << SASS_MEMORY_NEW(ctx.mem, String_Constant, pstate, lexed);
+          ex = SASS_MEMORY_NEW(ctx.mem, String_Constant, pstate, lexed);
         } else {
-          (*schema) << parse_list();
+          ex = parse_list();
         }
+        ex->is_interpolant(true);
+        (*schema) << ex;
         // ToDo: no error check here?
         lex < exactly < rbrace > >();
       }
       // lex some string constants or other valid token
       // Note: [-+] chars are left over from ie. `#{3}+3`
-      else if (lex< alternatives < exactly<'%'>, exactly < '-' >, exactly < '+' >, identifier > >()) {
+      else if (lex< alternatives < exactly<'%'>, exactly < '-' >, exactly < '+' > > >()) {
         (*schema) << SASS_MEMORY_NEW(ctx.mem, String_Constant, pstate, lexed);
-        if (*position == '"' || *position == '\'') {
-          (*schema) << SASS_MEMORY_NEW(ctx.mem, String_Constant, pstate, " ");
+      }
+      else if (lex< sequence < identifier > >()) {
+        (*schema) << SASS_MEMORY_NEW(ctx.mem, String_Constant, pstate, lexed);
+        if ((*position == '"' || *position == '\'') || peek < alternatives < alpha > >()) {
+          need_space = true;
         }
       }
       // lex a quoted string
       else if (lex< quoted_string >()) {
         (*schema) << SASS_MEMORY_NEW(ctx.mem, String_Quoted, pstate, lexed, '"');
-        if (*position == '"' || *position == '\'' || alpha(position)) {
-          (*schema) << SASS_MEMORY_NEW(ctx.mem, String_Constant, pstate, " ");
+        if ((*position == '"' || *position == '\'') || peek < alternatives < alpha > >()) {
+          need_space = true;
         }
+        if (peek < exactly < '-' > >()) return schema;
       }
       // lex (normalized) variable
       else if (lex< variable >()) {
@@ -1618,14 +1688,14 @@ namespace Sass {
     Token id(lexed);
     const char* i = id.begin;
     // see if there any interpolants
-    const char* p = find_first_in_interval< exactly<hash_lbrace> >(id.begin, id.end);
+    const char* p = find_first_in_interval< exactly<hash_lbrace>, block_comment >(id.begin, id.end);
     if (!p) {
       return SASS_MEMORY_NEW(ctx.mem, String_Constant, pstate, std::string(id.begin, id.end));
     }
 
     String_Schema* schema = SASS_MEMORY_NEW(ctx.mem, String_Schema, pstate);
     while (i < id.end) {
-      p = find_first_in_interval< exactly<hash_lbrace> >(i, id.end);
+      p = find_first_in_interval< exactly<hash_lbrace>, block_comment >(i, id.end);
       if (p) {
         if (i < p) {
           // accumulate the preceding segment if it's nonempty
@@ -1641,10 +1711,10 @@ namespace Sass {
         const char* j = skip_over_scopes< exactly<hash_lbrace>, exactly<rbrace> >(p+2, id.end); // find the closing brace
         if (j) {
           // parse the interpolant and accumulate it
-          Expression* interp_node = Parser::from_token(Token(p+2, j), ctx, pstate).parse_list();
+          Expression* interp_node = Parser::from_token(Token(p+2, j), ctx, pstate, source).parse_list();
           interp_node->is_interpolant(true);
           (*schema) << interp_node;
-          schema->has_interpolants(true);
+          // schema->has_interpolants(true);
           i = j;
         }
         else {
@@ -1688,13 +1758,38 @@ namespace Sass {
 
   String* Parser::parse_url_function_string()
   {
+    std::string prefix("");
+    if (lex< uri_prefix >()) {
+      prefix = std::string(lexed);
+    }
+
+    String* url_string = parse_url_function_argument();
+
+    std::string suffix("");
+    if (lex< real_uri_suffix >()) {
+      suffix = std::string(lexed);
+    }
+
+    if (String_Schema* schema = dynamic_cast<String_Schema*>(url_string)) {
+      String_Schema* res = SASS_MEMORY_NEW(ctx.mem, String_Schema, pstate);
+      (*res) << SASS_MEMORY_NEW(ctx.mem, String_Constant, pstate, prefix);
+      (*res) += schema;
+      (*res) << SASS_MEMORY_NEW(ctx.mem, String_Constant, pstate, suffix);
+      return res;
+    } else {
+      std::string res = prefix + url_string->to_string() + suffix;
+      return SASS_MEMORY_NEW(ctx.mem, String_Constant, pstate, res);
+    }
+  }
+
+  String* Parser::parse_url_function_argument()
+  {
     const char* p = position;
 
-    lex< uri_prefix >();
-    std::string prefix = lexed;
-
-    lex< real_uri_value >(false);
-    std::string uri = lexed;
+    std::string uri("");
+    if (lex< real_uri_value >(false)) {
+      uri = lexed.to_string();
+    }
 
     if (peek< exactly< hash_lbrace > >()) {
       const char* pp = position;
@@ -1702,14 +1797,15 @@ namespace Sass {
       while (peek< exactly< hash_lbrace > >(pp)) {
         pp = sequence< interpolant, real_uri_value >(pp);
       }
-      position = peek< real_uri_suffix >(pp);
+      position = pp;
       return parse_interpolated_chunk(Token(p, position));
-    } else {
-      lex< real_uri_suffix >();
-      std::string res = prefix + Util::rtrim(uri) + lexed.to_string();
+    }
+    else if (uri != "") {
+      std::string res = Util::rtrim(uri);
       return SASS_MEMORY_NEW(ctx.mem, String_Constant, pstate, res);
     }
 
+    return 0;
   }
 
   Function_Call* Parser::parse_function_call()
@@ -1733,7 +1829,14 @@ namespace Sass {
 
   Content* Parser::parse_content_directive()
   {
-    if (stack.back() != mixin_def) {
+    bool missing_mixin_parent = true;
+    for (auto parent : stack) {
+      if (parent == Scope::Mixin) {
+        missing_mixin_parent = false;
+        break;
+      }
+    }
+    if (missing_mixin_parent) {
       error("@content may only be used within a mixin", pstate);
     }
     return SASS_MEMORY_NEW(ctx.mem, Content, pstate);
@@ -1741,6 +1844,7 @@ namespace Sass {
 
   If* Parser::parse_if_directive(bool else_if)
   {
+    stack.push_back(Scope::Control);
     ParserState if_source_position = pstate;
     Expression* predicate = parse_list();
     predicate->is_delayed(false);
@@ -1756,11 +1860,13 @@ namespace Sass {
     else if (lex_css< kwd_else_directive >()) {
       alternative = parse_block();
     }
+    stack.pop_back();
     return SASS_MEMORY_NEW(ctx.mem, If, if_source_position, predicate, block, alternative);
   }
 
   For* Parser::parse_for_directive()
   {
+    stack.push_back(Scope::Control);
     ParserState for_source_position = pstate;
     lex_variable();
     std::string var(Util::normalize_underscores(lexed));
@@ -1774,6 +1880,7 @@ namespace Sass {
     Expression* upper_bound = parse_expression();
     upper_bound->is_delayed(false);
     Block* body = parse_block();
+    stack.pop_back();
     return SASS_MEMORY_NEW(ctx.mem, For, for_source_position, var, lower_bound, upper_bound, body, inclusive);
   }
 
@@ -1805,6 +1912,7 @@ namespace Sass {
 
   Each* Parser::parse_each_directive()
   {
+    stack.push_back(Scope::Control);
     ParserState each_source_position = pstate;
     std::vector<std::string> vars;
     lex_variable();
@@ -1823,12 +1931,14 @@ namespace Sass {
       }
     }
     Block* body = parse_block();
+    stack.pop_back();
     return SASS_MEMORY_NEW(ctx.mem, Each, each_source_position, vars, list, body);
   }
 
   // called after parsing `kwd_while_directive`
   While* Parser::parse_while_directive()
   {
+    stack.push_back(Scope::Control);
     // create the initial while call object
     While* call = SASS_MEMORY_NEW(ctx.mem, While, pstate, 0, 0);
     // parse mandatory predicate
@@ -1838,12 +1948,15 @@ namespace Sass {
     // parse mandatory block
     call->block(parse_block());
     // return ast node
+    stack.pop_back();
+    // return ast node
     return call;
   }
 
   // EO parse_while_directive
   Media_Block* Parser::parse_media_block()
   {
+    stack.push_back(Scope::Media);
     Media_Block* media_block = SASS_MEMORY_NEW(ctx.mem, Media_Block, pstate, 0, 0);
     media_block->media_queries(parse_media_queries());
 
@@ -1851,7 +1964,7 @@ namespace Sass {
     last_media_block = media_block;
     media_block->block(parse_css_block());
     last_media_block = prev_media_block;
-
+    stack.pop_back();
     return media_block;
   }
 
@@ -1904,10 +2017,10 @@ namespace Sass {
     }
     feature = parse_expression();
     Expression* expression = 0;
-    if (lex< exactly<':'> >()) {
+    if (lex_css< exactly<':'> >()) {
       expression = parse_list();
     }
-    if (!lex< exactly<')'> >()) {
+    if (!lex_css< exactly<')'> >()) {
       error("unclosed parenthesis in media query expression", pstate);
     }
     return SASS_MEMORY_NEW(ctx.mem, Media_Query_Expression, feature->pstate(), feature, expression);
@@ -2088,16 +2201,37 @@ namespace Sass {
 
   Warning* Parser::parse_warning()
   {
+    if (stack.back() != Scope::Root &&
+        stack.back() != Scope::Function &&
+        stack.back() != Scope::Mixin &&
+        stack.back() != Scope::Control &&
+        stack.back() != Scope::Rules) {
+      error("Illegal nesting: Only properties may be nested beneath properties.", pstate);
+    }
     return SASS_MEMORY_NEW(ctx.mem, Warning, pstate, parse_list());
   }
 
   Error* Parser::parse_error()
   {
+    if (stack.back() != Scope::Root &&
+        stack.back() != Scope::Function &&
+        stack.back() != Scope::Mixin &&
+        stack.back() != Scope::Control &&
+        stack.back() != Scope::Rules) {
+      error("Illegal nesting: Only properties may be nested beneath properties.", pstate);
+    }
     return SASS_MEMORY_NEW(ctx.mem, Error, pstate, parse_list());
   }
 
   Debug* Parser::parse_debug()
   {
+    if (stack.back() != Scope::Root &&
+        stack.back() != Scope::Function &&
+        stack.back() != Scope::Mixin &&
+        stack.back() != Scope::Control &&
+        stack.back() != Scope::Rules) {
+      error("Illegal nesting: Only properties may be nested beneath properties.", pstate);
+    }
     return SASS_MEMORY_NEW(ctx.mem, Debug, pstate, parse_list());
   }
 
@@ -2119,57 +2253,69 @@ namespace Sass {
     rv.error = p;
     if (const char* q =
       peek <
-        one_plus <
-          alternatives <
-            // consume whitespace and comments
-            spaces, block_comment, line_comment,
-            // match `/deep/` selector (pass-trough)
-            // there is no functionality for it yet
-            schema_reference_combinator,
-            // match selector ops /[*&%,()\[\]]/
-            class_char < selector_lookahead_ops >,
-            // match selector combinators /[>+~]/
-            class_char < selector_combinator_ops >,
-            // match attribute compare operators
-            alternatives <
-              exact_match, class_match, dash_match,
-              prefix_match, suffix_match, substring_match
+        alternatives <
+          // partial bem selector
+          sequence <
+            ampersand,
+            one_plus <
+              exactly < '-' >
             >,
-            // main selector match
-            sequence <
-              // allow namespace prefix
-              optional < namespace_schema >,
-              // modifiers prefixes
+            word_boundary
+          >,
+          // main selector matching
+          one_plus <
+            alternatives <
+              // consume whitespace and comments
+              spaces, block_comment, line_comment,
+              // match `/deep/` selector (pass-trough)
+              // there is no functionality for it yet
+              schema_reference_combinator,
+              // match selector ops /[*&%,()\[\]]/
+              class_char < selector_lookahead_ops >,
+              // match selector combinators /[>+~]/
+              class_char < selector_combinator_ops >,
+              // match attribute compare operators
               alternatives <
-                sequence <
-                  exactly <'#'>,
-                  // not for interpolation
-                  negate < exactly <'{'> >
-                >,
-                // class match
-                exactly <'.'>,
-                // single or double colon
-                optional < pseudo_prefix >
+                exact_match, class_match, dash_match,
+                prefix_match, suffix_match, substring_match
               >,
-              // accept hypens in token
-              one_plus < sequence <
-                // can start with hyphens
-                zero_plus < exactly<'-'> >,
-                // now the main token
+              // main selector match
+              sequence <
+                // allow namespace prefix
+                optional < namespace_schema >,
+                // modifiers prefixes
                 alternatives <
-                  kwd_optional,
-                  exactly <'*'>,
-                  quoted_string,
-                  interpolant,
-                  identifier,
-                  percentage,
-                  dimension,
-                  variable,
-                  alnum
-                >
-              > >,
-              // can also end with hyphens
-              zero_plus < exactly<'-'> >
+                  sequence <
+                    exactly <'#'>,
+                    // not for interpolation
+                    negate < exactly <'{'> >
+                  >,
+                  // class match
+                  exactly <'.'>,
+                  // single or double colon
+                  optional < pseudo_prefix >
+                >,
+                // accept hypens in token
+                one_plus < sequence <
+                  // can start with hyphens
+                  zero_plus < exactly<'-'> >,
+                  // now the main token
+                  alternatives <
+                    kwd_optional,
+                    exactly <'*'>,
+                    quoted_string,
+                    interpolant,
+                    identifier,
+                    variable,
+                    percentage,
+                    binomial,
+                    dimension,
+                    alnum
+                  >
+                > >,
+                // can also end with hyphens
+                zero_plus < exactly<'-'> >
+              >
             >
           >
         >
@@ -2360,7 +2506,7 @@ namespace Sass {
       if (op.operand == Sass_OP::DIV && b->left()->is_delayed() && b->right()->is_delayed()) {
         base->is_delayed(true);
       }
-      else {
+      else if (b && b->op().operand != Sass_OP::DIV) {
         b->left()->is_delayed(false);
         b->right()->is_delayed(false);
       }
@@ -2368,18 +2514,62 @@ namespace Sass {
     return base;
   }
 
-  Expression* Parser::fold_operands(Expression* base, std::vector<Expression*>& operands, std::vector<Operand>& ops)
+  Expression* Parser::fold_operands(Expression* base, std::vector<Expression*>& operands, std::vector<Operand>& ops, size_t i)
   {
-    for (size_t i = 0, S = operands.size(); i < S; ++i) {
-      base = SASS_MEMORY_NEW(ctx.mem, Binary_Expression, base->pstate(), ops[i], base, operands[i]);
+
+    if (String_Schema* schema = dynamic_cast<String_Schema*>(base)) {
+      // return schema;
+      if (schema->has_interpolants()) {
+        if (i + 1 < operands.size() && (
+             (ops[0].operand == Sass_OP::EQ)
+          || (ops[0].operand == Sass_OP::ADD)
+          || (ops[0].operand == Sass_OP::DIV)
+          || (ops[0].operand == Sass_OP::MUL)
+          || (ops[0].operand == Sass_OP::NEQ)
+          || (ops[0].operand == Sass_OP::LT)
+          || (ops[0].operand == Sass_OP::GT)
+          || (ops[0].operand == Sass_OP::LTE)
+          || (ops[0].operand == Sass_OP::GTE)
+        )) {
+          Expression* rhs = fold_operands(operands[0], operands, ops, 1);
+          rhs = SASS_MEMORY_NEW(ctx.mem, Binary_Expression, base->pstate(), ops[0], schema, rhs);
+          rhs->set_delayed(false);
+          rhs->is_delayed(true);
+          return rhs;
+        }
+        // return schema;
+      }
+    }
+
+    for (size_t S = operands.size(); i < S; ++i) {
+      if (String_Schema* schema = dynamic_cast<String_Schema*>(operands[i])) {
+        if (schema->has_interpolants()) {
+          if (i + 1 < S) {
+            Expression* rhs = fold_operands(operands[i+1], operands, ops, i + 2);
+            rhs = SASS_MEMORY_NEW(ctx.mem, Binary_Expression, base->pstate(), ops[i], schema, rhs);
+            base = SASS_MEMORY_NEW(ctx.mem, Binary_Expression, base->pstate(), ops[i], base, rhs);
+            rhs->is_delayed(true);
+            base->is_delayed(true);
+            return base;
+          }
+          base = SASS_MEMORY_NEW(ctx.mem, Binary_Expression, base->pstate(), ops[i], base, operands[i]);
+          if (ops[i].operand != Sass_OP::DIV) base->is_delayed(true);
+          return base;
+        } else {
+          base = SASS_MEMORY_NEW(ctx.mem, Binary_Expression, base->pstate(), ops[i], base, operands[i]);
+        }
+      } else {
+        base = SASS_MEMORY_NEW(ctx.mem, Binary_Expression, base->pstate(), ops[i], base, operands[i]);
+      }
       Binary_Expression* b = static_cast<Binary_Expression*>(base);
-      if (ops[i].operand == Sass_OP::DIV && b->left()->is_delayed() && b->right()->is_delayed()) {
+      if (b && ops[i].operand == Sass_OP::DIV && b->left()->is_delayed() && b->right()->is_delayed()) {
         base->is_delayed(true);
       }
-      else {
+      else if (b) {
         b->left()->is_delayed(false);
         b->right()->is_delayed(false);
       }
+
     }
     return base;
   }
@@ -2404,7 +2594,8 @@ namespace Sass {
     const char* end_left(last_pos + 1);
     while (pos_left > source) {
       if (end_left - pos_left >= max_len) {
-        ellipsis_left = true;
+        ellipsis_left = *(pos_left-1) != '\n' &&
+                        *(pos_left-1) != '\r';
         break;
       }
 
@@ -2420,21 +2611,24 @@ namespace Sass {
     bool ellipsis_right = false;
     const char* end_right(pos);
     const char* pos_right(pos);
-    while (end_right <= end) {
+    while (*end_right != 0) {
       if (end_right - pos_right > max_len) {
-        ellipsis_right = true;
+        ellipsis_left = *(pos_right) != '\n' &&
+                        *(pos_right) != '\r';
         break;
       }
       if (*end_right == '\r') break;
       if (*end_right == '\n') break;
       ++ end_right;
     }
-    if (end_right > end) end_right = end;
+    // if (*end_right == 0) end_right ++;
 
     std::string left(pos_left, end_left);
     std::string right(pos_right, end_right);
-    if (ellipsis_left) left = ellipsis + left.substr(left.size() - 15);
-    if (ellipsis_right) right = right.substr(right.size() - 15) + ellipsis;
+    size_t left_subpos = left.size() > 15 ? left.size() - 15 : 0;
+    size_t right_subpos = right.size() > 15 ? right.size() - 15 : 0;
+    if (left_subpos && ellipsis_left) left = ellipsis + left.substr(left_subpos);
+    if (right_subpos && ellipsis_right) right = right.substr(right_subpos) + ellipsis;
     // now pass new message to the more generic error function
     error(msg + prefix + quote(left) + middle + quote(right), pstate);
   }

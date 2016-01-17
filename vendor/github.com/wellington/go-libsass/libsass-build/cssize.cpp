@@ -1,3 +1,4 @@
+#include "sass.hpp"
 #include <iostream>
 #include <typeinfo>
 #include <vector>
@@ -99,6 +100,10 @@ namespace Sass {
                                   r->block()->perform(this)->block());
     // rr->tabs(r->block()->tabs());
     p_stack.pop_back();
+
+    if (!rr->block()) {
+      error("Illegal nesting: Only properties may be nested beneath properties.", r->block()->pstate());
+    }
 
     Block* props = SASS_MEMORY_NEW(ctx.mem, Block, rr->block()->pstate());
     Block* rules = SASS_MEMORY_NEW(ctx.mem, Block, rr->block()->pstate());

@@ -1,7 +1,4 @@
-#ifdef _MSC_VER
-#pragma warning(disable : 4503)
-#endif
-
+#include "sass.hpp"
 #include "extend.hpp"
 #include "context.hpp"
 #include "to_string.hpp"
@@ -1591,6 +1588,7 @@ namespace Sass {
         for (size_t index = 0; index < pCompound->length(); index++) {
           Simple_Selector* pSimpleSelector = (*pCompound)[index];
           (*pSels) << pSimpleSelector;
+          pCompound->extended(true);
         }
       }
 
@@ -1732,6 +1730,21 @@ namespace Sass {
       Compound_Selector* pHead = pIter->head();
 
       if (pHead) {
+        for (Simple_Selector* pSimple : *pHead) {
+          if (Wrapped_Selector* ws = dynamic_cast<Wrapped_Selector*>(pSimple)) {
+            if (Selector_List* sl = dynamic_cast<Selector_List*>(ws->selector())) {
+              for (Complex_Selector* cs : sl->elements()) {
+                while (cs) {
+                  if (complexSelectorHasExtension(cs, ctx, subset_map)) {
+                    hasExtension = true;
+                    break;
+                  }
+                  cs = cs->tail();
+                }
+              }
+            }
+          }
+        }
         SubsetMapEntries entries = subset_map.get_v(pHead->to_str_vec());
         for (ExtensionPair ext : entries) {
           // check if both selectors have the same media block parent
@@ -1762,29 +1775,6 @@ namespace Sass {
       }
 
       pIter = pIter->tail();
-    }
-
-    if (!hasExtension) {
-      /* ToDo: don't break stuff
-      std::stringstream err;
-      To_String to_string(&ctx);
-      std::string cwd(Sass::File::get_cwd());
-      std::string sel1(pComplexSelector->perform(&to_string));
-      Compound_Selector* pExtendSelector = 0;
-      for (auto i : subset_map.values()) {
-        if (i.first == pComplexSelector) {
-          pExtendSelector = i.second;
-          break;
-        }
-      }
-      if (!pExtendSelector || !pExtendSelector->is_optional()) {
-        std::string sel2(pExtendSelector ? pExtendSelector->perform(&to_string) : "[unknown]");
-        err << "\"" << sel1 << "\" failed to @extend \"" << sel2 << "\"\n";
-        err << "The selector \"" << sel2 << "\" was not found.\n";
-        err << "Use \"@extend " << sel2 << " !optional\" if the extend should be able to fail.";
-        error(err.str(), pExtendSelector ? pExtendSelector->pstate() : pComplexSelector->pstate());
-      }
-      */
     }
 
     return hasExtension;
@@ -1967,6 +1957,21 @@ namespace Sass {
       }
     }
 
+    for (Complex_Selector* cs : *pNewSelectors) {
+      while (cs) {
+        if (cs->head()) {
+        for (Simple_Selector* ss : *cs->head()) {
+          if (Wrapped_Selector* ws = dynamic_cast<Wrapped_Selector*>(ss)) {
+            if (Selector_List* sl = dynamic_cast<Selector_List*>(ws->selector())) {
+              bool extended = false;
+              ws->selector(extendSelectorList(sl, ctx, subset_map, false, extended));
+            }
+          }
+        }
+        }
+        cs = cs->tail();
+      }
+    }
     return pNewSelectors;
 
   }
@@ -2041,6 +2046,25 @@ namespace Sass {
     for (size_t i = 0, L = b->length(); i < L; ++i) {
       (*b)[i]->perform(this);
     }
+    // do final check if everything was extended
+    // we set `extended` flag on extended selectors
+    if (b->is_root()) {
+      // debug_subset_map(subset_map);
+      for(auto const &it : subset_map.values()) {
+        Complex_Selector* sel = it.first ? it.first->first() : NULL;
+        Compound_Selector* ext = it.second ? it.second : NULL;
+        if (ext && (ext->extended() || ext->is_optional())) continue;
+        std::string str_sel(sel->to_string());
+        std::string str_ext(ext->to_string());
+        // debug_ast(sel, "sel: ");
+        // debug_ast(ext, "ext: ");
+        error("\"" + str_sel + "\" failed to @extend \"" + str_ext + "\".\n"
+              "The selector \"" + str_ext + "\" was not found.\n"
+              "Use \"@extend " + str_ext + " !optional\" if the"
+                " extend should be able to fail.", ext->pstate());
+      }
+    }
+
   }
 
   void Extend::operator()(Ruleset* pRuleset)

@@ -80,6 +80,7 @@ inline void debug_ast(AST_Node* node, std::string ind, Env* env)
     std::cerr << " <" << selector->hash() << ">";
     std::cerr << " [@media:" << selector->media_block() << "]";
     std::cerr << (selector->is_optional() ? " [is_optional]": " -");
+    std::cerr << (selector->has_parent_ref() ? " [has-parent]": " -");
     std::cerr << (selector->has_line_break() ? " [line-break]": " -");
     std::cerr << (selector->has_line_feed() ? " [line-feed]": " -");
     std::cerr << std::endl;
@@ -107,6 +108,7 @@ inline void debug_ast(AST_Node* node, std::string ind, Env* env)
       << " [weight:" << longToHex(selector->specificity()) << "]"
       << " [@media:" << selector->media_block() << "]"
       << (selector->is_optional() ? " [is_optional]": " -")
+      << (selector->has_parent_ref() ? " [has parent]": " -")
       << (selector->has_line_feed() ? " [line-feed]": " -")
       << (selector->has_line_break() ? " [line-break]": " -")
       << " -- ";
@@ -135,7 +137,9 @@ inline void debug_ast(AST_Node* node, std::string ind, Env* env)
     std::cerr << " <" << selector->hash() << ">";
     std::cerr << " [weight:" << longToHex(selector->specificity()) << "]";
     std::cerr << " [@media:" << selector->media_block() << "]";
+    std::cerr << (selector->extended() ? " [extended]": " -");
     std::cerr << (selector->is_optional() ? " [is_optional]": " -");
+    std::cerr << (selector->has_parent_ref() ? " [has-parent]": " -");
     std::cerr << (selector->has_line_break() ? " [line-break]": " -");
     std::cerr << (selector->has_line_feed() ? " [line-feed]": " -");
     std::cerr << " <" << prettyprint(selector->pstate().token.ws_before()) << ">" << std::endl;
@@ -151,35 +155,60 @@ inline void debug_ast(AST_Node* node, std::string ind, Env* env)
     std::cerr << ind << "Wrapped_Selector " << selector;
     std::cerr << " (" << pstate_source_position(node) << ")";
     std::cerr << " <" << selector->hash() << ">";
-    std::cerr << " <<" << selector->ns_name() << ">>" << (selector->has_line_break() ? " [line-break]": " -") << (selector->has_line_feed() ? " [line-feed]": " -") << std::endl;
+    std::cerr << " <<" << selector->ns_name() << ">>";
+    std::cerr << (selector->is_optional() ? " [is_optional]": " -");
+    std::cerr << (selector->has_parent_ref() ? " [has-parent]": " -");
+    std::cerr << (selector->has_line_break() ? " [line-break]": " -");
+    std::cerr << (selector->has_line_feed() ? " [line-feed]": " -");
+    std::cerr << std::endl;
     debug_ast(selector->selector(), ind + " () ", env);
   } else if (dynamic_cast<Pseudo_Selector*>(node)) {
     Pseudo_Selector* selector = dynamic_cast<Pseudo_Selector*>(node);
     std::cerr << ind << "Pseudo_Selector " << selector;
     std::cerr << " (" << pstate_source_position(node) << ")";
     std::cerr << " <" << selector->hash() << ">";
-    std::cerr << " <<" << selector->ns_name() << ">>" << (selector->has_line_break() ? " [line-break]": " -") << (selector->has_line_feed() ? " [line-feed]": " -") << std::endl;
+    std::cerr << " <<" << selector->ns_name() << ">>";
+    std::cerr << (selector->is_optional() ? " [is_optional]": " -");
+    std::cerr << (selector->has_parent_ref() ? " [has-parent]": " -");
+    std::cerr << (selector->has_line_break() ? " [line-break]": " -");
+    std::cerr << (selector->has_line_feed() ? " [line-feed]": " -");
+    std::cerr << std::endl;
     debug_ast(selector->expression(), ind + " <= ", env);
   } else if (dynamic_cast<Attribute_Selector*>(node)) {
     Attribute_Selector* selector = dynamic_cast<Attribute_Selector*>(node);
     std::cerr << ind << "Attribute_Selector " << selector;
     std::cerr << " (" << pstate_source_position(node) << ")";
     std::cerr << " <" << selector->hash() << ">";
-    std::cerr << " <<" << selector->ns_name() << ">>" << (selector->has_line_break() ? " [line-break]": " -") << (selector->has_line_feed() ? " [line-feed]": " -") << std::endl;
+    std::cerr << " <<" << selector->ns_name() << ">>";
+    std::cerr << (selector->is_optional() ? " [is_optional]": " -");
+    std::cerr << (selector->has_parent_ref() ? " [has-parent]": " -");
+    std::cerr << (selector->has_line_break() ? " [line-break]": " -");
+    std::cerr << (selector->has_line_feed() ? " [line-feed]": " -");
+    std::cerr << std::endl;
     debug_ast(selector->value(), ind + "[" + selector->matcher() + "] ", env);
   } else if (dynamic_cast<Selector_Qualifier*>(node)) {
     Selector_Qualifier* selector = dynamic_cast<Selector_Qualifier*>(node);
     std::cerr << ind << "Selector_Qualifier " << selector;
     std::cerr << " (" << pstate_source_position(node) << ")";
     std::cerr << " <" << selector->hash() << ">";
-    std::cerr << " <<" << selector->ns_name() << ">>" << (selector->has_line_break() ? " [line-break]": " -") << (selector->has_line_feed() ? " [line-feed]": " -") << std::endl;
+    std::cerr << " <<" << selector->ns_name() << ">>";
+    std::cerr << (selector->is_optional() ? " [is_optional]": " -");
+    std::cerr << (selector->has_parent_ref() ? " [has-parent]": " -");
+    std::cerr << (selector->has_line_break() ? " [line-break]": " -");
+    std::cerr << (selector->has_line_feed() ? " [line-feed]": " -");
+    std::cerr << std::endl;
   } else if (dynamic_cast<Type_Selector*>(node)) {
     Type_Selector* selector = dynamic_cast<Type_Selector*>(node);
     std::cerr << ind << "Type_Selector " << selector;
     std::cerr << " (" << pstate_source_position(node) << ")";
     std::cerr << " <" << selector->hash() << ">";
-    std::cerr << " <<" << selector->ns_name() << ">>" << (selector->has_line_break() ? " [line-break]": " -") <<
-      " <" << prettyprint(selector->pstate().token.ws_before()) << ">" << std::endl;
+    std::cerr << " <<" << selector->ns_name() << ">>";
+    std::cerr << (selector->is_optional() ? " [is_optional]": " -");
+    std::cerr << (selector->has_parent_ref() ? " [has-parent]": " -");
+    std::cerr << (selector->has_line_break() ? " [line-break]": " -");
+    std::cerr << (selector->has_line_feed() ? " [line-feed]": " -");
+    std::cerr << " <" << prettyprint(selector->pstate().token.ws_before()) << ">";
+    std::cerr << std::endl;
   } else if (dynamic_cast<Selector_Placeholder*>(node)) {
 
     Selector_Placeholder* selector = dynamic_cast<Selector_Placeholder*>(node);
@@ -424,11 +453,13 @@ inline void debug_ast(AST_Node* node, std::string ind, Env* env)
     else if (expression->type() == Textual::DIMENSION) std::cerr << " [DIMENSION]";
     else if (expression->type() == Textual::HEX) std::cerr << " [HEX]";
     std::cerr << expression << " [" << expression->value() << "]";
+    std::cerr << " [interpolant: " << expression->is_interpolant() << "] ";
     if (expression->is_delayed()) std::cerr << " [delayed]";
     std::cerr << std::endl;
   } else if (dynamic_cast<Variable*>(node)) {
     Variable* expression = dynamic_cast<Variable*>(node);
     std::cerr << ind << "Variable " << expression;
+    std::cerr << " [interpolant: " << expression->is_interpolant() << "] ";
     std::cerr << " (" << pstate_source_position(node) << ")";
     std::cerr << " [" << expression->name() << "]" << std::endl;
     std::string name(expression->name());
@@ -436,6 +467,7 @@ inline void debug_ast(AST_Node* node, std::string ind, Env* env)
   } else if (dynamic_cast<Function_Call_Schema*>(node)) {
     Function_Call_Schema* expression = dynamic_cast<Function_Call_Schema*>(node);
     std::cerr << ind << "Function_Call_Schema " << expression;
+    std::cerr << " [interpolant: " << expression->is_interpolant() << "] ";
     std::cerr << " (" << pstate_source_position(node) << ")";
     std::cerr << "" << std::endl;
     debug_ast(expression->name(), ind + "name: ", env);
@@ -443,8 +475,12 @@ inline void debug_ast(AST_Node* node, std::string ind, Env* env)
   } else if (dynamic_cast<Function_Call*>(node)) {
     Function_Call* expression = dynamic_cast<Function_Call*>(node);
     std::cerr << ind << "Function_Call " << expression;
+    std::cerr << " [interpolant: " << expression->is_interpolant() << "] ";
     std::cerr << " (" << pstate_source_position(node) << ")";
-    std::cerr << " [" << expression->name() << "]" << std::endl;
+    std::cerr << " [" << expression->name() << "]";
+    if (expression->is_delayed()) std::cerr << " [delayed]";
+    if (expression->is_interpolant()) std::cerr << " [interpolant]";
+    std::cerr << std::endl;
     debug_ast(expression->arguments(), ind + " args: ", env);
   } else if (dynamic_cast<Arguments*>(node)) {
     Arguments* expression = dynamic_cast<Arguments*>(node);
@@ -483,13 +519,19 @@ inline void debug_ast(AST_Node* node, std::string ind, Env* env)
   } else if (dynamic_cast<Unary_Expression*>(node)) {
     Unary_Expression* expression = dynamic_cast<Unary_Expression*>(node);
     std::cerr << ind << "Unary_Expression " << expression;
+    std::cerr << " [interpolant: " << expression->is_interpolant() << "] ";
     std::cerr << " (" << pstate_source_position(node) << ")";
     std::cerr << " [" << expression->type() << "]" << std::endl;
     debug_ast(expression->operand(), ind + " operand: ", env);
   } else if (dynamic_cast<Binary_Expression*>(node)) {
     Binary_Expression* expression = dynamic_cast<Binary_Expression*>(node);
     std::cerr << ind << "Binary_Expression " << expression;
+    if (expression->is_interpolant()) std::cerr << " [is interpolant] ";
+    if (expression->is_left_interpolant()) std::cerr << " [left interpolant] ";
+    if (expression->is_right_interpolant()) std::cerr << " [right interpolant] ";
     std::cerr << " [delayed: " << expression->is_delayed() << "] ";
+    std::cerr << " [ws_before: " << expression->op().ws_before << "] ";
+    std::cerr << " [ws_after: " << expression->op().ws_after << "] ";
     std::cerr << " (" << pstate_source_position(node) << ")";
     std::cerr << " [" << expression->type_name() << "]" << std::endl;
     debug_ast(expression->left(), ind + " left:  ", env);
@@ -497,6 +539,7 @@ inline void debug_ast(AST_Node* node, std::string ind, Env* env)
   } else if (dynamic_cast<Map*>(node)) {
     Map* expression = dynamic_cast<Map*>(node);
     std::cerr << ind << "Map " << expression;
+    std::cerr << " [interpolant: " << expression->is_interpolant() << "] ";
     std::cerr << " (" << pstate_source_position(node) << ")";
     std::cerr << " [Hashed]" << std::endl;
     for (auto i : expression->elements()) {
@@ -508,7 +551,7 @@ inline void debug_ast(AST_Node* node, std::string ind, Env* env)
     std::cerr << ind << "List " << expression;
     std::cerr << " (" << pstate_source_position(node) << ")";
     std::cerr << " (" << expression->length() << ") " <<
-      (expression->separator() == SASS_COMMA ? "Comma " : "Space ") <<
+      (expression->separator() == SASS_COMMA ? "Comma " : expression->separator() == SASS_HASH ? "Map" : "Space ") <<
       " [delayed: " << expression->is_delayed() << "] " <<
       " [interpolant: " << expression->is_interpolant() << "] " <<
       " [arglist: " << expression->is_arglist() << "] " <<
@@ -524,16 +567,19 @@ inline void debug_ast(AST_Node* node, std::string ind, Env* env)
     Boolean* expression = dynamic_cast<Boolean*>(node);
     std::cerr << ind << "Boolean " << expression;
     std::cerr << " (" << pstate_source_position(node) << ")";
+    std::cerr << " [interpolant: " << expression->is_interpolant() << "] ";
     std::cerr << " [" << expression->value() << "]" << std::endl;
   } else if (dynamic_cast<Color*>(node)) {
     Color* expression = dynamic_cast<Color*>(node);
     std::cerr << ind << "Color " << expression;
     std::cerr << " (" << pstate_source_position(node) << ")";
+    std::cerr << " [interpolant: " << expression->is_interpolant() << "] ";
     std::cerr << " [" << expression->r() << ":"  << expression->g() << ":" << expression->b() << "@" << expression->a() << "]" << std::endl;
   } else if (dynamic_cast<Number*>(node)) {
     Number* expression = dynamic_cast<Number*>(node);
     std::cerr << ind << "Number " << expression;
     std::cerr << " (" << pstate_source_position(node) << ")";
+    std::cerr << " [interpolant: " << expression->is_interpolant() << "] ";
     std::cerr << " [" << expression->value() << expression->unit() << "]" <<
       " [hash: " << expression->hash() << "] " <<
       std::endl;
@@ -564,8 +610,10 @@ inline void debug_ast(AST_Node* node, std::string ind, Env* env)
     std::cerr << ind << "String_Schema " << expression;
     std::cerr << " " << expression->concrete_type();
     if (expression->is_delayed()) std::cerr << " [delayed]";
-    if (expression->has_interpolants()) std::cerr << " [has_interpolants]";
-    if (expression->is_interpolant()) std::cerr << " [interpolant]";
+    if (expression->is_interpolant()) std::cerr << " [is interpolant]";
+    if (expression->has_interpolant()) std::cerr << " [has interpolant]";
+    if (expression->is_left_interpolant()) std::cerr << " [left interpolant] ";
+    if (expression->is_right_interpolant()) std::cerr << " [right interpolant] ";
     std::cerr << " <" << prettyprint(expression->pstate().token.ws_before()) << ">" << std::endl;
     for(auto i : expression->elements()) { debug_ast(i, ind + " ", env); }
   } else if (dynamic_cast<String*>(node)) {

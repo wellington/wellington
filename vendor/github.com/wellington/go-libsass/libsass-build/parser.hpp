@@ -23,11 +23,11 @@ namespace Sass {
   class Parser : public ParserState {
   public:
 
-    enum Syntactic_Context { nothing, mixin_def, function_def };
+    enum Scope { Root, Mixin, Function, Media, Control, Properties, Rules };
 
     Context& ctx;
     std::vector<Block*> block_stack;
-    std::vector<Syntactic_Context> stack;
+    std::vector<Scope> stack;
     Media_Block* last_media_block;
     const char* source;
     const char* position;
@@ -44,14 +44,14 @@ namespace Sass {
     Parser(Context& ctx, const ParserState& pstate)
     : ParserState(pstate), ctx(ctx), block_stack(0), stack(0), last_media_block(0),
       source(0), position(0), end(0), before_token(pstate), after_token(pstate), pstate(pstate), indentation(0)
-    { in_at_root = false; stack.push_back(nothing); }
+    { in_at_root = false; stack.push_back(Scope::Root); }
 
     // static Parser from_string(const std::string& src, Context& ctx, ParserState pstate = ParserState("[STRING]"));
-    static Parser from_c_str(const char* src, Context& ctx, ParserState pstate = ParserState("[CSTRING]"));
-    static Parser from_c_str(const char* beg, const char* end, Context& ctx, ParserState pstate = ParserState("[CSTRING]"));
-    static Parser from_token(Token t, Context& ctx, ParserState pstate = ParserState("[TOKEN]"));
+    static Parser from_c_str(const char* src, Context& ctx, ParserState pstate = ParserState("[CSTRING]"), const char* source = 0);
+    static Parser from_c_str(const char* beg, const char* end, Context& ctx, ParserState pstate = ParserState("[CSTRING]"), const char* source = 0);
+    static Parser from_token(Token t, Context& ctx, ParserState pstate = ParserState("[TOKEN]"), const char* source = 0);
     // special static parsers to convert strings into certain selectors
-    static Selector_List* parse_selector(const char* src, Context& ctx, ParserState pstate = ParserState("[SELECTOR]"));
+    static Selector_List* parse_selector(const char* src, Context& ctx, ParserState pstate = ParserState("[SELECTOR]"), const char* source = 0);
 
 #ifdef __clang__
 
@@ -253,6 +253,7 @@ namespace Sass {
     Function_Call* parse_function_call();
     Function_Call_Schema* parse_function_call_schema();
     String* parse_url_function_string();
+    String* parse_url_function_argument();
     String* parse_interpolated_chunk(Token, bool constant = false);
     String* parse_string();
     String_Constant* parse_static_expression();
@@ -299,7 +300,7 @@ namespace Sass {
     Lookahead lookahead_for_include(const char* start = 0);
 
     Expression* fold_operands(Expression* base, std::vector<Expression*>& operands, Operand op);
-    Expression* fold_operands(Expression* base, std::vector<Expression*>& operands, std::vector<Operand>& ops);
+    Expression* fold_operands(Expression* base, std::vector<Expression*>& operands, std::vector<Operand>& ops, size_t i = 0);
 
     void throw_syntax_error(std::string message, size_t ln = 0);
     void throw_read_error(std::string message, size_t ln = 0);

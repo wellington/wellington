@@ -51,6 +51,14 @@ type Compiler interface {
 	// Context is deprecated, provided here as a bridge while refactoring
 	// happens in chunks. Use with caution.
 	Context() *Context
+
+	BuildDir() string
+
+	HTTPPath() string
+
+	GenImgDir() string
+
+	ImgDir() string
 }
 
 // CacheBust append timestamps to static assets to prevent caching

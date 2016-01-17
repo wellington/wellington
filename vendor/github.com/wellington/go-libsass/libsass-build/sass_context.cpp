@@ -1,3 +1,4 @@
+#include "sass.hpp"
 #include <cstring>
 #include <stdexcept>
 #include <sstream>
@@ -10,6 +11,7 @@
 #include "util.hpp"
 #include "context.hpp"
 #include "sass_context.hpp"
+#include "sass_functions.hpp"
 #include "ast_fwd_decl.hpp"
 #include "error_handling.hpp"
 
@@ -41,11 +43,10 @@ extern "C" {
     catch (Exception::Base& e) {
       std::stringstream msg_stream;
       std::string cwd(Sass::File::get_cwd());
-      std::string rel_path(Sass::File::abs2rel(e.pstate.path, cwd, cwd));
 
-      std::string msg_prefix("Error: ");
+      std::string msg_prefix(e.errtype());
       bool got_newline = false;
-      msg_stream << msg_prefix;
+      msg_stream << msg_prefix << ": ";
       const char* msg = e.what();
       while(msg && *msg) {
         if (*msg == '\r') {
@@ -53,15 +54,26 @@ extern "C" {
         } else if (*msg == '\n') {
           got_newline = true;
         } else if (got_newline) {
-          msg_stream << std::string(msg_prefix.size(), ' ');
+          msg_stream << std::string(msg_prefix.size() + 2, ' ');
           got_newline = false;
         }
         msg_stream << *msg;
         ++ msg;
       }
       if (!got_newline) msg_stream << "\n";
-      msg_stream << std::string(msg_prefix.size(), ' ');
-      msg_stream << " on line " << e.pstate.line+1 << " of " << rel_path << "\n";
+      if (e.import_stack) {
+        for (size_t i = 1; i < e.import_stack->size() - 1; ++i) {
+          std::string path((*e.import_stack)[i]->imp_path);
+          std::string rel_path(Sass::File::abs2rel(path, cwd, cwd));
+          msg_stream << std::string(msg_prefix.size() + 2, ' ');
+          msg_stream << (i == 1 ? " on line " : " from line ");
+          msg_stream << e.pstate.line+1 << " of " << rel_path << "\n";
+        }
+      } else {
+        std::string rel_path(Sass::File::abs2rel(e.pstate.path, cwd, cwd));
+        msg_stream << std::string(msg_prefix.size() + 2, ' ');
+        msg_stream << " on line " << e.pstate.line+1 << " of " << rel_path << "\n";
+      }
 
       // now create the code trace (ToDo: maybe have util functions?)
       if (e.pstate.line != std::string::npos && e.pstate.column != std::string::npos) {
@@ -416,7 +428,8 @@ extern "C" {
       return data_ctx->error_status;
     try {
       if (data_ctx->source_string == 0) { throw(std::runtime_error("Data context has no source string")); }
-      if (*data_ctx->source_string == 0) { throw(std::runtime_error("Data context has empty source string")); }
+      // empty source string is a valid case, even if not really usefull (different than with file context)
+      // if (*data_ctx->source_string == 0) { throw(std::runtime_error("Data context has empty source string")); }
     }
     catch (...) { return handle_errors(data_ctx) | 1; }
     Context* cpp_ctx = new Data_Context(data_ctx);

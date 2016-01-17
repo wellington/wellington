@@ -1,3 +1,4 @@
+#include "sass.hpp"
 #include "ast.hpp"
 #include "context.hpp"
 #include "node.hpp"
@@ -58,7 +59,10 @@ namespace Sass {
 
   bool Compound_Selector::has_parent_ref()
   {
-    return has_parent_reference();
+    for (Simple_Selector* s : *this) {
+      if (s->has_parent_ref()) return true;
+    }
+    return false;
   }
 
   bool Complex_Selector::has_parent_ref()
@@ -971,11 +975,12 @@ namespace Sass {
 
     if (head && head->length() > 0) {
 
+      Selector_List* retval = 0;
       // we have a parent selector in a simple compound list
       // mix parent complex selector into the compound list
       if (dynamic_cast<Parent_Selector*>((*head)[0])) {
+        retval = SASS_MEMORY_NEW(ctx.mem, Selector_List, pstate());
         if (parents && parents->length()) {
-          Selector_List* retval = SASS_MEMORY_NEW(ctx.mem, Selector_List, pstate());
           if (tails && tails->length() > 0) {
             for (size_t n = 0, nL = tails->length(); n < nL; ++n) {
               for (size_t i = 0, iL = parents->length(); i < iL; ++i) {
@@ -1014,11 +1019,9 @@ namespace Sass {
               *retval << s;
             }
           }
-          return retval;
         }
         // have no parent but some tails
         else {
-          Selector_List* retval = SASS_MEMORY_NEW(ctx.mem, Selector_List, pstate());
           if (tails && tails->length() > 0) {
             for (size_t n = 0, nL = tails->length(); n < nL; ++n) {
               Complex_Selector* cpy = this->clone(ctx);
@@ -1039,13 +1042,22 @@ namespace Sass {
             if (!cpy->head()->length()) cpy->head(0);
             *retval << cpy->skip_empty_reference();
           }
-          return retval;
         }
       }
       // no parent selector in head
       else {
-        return this->tails(ctx, tails);
+        retval = this->tails(ctx, tails);
       }
+
+      for (Simple_Selector* ss : *head) {
+        if (Wrapped_Selector* ws = dynamic_cast<Wrapped_Selector*>(ss)) {
+          if (Selector_List* sl = dynamic_cast<Selector_List*>(ws->selector())) {
+            if (parents) ws->selector(sl->parentize(parents, ctx));
+          }
+        }
+      }
+
+      return retval;
 
     }
     // has no head
@@ -1157,6 +1169,7 @@ namespace Sass {
   Complex_Selector* Complex_Selector::clone(Context& ctx) const
   {
     Complex_Selector* cpy = SASS_MEMORY_NEW(ctx.mem, Complex_Selector, *this);
+    cpy->is_optional(this->is_optional());
     cpy->media_block(this->media_block());
     if (tail()) cpy->tail(tail()->clone(ctx));
     return cpy;
@@ -1165,7 +1178,8 @@ namespace Sass {
   Complex_Selector* Complex_Selector::cloneFully(Context& ctx) const
   {
     Complex_Selector* cpy = SASS_MEMORY_NEW(ctx.mem, Complex_Selector, *this);
-
+    cpy->is_optional(this->is_optional());
+    cpy->media_block(this->media_block());
     if (head()) {
       cpy->head(head()->clone(ctx));
     }
@@ -1180,13 +1194,16 @@ namespace Sass {
   Compound_Selector* Compound_Selector::clone(Context& ctx) const
   {
     Compound_Selector* cpy = SASS_MEMORY_NEW(ctx.mem, Compound_Selector, *this);
+    cpy->is_optional(this->is_optional());
     cpy->media_block(this->media_block());
+    cpy->extended(this->extended());
     return cpy;
   }
 
   Selector_List* Selector_List::clone(Context& ctx) const
   {
     Selector_List* cpy = SASS_MEMORY_NEW(ctx.mem, Selector_List, *this);
+    cpy->is_optional(this->is_optional());
     cpy->media_block(this->media_block());
     return cpy;
   }
@@ -1194,6 +1211,8 @@ namespace Sass {
   Selector_List* Selector_List::cloneFully(Context& ctx) const
   {
     Selector_List* cpy = SASS_MEMORY_NEW(ctx.mem, Selector_List, pstate());
+    cpy->is_optional(this->is_optional());
+    cpy->media_block(this->media_block());
     for (size_t i = 0, L = length(); i < L; ++i) {
       *cpy << (*this)[i]->cloneFully(ctx);
     }
@@ -1229,9 +1248,17 @@ namespace Sass {
     }
   }
 
+  bool Selector_List::has_parent_ref()
+  {
+    for (Complex_Selector* s : *this) {
+      if (s->has_parent_ref()) return true;
+    }
+    return false;
+  }
+
   void Selector_List::adjust_after_pushing(Complex_Selector* c)
   {
-    if (c->has_reference())   has_reference(true);
+    // if (c->has_reference())   has_reference(true);
   }
 
   // it's a superselector if every selector of the right side
@@ -1376,6 +1403,36 @@ namespace Sass {
     for (SourcesSet::iterator iterator = sources.begin(), endIterator = sources.end(); iterator != endIterator; ++iterator) {
       this->sources_.insert((*iterator)->clone(ctx));
     }
+  }
+
+  Argument* Arguments::get_rest_argument()
+  {
+    Argument* arg = 0;
+    if (this->has_rest_argument()) {
+      for (auto a : this->elements()) {
+        if (a->is_rest_argument()) {
+          arg = a;
+          break;
+        }
+      }
+    }
+
+    return arg;
+  }
+
+  Argument* Arguments::get_keyword_argument()
+  {
+    Argument* arg = 0;
+    if (this->has_keyword_argument()) {
+      for (auto a : this->elements()) {
+        if (a->is_keyword_argument()) {
+          arg = a;
+          break;
+        }
+      }
+    }
+
+    return arg;
   }
 
   void Arguments::adjust_after_pushing(Argument* a)
@@ -1677,6 +1734,12 @@ namespace Sass {
   bool Number::operator== (const Expression& rhs) const
   {
     if (const Number* r = dynamic_cast<const Number*>(&rhs)) {
+      size_t lhs_units = numerator_units_.size() + denominator_units_.size();
+      size_t rhs_units = r->numerator_units_.size() + r->denominator_units_.size();
+      // unitless and only having one unit seems equivalent (will change in future)
+      if (!lhs_units || !rhs_units) {
+        return std::fabs(value() - r->value()) < NUMBER_EPSILON;
+      }
       return (numerator_units_ == r->numerator_units_) &&
              (denominator_units_ == r->denominator_units_) &&
              std::fabs(value() - r->value()) < NUMBER_EPSILON;
@@ -1686,11 +1749,18 @@ namespace Sass {
 
   bool Number::operator< (const Number& rhs) const
   {
+    size_t lhs_units = numerator_units_.size() + denominator_units_.size();
+    size_t rhs_units = rhs.numerator_units_.size() + rhs.denominator_units_.size();
+    // unitless and only having one unit seems equivalent (will change in future)
+    if (!lhs_units || !rhs_units) {
+      return value() < rhs.value();
+    }
+
     Number tmp_r(rhs);
     tmp_r.normalize(find_convertible_unit());
     std::string l_unit(unit());
     std::string r_unit(tmp_r.unit());
-    if (!l_unit.empty() && !r_unit.empty() && unit() != tmp_r.unit()) {
+    if (unit() != tmp_r.unit()) {
       error("cannot compare numbers with incompatible units", pstate());
     }
     return value() < tmp_r.value();
@@ -1714,6 +1784,15 @@ namespace Sass {
       return (value() == cstr->value());
     }
     return false;
+  }
+
+  bool String_Schema::is_left_interpolant(void) const
+  {
+    return length() && first()->is_left_interpolant();
+  }
+  bool String_Schema::is_right_interpolant(void) const
+  {
+    return length() && last()->is_right_interpolant();
   }
 
   bool String_Schema::operator== (const Expression& rhs) const
@@ -1831,17 +1910,121 @@ namespace Sass {
     if (empty()) return res;
     if (is_invisible()) return res;
     bool items_output = false;
-    std::string sep = separator() == SASS_COMMA ? "," : " ";
+    std::string sep = separator() == SASS_SPACE ? " " : ",";
     if (!compressed && sep == ",") sep += " ";
     for (size_t i = 0, L = size(); i < L; ++i) {
+      if (separator_ == SASS_HASH)
+      { sep[0] = i % 2 ? ':' : ','; }
       Expression* item = (*this)[i];
       if (item->is_invisible()) continue;
       if (items_output) res += sep;
-      if (Value* v_val = dynamic_cast<Value*>(item))
-      { res += v_val->to_string(compressed, precision); }
+      if (Expression* ex = dynamic_cast<Expression*>(item))
+      { res += ex->to_string(compressed, precision); }
+      // else if (Function_Call* v_fn = dynamic_cast<Function_Call*>(item))
+      // { res += v_fn->to_string(compressed, precision); }
+      else { res += "[unknown type]"; }
       items_output = true;
     }
     return res;
+  }
+
+  std::string Function_Call::to_string(bool compressed, int precision) const
+  {
+    std::string str(name());
+    str += "(";
+    str += arguments()->to_string(compressed, precision);
+    str += ")";
+    return str;
+  }
+
+  std::string Arguments::to_string(bool compressed, int precision) const
+  {
+    std::string str("");
+    for(auto arg : elements()) {
+      if (str != "") str += compressed ? "," : ", ";
+      str += arg->to_string(compressed, precision);
+    }
+    return str;
+  }
+
+  std::string Argument::to_string(bool compressed, int precision) const
+  {
+    return value()->to_string(compressed, precision);
+  }
+
+  bool Binary_Expression::is_left_interpolant(void) const
+  {
+    return is_interpolant() || (left() && left()->is_left_interpolant());
+  }
+  bool Binary_Expression::is_right_interpolant(void) const
+  {
+    return is_interpolant() || (right() && right()->is_right_interpolant());
+  }
+
+  std::string Binary_Expression::to_string(bool compressed, int precision) const
+  {
+    std::string str("");
+    str += left()->to_string(compressed, precision);
+    if (!compressed) str += " ";
+    switch (type()) {
+      case Sass_OP::AND: str += "and"; break;
+      case Sass_OP::OR:  str += "or";  break;
+      case Sass_OP::EQ:  str += "==";  break;
+      case Sass_OP::NEQ: str += "!=";  break;
+      case Sass_OP::GT:  str += ">";   break;
+      case Sass_OP::GTE: str += ">=";  break;
+      case Sass_OP::LT:  str += "<";   break;
+      case Sass_OP::LTE: str += "<=";  break;
+      case Sass_OP::ADD: str += "+";   break;
+      case Sass_OP::SUB: str += "-";   break;
+      case Sass_OP::MUL: str += "*";   break;
+      case Sass_OP::DIV: str += "/"; break;
+      case Sass_OP::MOD: str += "%";   break;
+      default: break; // shouldn't get here
+    }
+    if (!compressed) str += " ";
+    str += right()->to_string(compressed, precision);
+    return str;
+  }
+  std::string Textual::to_string(bool compressed, int precision) const
+  {
+    return value();
+  }
+  std::string Variable::to_string(bool compressed, int precision) const
+  {
+    return name();
+  }
+
+  // For now it seems easiest to just implement these, since we need it to
+  // ie. report the values as is for error reporting (like duplicate keys).
+  // We cannot use inspect since we do not always have a context object.
+  std::string Unary_Expression::to_string(bool compressed, int precision) const
+  {
+    return "[Unary_Expression.to_string not implemented]";
+  }
+  std::string Function_Call_Schema::to_string(bool compressed, int precision) const
+  {
+    return "[Function_Call_Schema.to_string not implemented]";
+  }
+  std::string Media_Query::to_string(bool compressed, int precision) const
+  {
+    return "[Media_Query.to_string not implemented]";
+  }
+  std::string Media_Query_Expression::to_string(bool compressed, int precision) const
+  {
+    return "[Media_Query_Expression.to_string not implemented]";
+  }
+  std::string Supports_Condition::to_string(bool compressed, int precision) const
+  {
+    return "[Supports_Condition.to_string not implemented]";
+  }
+  std::string At_Root_Expression::to_string(bool compressed, int precision) const
+  {
+    return "[At_Root_Expression.to_string not implemented]";
+  }
+  std::string Thunk::to_string(bool compressed, int precision) const
+  {
+    return "[Thunk.to_string not implemented]";
   }
 
   std::string String_Schema::to_string(bool compressed, int precision) const
@@ -1874,8 +2057,9 @@ namespace Sass {
     else                return c;
   }
 
-  std::string Color::to_string(bool compressed, int precision) const
+  std::string Color::to_hex(bool compressed, int precision) const
   {
+
     std::stringstream ss;
 
     // original color name
@@ -1896,6 +2080,53 @@ namespace Sass {
       r = Sass::round(cap_channel<0xff>(n->r()));
       g = Sass::round(cap_channel<0xff>(n->g()));
       b = Sass::round(cap_channel<0xff>(n->b()));
+      a = cap_channel<1>   (n->a());
+    }
+    // otherwise get the possible resolved color name
+    else {
+      double numval = r * 0x10000 + g * 0x100 + b;
+      if (color_to_name(numval))
+        res_name = color_to_name(numval);
+    }
+
+    std::stringstream hexlet;
+    hexlet << '#' << std::setw(1) << std::setfill('0');
+    // create a short color hexlet if there is any need for it
+    if (compressed && is_color_doublet(r, g, b) && a == 1) {
+      hexlet << std::hex << std::setw(1) << (static_cast<unsigned long>(r) >> 4);
+      hexlet << std::hex << std::setw(1) << (static_cast<unsigned long>(g) >> 4);
+      hexlet << std::hex << std::setw(1) << (static_cast<unsigned long>(b) >> 4);
+    } else {
+      hexlet << std::hex << std::setw(2) << static_cast<unsigned long>(r);
+      hexlet << std::hex << std::setw(2) << static_cast<unsigned long>(g);
+      hexlet << std::hex << std::setw(2) << static_cast<unsigned long>(b);
+    }
+
+    return hexlet.str();
+
+  }
+  std::string Color::to_string(bool compressed, int precision) const
+  {
+    std::stringstream ss;
+
+    // original color name
+    // maybe an unknown token
+    std::string name = disp();
+
+    // resolved color
+    std::string res_name = name;
+
+    double r = Sass::round(cap_channel<0xff>(r_), precision);
+    double g = Sass::round(cap_channel<0xff>(g_), precision);
+    double b = Sass::round(cap_channel<0xff>(b_), precision);
+    double a = cap_channel<1>   (a_);
+
+    // get color from given name (if one was given at all)
+    if (name != "" && name_to_color(name)) {
+      const Color* n = name_to_color(name);
+      r = Sass::round(cap_channel<0xff>(n->r()), precision);
+      g = Sass::round(cap_channel<0xff>(n->g()), precision);
+      b = Sass::round(cap_channel<0xff>(n->b()), precision);
       a = cap_channel<1>   (n->a());
     }
     // otherwise get the possible resolved color name
@@ -2007,17 +2238,30 @@ namespace Sass {
       res = std::string(ss.str());
       // maybe we truncated up to decimal point
       size_t pos = res.find_last_not_of("0");
-      bool at_dec_point = res[pos] == '.' ||
-                          res[pos] == ',';
-      // don't leave a blank point
-      if (at_dec_point) ++ pos;
-      res.resize (pos + 1);
+      // handle case where we have a "0"
+      if (pos == std::string::npos) {
+        res = "0.0";
+      } else {
+        bool at_dec_point = res[pos] == '.' ||
+                            res[pos] == ',';
+        // don't leave a blank point
+        if (at_dec_point) ++ pos;
+        res.resize (pos + 1);
+      }
     }
 
     // some final cosmetics
-    if (res == "-0.0") res.erase(0, 1);
-    else if (res == "-0") res.erase(0, 1);
+    if (res == "0.0") res = "0";
     else if (res == "") res = "0";
+    else if (res == "-0") res = "0";
+    else if (res == "-0.0") res = "0";
+    else if (compressed)
+    {
+      // check if handling negative nr
+      size_t off = res[0] == '-' ? 1 : 0;
+      // remove leading zero from floating point in compressed mode
+      if (zero() && res[off] == '0' && res[off+1] == '.') res.erase(off, 1);
+    }
 
     // add unit now
     res += unit();
@@ -2027,9 +2271,19 @@ namespace Sass {
 
   }
 
+  std::string String_Quoted::inspect() const
+  {
+    return quote(value_, '*', true);
+  }
+
   std::string String_Quoted::to_string(bool compressed, int precision) const
   {
     return quote_mark_ ? quote(value_, quote_mark_, true) : value_;
+  }
+
+  std::string String_Constant::inspect() const
+  {
+    return quote(value_, '*', true);
   }
 
   std::string String_Constant::to_string(bool compressed, int precision) const
@@ -2051,9 +2305,10 @@ namespace Sass {
     std::string str("");
     auto end = this->end();
     auto start = this->begin();
+    std::string sep(compressed ? "," : ", ");
     while (start < end && *start) {
       Complex_Selector* sel = *start;
-      if (!str.empty()) str += ", ";
+      if (!str.empty()) str += sep;
       str += sel->to_string(compressed, precision);
       ++ start;
     }
@@ -2089,6 +2344,7 @@ namespace Sass {
       case ADJACENT_TO: str_op = "+"; break;
       case REFERENCE:   str_op = "/" + str_ref + "/"; break;
     }
+
     // prettify for non ancestors
     if (combinator() != ANCESTOR_OF) {
       // no spaces needed for compressed
@@ -2101,6 +2357,12 @@ namespace Sass {
     // is ancestor with no tail
     else if (str_tail == "") {
       str_op = ""; // superflous
+    }
+    else if (compressed)
+    {
+      if (str_tail[0] == '-') {
+        str_op = ""; // superflous
+      }
     }
     // now build the final result
     return str_head + str_op + str_tail;

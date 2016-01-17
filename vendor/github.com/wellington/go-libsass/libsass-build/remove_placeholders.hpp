@@ -17,11 +17,12 @@ namespace Sass {
 
         void fallback_impl(AST_Node* n) {}
 
+    private:
+      Selector_List* remove_placeholders(Selector_List*);
+
     public:
         Remove_Placeholders(Context&);
-        virtual ~Remove_Placeholders() { }
-
-        using Operation<void>::operator();
+        ~Remove_Placeholders() { }
 
         void operator()(Block*);
         void operator()(Ruleset*);

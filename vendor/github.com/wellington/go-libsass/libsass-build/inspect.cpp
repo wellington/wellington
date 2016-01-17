@@ -1,3 +1,4 @@
+#include "sass.hpp"
 #include <cmath>
 #include <string>
 #include <iostream>
@@ -381,6 +382,8 @@ namespace Sass {
     else if (list->separator() == SASS_COMMA) in_comma_array = true;
 
     for (size_t i = 0, L = list->size(); i < L; ++i) {
+      if (list->separator() == SASS_HASH)
+      { sep[0] = i % 2 ? ':' : ','; }
       Expression* list_item = (*list)[i];
       if (list_item->is_invisible()) {
         continue;
@@ -410,7 +413,12 @@ namespace Sass {
     expr->left()->perform(this);
     if ( in_media_block || (
           expr->op().ws_before
-          && !expr->is_delayed()
+          && (!expr->is_interpolant())
+          && (!expr->is_delayed() ||
+          expr->is_left_interpolant() ||
+          expr->is_right_interpolant()
+          )
+
     )) append_string(" ");
     switch (expr->type()) {
       case Sass_OP::AND: append_string("&&"); break;
@@ -430,7 +438,11 @@ namespace Sass {
     }
     if ( in_media_block || (
           expr->op().ws_after
-          && !expr->is_delayed()
+          && (!expr->is_interpolant())
+          && (!expr->is_delayed()
+              || expr->is_left_interpolant()
+              || expr->is_right_interpolant()
+          )
     )) append_string(" ");
     expr->right()->perform(this);
   }

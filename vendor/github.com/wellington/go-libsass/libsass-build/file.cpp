@@ -1,19 +1,15 @@
 #ifdef _WIN32
-#ifdef __MINGW32__
-#ifndef off64_t
-#define off64_t _off64_t    /* Workaround for http://sourceforge.net/p/mingw/bugs/2024/ */
-#endif
-#endif
-#include <direct.h>
-#define getcwd _getcwd
-#define S_ISDIR(mode) (((mode) & S_IFMT) == S_IFDIR)
+# ifdef __MINGW32__
+#  ifndef off64_t
+#   define off64_t _off64_t    /* Workaround for http://sourceforge.net/p/mingw/bugs/2024/ */
+#  endif
+# endif
+# include <direct.h>
+# define S_ISDIR(mode) (((mode) & S_IFMT) == S_IFDIR)
 #else
-#include <unistd.h>
+# include <unistd.h>
 #endif
-#ifdef _MSC_VER
-#define NOMINMAX
-#endif
-
+#include "sass.hpp"
 #include <iostream>
 #include <fstream>
 #include <cctype>
@@ -27,15 +23,24 @@
 #include "sass2scss.h"
 
 #ifdef _WIN32
-#include <windows.h>
-#endif
+# include <windows.h>
 
-#ifndef FS_CASE_SENSITIVE
-#ifdef _WIN32
-#define FS_CASE_SENSITIVE 0
-#else
-#define FS_CASE_SENSITIVE 1
-#endif
+# ifdef _MSC_VER
+# include <codecvt>
+inline static std::string wstring_to_string(const std::wstring& wstr)
+{
+    std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> wchar_converter;
+    return wchar_converter.to_bytes(wstr);
+}
+# else // mingw(/gcc) does not support C++11's codecvt yet.
+inline static std::string wstring_to_string(const std::wstring &wstr)
+{
+    int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
+    std::string strTo(size_needed, 0);
+    WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
+    return strTo;
+}
+# endif
 #endif
 
 namespace Sass {
@@ -46,9 +51,12 @@ namespace Sass {
     std::string get_cwd()
     {
       const size_t wd_len = 1024;
-      char wd[wd_len];
-      std::string cwd = getcwd(wd, wd_len);
-      #ifdef _WIN32
+      #ifndef _WIN32
+        char wd[wd_len];
+        std::string cwd = getcwd(wd, wd_len);
+      #else
+        wchar_t wd[wd_len];
+        std::string cwd = wstring_to_string(_wgetcwd(wd, wd_len));
         //convert backslashes to forward slashes
         replace(cwd.begin(), cwd.end(), '\\', '/');
       #endif
@@ -184,8 +192,10 @@ namespace Sass {
       if (l[l.length()-1] != '/') l += '/';
 
       while ((r.length() > 3) && ((r.substr(0, 3) == "../") || (r.substr(0, 3)) == "..\\")) {
-        r = r.substr(3);
-        size_t pos = find_last_folder_separator(l, l.length() - 2);
+        size_t L = l.length(), pos = find_last_folder_separator(l, L - 2);
+        bool is_slash = pos + 2 == L && (l[pos+1] == '/' || l[pos+1] == '\\');
+        bool is_self = pos + 3 == L && (l[pos+1] == '.');
+        if (!is_self && !is_slash) r = r.substr(3);
         l = l.substr(0, pos == std::string::npos ? pos : pos + 1);
       }
 

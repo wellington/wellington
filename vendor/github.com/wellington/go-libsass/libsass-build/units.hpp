@@ -7,9 +7,9 @@
 
 namespace Sass {
 
-  const double PI = acos(-1);
+  const double PI = std::acos(-1);
 
-  enum SassUnitType {
+  enum UnitClass {
     LENGTH = 0x000,
     ANGLE = 0x100,
     TIME = 0x200,
@@ -18,10 +18,10 @@ namespace Sass {
     INCOMMENSURABLE = 0x500
   };
 
-  enum SassUnit {
+  enum UnitType {
 
     // size units
-    IN = SassUnitType::LENGTH,
+    IN = UnitClass::LENGTH,
     CM,
     PC,
     MM,
@@ -58,9 +58,9 @@ namespace Sass {
   extern const double frequency_conversion_factors[2][2];
   extern const double resolution_conversion_factors[3][3];
 
-  enum SassUnit string_to_unit(const std::string&);
-  const char* unit_to_string(SassUnit unit);
-  enum SassUnitType get_unit_type(SassUnit unit);
+  enum Sass::UnitType string_to_unit(const std::string&);
+  const char* unit_to_string(Sass::UnitType unit);
+  enum Sass::UnitClass get_unit_type(Sass::UnitType unit);
   // throws incompatibleUnits exceptions
   double conversion_factor(const std::string&, const std::string&, bool = true);
 
@@ -68,7 +68,7 @@ namespace Sass {
   {
     public:
       const char* msg;
-      incompatibleUnits(SassUnit a, SassUnit b)
+      incompatibleUnits(Sass::UnitType a, Sass::UnitType b)
       : exception()
       {
         std::stringstream ss;

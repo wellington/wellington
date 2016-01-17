@@ -1,3 +1,4 @@
+#include "sass.hpp"
 #include "functions.hpp"
 #include "ast.hpp"
 #include "context.hpp"
@@ -14,6 +15,7 @@
 #include "sass/base.h"
 #include "utf8.h"
 
+#include <cstdint>
 #include <cstdlib>
 #include <cmath>
 #include <cctype>
@@ -23,10 +25,6 @@
 #include <iostream>
 #include <random>
 #include <set>
-
-#if defined(_MSC_VER) && _MSC_VER < 1900
-#include "inttypes.h"
-#endif
 
 #ifdef __MINGW32__
 #include "windows.h"
@@ -315,9 +313,9 @@ namespace Sass {
 
       return SASS_MEMORY_NEW(ctx.mem, Color,
                              pstate,
-                             Sass::round(w1*color1->r() + w2*color2->r()),
-                             Sass::round(w1*color1->g() + w2*color2->g()),
-                             Sass::round(w1*color1->b() + w2*color2->b()),
+                             Sass::round(w1*color1->r() + w2*color2->r(), ctx.c_options->precision),
+                             Sass::round(w1*color1->g() + w2*color2->g(), ctx.c_options->precision),
+                             Sass::round(w1*color1->b() + w2*color2->b(), ctx.c_options->precision),
                              color1->a()*p + color2->a()*(1-p));
     }
 
@@ -858,10 +856,10 @@ namespace Sass {
 
       std::stringstream ss;
       ss << '#' << std::setw(2) << std::setfill('0');
-      ss << std::hex << std::setw(2) << static_cast<unsigned long>(Sass::round(a));
-      ss << std::hex << std::setw(2) << static_cast<unsigned long>(Sass::round(r));
-      ss << std::hex << std::setw(2) << static_cast<unsigned long>(Sass::round(g));
-      ss << std::hex << std::setw(2) << static_cast<unsigned long>(Sass::round(b));
+      ss << std::hex << std::setw(2) << static_cast<unsigned long>(Sass::round(a, ctx.c_options->precision));
+      ss << std::hex << std::setw(2) << static_cast<unsigned long>(Sass::round(r, ctx.c_options->precision));
+      ss << std::hex << std::setw(2) << static_cast<unsigned long>(Sass::round(g, ctx.c_options->precision));
+      ss << std::hex << std::setw(2) << static_cast<unsigned long>(Sass::round(b, ctx.c_options->precision));
 
       std::string result(ss.str());
       for (size_t i = 0, L = result.length(); i < L; ++i) {
@@ -1092,7 +1090,7 @@ namespace Sass {
       Number* n = ARG("$number", Number);
       Number* r = SASS_MEMORY_NEW(ctx.mem, Number, *n);
       r->pstate(pstate);
-      r->value(Sass::round(r->value()));
+      r->value(Sass::round(r->value(), ctx.c_options->precision));
       return r;
     }
 
@@ -1139,7 +1137,7 @@ namespace Sass {
           error("\"" + val->perform(&to_string) + "\" is not a number for `min'", pstate);
         }
         if (least) {
-          if (Eval::lt(xi, least)) least = xi;
+          if (*xi < *least) least = xi;
         } else least = xi;
       }
       return least;
@@ -1158,7 +1156,7 @@ namespace Sass {
           error("\"" + val->perform(&to_string) + "\" is not a number for `max'", pstate);
         }
         if (greatest) {
-          if (Eval::lt(greatest, xi)) greatest = xi;
+          if (*greatest < *xi) greatest = xi;
         } else greatest = xi;
       }
       return greatest;
