@@ -46,18 +46,29 @@ div.retina {
 
 func TestFuncSpriteFile(t *testing.T) {
 
-	ctx := oldContext()
-	ctx.BuildDir = "../test/build"
-	ctx.GenImgDir = "../test/build/img"
-	ctx.ImageDir = "../test/img"
+	comp, err := libsass.New(nil, nil,
+		libsass.Payload(payload.New()),
+		libsass.ImgDir("../test/img"),
+		libsass.BuildDir("../test/build"),
+		libsass.ImgBuildDir("../test/build/img"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Add real arguments when sass lists can be [un]marshalled
 	lst := []interface{}{"*.png", "139"}
-	usv, _ := libsass.Marshal(lst)
-	var rsv libsass.SassValue
-	SpriteFile(ctx, usv, &rsv)
+	usv, err := libsass.Marshal(lst)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rsv, err := SpriteFile(libsass.NewCompilerContext(comp), usv)
+	if err != nil {
+		t.Fatal(err)
+	}
 	var glob, path string
-	err := libsass.Unmarshal(rsv, &glob, &path)
+	err = libsass.Unmarshal(*rsv, &glob, &path)
 	if err != nil {
 		t.Error(err)
 	}

@@ -22,15 +22,6 @@ func init() {
 	os.MkdirAll("../test/build/img", 0777)
 }
 
-func wrapCallback(sc libsass.HandlerFunc, ch chan libsass.SassValue) libs.SassCallback {
-	return libsass.Handler(func(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error {
-		c := v.(*libsass.Context)
-		err := sc(c, usv, rsv)
-		ch <- *rsv
-		return err
-	})
-}
-
 func testSprite(t *testing.T, comp libsass.Compiler) {
 	paths := comp.(libsass.Pather)
 	// Generate test sprite
@@ -75,12 +66,6 @@ func setupComp(t *testing.T, r io.Reader, out io.Writer) (libsass.Compiler, erro
 	err = comp.Run()
 	close(done)
 	return comp, err
-}
-
-func oldContext() *libsass.Context {
-	ctx := libsass.NewContext()
-	ctx.Payload = payload.New()
-	return ctx
 }
 
 func TestFuncImageURL(t *testing.T) {
