@@ -55,7 +55,7 @@ func SassHandler(h SassFunc) libs.SassCallback {
 			*rsv = libs.MakeNil()
 		}
 
-		libCtx, ok := v.(*Context)
+		libCtx, ok := v.(*compctx)
 		if !ok {
 			return errors.New("libsass Context not found")
 		}
@@ -151,10 +151,10 @@ type Funcs struct {
 
 	// Func are complex, we need a reference to the entire context to
 	// successfully execute them.
-	ctx *Context
+	ctx *compctx
 }
 
-func NewFuncs(ctx *Context) *Funcs {
+func NewFuncs(ctx *compctx) *Funcs {
 	return &Funcs{
 		closing: make(chan struct{}),
 		ctx:     ctx,

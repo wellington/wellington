@@ -50,10 +50,6 @@ type Compiler interface {
 	// Payload returns the attached spritewell information attached
 	// to the compiler context
 	Payload() context.Context
-
-	// Context is deprecated, provided here as a bridge while refactoring
-	// happens in chunks. Use with caution.
-	Context() *Context
 }
 
 // CacheBust append timestamps to static assets to prevent caching
@@ -201,7 +197,7 @@ func New(dst io.Writer, src io.Reader, opts ...option) (Compiler, error) {
 	c := &sass{
 		dst: dst,
 		src: src,
-		ctx: NewContext(),
+		ctx: newContext(),
 	}
 
 	c.ctx.in = src
@@ -215,7 +211,7 @@ func New(dst io.Writer, src io.Reader, opts ...option) (Compiler, error) {
 // sass implements compiler interface for Sass and Scss stylesheets. To
 // configure the compiler, use the option method.
 type sass struct {
-	ctx     *Context
+	ctx     *compctx
 	dst     io.Writer
 	src     io.Reader
 	srcFile string
@@ -231,7 +227,7 @@ type sass struct {
 
 var _ Compiler = &sass{}
 
-func (c *sass) Context() *Context {
+func (c *sass) Context() *compctx {
 	return c.ctx
 }
 
