@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -403,18 +404,18 @@ div {
   background: sprite($map, "140");
 }`)
 
-	ctx := oldContext()
-
-	ctx.BuildDir = "../test/build"
-	ctx.GenImgDir = "../test/build/img"
-	ctx.ImageDir = "../test/img"
-	var out bytes.Buffer
-	err := ctx.Compile(in, &out)
+	comp, err := libsass.New(os.Stdout, in,
+		libsass.Payload(payload.New()),
+		libsass.ImgDir("../test/img"),
+		libsass.BuildDir("../test/build"),
+		libsass.ImgBuildDir("../test/build/img"),
+	)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
-
-	io.Copy(os.Stdout, &out)
+	if err := comp.Run(); err != nil {
+		log.Fatal(err)
+	}
 
 	// Output:
 	// div {
@@ -428,12 +429,8 @@ div {
   background: sprite($map, "140", 10px, 10px);
 }`)
 
-	ctx := oldContext()
-	ctx.BuildDir = "../test/build"
-	ctx.GenImgDir = "../test/build/img"
-	ctx.ImageDir = "../test/img"
 	var out bytes.Buffer
-	err := ctx.Compile(in, &out)
+	_, err := setupComp(t, in, &out)
 
 	if err != nil {
 		t.Fatal("expected error")
@@ -454,12 +451,8 @@ div {
   background: sprite($map, "140", 0, 0);
 }`)
 
-	ctx := oldContext()
-	ctx.BuildDir = "../test/build"
-	ctx.GenImgDir = "../test/build/img"
-	ctx.ImageDir = "../test/img"
 	var out bytes.Buffer
-	err := ctx.Compile(in, &out)
+	_, err := setupComp(t, in, &out)
 
 	e := `Error > stdin:4
 error in C function sprite: Please specify unit for offset ie. (2px)
@@ -490,18 +483,24 @@ div {
   background: sprite($map, "140");
 }`)
 
-	ctx := oldContext()
-	ctx.IncludePaths = []string{"../test"}
-	ctx.HTTPPath = "http://foo.com"
-	ctx.BuildDir = "../test/build"
-	ctx.GenImgDir = "../test/build/img"
-	ctx.ImageDir = "../test/img"
 	var out bytes.Buffer
-	err := ctx.Compile(in, &out)
-
+	comp, err := libsass.New(&out, in,
+		libsass.OutputStyle(libsass.NESTED_STYLE),
+		libsass.BuildDir("../test/build"),
+		libsass.ImgDir("../test/img"),
+		libsass.FontDir("../test/font"),
+		libsass.Payload(payload.New()),
+		libsass.ImgBuildDir("../test/build/img"),
+		libsass.HTTPPath("http://foo.com"),
+	)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
+
+	if err := comp.Run(); err != nil {
+		t.Fatal(err)
+	}
+
 	e := `div {
   background: url("http://foo.com/build/4f0c6e.png") 0px -149px; }
 `
@@ -523,14 +522,8 @@ div {
   background: sprite($map, "twitt");
 }`)
 
-	ctx := oldContext()
-
-	ctx.BuildDir = "../test/build"
-	ctx.GenImgDir = "../test/build/img"
-	ctx.ImageDir = "../test/img"
 	var out bytes.Buffer
-	err := ctx.Compile(in, &out)
-
+	_, err := setupComp(t, in, &out)
 	if err != nil {
 		t.Error(err)
 	}
