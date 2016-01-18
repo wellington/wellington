@@ -8,8 +8,10 @@ import (
 )
 
 var (
-	ErrPayloadEmpty = errors.New("empty payload")
-	ErrNoCompile    = errors.New("No compile has occurred")
+	ErrPayloadEmpty          = errors.New("empty payload")
+	ErrNoCompile             = errors.New("No compile has occurred")
+	_               Pather   = &sass{}
+	_               Compiler = &sass{}
 )
 
 // Pather describes the file system paths necessary for a project
@@ -17,7 +19,8 @@ type Pather interface {
 	ImgDir() string
 	BuildDir() string
 	HTTPPath() string
-	GenImgDir() string
+	ImgBuildDir() string
+	FontDir() string
 }
 
 // Compiler interface is used to translate input Sass network, filepath,
@@ -51,14 +54,6 @@ type Compiler interface {
 	// Context is deprecated, provided here as a bridge while refactoring
 	// happens in chunks. Use with caution.
 	Context() *Context
-
-	BuildDir() string
-
-	HTTPPath() string
-
-	GenImgDir() string
-
-	ImgDir() string
 }
 
 // CacheBust append timestamps to static assets to prevent caching
@@ -263,13 +258,18 @@ func (s *sass) HTTPPath() string {
 	return s.ctx.HTTPPath
 }
 
-func (s *sass) GenImgDir() string {
+func (s *sass) ImgBuildDir() string {
 	return s.ctx.GenImgDir
 }
 
 // ImgDir returns the Image Directory used for locating images
 func (c *sass) ImgDir() string {
 	return c.ctx.ImageDir
+}
+
+// FontDir returns the font directory option
+func (c *sass) FontDir() string {
+	return c.ctx.FontDir
 }
 
 // Option allows the modifying of internal compiler state
