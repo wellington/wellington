@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -31,17 +30,18 @@ func wrapCallback(sc libsass.HandlerFunc, ch chan libsass.SassValue) libs.SassCa
 	})
 }
 
-func testSprite(ctx *libsass.Context) {
+func testSprite(t *testing.T, comp libsass.Compiler) {
+	paths := comp.(libsass.Pather)
 	// Generate test sprite
 	imgs := spritewell.New(&spritewell.Options{
-		ImageDir:  ctx.ImageDir,
-		BuildDir:  ctx.BuildDir,
-		GenImgDir: ctx.GenImgDir,
+		ImageDir:  paths.ImgDir(),
+		BuildDir:  paths.BuildDir(),
+		GenImgDir: paths.ImgBuildDir(),
 	})
 	glob := "*.png"
 	err := imgs.Decode(glob)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 }
@@ -59,7 +59,7 @@ func setupComp(t *testing.T, r io.Reader, out io.Writer) (libsass.Compiler, libs
 	if err != nil {
 		t.Fatal(err)
 	}
-	testSprite(comp.Context())
+	testSprite(t, comp)
 
 	done := make(chan struct{})
 	go func() {
@@ -85,16 +85,28 @@ func oldContext() *libsass.Context {
 func setupCtx(t *testing.T, r io.Reader, out io.Writer /*, cookies ...libsass.Cookie*/) (*libsass.Context, libsass.SassValue, error) {
 	var usv libsass.SassValue
 
-	ctx := oldContext()
-	ctx.OutputStyle = libsass.NESTED_STYLE
-	ctx.IncludePaths = make([]string, 0)
-	ctx.BuildDir = "../test/build"
-	ctx.ImageDir = "../test/img"
-	ctx.FontDir = "../test/font"
-	ctx.GenImgDir = "../test/build/img"
-	ctx.Out = ""
+	comp, err := libsass.New(out, r,
+		libsass.OutputStyle(libsass.NESTED_STYLE),
+		libsass.BuildDir("../test/build"),
+		libsass.ImgDir("../test/img"),
+		libsass.FontDir("../test/font"),
+		libsass.ImgBuildDir("../test/build/img"),
+		libsass.Payload(payload.New()),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := comp.Context()
+	// ctx := oldContext()
+	// ctx.OutputStyle = libsass.NESTED_STYLE
+	// ctx.IncludePaths = make([]string, 0)
+	// ctx.BuildDir = "../test/build"
+	// ctx.ImageDir = "../test/img"
+	// ctx.FontDir = "../test/font"
+	// ctx.GenImgDir = "../test/build/img"
+	// ctx.Out = ""
 
-	testSprite(ctx)
+	testSprite(t, comp)
 
 	done := make(chan struct{})
 	go func() {
@@ -106,7 +118,7 @@ func setupCtx(t *testing.T, r io.Reader, out io.Writer /*, cookies ...libsass.Co
 		}
 	}()
 
-	err := ctx.Compile(r, out)
+	err = ctx.Compile(r, out)
 	close(done)
 	return ctx, usv, err
 }

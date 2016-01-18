@@ -58,7 +58,7 @@ func ImageURL(ctx context.Context, csv libsass.SassValue) (*libsass.SassValue, e
 	if err != nil {
 		return nil, err
 	}
-	rel, err := relativeImage(comp.BuildDir(), comp.ImgDir())
+	rel, err := relativeImage(pather.BuildDir(), pather.ImgDir())
 	if err != nil {
 		return nil, err
 	}
@@ -108,10 +108,11 @@ func ImageHeight(mainctx context.Context, usv libsass.SassValue) (*libsass.SassV
 		glob = infs[0].(string)
 		name = infs[1].(string)
 	}
+	paths := comp.(libsass.Pather)
 	imgs := sw.New(&sw.Options{
-		ImageDir:  comp.ImgDir(),
-		BuildDir:  comp.BuildDir(),
-		GenImgDir: comp.GenImgDir(),
+		ImageDir:  paths.ImgDir(),
+		BuildDir:  paths.BuildDir(),
+		GenImgDir: paths.ImgBuildDir(),
 	})
 
 	loadctx := comp.Payload()
@@ -177,10 +178,11 @@ func ImageWidth(mainctx context.Context, usv libsass.SassValue) (rsv *libsass.Sa
 		glob = infs[0].(string)
 		name = infs[1].(string)
 	}
+	paths := comp.(libsass.Pather)
 	imgs := sw.New(&sw.Options{
-		ImageDir:  comp.ImgDir(),
-		BuildDir:  comp.BuildDir(),
-		GenImgDir: comp.GenImgDir(),
+		ImageDir:  paths.ImgDir(),
+		BuildDir:  paths.BuildDir(),
+		GenImgDir: paths.ImgBuildDir(),
 	})
 
 	loadctx := comp.Payload()

@@ -132,7 +132,7 @@ func Sprite(ctx context.Context, usv libsass.SassValue) (rsv *libsass.SassValue,
 	}
 
 	buildDir := pather.BuildDir()
-	genImgDir := pather.GenImgDir()
+	genImgDir := pather.ImgBuildDir()
 	httpPath := pather.HTTPPath()
 
 	// FIXME: path directory can not be trusted, rebuild this from the context
@@ -195,11 +195,11 @@ func SpriteMap(mainctx context.Context, usv libsass.SassValue) (*libsass.SassVal
 	if err != nil {
 		return nil, err
 	}
-
+	paths := comp.(libsass.Pather)
 	imgs := sw.New(&sw.Options{
-		ImageDir:  comp.ImgDir(),
-		BuildDir:  comp.BuildDir(),
-		GenImgDir: comp.GenImgDir(),
+		ImageDir:  paths.ImgDir(),
+		BuildDir:  paths.BuildDir(),
+		GenImgDir: paths.ImgBuildDir(),
 		Padding:   int(spacing.Value),
 	})
 	if cglob, err := strconv.Unquote(glob); err == nil {
