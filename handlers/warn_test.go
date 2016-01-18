@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -12,8 +11,11 @@ import (
 )
 
 func TestError_warn(t *testing.T) {
-
 	oo := os.Stdout
+	defer func() {
+		os.Stdout = oo
+	}()
+
 	r, w, _ := os.Pipe()
 	defer w.Close()
 	os.Stdout = w
@@ -21,29 +23,39 @@ func TestError_warn(t *testing.T) {
 	// Disabled while new warn integration is built
 	in := bytes.NewBufferString(`@warn "!";
 div { color: red; }`)
-	ctx := libsass.NewContext()
+
 	libsass.RegisterHandler("@warn", WarnHandler)
-	var empty bytes.Buffer
-	err := ctx.Compile(in, &empty)
+
+	var out bytes.Buffer
+	comp, err := libsass.New(&out, in,
+		libsass.OutputStyle(libsass.NESTED_STYLE),
+		libsass.BuildDir("../test/build"),
+		libsass.ImgDir("../test/img"),
+		libsass.ImgBuildDir("../test/build/img"),
+	)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
-	e := `WARNING: !`
+	err = comp.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	outC := make(chan string)
 	go func() {
 		var buf bytes.Buffer
 		io.Copy(&buf, r)
 		outC <- buf.String()
 	}()
-
 	w.Close()
-	os.Stdout = oo
-	out := <-outC
-	qout := fmt.Sprintf("%q", out)
 
-	if !strings.Contains(qout, e) {
-		t.Errorf("got:\n%s\nwanted:\n%s", qout, e)
+	warnout := <-outC
+	if len(warnout) == 0 {
+		t.Fatal("no error reported")
 	}
-	os.Stdout = oo
+	e := `WARNING: !`
+	if !strings.Contains(warnout, e) {
+		t.Errorf("got: %q wanted: %q", warnout, e)
+	}
 }

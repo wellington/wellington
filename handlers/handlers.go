@@ -257,11 +257,13 @@ func InlineImage(mainctx context.Context, usv libsass.SassValue) (rsv *libsass.S
 	if err != nil {
 		return nil, err
 	}
-	ctx := comp.Context()
+
 	err = libsass.Unmarshal(usv, &name, &encode)
 	if err != nil {
 		return nil, err
 	}
+
+	paths := comp.(libsass.Pather)
 
 	// check for valid URL. If true, attempt to resolve image.
 	// This is really going to slow down compilation think about
@@ -270,7 +272,7 @@ func InlineImage(mainctx context.Context, usv libsass.SassValue) (rsv *libsass.S
 	if err == nil && len(u.Scheme) > 0 {
 		f, err = imgResolver.Do(u.String())
 	} else {
-		f, err = os.Open(filepath.Join(ctx.ImageDir, name))
+		f, err = os.Open(filepath.Join(paths.ImgDir(), name))
 	}
 	if err != nil {
 		return nil, err
