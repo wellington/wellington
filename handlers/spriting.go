@@ -19,7 +19,7 @@ import (
 func init() {
 	libsass.RegisterSassFunc("sprite($map, $name, $offsetX: 0px, $offsetY: 0px)", Sprite)
 	libsass.RegisterSassFunc("sprite-map($glob, $spacing: 0px)", SpriteMap)
-	libsass.RegisterHandler("sprite-file($map, $name)", SpriteFile)
+	libsass.RegisterSassFunc("sprite-file($map, $name)", SpriteFile)
 	libsass.RegisterSassFunc("sprite-position($map, $file)", SpritePosition)
 }
 
@@ -78,18 +78,15 @@ func SpritePosition(mainctx context.Context, usv libsass.SassValue) (rsv *libsas
 }
 
 // SpriteFile proxies the sprite glob and image name through.
-func SpriteFile(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error {
+func SpriteFile(ctx context.Context, usv libsass.SassValue) (rsv *libsass.SassValue, err error) {
 	var glob, name string
-	err := libsass.Unmarshal(usv, &glob, &name)
+	err = libsass.Unmarshal(usv, &glob, &name)
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return nil, err
 	}
 	infs := []interface{}{glob, name}
 	res, err := libsass.Marshal(infs)
-	if rsv != nil {
-		*rsv = res
-	}
-	return nil
+	return &res, err
 }
 
 // Sprite returns the source and background position for an image in the
@@ -132,7 +129,7 @@ func Sprite(ctx context.Context, usv libsass.SassValue) (rsv *libsass.SassValue,
 	}
 
 	buildDir := pather.BuildDir()
-	genImgDir := pather.GenImgDir()
+	genImgDir := pather.ImgBuildDir()
 	httpPath := pather.HTTPPath()
 
 	// FIXME: path directory can not be trusted, rebuild this from the context
@@ -195,11 +192,11 @@ func SpriteMap(mainctx context.Context, usv libsass.SassValue) (*libsass.SassVal
 	if err != nil {
 		return nil, err
 	}
-	ctx := comp.Context()
+	paths := comp.(libsass.Pather)
 	imgs := sw.New(&sw.Options{
-		ImageDir:  ctx.ImageDir,
-		BuildDir:  ctx.BuildDir,
-		GenImgDir: ctx.GenImgDir,
+		ImageDir:  paths.ImgDir(),
+		BuildDir:  paths.BuildDir(),
+		GenImgDir: paths.ImgBuildDir(),
 		Padding:   int(spacing.Value),
 	})
 	if cglob, err := strconv.Unquote(glob); err == nil {

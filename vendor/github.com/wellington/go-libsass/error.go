@@ -14,7 +14,7 @@ type SassError struct {
 
 // ProcessSassError reads the original libsass error and creates helpful debuggin
 // information for debuggin that error.
-func (ctx *Context) ProcessSassError(bs []byte) error {
+func (ctx *compctx) ProcessSassError(bs []byte) error {
 
 	if len(bs) == 0 {
 		return nil
@@ -31,18 +31,18 @@ func (ctx *Context) ProcessSassError(bs []byte) error {
 	return nil
 }
 
-func (ctx *Context) Error() string {
+func (ctx *compctx) Error() string {
 	return ctx.errorString
 }
 
 // Reset returns removes all error state information.
-func (ctx *Context) Reset() {
+func (ctx *compctx) Reset() {
 	ctx.errorString = ""
 }
 
 // ErrorLine attempts to resolve the file associated with
 // a stdin:#
-func (ctx *Context) ErrorLine() int {
+func (ctx *compctx) ErrorLine() int {
 	var n int
 	fmt.Sscanf(ctx.Error(), "Error > stdin:%d", &n)
 	return n

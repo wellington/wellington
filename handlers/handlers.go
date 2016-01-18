@@ -25,7 +25,7 @@ func init() {
 	libsass.RegisterSassFunc("image-url($name)", ImageURL)
 	libsass.RegisterSassFunc("image-height($path)", ImageHeight)
 	libsass.RegisterSassFunc("image-width($path)", ImageWidth)
-	libsass.RegisterHandler("inline-image($path, $encode: false)", InlineImage)
+	libsass.RegisterSassFunc("inline-image($path, $encode: false)", InlineImage)
 }
 
 var ErrPayloadNil = errors.New("payload is nil")
@@ -38,7 +38,6 @@ func ImageURL(ctx context.Context, csv libsass.SassValue) (*libsass.SassValue, e
 		return nil, err
 	}
 	pather := comp.(libsass.Pather)
-	libctx := comp.Context()
 	var path []string
 	err = libsass.Unmarshal(csv, &path)
 	// This should create and throw a sass error
@@ -59,9 +58,12 @@ func ImageURL(ctx context.Context, csv libsass.SassValue) (*libsass.SassValue, e
 	if err != nil {
 		return nil, err
 	}
-
+	rel, err := relativeImage(pather.BuildDir(), pather.ImgDir())
+	if err != nil {
+		return nil, err
+	}
 	url := strings.Join([]string{
-		libctx.RelativeImage(),
+		rel,
 		path[0],
 	}, "/")
 	res, err := libsass.Marshal(fmt.Sprintf("url('%s%s')", url, qry))
@@ -69,6 +71,11 @@ func ImageURL(ctx context.Context, csv libsass.SassValue) (*libsass.SassValue, e
 		return nil, err
 	}
 	return &res, nil
+}
+
+func relativeImage(buildDir, imageDir string) (string, error) {
+	rel, err := filepath.Rel(buildDir, imageDir)
+	return filepath.ToSlash(filepath.Clean(rel)), err
 }
 
 // ImageHeight takes a file path (or sprite glob) and returns the
@@ -83,7 +90,7 @@ func ImageHeight(mainctx context.Context, usv libsass.SassValue) (*libsass.SassV
 	if err != nil {
 		return nil, err
 	}
-	ctx := comp.Context()
+
 	err = libsass.Unmarshal(usv, &name)
 	// Check for sprite-file override first
 	if err != nil {
@@ -101,10 +108,11 @@ func ImageHeight(mainctx context.Context, usv libsass.SassValue) (*libsass.SassV
 		glob = infs[0].(string)
 		name = infs[1].(string)
 	}
+	paths := comp.(libsass.Pather)
 	imgs := sw.New(&sw.Options{
-		ImageDir:  ctx.ImageDir,
-		BuildDir:  ctx.BuildDir,
-		GenImgDir: ctx.GenImgDir,
+		ImageDir:  paths.ImgDir(),
+		BuildDir:  paths.BuildDir(),
+		GenImgDir: paths.ImgBuildDir(),
 	})
 
 	loadctx := comp.Payload()
@@ -152,7 +160,7 @@ func ImageWidth(mainctx context.Context, usv libsass.SassValue) (rsv *libsass.Sa
 	if err != nil {
 		return
 	}
-	ctx := comp.Context()
+
 	err = libsass.Unmarshal(usv, &name)
 	// Check for sprite-file override first
 	if err != nil {
@@ -170,10 +178,11 @@ func ImageWidth(mainctx context.Context, usv libsass.SassValue) (rsv *libsass.Sa
 		glob = infs[0].(string)
 		name = infs[1].(string)
 	}
+	paths := comp.(libsass.Pather)
 	imgs := sw.New(&sw.Options{
-		ImageDir:  ctx.ImageDir,
-		BuildDir:  ctx.BuildDir,
-		GenImgDir: ctx.GenImgDir,
+		ImageDir:  paths.ImgDir(),
+		BuildDir:  paths.BuildDir(),
+		GenImgDir: paths.ImgBuildDir(),
 	})
 
 	loadctx := comp.Payload()
@@ -238,17 +247,23 @@ func (g img) Do(name string) (io.ReadCloser, error) {
 var imgResolver Resolver = img{}
 
 // InlineImage returns a base64 encoded png from the input image
-func InlineImage(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error {
+func InlineImage(mainctx context.Context, usv libsass.SassValue) (rsv *libsass.SassValue, err error) {
 	var (
 		name   string
 		encode bool
 		f      io.ReadCloser
 	)
-	ctx := v.(*libsass.Context)
-	err := libsass.Unmarshal(usv, &name, &encode)
+	comp, err := libsass.CompFromCtx(mainctx)
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return nil, err
 	}
+
+	err = libsass.Unmarshal(usv, &name, &encode)
+	if err != nil {
+		return nil, err
+	}
+
+	paths := comp.(libsass.Pather)
 
 	// check for valid URL. If true, attempt to resolve image.
 	// This is really going to slow down compilation think about
@@ -257,26 +272,23 @@ func InlineImage(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) e
 	if err == nil && len(u.Scheme) > 0 {
 		f, err = imgResolver.Do(u.String())
 	} else {
-		f, err = os.Open(filepath.Join(ctx.ImageDir, name))
+		f, err = os.Open(filepath.Join(paths.ImgDir(), name))
 	}
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return nil, err
 	}
 	defer f.Close()
 
 	var buf bytes.Buffer
 	err = sw.Inline(f, &buf, encode)
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return nil, err
 	}
 	res, err := libsass.Marshal(buf.String())
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return nil, err
 	}
-	if rsv != nil {
-		*rsv = res
-	}
-	return nil
+	return &res, nil
 }
 
 func setErrorAndReturn(err error, rsv *libsass.SassValue) error {

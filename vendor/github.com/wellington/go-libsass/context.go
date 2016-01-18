@@ -17,7 +17,7 @@ import (
 
 // Context handles the interactions with libsass.  Context
 // exposes libsass options that are available.
-type Context struct {
+type compctx struct {
 	// TODO: hack to give handlers Access to the Compiler
 	compiler Compiler
 
@@ -92,8 +92,8 @@ func init() {
 
 }
 
-func NewContext() *Context {
-	c := &Context{
+func newContext() *compctx {
+	c := &compctx{
 		Headers: NewHeaders(),
 		Imports: NewImports(),
 	}
@@ -105,7 +105,7 @@ func NewContext() *Context {
 }
 
 // Init validates options in the struct and returns a Sass Options.
-func (ctx *Context) Init(goopts libs.SassOptions) libs.SassOptions {
+func (ctx *compctx) Init(goopts libs.SassOptions) libs.SassOptions {
 	if ctx.Precision == 0 {
 		ctx.Precision = 5
 	}
@@ -121,7 +121,7 @@ func (ctx *Context) Init(goopts libs.SassOptions) libs.SassOptions {
 	return goopts
 }
 
-func (ctx *Context) FileCompile(path string, out io.Writer) error {
+func (ctx *compctx) FileCompile(path string, out io.Writer) error {
 	defer ctx.Reset()
 	gofc := libs.SassMakeFileContext(path)
 	goopts := libs.SassFileContextGetOptions(gofc)
@@ -163,7 +163,7 @@ func (ctx *Context) FileCompile(path string, out io.Writer) error {
 
 // Compile reads in and writes the libsass compiled result to out.
 // Options and custom functions are applied as specified in Context.
-func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
+func (ctx *compctx) Compile(in io.Reader, out io.Writer) error {
 
 	defer ctx.Reset()
 	bs, err := ioutil.ReadAll(in)
@@ -220,7 +220,7 @@ func (ctx *Context) Compile(in io.Reader, out io.Writer) error {
 // Rel creates relative paths between the build directory where the CSS lives
 // and the image directory that is being linked.  This is not compatible
 // with generated images like sprites.
-func (p *Context) RelativeImage() string {
+func (p *compctx) RelativeImage() string {
 	rel, _ := filepath.Rel(p.BuildDir, p.ImageDir)
 	return filepath.ToSlash(filepath.Clean(rel))
 }

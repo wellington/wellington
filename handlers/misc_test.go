@@ -11,17 +11,24 @@ import (
 )
 
 func TestFontURLFail(t *testing.T) {
-	var ignore *os.File
-	old := os.Stdout
-	defer func() { os.Stdout = old }()
-	os.Stdout = ignore
 	in := bytes.NewBufferString(`@font-face {
   src: font-url("arial.eot");
 }`)
 	var out bytes.Buffer
-	ctx := libsass.NewContext()
-	err := ctx.Compile(in, &out)
+	comp, err := libsass.New(&out, in,
+		libsass.OutputStyle(libsass.NESTED_STYLE),
+		libsass.BuildDir("../test/build"),
+		libsass.ImgDir("../test/img"),
+		libsass.ImgBuildDir("../test/build/img"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
 
+	err = comp.Run()
+	if err == nil {
+		t.Fatal("no error reported")
+	}
 	e := "error in C function font-url: font-url: font path not set"
 	if !strings.Contains(err.Error(), e) {
 		t.Errorf("got:\n%s\nwanted:\n%s\n", err, e)
@@ -38,7 +45,7 @@ $path: font-url($raw: true, $path: "arial.eot");
 }`
 	in := bytes.NewBufferString(contents)
 	var out bytes.Buffer
-	comp, _, err := setupComp(t, in, &out)
+	comp, err := setupComp(t, in, &out)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,17 +86,24 @@ $path: font-url($raw: true, $path: "arial.eot");
 }
 
 func TestFontURL_invalid(t *testing.T) {
-	r, w, _ := os.Pipe()
-	_, _ = r, w
-	old := os.Stdout
-	defer func() { os.Stdout = old }()
-	//os.Stdout = w
 	in := bytes.NewBufferString(`@font-face {
   src: font-url(5px);
 }`)
 	var out bytes.Buffer
-	ctx := libsass.NewContext()
-	err := ctx.Compile(in, &out)
+	comp, err := libsass.New(&out, in,
+		libsass.OutputStyle(libsass.NESTED_STYLE),
+		libsass.BuildDir("../test/build"),
+		libsass.ImgDir("../test/img"),
+		libsass.ImgBuildDir("../test/build/img"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = comp.Run()
+	if err == nil {
+		t.Fatal("no error reported")
+	}
 
 	e := `Error > stdin:2
 error in C function font-url: Invalid Sass type expected: string got: libs.SassNumber value: 5px`

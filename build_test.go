@@ -33,34 +33,27 @@ func TestFromBuildArgs(t *testing.T) {
 
 }
 
-// InitializeContext sets up some data structures necessary
-// to use wellington
-func InitializeContext(ctx *libsass.Context) {
-	ctx.Payload = payload.New()
-}
-
 func TestCompileStdin_imports(t *testing.T) {
 
 	in := bytes.NewBufferString(`@import "compass";
 @import "compass/utilities/sprite/base";
 
 `)
-	ctx := libsass.NewContext()
-	InitializeContext(ctx)
-	ctx.Imports.Init()
 
 	var buf bytes.Buffer
-	err := ctx.Compile(in, &buf)
+	comp, err := libsass.New(&buf, in, libsass.Payload(payload.New()))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	out := buf.String()
+	if err := comp.Run(); err != nil {
+		t.Fatal(err)
+	}
 
+	out := buf.String()
 	if e := ``; e != out {
 		t.Fatalf("mismatch expected:\n%s\nwas:\n%s\n", e, out)
 	}
-
 }
 
 func BenchmarkNewBuild(b *testing.B) {

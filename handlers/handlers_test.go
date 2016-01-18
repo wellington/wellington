@@ -22,32 +22,24 @@ func init() {
 	os.MkdirAll("../test/build/img", 0777)
 }
 
-func wrapCallback(sc libsass.HandlerFunc, ch chan libsass.SassValue) libs.SassCallback {
-	return libsass.Handler(func(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error {
-		c := v.(*libsass.Context)
-		err := sc(c, usv, rsv)
-		ch <- *rsv
-		return err
-	})
-}
-
-func testSprite(ctx *libsass.Context) {
+func testSprite(t *testing.T, comp libsass.Compiler) {
+	paths := comp.(libsass.Pather)
 	// Generate test sprite
 	imgs := spritewell.New(&spritewell.Options{
-		ImageDir:  ctx.ImageDir,
-		BuildDir:  ctx.BuildDir,
-		GenImgDir: ctx.GenImgDir,
+		ImageDir:  paths.ImgDir(),
+		BuildDir:  paths.BuildDir(),
+		GenImgDir: paths.ImgBuildDir(),
 	})
 	glob := "*.png"
 	err := imgs.Decode(glob)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 }
 
-func setupComp(t *testing.T, r io.Reader, out io.Writer) (libsass.Compiler, libsass.SassValue, error) {
-	var usv libsass.SassValue
+func setupComp(t *testing.T, r io.Reader, out io.Writer) (libsass.Compiler, error) {
+
 	comp, err := libsass.New(out, r,
 		libsass.OutputStyle(libsass.NESTED_STYLE),
 		libsass.BuildDir("../test/build"),
@@ -59,7 +51,7 @@ func setupComp(t *testing.T, r io.Reader, out io.Writer) (libsass.Compiler, libs
 	if err != nil {
 		t.Fatal(err)
 	}
-	testSprite(comp.Context())
+	testSprite(t, comp)
 
 	done := make(chan struct{})
 	go func() {
@@ -73,42 +65,7 @@ func setupComp(t *testing.T, r io.Reader, out io.Writer) (libsass.Compiler, libs
 
 	err = comp.Run()
 	close(done)
-	return comp, usv, err
-}
-
-func oldContext() *libsass.Context {
-	ctx := libsass.NewContext()
-	ctx.Payload = payload.New()
-	return ctx
-}
-
-func setupCtx(t *testing.T, r io.Reader, out io.Writer /*, cookies ...libsass.Cookie*/) (*libsass.Context, libsass.SassValue, error) {
-	var usv libsass.SassValue
-
-	ctx := oldContext()
-	ctx.OutputStyle = libsass.NESTED_STYLE
-	ctx.IncludePaths = make([]string, 0)
-	ctx.BuildDir = "../test/build"
-	ctx.ImageDir = "../test/img"
-	ctx.FontDir = "../test/font"
-	ctx.GenImgDir = "../test/build/img"
-	ctx.Out = ""
-
-	testSprite(ctx)
-
-	done := make(chan struct{})
-	go func() {
-		select {
-		case <-time.After(5 * time.Second):
-			t.Fatal("setupCtx timeout")
-		case <-done:
-			return
-		}
-	}()
-
-	err := ctx.Compile(r, out)
-	close(done)
-	return ctx, usv, err
+	return comp, err
 }
 
 func TestFuncImageURL(t *testing.T) {
@@ -175,10 +132,8 @@ func TestCompile_HTTP_InlineImage(t *testing.T) {
   background: #602d6c no-repeat inline-image("http://example.com/pixel/1x1.png");
 }`)
 
-	ctx := oldContext()
-
 	var out bytes.Buffer
-	err = ctx.Compile(in, &out)
+	_, err = setupComp(t, in, &out)
 	if err != nil {
 		t.Error(err)
 	}
@@ -195,7 +150,7 @@ func TestFuncImageHeight(t *testing.T) {
     height: image-height("139");
 }`)
 	var out bytes.Buffer
-	_, _, err := setupCtx(t, in, &out)
+	_, err := setupComp(t, in, &out)
 
 	if err != nil {
 		t.Error(err)
@@ -214,7 +169,7 @@ func TestRegImageWidth(t *testing.T) {
     height: image-width("139");
 }`)
 	var out bytes.Buffer
-	_, _, err := setupCtx(t, in, &out)
+	_, err := setupComp(t, in, &out)
 	if err != nil {
 		t.Error(err)
 	}
@@ -232,7 +187,7 @@ div {
   height: image-height(sprite-file($map,"139"));
 }`)
 	var out bytes.Buffer
-	_, _, err := setupCtx(t, in, &out)
+	_, err := setupComp(t, in, &out)
 	if err != nil {
 		t.Error(err)
 	}
@@ -250,7 +205,7 @@ div {
   width: image-width(sprite-file($map,"139"));
 }`)
 	var out bytes.Buffer
-	_, _, err := setupCtx(t, in, &out)
+	_, err := setupComp(t, in, &out)
 	if err != nil {
 		t.Error(err)
 	}
@@ -271,7 +226,7 @@ div {
 }`
 	in := bytes.NewBufferString(contents)
 	var out bytes.Buffer
-	comp, _, err := setupComp(t, in, &out)
+	comp, err := setupComp(t, in, &out)
 	if err != nil {
 		t.Error(err)
 	}
@@ -298,7 +253,7 @@ div {
 }`
 	in := bytes.NewBufferString(contents)
 	var out bytes.Buffer
-	comp, _, err := setupComp(t, in, &out)
+	comp, err := setupComp(t, in, &out)
 	if err != nil {
 		t.Error(err)
 	}
@@ -356,7 +311,7 @@ div {
     background: inline-image("pixel/1x1.png");
 }`)
 	var out bytes.Buffer
-	_, _, err := setupCtx(t, in, &out)
+	_, err := setupComp(t, in, &out)
 	if err != nil {
 		t.Error(err)
 	}
@@ -374,7 +329,7 @@ div {
     background: inline-image("pixel/nofile.png");
 }`)
 	var out bytes.Buffer
-	_, _, err := setupCtx(t, in, &out)
+	_, err := setupComp(t, in, &out)
 	if err == nil {
 		t.Error("No error thrown for missing file")
 	}
@@ -403,7 +358,7 @@ div {
   background: sprite("nomap", "140");
 }`)
 	var out bytes.Buffer
-	_, _, err := setupCtx(t, in, &out)
+	_, err := setupComp(t, in, &out)
 	if err == nil {
 		t.Error("no error thrown for invalid map")
 	}
@@ -434,18 +389,18 @@ div {
   background: sprite($map, "140");
 }`)
 
-	ctx := oldContext()
-
-	ctx.BuildDir = "../test/build"
-	ctx.GenImgDir = "../test/build/img"
-	ctx.ImageDir = "../test/img"
-	var out bytes.Buffer
-	err := ctx.Compile(in, &out)
+	comp, err := libsass.New(os.Stdout, in,
+		libsass.Payload(payload.New()),
+		libsass.ImgDir("../test/img"),
+		libsass.BuildDir("../test/build"),
+		libsass.ImgBuildDir("../test/build/img"),
+	)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
-
-	io.Copy(os.Stdout, &out)
+	if err := comp.Run(); err != nil {
+		log.Fatal(err)
+	}
 
 	// Output:
 	// div {
@@ -459,12 +414,8 @@ div {
   background: sprite($map, "140", 10px, 10px);
 }`)
 
-	ctx := oldContext()
-	ctx.BuildDir = "../test/build"
-	ctx.GenImgDir = "../test/build/img"
-	ctx.ImageDir = "../test/img"
 	var out bytes.Buffer
-	err := ctx.Compile(in, &out)
+	_, err := setupComp(t, in, &out)
 
 	if err != nil {
 		t.Fatal("expected error")
@@ -485,12 +436,8 @@ div {
   background: sprite($map, "140", 0, 0);
 }`)
 
-	ctx := oldContext()
-	ctx.BuildDir = "../test/build"
-	ctx.GenImgDir = "../test/build/img"
-	ctx.ImageDir = "../test/img"
 	var out bytes.Buffer
-	err := ctx.Compile(in, &out)
+	_, err := setupComp(t, in, &out)
 
 	e := `Error > stdin:4
 error in C function sprite: Please specify unit for offset ie. (2px)
@@ -521,18 +468,24 @@ div {
   background: sprite($map, "140");
 }`)
 
-	ctx := oldContext()
-	ctx.IncludePaths = []string{"../test"}
-	ctx.HTTPPath = "http://foo.com"
-	ctx.BuildDir = "../test/build"
-	ctx.GenImgDir = "../test/build/img"
-	ctx.ImageDir = "../test/img"
 	var out bytes.Buffer
-	err := ctx.Compile(in, &out)
-
+	comp, err := libsass.New(&out, in,
+		libsass.OutputStyle(libsass.NESTED_STYLE),
+		libsass.BuildDir("../test/build"),
+		libsass.ImgDir("../test/img"),
+		libsass.FontDir("../test/font"),
+		libsass.Payload(payload.New()),
+		libsass.ImgBuildDir("../test/build/img"),
+		libsass.HTTPPath("http://foo.com"),
+	)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
+
+	if err := comp.Run(); err != nil {
+		t.Fatal(err)
+	}
+
 	e := `div {
   background: url("http://foo.com/build/4f0c6e.png") 0px -149px; }
 `
@@ -554,14 +507,8 @@ div {
   background: sprite($map, "twitt");
 }`)
 
-	ctx := oldContext()
-
-	ctx.BuildDir = "../test/build"
-	ctx.GenImgDir = "../test/build/img"
-	ctx.ImageDir = "../test/img"
 	var out bytes.Buffer
-	err := ctx.Compile(in, &out)
-
+	_, err := setupComp(t, in, &out)
 	if err != nil {
 		t.Error(err)
 	}
@@ -584,7 +531,7 @@ func TestInlineSVG(t *testing.T) {
 	in.WriteString(`div {
   background-image: inline-image("hexane.svg");
 }`)
-	_, _, err := setupCtx(t, &in, &out)
+	_, err := setupComp(t, &in, &out)
 	if err != nil {
 		t.Error(err)
 	}
@@ -602,7 +549,7 @@ func TestInlineSVG(t *testing.T) {
 	in.WriteString(`div {
   background-image: inline-image("hexane.svg", $encode: true);
 }`)
-	_, _, err = setupCtx(t, &in, &out)
+	_, err = setupComp(t, &in, &out)
 	if err != nil {
 		t.Error(err)
 	}

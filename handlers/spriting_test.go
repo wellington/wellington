@@ -2,12 +2,12 @@ package handlers
 
 import (
 	"bytes"
-	"fmt"
-	"io"
+	"log"
 	"os"
 	"testing"
 
 	libsass "github.com/wellington/go-libsass"
+	"github.com/wellington/wellington/payload"
 )
 
 func ExampleSprite_position() {
@@ -21,17 +21,20 @@ div.retina {
   background-position: 10px ceil(nth(sprite-position($map, "140"), 2) /2 );
 }`)
 
-	ctx := oldContext()
-	ctx.BuildDir = "../test/build"
-	ctx.GenImgDir = "../test/build/img"
-	ctx.ImageDir = "../test/img"
-	var out bytes.Buffer
-	err := ctx.Compile(in, &out)
+	comp, err := libsass.New(os.Stdout, in,
+		libsass.Payload(payload.New()),
+		libsass.ImgDir("../test/img"),
+		libsass.BuildDir("../test/build"),
+		libsass.ImgBuildDir("../test/build/img"),
+	)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
 
-	io.Copy(os.Stdout, &out)
+	err = comp.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Output:
 	// div {
@@ -42,18 +45,30 @@ div.retina {
 }
 
 func TestFuncSpriteFile(t *testing.T) {
-	ctx := oldContext()
-	ctx.BuildDir = "../test/build"
-	ctx.GenImgDir = "../test/build/img"
-	ctx.ImageDir = "../test/img"
+
+	comp, err := libsass.New(nil, nil,
+		libsass.Payload(payload.New()),
+		libsass.ImgDir("../test/img"),
+		libsass.BuildDir("../test/build"),
+		libsass.ImgBuildDir("../test/build/img"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// Add real arguments when sass lists can be [un]marshalled
 	lst := []interface{}{"*.png", "139"}
-	usv, _ := libsass.Marshal(lst)
-	var rsv libsass.SassValue
-	SpriteFile(ctx, usv, &rsv)
+	usv, err := libsass.Marshal(lst)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rsv, err := SpriteFile(libsass.NewCompilerContext(comp), usv)
+	if err != nil {
+		t.Fatal(err)
+	}
 	var glob, path string
-	err := libsass.Unmarshal(rsv, &glob, &path)
+	err = libsass.Unmarshal(*rsv, &glob, &path)
 	if err != nil {
 		t.Error(err)
 	}
@@ -104,22 +119,17 @@ height: $aritymap;
 line-height: $paddedmap;
 }`)
 
-	ctx := oldContext()
-
-	ctx.BuildDir = "../test/build"
-	ctx.GenImgDir = "../test/build/img"
-	ctx.ImageDir = "../test/img"
 	var out bytes.Buffer
-	err := ctx.Compile(in, &out)
+	_, err := setupComp(t, in, &out)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
+
 	exp := `div {
   width: *.png0;
   height: *.png0;
   line-height: *.png1; }
 `
-
 	if exp != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), exp)
 	}
@@ -131,17 +141,12 @@ div {
   content: $map;
 }`)
 
-	ctx := oldContext()
-
-	ctx.ImageDir = "../test/img"
-	ctx.BuildDir = "../test/build"
-	ctx.GenImgDir = "../test/build/img"
-
 	var out bytes.Buffer
-	err := ctx.Compile(in, &out)
+	_, err := setupComp(t, in, &out)
 	if err != nil {
 		t.Error(err)
 	}
+
 	exp := `div {
   content: *.png10; }
 `
