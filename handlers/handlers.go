@@ -90,7 +90,7 @@ func ImageHeight(mainctx context.Context, usv libsass.SassValue) (*libsass.SassV
 	if err != nil {
 		return nil, err
 	}
-	ctx := comp.Context()
+
 	err = libsass.Unmarshal(usv, &name)
 	// Check for sprite-file override first
 	if err != nil {
@@ -109,9 +109,9 @@ func ImageHeight(mainctx context.Context, usv libsass.SassValue) (*libsass.SassV
 		name = infs[1].(string)
 	}
 	imgs := sw.New(&sw.Options{
-		ImageDir:  ctx.ImageDir,
-		BuildDir:  ctx.BuildDir,
-		GenImgDir: ctx.GenImgDir,
+		ImageDir:  comp.ImgDir(),
+		BuildDir:  comp.BuildDir(),
+		GenImgDir: comp.GenImgDir(),
 	})
 
 	loadctx := comp.Payload()
@@ -159,7 +159,7 @@ func ImageWidth(mainctx context.Context, usv libsass.SassValue) (rsv *libsass.Sa
 	if err != nil {
 		return
 	}
-	ctx := comp.Context()
+
 	err = libsass.Unmarshal(usv, &name)
 	// Check for sprite-file override first
 	if err != nil {
@@ -178,9 +178,9 @@ func ImageWidth(mainctx context.Context, usv libsass.SassValue) (rsv *libsass.Sa
 		name = infs[1].(string)
 	}
 	imgs := sw.New(&sw.Options{
-		ImageDir:  ctx.ImageDir,
-		BuildDir:  ctx.BuildDir,
-		GenImgDir: ctx.GenImgDir,
+		ImageDir:  comp.ImgDir(),
+		BuildDir:  comp.BuildDir(),
+		GenImgDir: comp.GenImgDir(),
 	})
 
 	loadctx := comp.Payload()

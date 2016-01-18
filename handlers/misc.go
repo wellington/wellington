@@ -30,20 +30,21 @@ func FontURL(ctx context.Context, usv libsass.SassValue) (*libsass.SassValue, er
 	if err != nil {
 		return nil, err
 	}
-	libctx := comp.Context()
+
 	err = libsass.Unmarshal(usv, &path, &raw)
 
 	if err != nil {
 		return nil, err
 	}
 
+	fdir := comp.FontDir()
 	// Enter warning
-	if libctx.FontDir == "." || libctx.FontDir == "" {
+	if fdir == "." || fdir == "" {
 		s := "font-url: font path not set"
 		return nil, errors.New(s)
 	}
 
-	rel, err := filepath.Rel(libctx.BuildDir, libctx.FontDir)
+	rel, err := filepath.Rel(comp.BuildDir(), fdir)
 	if err != nil {
 		return nil, err
 	}
@@ -53,9 +54,8 @@ func FontURL(ctx context.Context, usv libsass.SassValue) (*libsass.SassValue, er
 	} else {
 		format = `url("%s%s")`
 	}
-	// TODO: FontDir() on compiler
-	fontdir := libctx.FontDir
-	abspath := filepath.Join(fontdir, path)
+
+	abspath := filepath.Join(fdir, path)
 	qry, err := qs(comp.CacheBust(), abspath)
 	if err != nil {
 		return nil, err

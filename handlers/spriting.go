@@ -195,11 +195,11 @@ func SpriteMap(mainctx context.Context, usv libsass.SassValue) (*libsass.SassVal
 	if err != nil {
 		return nil, err
 	}
-	ctx := comp.Context()
+
 	imgs := sw.New(&sw.Options{
-		ImageDir:  ctx.ImageDir,
-		BuildDir:  ctx.BuildDir,
-		GenImgDir: ctx.GenImgDir,
+		ImageDir:  comp.ImgDir(),
+		BuildDir:  comp.BuildDir(),
+		GenImgDir: comp.GenImgDir(),
 		Padding:   int(spacing.Value),
 	})
 	if cglob, err := strconv.Unquote(glob); err == nil {
