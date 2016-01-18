@@ -46,8 +46,8 @@ func testSprite(t *testing.T, comp libsass.Compiler) {
 
 }
 
-func setupComp(t *testing.T, r io.Reader, out io.Writer) (libsass.Compiler, libsass.SassValue, error) {
-	var usv libsass.SassValue
+func setupComp(t *testing.T, r io.Reader, out io.Writer) (libsass.Compiler, error) {
+
 	comp, err := libsass.New(out, r,
 		libsass.OutputStyle(libsass.NESTED_STYLE),
 		libsass.BuildDir("../test/build"),
@@ -73,7 +73,7 @@ func setupComp(t *testing.T, r io.Reader, out io.Writer) (libsass.Compiler, libs
 
 	err = comp.Run()
 	close(done)
-	return comp, usv, err
+	return comp, err
 }
 
 func oldContext() *libsass.Context {
@@ -97,14 +97,6 @@ func setupCtx(t *testing.T, r io.Reader, out io.Writer /*, cookies ...libsass.Co
 		t.Fatal(err)
 	}
 	ctx := comp.Context()
-	// ctx := oldContext()
-	// ctx.OutputStyle = libsass.NESTED_STYLE
-	// ctx.IncludePaths = make([]string, 0)
-	// ctx.BuildDir = "../test/build"
-	// ctx.ImageDir = "../test/img"
-	// ctx.FontDir = "../test/font"
-	// ctx.GenImgDir = "../test/build/img"
-	// ctx.Out = ""
 
 	testSprite(t, comp)
 
@@ -187,10 +179,8 @@ func TestCompile_HTTP_InlineImage(t *testing.T) {
   background: #602d6c no-repeat inline-image("http://example.com/pixel/1x1.png");
 }`)
 
-	ctx := oldContext()
-
 	var out bytes.Buffer
-	err = ctx.Compile(in, &out)
+	_, err = setupComp(t, in, &out)
 	if err != nil {
 		t.Error(err)
 	}
@@ -207,7 +197,7 @@ func TestFuncImageHeight(t *testing.T) {
     height: image-height("139");
 }`)
 	var out bytes.Buffer
-	_, _, err := setupCtx(t, in, &out)
+	_, err := setupComp(t, in, &out)
 
 	if err != nil {
 		t.Error(err)
@@ -283,7 +273,7 @@ div {
 }`
 	in := bytes.NewBufferString(contents)
 	var out bytes.Buffer
-	comp, _, err := setupComp(t, in, &out)
+	comp, err := setupComp(t, in, &out)
 	if err != nil {
 		t.Error(err)
 	}
@@ -310,7 +300,7 @@ div {
 }`
 	in := bytes.NewBufferString(contents)
 	var out bytes.Buffer
-	comp, _, err := setupComp(t, in, &out)
+	comp, err := setupComp(t, in, &out)
 	if err != nil {
 		t.Error(err)
 	}

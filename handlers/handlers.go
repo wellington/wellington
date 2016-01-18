@@ -25,7 +25,7 @@ func init() {
 	libsass.RegisterSassFunc("image-url($name)", ImageURL)
 	libsass.RegisterSassFunc("image-height($path)", ImageHeight)
 	libsass.RegisterSassFunc("image-width($path)", ImageWidth)
-	libsass.RegisterHandler("inline-image($path, $encode: false)", InlineImage)
+	libsass.RegisterSassFunc("inline-image($path, $encode: false)", InlineImage)
 }
 
 var ErrPayloadNil = errors.New("payload is nil")
@@ -247,16 +247,20 @@ func (g img) Do(name string) (io.ReadCloser, error) {
 var imgResolver Resolver = img{}
 
 // InlineImage returns a base64 encoded png from the input image
-func InlineImage(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) error {
+func InlineImage(mainctx context.Context, usv libsass.SassValue) (rsv *libsass.SassValue, err error) {
 	var (
 		name   string
 		encode bool
 		f      io.ReadCloser
 	)
-	ctx := v.(*libsass.Context)
-	err := libsass.Unmarshal(usv, &name, &encode)
+	comp, err := libsass.CompFromCtx(mainctx)
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return nil, err
+	}
+	ctx := comp.Context()
+	err = libsass.Unmarshal(usv, &name, &encode)
+	if err != nil {
+		return nil, err
 	}
 
 	// check for valid URL. If true, attempt to resolve image.
@@ -269,23 +273,20 @@ func InlineImage(v interface{}, usv libsass.SassValue, rsv *libsass.SassValue) e
 		f, err = os.Open(filepath.Join(ctx.ImageDir, name))
 	}
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return nil, err
 	}
 	defer f.Close()
 
 	var buf bytes.Buffer
 	err = sw.Inline(f, &buf, encode)
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return nil, err
 	}
 	res, err := libsass.Marshal(buf.String())
 	if err != nil {
-		return setErrorAndReturn(err, rsv)
+		return nil, err
 	}
-	if rsv != nil {
-		*rsv = res
-	}
-	return nil
+	return &res, nil
 }
 
 func setErrorAndReturn(err error, rsv *libsass.SassValue) error {

@@ -38,7 +38,7 @@ $path: font-url($raw: true, $path: "arial.eot");
 }`
 	in := bytes.NewBufferString(contents)
 	var out bytes.Buffer
-	comp, _, err := setupComp(t, in, &out)
+	comp, err := setupComp(t, in, &out)
 	if err != nil {
 		t.Fatal(err)
 	}
