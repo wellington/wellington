@@ -1,0 +1,1 @@
+Example using libSass Headers. Headers include Sass code at the top of every file. It is used by Wellington to include mixins like sprite-dimensions. In this example, we add a preamble to every file. It could be used to add license notes or include base styles that are shared everywhere.

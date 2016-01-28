@@ -34,7 +34,6 @@
 #include "../libsass-build/sass_values.cpp"
 #include "../libsass-build/source_map.cpp"
 #include "../libsass-build/to_c.cpp"
-#include "../libsass-build/to_string.cpp"
 #include "../libsass-build/to_value.cpp"
 #include "../libsass-build/units.cpp"
 #include "../libsass-build/utf8_string.cpp"

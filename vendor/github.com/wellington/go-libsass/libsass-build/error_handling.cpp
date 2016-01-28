@@ -2,7 +2,6 @@
 #include "ast.hpp"
 #include "prelexer.hpp"
 #include "backtrace.hpp"
-#include "to_string.hpp"
 #include "error_handling.hpp"
 
 #include <iostream>
@@ -26,9 +25,9 @@ namespace Sass {
     : Base(selector->pstate()), parent(parent), selector(selector)
     {
       msg = "Invalid parent selector for \"";
-      msg += selector->to_string(false);
+      msg += selector->to_string(Sass_Inspect_Options());
       msg += "\": \"";
-      msg += parent->to_string(false);;
+      msg += parent->to_string(Sass_Inspect_Options());
       msg += "\"";
     }
 
@@ -36,7 +35,7 @@ namespace Sass {
     : Base(pstate), fn(fn), arg(arg), type(type), value(value)
     {
       msg  = arg + ": \"";
-      msg += value->to_string(true, 5);
+      msg += value->to_string(Sass_Inspect_Options());
       msg += "\" is not a " + type;
       msg += " for `" + fn + "'";
     }
@@ -49,17 +48,9 @@ namespace Sass {
     : lhs(lhs), rhs(rhs), op(op)
     {
       msg  = def_op_msg + ": \"";
-      if (const Value* l = dynamic_cast<const Value*>(lhs)) {
-        msg += l->to_string();
-      } else if (lhs) {
-        msg += "[EXPRESSION]";
-      }
+      msg += lhs->to_string({ NESTED, 5 });
       msg += " " + op + " ";
-      if (const Value* r = dynamic_cast<const Value*>(rhs)) {
-        msg += r->to_string();
-      } else if (rhs) {
-        msg += "[EXPRESSION]";
-      }
+      msg += rhs->to_string({ TO_SASS, 5 });
       msg += "\".";
     }
 
@@ -67,17 +58,9 @@ namespace Sass {
     : UndefinedOperation(lhs, rhs, op)
     {
       msg  = def_op_null_msg + ": \"";
-      if (const Value* l = dynamic_cast<const Value*>(lhs)) {
-        msg += l->inspect();
-      } else if (lhs) {
-        msg += "[EXPRESSION]";
-      }
+      msg += lhs->inspect();
       msg += " " + op + " ";
-      if (const Value* r = dynamic_cast<const Value*>(rhs)) {
-        msg += r->inspect();
-      } else if (rhs) {
-        msg += "[EXPRESSION]";
-      }
+      msg += rhs->inspect();
       msg += "\".";
     }
 
@@ -85,6 +68,33 @@ namespace Sass {
     : lhs(lhs), rhs(rhs)
     {
       msg  = "divided by 0";
+    }
+
+    DuplicateKeyError::DuplicateKeyError(const Map& dup, const Expression& org)
+    : Base(org.pstate()), dup(dup), org(org)
+    {
+      msg  = "Duplicate key ";
+      dup.get_duplicate_key()->is_delayed(false);
+      msg += dup.get_duplicate_key()->inspect();
+      msg += " in map (";
+      msg += org.inspect();
+      msg += ").";
+    }
+
+    TypeMismatch::TypeMismatch(const Expression& var, const std::string type)
+    : Base(var.pstate()), var(var), type(type)
+    {
+      msg  = var.to_string();
+      msg += " is not an ";
+      msg += type;
+      msg += ".";
+    }
+
+    InvalidValue::InvalidValue(const Expression& val)
+    : Base(val.pstate()), val(val)
+    {
+      msg  = val.to_string();
+      msg += " isn't a valid CSS value.";
     }
 
     IncompatibleUnits::IncompatibleUnits(const Number& lhs, const Number& rhs)
@@ -101,17 +111,9 @@ namespace Sass {
     : lhs(lhs), rhs(rhs), op(op)
     {
       msg  = "Alpha channels must be equal: ";
-      if (const Value* l = dynamic_cast<const Value*>(lhs)) {
-        msg += l->to_string();
-      } else if (lhs) {
-        msg += "[EXPRESSION]";
-      }
+      msg += lhs->to_string({ NESTED, 5 });
       msg += " " + op + " ";
-      if (const Value* r = dynamic_cast<const Value*>(rhs)) {
-        msg += r->to_string();
-      } else if (rhs) {
-        msg += "[EXPRESSION]";
-      }
+      msg += rhs->to_string({ NESTED, 5 });
       msg += ".";
     }
 

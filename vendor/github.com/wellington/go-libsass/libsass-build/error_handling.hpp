@@ -86,6 +86,35 @@ namespace Sass {
         virtual ~ZeroDivisionError() throw() {};
     };
 
+    class DuplicateKeyError : public Base {
+      protected:
+        const Map& dup;
+        const Expression& org;
+      public:
+        DuplicateKeyError(const Map& dup, const Expression& org);
+        virtual const char* errtype() const { return "Error"; }
+        virtual ~DuplicateKeyError() throw() {};
+    };
+
+    class TypeMismatch : public Base {
+      protected:
+        const Expression& var;
+        const std::string type;
+      public:
+        TypeMismatch(const Expression& var, const std::string type);
+        virtual const char* errtype() const { return "Error"; }
+        virtual ~TypeMismatch() throw() {};
+    };
+
+    class InvalidValue : public Base {
+      protected:
+        const Expression& val;
+      public:
+        InvalidValue(const Expression& val);
+        virtual const char* errtype() const { return "Error"; }
+        virtual ~InvalidValue() throw() {};
+    };
+
     class IncompatibleUnits : public OperationError {
       protected:
         const Number& lhs;

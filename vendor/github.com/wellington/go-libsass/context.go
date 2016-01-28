@@ -68,9 +68,6 @@ type compctx struct {
 	// Attach additional data to a context for use by custom
 	// handlers/mixins
 	Payload context.Context
-
-	// Safe place to store memory allocations for C
-	entries *[]libs.ImportEntry
 }
 
 // Constants/enums for the output style.

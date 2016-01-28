@@ -200,6 +200,8 @@ namespace Sass {
     const char* strict_identifier_alpha(const char* src);
     const char* strict_identifier_alnum(const char* src);
     // Match a CSS unit identifier.
+    const char* one_unit(const char* src);
+    const char* multiple_units(const char* src);
     const char* unit_identifier(const char* src);
     // const char* strict_identifier_alnums(const char* src);
     // Match reference selector.
@@ -419,13 +421,42 @@ namespace Sass {
     }
 
     template <size_t size, prelexer mx, prelexer pad>
-    const char* padded_token(const char* src);
+    const char* padded_token(const char* src)
+    {
+      size_t got = 0;
+      const char* pos = src;
+      while (got < size) {
+        if (!mx(pos)) break;
+        ++ pos; ++ got;
+      }
+      while (got < size) {
+        if (!pad(pos)) break;
+        ++ pos; ++ got;
+      }
+      return got ? pos : 0;
+    }
 
     template <size_t min, size_t max, prelexer mx>
-    const char* minmax_range(const char* src);
+    const char* minmax_range(const char* src)
+    {
+      size_t got = 0;
+      const char* pos = src;
+      while (got < max) {
+        if (!mx(pos)) break;
+        ++ pos; ++ got;
+      }
+      if (got < min) return 0;
+      if (got > max) return 0;
+      return pos;
+    }
 
     template <char min, char max>
-    const char* char_range(const char* src);
+    const char* char_range(const char* src)
+    {
+      if (*src < min) return 0;
+      if (*src > max) return 0;
+      return src + 1;
+    }
 
   }
 }

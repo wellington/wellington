@@ -154,8 +154,8 @@ namespace Sass {
              >(src);
     }
 
-    // Match CSS unit identifier.
-    const char* unit_identifier(const char* src)
+    // Match a single CSS unit
+    const char* one_unit(const char* src)
     {
       return sequence <
                optional < exactly <'-'> >,
@@ -168,6 +168,34 @@ namespace Sass {
                  >
                > >
              >(src);
+    }
+
+    // Match numerator/denominator CSS units
+    const char* multiple_units(const char* src)
+    {
+      return
+        sequence <
+          one_unit,
+          zero_plus <
+            sequence <
+              exactly <'*'>,
+              one_unit
+            >
+          >
+        >(src);
+    }
+
+    // Match complex CSS unit identifiers
+    const char* unit_identifier(const char* src)
+    {
+      return sequence <
+        multiple_units,
+        optional <
+          sequence <
+          exactly <'/'>,
+          multiple_units
+        > >
+      >(src);
     }
 
     const char* identifier_alnums(const char* src)
@@ -195,7 +223,12 @@ namespace Sass {
                  sequence <
                    zero_plus <
                      alternatives <
-                       identifier,
+                       sequence <
+                         optional <
+                           exactly <'$'>
+                         >,
+                         identifier
+                       >,
                        exactly <'-'>
                      >
                    >,
@@ -203,7 +236,12 @@ namespace Sass {
                    zero_plus <
                      alternatives <
                        digits,
-                       identifier,
+                       sequence <
+                         optional <
+                           exactly <'$'>
+                         >,
+                         identifier
+                       >,
                        quoted_string,
                        exactly<'-'>
                      >
@@ -642,7 +680,20 @@ namespace Sass {
     // Match CSS uri specifiers.
 
     const char* uri_prefix(const char* src) {
-      return exactly<url_kwd>(src);
+      return sequence <
+        exactly <
+          url_kwd
+        >,
+        zero_plus <
+          sequence <
+            exactly <'-'>,
+            one_plus <
+              alpha
+            >
+          >
+        >,
+        exactly <'('>
+      >(src);
     }
 
     // TODO: rename the following two functions
@@ -1162,44 +1213,6 @@ namespace Sass {
           >
         >
       >(src);
-    }
-
-    template <size_t size, prelexer mx, prelexer pad>
-    const char* padded_token(const char* src)
-    {
-      size_t got = 0;
-      const char* pos = src;
-      while (got < size) {
-        if (!mx(pos)) break;
-        ++ pos; ++ got;
-      }
-      while (got < size) {
-        if (!pad(pos)) break;
-        ++ pos; ++ got;
-      }
-      return got ? pos : 0;
-    }
-
-    template <size_t min, size_t max, prelexer mx>
-    const char* minmax_range(const char* src)
-    {
-      size_t got = 0;
-      const char* pos = src;
-      while (got < max) {
-        if (!mx(pos)) break;
-        ++ pos; ++ got;
-      }
-      if (got < min) return 0;
-      if (got > max) return 0;
-      return pos;
-    }
-
-    template <char min, char max>
-    const char* char_range(const char* src)
-    {
-      if (*src < min) return 0;
-      if (*src > max) return 0;
-      return src + 1;
     }
 
   }

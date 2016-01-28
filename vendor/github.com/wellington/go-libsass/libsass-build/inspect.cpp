@@ -27,11 +27,11 @@ namespace Sass {
       add_open_mapping(block);
       append_scope_opener();
     }
-    if (output_style() == SASS_STYLE_NESTED) indentation += block->tabs();
+    if (output_style() == NESTED) indentation += block->tabs();
     for (size_t i = 0, L = block->length(); i < L; ++i) {
       (*block)[i]->perform(this);
     }
-    if (output_style() == SASS_STYLE_NESTED) indentation -= block->tabs();
+    if (output_style() == NESTED) indentation -= block->tabs();
     if (!block->is_root()) {
       append_scope_closer();
       add_close_mapping(block);
@@ -124,14 +124,15 @@ namespace Sass {
     if (dec->value()->concrete_type() == Expression::NULL_VAL) return;
     bool was_decl = in_declaration;
     in_declaration = true;
-    if (output_style() == SASS_STYLE_NESTED)
+    if (output_style() == NESTED)
       indentation += dec->tabs();
     append_indentation();
     dec->property()->perform(this);
     append_colon_separator();
 
     if (dec->value()->concrete_type() == Expression::SELECTOR) {
-      Listize listize(*ctx);
+      Memory_Manager mem;
+      Listize listize(mem);
       dec->value()->perform(&listize)->perform(this);
     } else {
       dec->value()->perform(this);
@@ -142,7 +143,7 @@ namespace Sass {
       append_string("!important");
     }
     append_delimiter();
-    if (output_style() == SASS_STYLE_NESTED)
+    if (output_style() == NESTED)
       indentation -= dec->tabs();
     in_declaration = was_decl;
   }
@@ -170,9 +171,11 @@ namespace Sass {
       }
 
       import->urls().front()->perform(this);
-      if (import->media_queries()) {
-        append_mandatory_space();
-        import->media_queries()->perform(this);
+      if (import->urls().size() == 1) {
+        if (import->media_queries()) {
+          append_mandatory_space();
+          import->media_queries()->perform(this);
+        }
       }
       append_delimiter();
       for (size_t i = 1, S = import->urls().size(); i < S; ++i) {
@@ -185,9 +188,11 @@ namespace Sass {
         }
 
         import->urls()[i]->perform(this);
-        if (import->media_queries()) {
-          append_mandatory_space();
-          import->media_queries()->perform(this);
+        if (import->urls().size() - 1 == i) {
+          if (import->media_queries()) {
+            append_mandatory_space();
+            import->media_queries()->perform(this);
+          }
         }
         append_delimiter();
       }
@@ -347,6 +352,10 @@ namespace Sass {
 
   void Inspect::operator()(Map* map)
   {
+    if (output_style() == TO_SASS && map->empty()) {
+      append_string("()");
+      return;
+    }
     if (map->empty()) return;
     if (map->is_invisible()) return;
     bool items_output = false;
@@ -363,15 +372,25 @@ namespace Sass {
 
   void Inspect::operator()(List* list)
   {
+    if (output_style() == TO_SASS && list->empty()) {
+      append_string("()");
+      return;
+    }
     std::string sep(list->separator() == SASS_SPACE ? " " : ",");
-    if ((output_style() != SASS_STYLE_COMPRESSED || in_debug) && sep == ",") sep += " ";
+    if ((output_style() != COMPRESSED) && sep == ",") sep += " ";
     else if (in_media_block && sep != " ") sep += " "; // verified
     if (list->empty()) return;
     bool items_output = false;
 
     bool was_space_array = in_space_array;
     bool was_comma_array = in_comma_array;
-    if (!in_declaration && (
+    // probably ruby sass eqivalent of element_needs_parens
+    if (output_style() == TO_SASS && list->length() == 1 &&
+      (!dynamic_cast<List*>((*list)[0]) &&
+       !dynamic_cast<Selector_List*>((*list)[0]))) {
+      append_string("(");
+    }
+    else if (!in_declaration && (list->separator() == SASS_HASH ||
         (list->separator() == SASS_SPACE && in_space_array) ||
         (list->separator() == SASS_COMMA && in_comma_array)
     )) {
@@ -385,8 +404,10 @@ namespace Sass {
       if (list->separator() == SASS_HASH)
       { sep[0] = i % 2 ? ':' : ','; }
       Expression* list_item = (*list)[i];
-      if (list_item->is_invisible()) {
-        continue;
+      if (output_style() != TO_SASS) {
+        if (list_item->is_invisible()) {
+          continue;
+        }
       }
       if (items_output) {
         append_string(sep);
@@ -399,7 +420,13 @@ namespace Sass {
 
     in_comma_array = was_comma_array;
     in_space_array = was_space_array;
-    if (!in_declaration && (
+    // probably ruby sass eqivalent of element_needs_parens
+    if (output_style() == TO_SASS && list->length() == 1 &&
+      (!dynamic_cast<List*>((*list)[0]) &&
+       !dynamic_cast<Selector_List*>((*list)[0]))) {
+      append_string(",)");
+    }
+    else if (!in_declaration && (list->separator() == SASS_HASH ||
         (list->separator() == SASS_SPACE && in_space_array) ||
         (list->separator() == SASS_COMMA && in_comma_array)
     )) {
@@ -411,7 +438,8 @@ namespace Sass {
   void Inspect::operator()(Binary_Expression* expr)
   {
     expr->left()->perform(this);
-    if ( in_media_block || (
+    if ( in_media_block ||
+         (output_style() == INSPECT) || (
           expr->op().ws_before
           && (!expr->is_interpolant())
           && (!expr->is_delayed() ||
@@ -436,7 +464,8 @@ namespace Sass {
       case Sass_OP::MOD: append_string("%");   break;
       default: break; // shouldn't get here
     }
-    if ( in_media_block || (
+    if ( in_media_block ||
+         (output_style() == INSPECT) || (
           expr->op().ws_after
           && (!expr->is_interpolant())
           && (!expr->is_delayed()
@@ -478,29 +507,187 @@ namespace Sass {
 
   void Inspect::operator()(Number* n)
   {
-    // use values to_string facility
-    bool compressed = ctx->output_style() == SASS_STYLE_COMPRESSED;
-    std::string res(n->to_string(compressed, (int)ctx->c_options->precision));
+
+    std::string res;
+
+    // check if the fractional part of the value equals to zero
+    // neat trick from http://stackoverflow.com/a/1521682/1550314
+    // double int_part; bool is_int = modf(value, &int_part) == 0.0;
+
+    // this all cannot be done with one run only, since fixed
+    // output differs from normal output and regular output
+    // can contain scientific notation which we do not want!
+
+    // first sample
+    std::stringstream ss;
+    ss.precision(12);
+    ss << n->value();
+
+    // check if we got scientific notation in result
+    if (ss.str().find_first_of("e") != std::string::npos) {
+      ss.clear(); ss.str(std::string());
+      ss.precision(std::max(12, opt.precision));
+      ss << std::fixed << n->value();
+    }
+
+    std::string tmp = ss.str();
+    size_t pos_point = tmp.find_first_of(".,");
+    size_t pos_fract = tmp.find_last_not_of("0");
+    bool is_int = pos_point == pos_fract ||
+                  pos_point == std::string::npos;
+
+    // reset stream for another run
+    ss.clear(); ss.str(std::string());
+
+    // take a shortcut for integers
+    if (is_int)
+    {
+      ss.precision(0);
+      ss << std::fixed << n->value();
+      res = std::string(ss.str());
+    }
+    // process floats
+    else
+    {
+      // do we have have too much precision?
+      if (pos_fract < opt.precision + pos_point)
+      { ss.precision((int)(pos_fract - pos_point)); }
+      else { ss.precision(opt.precision); }
+      // round value again
+      ss << std::fixed << n->value();
+      res = std::string(ss.str());
+      // maybe we truncated up to decimal point
+      size_t pos = res.find_last_not_of("0");
+      // handle case where we have a "0"
+      if (pos == std::string::npos) {
+        res = "0.0";
+      } else {
+        bool at_dec_point = res[pos] == '.' ||
+                            res[pos] == ',';
+        // don't leave a blank point
+        if (at_dec_point) ++ pos;
+        res.resize (pos + 1);
+      }
+    }
+
+    // some final cosmetics
+    if (res == "0.0") res = "0";
+    else if (res == "") res = "0";
+    else if (res == "-0") res = "0";
+    else if (res == "-0.0") res = "0";
+    else if (opt.output_style == COMPRESSED)
+    {
+      // check if handling negative nr
+      size_t off = res[0] == '-' ? 1 : 0;
+      // remove leading zero from floating point in compressed mode
+      if (n->zero() && res[off] == '0' && res[off+1] == '.') res.erase(off, 1);
+    }
+
+    // add unit now
+    res += n->unit();
+
     // output the final token
     append_token(res, n);
   }
 
+  // helper function for serializing colors
+  template <size_t range>
+  static double cap_channel(double c) {
+    if      (c > range) return range;
+    else if (c < 0)     return 0;
+    else                return c;
+  }
+
   void Inspect::operator()(Color* c)
   {
-    // use values to_string facility
-    bool compressed = ctx->output_style() == SASS_STYLE_COMPRESSED;
-    std::string res(c->to_string(compressed, (int)ctx->c_options->precision));
     // output the final token
-    append_token(res, c);
+    std::stringstream ss;
+
+    // original color name
+    // maybe an unknown token
+    std::string name = c->disp();
+
+    // resolved color
+    std::string res_name = name;
+
+    double r = Sass::round(cap_channel<0xff>(c->r()), opt.precision);
+    double g = Sass::round(cap_channel<0xff>(c->g()), opt.precision);
+    double b = Sass::round(cap_channel<0xff>(c->b()), opt.precision);
+    double a = cap_channel<1>   (c->a());
+
+    // get color from given name (if one was given at all)
+    if (name != "" && name_to_color(name)) {
+      const Color* n = name_to_color(name);
+      r = Sass::round(cap_channel<0xff>(n->r()), opt.precision);
+      g = Sass::round(cap_channel<0xff>(n->g()), opt.precision);
+      b = Sass::round(cap_channel<0xff>(n->b()), opt.precision);
+      a = cap_channel<1>   (n->a());
+    }
+    // otherwise get the possible resolved color name
+    else {
+      double numval = r * 0x10000 + g * 0x100 + b;
+      if (color_to_name(numval))
+        res_name = color_to_name(numval);
+    }
+
+    std::stringstream hexlet;
+    bool compressed = opt.output_style == COMPRESSED;
+    hexlet << '#' << std::setw(1) << std::setfill('0');
+    // create a short color hexlet if there is any need for it
+    if (compressed && is_color_doublet(r, g, b) && a == 1) {
+      hexlet << std::hex << std::setw(1) << (static_cast<unsigned long>(r) >> 4);
+      hexlet << std::hex << std::setw(1) << (static_cast<unsigned long>(g) >> 4);
+      hexlet << std::hex << std::setw(1) << (static_cast<unsigned long>(b) >> 4);
+    } else {
+      hexlet << std::hex << std::setw(2) << static_cast<unsigned long>(r);
+      hexlet << std::hex << std::setw(2) << static_cast<unsigned long>(g);
+      hexlet << std::hex << std::setw(2) << static_cast<unsigned long>(b);
+    }
+
+    if (compressed && !c->is_delayed()) name = "";
+    if (opt.output_style == INSPECT && a >= 1) {
+      append_token(hexlet.str(), c);
+      return;
+    }
+
+    // retain the originally specified color definition if unchanged
+    if (name != "") {
+      ss << name;
+    }
+    else if (r == 0 && g == 0 && b == 0 && a == 0) {
+        ss << "transparent";
+    }
+    else if (a >= 1) {
+      if (res_name != "") {
+        if (compressed && hexlet.str().size() < res_name.size()) {
+          ss << hexlet.str();
+        } else {
+          ss << res_name;
+        }
+      }
+      else {
+        ss << hexlet.str();
+      }
+    }
+    else {
+      ss << "rgba(";
+      ss << static_cast<unsigned long>(r) << ",";
+      if (!compressed) ss << " ";
+      ss << static_cast<unsigned long>(g) << ",";
+      if (!compressed) ss << " ";
+      ss << static_cast<unsigned long>(b) << ",";
+      if (!compressed) ss << " ";
+      ss << a << ')';
+    }
+
+    append_token(ss.str(), c);
+
   }
 
   void Inspect::operator()(Boolean* b)
   {
-    // use values to_string facility
-    bool compressed = ctx->output_style() == SASS_STYLE_COMPRESSED;
-    std::string res(b->to_string(compressed, (int)ctx->c_options->precision));
     // output the final token
-    append_token(res, b);
+    append_token(b->value() ? "true" : "false", b);
   }
 
   void Inspect::operator()(String_Schema* ss)
@@ -516,25 +703,28 @@ namespace Sass {
 
   void Inspect::operator()(String_Constant* s)
   {
-    // get options from optional? context
-    int precision = ctx ? (int)ctx->c_options->precision : 5;
-    bool compressed = ctx ? ctx->output_style() == SASS_STYLE_COMPRESSED : false;
-    // use values to_string facility
-    std::string res(s->to_string(compressed, precision));
-    // output the final token
-    append_token(res, s);
+    append_token(s->value(), s);
   }
 
   void Inspect::operator()(String_Quoted* s)
   {
-    // get options from optional? context
-    int precision = ctx ? (int)ctx->c_options->precision : 5;
-    bool compressed = ctx ? ctx->output_style() == SASS_STYLE_COMPRESSED : false;
-    // use values to_string facility
-    std::string res(s->to_string(compressed, precision));
-    // output the final token
-    append_token(res, s);
+    if (const char q = s->quote_mark()) {
+      append_token(quote(s->value(), q), s);
+    } else {
+      append_token(s->value(), s);
+    }
   }
+
+  void Inspect::operator()(Custom_Error* e)
+  {
+    append_token(e->message(), e);
+  }
+
+  void Inspect::operator()(Custom_Warning* w)
+  {
+    append_token(w->message(), w);
+  }
+
   void Inspect::operator()(Supports_Operator* so)
   {
 
@@ -631,11 +821,8 @@ namespace Sass {
 
   void Inspect::operator()(Null* n)
   {
-    // use values to_string facility
-    bool compressed = output_style() == SASS_STYLE_COMPRESSED;
-    std::string res(n->to_string(compressed, (int)ctx->c_options->precision));
     // output the final token
-    append_token(res, n);
+    append_token("null", n);
   }
 
   // parameters and arguments
@@ -772,7 +959,7 @@ namespace Sass {
       (*s)[i]->perform(this);
     }
     if (s->has_line_break()) {
-      if (output_style() != SASS_STYLE_COMPACT) {
+      if (output_style() != COMPACT) {
         append_optional_linefeed();
       }
     }
@@ -794,7 +981,7 @@ namespace Sass {
     if (head && head->length() != 0) head->perform(this);
     bool is_empty = !head || head->length() == 0 || head->is_empty_reference();
     bool is_tail = head && !head->is_empty_reference() && tail;
-    if (output_style() == SASS_STYLE_COMPRESSED && comb != Complex_Selector::ANCESTOR_OF) scheduled_space = 0;
+    if (output_style() == COMPRESSED && comb != Complex_Selector::ANCESTOR_OF) scheduled_space = 0;
 
     switch (comb) {
       case Complex_Selector::ANCESTOR_OF:
@@ -830,7 +1017,7 @@ namespace Sass {
     }
     if (tail) tail->perform(this);
     if (!tail && c->has_line_break()) {
-      if (output_style() == SASS_STYLE_COMPACT) {
+      if (output_style() == COMPACT) {
         append_mandatory_space();
       }
     }
@@ -838,10 +1025,23 @@ namespace Sass {
 
   void Inspect::operator()(Selector_List* g)
   {
-    if (g->empty()) return;
+
+    if (g->empty()) {
+      if (output_style() == TO_SASS) {
+        append_token("()", g);
+      }
+      return;
+    }
+
 
     bool was_comma_array = in_comma_array;
-    if (!in_declaration && in_comma_array) {
+    // probably ruby sass eqivalent of element_needs_parens
+    if (output_style() == TO_SASS && g->length() == 1 &&
+      (!dynamic_cast<List*>((*g)[0]) &&
+       !dynamic_cast<Selector_List*>((*g)[0]))) {
+      append_string("(");
+    }
+    else if (!in_declaration && in_comma_array) {
       append_string("(");
     }
 
@@ -861,7 +1061,13 @@ namespace Sass {
     }
 
     in_comma_array = was_comma_array;
-    if (!in_declaration && in_comma_array) {
+    // probably ruby sass eqivalent of element_needs_parens
+    if (output_style() == TO_SASS && g->length() == 1 &&
+      (!dynamic_cast<List*>((*g)[0]) &&
+       !dynamic_cast<Selector_List*>((*g)[0]))) {
+      append_string(",)");
+    }
+    else if (!in_declaration && in_comma_array) {
       append_string(")");
     }
 

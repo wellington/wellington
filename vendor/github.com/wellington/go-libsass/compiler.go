@@ -227,10 +227,6 @@ type sass struct {
 
 var _ Compiler = &sass{}
 
-func (c *sass) Context() *compctx {
-	return c.ctx
-}
-
 func (c *sass) run() error {
 	defer func() {
 		c.imports = c.ctx.ResolvedImports

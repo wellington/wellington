@@ -5,7 +5,6 @@
 #include "expand.hpp"
 #include "bind.hpp"
 #include "eval.hpp"
-#include "to_string.hpp"
 #include "backtrace.hpp"
 #include "context.hpp"
 #include "parser.hpp"
@@ -105,7 +104,7 @@ namespace Sass {
           while (tail) {
             if (tail->head()) for (Simple_Selector* header : tail->head()->elements()) {
               if (dynamic_cast<Parent_Selector*>(header) == NULL) continue; // skip all others
-              To_String to_string(&ctx); std::string sel_str(complex_selector->perform(&to_string));
+              std::string sel_str(complex_selector->to_string(ctx.c_options));
               error("Base-level rules cannot contain the parent-selector-referencing character '&'.", header->pstate(), backtrace());
             }
             tail = tail->tail();
@@ -185,12 +184,15 @@ namespace Sass {
 
   Statement* Expand::operator()(Media_Block* m)
   {
-    To_String to_string(&ctx);
     Expression* mq = m->media_queries()->perform(&eval);
-    mq = Parser::from_c_str(mq->perform(&to_string).c_str(), ctx, mq->pstate()).parse_media_queries();
+    std::string str_mq(mq->to_string(ctx.c_options));
+    char* str = sass_strdup(str_mq.c_str());
+    ctx.strings.push_back(str);
+    Parser p(Parser::from_c_str(str, ctx, mq->pstate()));
+    mq = p.parse_media_queries();
     Media_Block* mm = SASS_MEMORY_NEW(ctx.mem, Media_Block,
                                       m->pstate(),
-                                      static_cast<List*>(mq),
+                                      static_cast<List*>(mq->perform(&eval)),
                                       m->block()->perform(this)->block(),
                                       0);
     mm->tabs(m->tabs());
@@ -399,11 +401,11 @@ namespace Sass {
     std::string variable(f->variable());
     Expression* low = f->lower_bound()->perform(&eval);
     if (low->concrete_type() != Expression::NUMBER) {
-      error("lower bound of `@for` directive must be numeric", low->pstate(), backtrace());
+      throw Exception::TypeMismatch(*low, "integer");
     }
     Expression* high = f->upper_bound()->perform(&eval);
     if (high->concrete_type() != Expression::NUMBER) {
-      error("upper bound of `@for` directive must be numeric", high->pstate(), backtrace());
+      throw Exception::TypeMismatch(*high, "integer");
     }
     Number* sass_start = static_cast<Number*>(low);
     Number* sass_end = static_cast<Number*>(high);
@@ -457,6 +459,10 @@ namespace Sass {
     Map* map = 0;
     if (expr->concrete_type() == Expression::MAP) {
       map = static_cast<Map*>(expr);
+    }
+    else if (Selector_List* ls = dynamic_cast<Selector_List*>(expr)) {
+      Listize listize(ctx.mem);
+      list = dynamic_cast<List*>(ls->perform(&listize));
     }
     else if (expr->concrete_type() != Expression::LIST) {
       list = SASS_MEMORY_NEW(ctx.mem, List, expr->pstate(), 1, SASS_COMMA);
@@ -558,7 +564,7 @@ namespace Sass {
         while (tail) {
           if (tail->head()) for (Simple_Selector* header : tail->head()->elements()) {
             if (dynamic_cast<Parent_Selector*>(header) == NULL) continue; // skip all others
-            To_String to_string(&ctx); std::string sel_str(complex_selector->perform(&to_string));
+            std::string sel_str(complex_selector->to_string(ctx.c_options));
             error("Can't extend " + sel_str + ": can't extend parent selectors", header->pstate(), backtrace());
           }
           tail = tail->tail();
@@ -572,7 +578,7 @@ namespace Sass {
     for (auto complex_sel : contextualized->elements()) {
       Complex_Selector* c = complex_sel;
       if (!c->head() || c->tail()) {
-        To_String to_string(&ctx); std::string sel_str(contextualized->perform(&to_string));
+        std::string sel_str(contextualized->to_string(ctx.c_options));
         error("Can't extend " + sel_str + ": can't extend nested selectors", c->pstate(), backtrace());
       }
       Compound_Selector* placeholder = c->head();

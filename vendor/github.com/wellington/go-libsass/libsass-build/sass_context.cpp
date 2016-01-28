@@ -123,6 +123,7 @@ extern "C" {
       msg_stream << "Unable to allocate memory: " << ba.what() << std::endl;
       json_append_member(json_err, "status", json_mknumber(2));
       json_append_member(json_err, "message", json_mkstring(ba.what()));
+      json_append_member(json_err, "formatted", json_mkstring(msg_stream.str().c_str()));
       c_ctx->error_json = json_stringify(json_err, "  ");;
       c_ctx->error_message = sass_strdup(msg_stream.str().c_str());
       c_ctx->error_text = sass_strdup(ba.what());
@@ -134,9 +135,10 @@ extern "C" {
     catch (std::exception& e) {
       std::stringstream msg_stream;
       JsonNode* json_err = json_mkobject();
-      msg_stream << "Error: " << e.what() << std::endl;
+      msg_stream << "Internal Error: " << e.what() << std::endl;
       json_append_member(json_err, "status", json_mknumber(3));
       json_append_member(json_err, "message", json_mkstring(e.what()));
+      json_append_member(json_err, "formatted", json_mkstring(msg_stream.str().c_str()));
       c_ctx->error_json = json_stringify(json_err, "  ");;
       c_ctx->error_message = sass_strdup(msg_stream.str().c_str());
       c_ctx->error_text = sass_strdup(e.what());
@@ -148,9 +150,10 @@ extern "C" {
     catch (std::string& e) {
       std::stringstream msg_stream;
       JsonNode* json_err = json_mkobject();
-      msg_stream << "Error: " << e << std::endl;
+      msg_stream << "Internal Error: " << e << std::endl;
       json_append_member(json_err, "status", json_mknumber(4));
       json_append_member(json_err, "message", json_mkstring(e.c_str()));
+      json_append_member(json_err, "formatted", json_mkstring(msg_stream.str().c_str()));
       c_ctx->error_json = json_stringify(json_err, "  ");;
       c_ctx->error_message = sass_strdup(msg_stream.str().c_str());
       c_ctx->error_text = sass_strdup(e.c_str());
@@ -162,9 +165,10 @@ extern "C" {
     catch (const char* e) {
       std::stringstream msg_stream;
       JsonNode* json_err = json_mkobject();
-      msg_stream << "Error: " << e << std::endl;
+      msg_stream << "Internal Error: " << e << std::endl;
       json_append_member(json_err, "status", json_mknumber(4));
       json_append_member(json_err, "message", json_mkstring(e));
+      json_append_member(json_err, "formatted", json_mkstring(msg_stream.str().c_str()));
       c_ctx->error_json = json_stringify(json_err, "  ");;
       c_ctx->error_message = sass_strdup(msg_stream.str().c_str());
       c_ctx->error_text = sass_strdup(e);
@@ -410,14 +414,14 @@ extern "C" {
   struct Sass_Compiler* ADDCALL sass_make_data_compiler (struct Sass_Data_Context* data_ctx)
   {
     if (data_ctx == 0) return 0;
-    Context* cpp_ctx = new Data_Context(data_ctx);
+    Context* cpp_ctx = new Data_Context(*data_ctx);
     return sass_prepare_context(data_ctx, cpp_ctx);
   }
 
   struct Sass_Compiler* ADDCALL sass_make_file_compiler (struct Sass_File_Context* file_ctx)
   {
     if (file_ctx == 0) return 0;
-    Context* cpp_ctx = new File_Context(file_ctx);
+    Context* cpp_ctx = new File_Context(*file_ctx);
     return sass_prepare_context(file_ctx, cpp_ctx);
   }
 
@@ -432,7 +436,7 @@ extern "C" {
       // if (*data_ctx->source_string == 0) { throw(std::runtime_error("Data context has empty source string")); }
     }
     catch (...) { return handle_errors(data_ctx) | 1; }
-    Context* cpp_ctx = new Data_Context(data_ctx);
+    Context* cpp_ctx = new Data_Context(*data_ctx);
     return sass_compile_context(data_ctx, cpp_ctx);
   }
 
@@ -446,7 +450,7 @@ extern "C" {
       if (*file_ctx->input_path == 0) { throw(std::runtime_error("File context has empty input path")); }
     }
     catch (...) { return handle_errors(file_ctx) | 1; }
-    Context* cpp_ctx = new File_Context(file_ctx);
+    Context* cpp_ctx = new File_Context(*file_ctx);
     return sass_compile_context(file_ctx, cpp_ctx);
   }
 

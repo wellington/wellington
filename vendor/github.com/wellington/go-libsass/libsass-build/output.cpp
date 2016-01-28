@@ -1,12 +1,11 @@
 #include "sass.hpp"
 #include "ast.hpp"
 #include "output.hpp"
-#include "to_string.hpp"
 
 namespace Sass {
 
-  Output::Output(Context* ctx)
-  : Inspect(Emitter(ctx)),
+  Output::Output(Sass_Output_Options& opt)
+  : Inspect(Emitter(opt)),
     charset(""),
     top_nodes(0)
   {}
@@ -21,16 +20,11 @@ namespace Sass {
   void Output::operator()(Number* n)
   {
     // use values to_string facility
-    To_String to_string(ctx);
-    std::string res = n->perform(&to_string);
+    std::string res = n->to_string(opt);
     // check for a valid unit here
     // includes result for reporting
-    if (n->numerator_units().size() > 1 ||
-        n->denominator_units().size() > 0 ||
-        (n->numerator_units().size() && n->numerator_units()[0].find_first_of('/') != std::string::npos) ||
-        (n->numerator_units().size() && n->numerator_units()[0].find_first_of('*') != std::string::npos)
-    ) {
-      error(res + " isn't a valid CSS value.", n->pstate());
+    if (!n->is_valid_css_unit()) {
+      throw Exception::InvalidValue(*n);
     }
     // output the final token
     append_token(res, n);
@@ -43,15 +37,14 @@ namespace Sass {
 
   void Output::operator()(Map* m)
   {
-    To_String to_string(ctx);
-    std::string dbg(m->perform(&to_string));
+    std::string dbg(m->to_string(opt));
     error(dbg + " isn't a valid CSS value.", m->pstate());
   }
 
   OutputBuffer Output::get_buffer(void)
   {
 
-    Emitter emitter(ctx);
+    Emitter emitter(opt);
     Inspect inspect(emitter);
 
     size_t size_nodes = top_nodes.size();
@@ -66,9 +59,9 @@ namespace Sass {
     // prepend buffer on top
     prepend_output(inspect.output());
     // make sure we end with a linefeed
-    if (!ends_with(wbuf.buffer, ctx->linefeed)) {
+    if (!ends_with(wbuf.buffer, opt.linefeed)) {
       // if the output is not completely empty
-      if (!wbuf.buffer.empty()) append_string(ctx->linefeed);
+      if (!wbuf.buffer.empty()) append_string(opt.linefeed);
     }
 
     // search for unicode char
@@ -76,9 +69,9 @@ namespace Sass {
       // skip all ascii chars
       if (chr >= 0) continue;
       // declare the charset
-      if (output_style() != SASS_STYLE_COMPRESSED)
+      if (output_style() != COMPRESSED)
         charset = "@charset \"UTF-8\";"
-                  + ctx->linefeed;
+                + std::string(opt.linefeed);
       else charset = "\xEF\xBB\xBF";
       // abort search
       break;
@@ -93,11 +86,10 @@ namespace Sass {
 
   void Output::operator()(Comment* c)
   {
-    To_String to_string(ctx);
-    std::string txt = c->text()->perform(&to_string);
+    std::string txt = c->text()->to_string(opt);
     // if (indentation && txt == "/**/") return;
     bool important = c->is_important();
-    if (output_style() != SASS_STYLE_COMPRESSED || important) {
+    if (output_style() != COMPRESSED || important) {
       if (buffer().size() == 0) {
         top_nodes.push_back(c);
       } else {
@@ -133,8 +125,8 @@ namespace Sass {
 
     if (b->has_non_hoistable()) {
       decls = true;
-      if (output_style() == SASS_STYLE_NESTED) indentation += r->tabs();
-      if (ctx && ctx->c_options->source_comments) {
+      if (output_style() == NESTED) indentation += r->tabs();
+      if (opt.source_comments) {
         std::stringstream ss;
         append_indentation();
         ss << "/* line " << r->pstate().line + 1 << ", " << r->pstate().path << " */";
@@ -173,7 +165,7 @@ namespace Sass {
           stm->perform(this);
         }
       }
-      if (output_style() == SASS_STYLE_NESTED) indentation -= r->tabs();
+      if (output_style() == NESTED) indentation -= r->tabs();
       append_scope_closer(b);
     }
 
@@ -240,7 +232,7 @@ namespace Sass {
       return;
     }
 
-    if (output_style() == SASS_STYLE_NESTED) indentation += f->tabs();
+    if (output_style() == NESTED) indentation += f->tabs();
     append_indentation();
     append_token("@supports", f);
     append_mandatory_space();
@@ -276,7 +268,7 @@ namespace Sass {
       }
     }
 
-    if (output_style() == SASS_STYLE_NESTED) indentation -= f->tabs();
+    if (output_style() == NESTED) indentation -= f->tabs();
 
     append_scope_closer();
 
@@ -299,7 +291,7 @@ namespace Sass {
       }
       return;
     }
-    if (output_style() == SASS_STYLE_NESTED) indentation += m->tabs();
+    if (output_style() == NESTED) indentation += m->tabs();
     append_indentation();
     append_token("@media", m);
     append_mandatory_space();
@@ -313,7 +305,7 @@ namespace Sass {
       if (i < L - 1) append_special_linefeed();
     }
 
-    if (output_style() == SASS_STYLE_NESTED) indentation -= m->tabs();
+    if (output_style() == NESTED) indentation -= m->tabs();
     append_scope_closer();
   }
 
@@ -334,7 +326,8 @@ namespace Sass {
     }
     if (v) {
       append_mandatory_space();
-      v->perform(this);
+      // ruby sass bug? should use options?
+      append_token(v->to_string(/* opt */), v);
     }
     if (!b) {
       append_delimiter();
@@ -383,7 +376,7 @@ namespace Sass {
   void Output::operator()(String_Constant* s)
   {
     std::string value(s->value());
-    if (s->can_compress_whitespace() && output_style() == SASS_STYLE_COMPRESSED) {
+    if (s->can_compress_whitespace() && output_style() == COMPRESSED) {
       value.erase(std::remove_if(value.begin(), value.end(), ::isspace), value.end());
     }
     if (!in_comment) {

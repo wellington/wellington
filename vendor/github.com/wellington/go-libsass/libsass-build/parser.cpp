@@ -5,7 +5,6 @@
 #include "parser.hpp"
 #include "file.hpp"
 #include "inspect.hpp"
-#include "to_string.hpp"
 #include "constants.hpp"
 #include "util.hpp"
 #include "prelexer.hpp"
@@ -222,7 +221,8 @@ namespace Sass {
     }
 
     else if (lex < kwd_extend >(true)) {
-      if (block->is_root()) {
+      Scope parent = stack.empty() ? Scope::Rules : stack.back();
+      if (parent == Scope::Root) {
         error("Extend directives may only be used within rules.", pstate);
       }
 
@@ -591,7 +591,6 @@ namespace Sass {
     bool reloop = true;
     bool had_linefeed = false;
     Complex_Selector* sel = 0;
-    To_String to_string(&ctx);
     Selector_List* group = SASS_MEMORY_NEW(ctx.mem, Selector_List, pstate);
     group->media_block(last_media_block);
 
@@ -737,7 +736,7 @@ namespace Sass {
       // remove all block comments (don't skip white-space)
       lex< delimited_by< slash_star, star_slash, false > >(false);
       // parse functional
-      if (peek < re_pseudo_selector >())
+      if (match < re_pseudo_selector >())
       {
         (*seq) << parse_simple_selector();
       }
@@ -753,8 +752,8 @@ namespace Sass {
           ParserState state(pstate);
           Simple_Selector* cur = (*seq)[seq->length()-1];
           Simple_Selector* prev = (*seq)[seq->length()-2];
-          std::string sel(prev->to_string(false, 5));
-          std::string found(cur->to_string(false, 5));
+          std::string sel(prev->to_string({ NESTED, 5 }));
+          std::string found(cur->to_string({ NESTED, 5 }));
           if (lex < identifier >()) { found += std::string(lexed); }
           error("Invalid CSS after \"" + sel + "\": expected \"{\", was \"" + found + "\"\n\n"
             "\"" + found + "\" may only be used at the beginning of a compound selector.", state);
@@ -1070,6 +1069,7 @@ namespace Sass {
           exactly<'{'>,
           exactly<')'>,
           exactly<':'>,
+          end_of_file,
           exactly<ellipsis>,
           default_flag,
           global_flag
@@ -1095,6 +1095,7 @@ namespace Sass {
             exactly<'{'>,
             exactly<')'>,
             exactly<':'>,
+            end_of_file,
             exactly<ellipsis>,
             default_flag,
             global_flag
@@ -1121,6 +1122,7 @@ namespace Sass {
           exactly<')'>,
           exactly<','>,
           exactly<':'>,
+          end_of_file,
           exactly<ellipsis>,
           default_flag,
           global_flag
@@ -1138,6 +1140,7 @@ namespace Sass {
                exactly<')'>,
                exactly<','>,
                exactly<':'>,
+               end_of_file,
                exactly<ellipsis>,
                default_flag,
                global_flag
@@ -1201,7 +1204,7 @@ namespace Sass {
           > >(position))
     {
       // is directly adjancent to expression?
-      bool left_ws = peek < css_comments >();
+      bool left_ws = peek < css_comments >() != NULL;
       // parse the operator
       enum Sass_OP op
       = lex<kwd_eq>()  ? Sass_OP::EQ
@@ -1213,10 +1216,10 @@ namespace Sass {
       // we checked the possibilites on top of fn
       :                  Sass_OP::EQ;
       // is directly adjancent to expression?
-      bool right_ws = peek < css_comments >();
+      bool right_ws = peek < css_comments >() != NULL;
       operators.push_back({ op, left_ws, right_ws });
       operands.push_back(parse_expression());
-      left_ws = peek < css_comments >();
+      left_ws = peek < css_comments >() != NULL;
     }
     // parse the operator
     return fold_operands(lhs, operands, operators);
@@ -1245,7 +1248,7 @@ namespace Sass {
 
     std::vector<Expression*> operands;
     std::vector<Operand> operators;
-    bool left_ws = peek < css_comments >();
+    bool left_ws = peek < css_comments >() != NULL;
     while (
       lex_css< exactly<'+'> >() ||
 
@@ -1257,10 +1260,10 @@ namespace Sass {
     ) {
 
 
-      bool right_ws = peek < css_comments >();
+      bool right_ws = peek < css_comments >() != NULL;
       operators.push_back({ lexed.to_string() == "+" ? Sass_OP::ADD : Sass_OP::SUB, left_ws, right_ws });
       operands.push_back(parse_operators());
-      left_ws = peek < css_comments >();
+      left_ws = peek < css_comments >() != NULL;
     }
 
     if (operands.size() == 0) return lhs;
@@ -1770,6 +1773,11 @@ namespace Sass {
       suffix = std::string(lexed);
     }
 
+    std::string uri("");
+    if (url_string) {
+      uri = url_string->to_string({ NESTED, 5 });
+    }
+
     if (String_Schema* schema = dynamic_cast<String_Schema*>(url_string)) {
       String_Schema* res = SASS_MEMORY_NEW(ctx.mem, String_Schema, pstate);
       (*res) << SASS_MEMORY_NEW(ctx.mem, String_Constant, pstate, prefix);
@@ -1777,7 +1785,7 @@ namespace Sass {
       (*res) << SASS_MEMORY_NEW(ctx.mem, String_Constant, pstate, suffix);
       return res;
     } else {
-      std::string res = prefix + url_string->to_string() + suffix;
+      std::string res = prefix + uri + suffix;
       return SASS_MEMORY_NEW(ctx.mem, String_Constant, pstate, res);
     }
   }
@@ -2129,6 +2137,7 @@ namespace Sass {
     Block* body = 0;
     At_Root_Expression* expr = 0;
     Lookahead lookahead_result;
+    // stack.push_back(Scope::Root);
     LOCAL_FLAG(in_at_root, true);
     if (lex< exactly<'('> >()) {
       expr = parse_at_root_expression();
@@ -2143,6 +2152,7 @@ namespace Sass {
     }
     At_Root_Block* at_root = SASS_MEMORY_NEW(ctx.mem, At_Root_Block, at_source_position, body);
     if (expr) at_root->expression(expr);
+    // stack.pop_back();
     return at_root;
   }
 
@@ -2583,23 +2593,37 @@ namespace Sass {
   void Parser::css_error(const std::string& msg, const std::string& prefix, const std::string& middle)
   {
     int max_len = 18;
+    const char* end = this->end;
+    while (*end != 0) ++ end;
     const char* pos = peek < optional_spaces >();
 
-    const char* last_pos(pos - 1);
+    const char* last_pos(pos);
+    if (last_pos > source) {
+      utf8::prior(last_pos, source);
+    }
     // backup position to last significant char
-    while ((!*last_pos || Prelexer::is_space(*last_pos)) && last_pos > source) -- last_pos;
+    while (last_pos > source && last_pos < end) {
+      if (!Prelexer::is_space(*last_pos)) break;
+      utf8::prior(last_pos, source);
+    }
 
     bool ellipsis_left = false;
-    const char* pos_left(last_pos + 1);
-    const char* end_left(last_pos + 1);
+    const char* pos_left(last_pos);
+    const char* end_left(last_pos);
+
+    utf8::next(pos_left, end);
+    utf8::next(end_left, end);
     while (pos_left > source) {
-      if (end_left - pos_left >= max_len) {
-        ellipsis_left = *(pos_left-1) != '\n' &&
-                        *(pos_left-1) != '\r';
+      if (utf8::distance(pos_left, end_left) >= max_len) {
+        utf8::prior(pos_left, source);
+        ellipsis_left = *(pos_left) != '\n' &&
+                        *(pos_left) != '\r';
+        utf8::next(pos_left, end);
         break;
       }
 
-      const char* prev = pos_left - 1;
+      const char* prev = pos_left;
+      utf8::prior(prev, source);
       if (*prev == '\r') break;
       if (*prev == '\n') break;
       pos_left = prev;
@@ -2611,15 +2635,15 @@ namespace Sass {
     bool ellipsis_right = false;
     const char* end_right(pos);
     const char* pos_right(pos);
-    while (*end_right != 0) {
-      if (end_right - pos_right > max_len) {
+    while (end_right < end) {
+      if (utf8::distance(pos_right, end_right) > max_len) {
         ellipsis_left = *(pos_right) != '\n' &&
                         *(pos_right) != '\r';
         break;
       }
       if (*end_right == '\r') break;
       if (*end_right == '\n') break;
-      ++ end_right;
+      utf8::next(end_right, end);
     }
     // if (*end_right == 0) end_right ++;
 
