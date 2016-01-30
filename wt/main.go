@@ -43,6 +43,8 @@ var (
 
 	// unused
 	relativeAssets bool
+
+	paths []string
 )
 
 /*
@@ -69,7 +71,7 @@ func flags(app *kingpin.Application) {
 	app.Flag("images-dir", "Deprecated: Use -d instead").Hidden().ExistingDirVar(&dir)
 	app.Flag("includes", "Include Sass from additional directories").Short('I').ExistingDirsVar(&includes)
 	app.Flag("output-style", "Deprecated: Use --style instead").Hidden().Short('s').Default("nested").EnumVar(&style, "nested", "expanded", "compact", "compressed")
-	app.Flag("proj", "Path to directory containing Sass stylesheets").Short('p').Default(".").ExistingDirVar(&proj)
+	app.Flag("proj", "Path to directory containing Sass stylesheets").Short('p').ExistingDirVar(&proj)
 	app.Flag("relative-assets", "UNSUPPORTED: Make compass asset helpers generate relative urls to assets.").BoolVar(&relativeAssets)
 	app.Flag("sass-dir", "Deprecated: Use --includes instead").Hidden().ExistingDirsVar(&includes)
 	app.Flag("style", "Nested style of output CSS. Available options: nested, expanded, compact, compressed").Short('s').Default("nested").EnumVar(&style, "nested", "expanded", "compact", "compressed")
@@ -90,8 +92,6 @@ func hostname() string {
 
 	return ""
 }
-
-var paths []string
 
 func main() {
 	app := kingpin.New("wt", "wt is a Sass project tool made to handle large projects. It uses the libSass compiler for efficiency and speed.").
@@ -291,7 +291,6 @@ func run(pMap *wt.SafePartialMap, gba *wt.BuildArgs) {
 
 	// No paths given, read from stdin and wait
 	if len(paths) == 0 {
-
 		log.Println("Reading from stdin, -h for help")
 		out := os.Stdout
 		in := os.Stdin
