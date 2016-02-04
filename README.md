@@ -1,5 +1,6 @@
 [![Circle CI](https://circleci.com/gh/wellington/wellington/tree/master.svg?style=svg)](https://circleci.com/gh/wellington/wellington/tree/master)
 [![Coverage Status](https://coveralls.io/repos/wellington/wellington/badge.png?branch=master)](https://coveralls.io/r/wellington/wellington?branch=master)
+[![Report Card](http://goreportcard.com/badge/bobziuchkovski/writ)](http://goreportcard.com/report/bobziuchkovski/writ)
 [![Appveyor](https://ci.appveyor.com/api/projects/status/1apfkxe0369ce26d/branch/master?svg=true)](https://ci.appveyor.com/project/drewwells/wellington/branch/master)
 
 
