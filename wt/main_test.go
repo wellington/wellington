@@ -9,49 +9,37 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/wellington/wellington"
 )
 
-// Sometimes circleci detects races in these tests. This may prevent it
-var wtCmdMu sync.RWMutex
-
-func init() {
-	s := new(string)
-	wtCmdMu.Lock()
-	wtCmd.PersistentFlags().StringVarP(s, "test", "t", "", "dummy for testing")
-	wtCmdMu.Unlock()
-
-}
-
 func resetFlags() {
-	wtCmdMu.Lock()
-	defer wtCmdMu.Unlock()
-	wtCmd.ResetFlags()
-}
-
-func testMain() {
-	wtCmdMu.Lock()
-	AddCommands()
-	root()
-	wtCmdMu.Unlock()
-
-	wtCmdMu.RLock()
-	wtCmd.Execute()
-	wtCmdMu.RUnlock()
+	proj = ""
+	includes = nil
+	font = ""
+	dir = ""
+	gen = ""
+	style = ""
+	comments = false
+	cpuprofile = ""
+	buildDir = ""
+	httpPath = ""
+	timeB = false
+	config = ""
+	debug = false
+	cachebust = ""
+	relativeAssets = false
+	paths = nil
 }
 
 func TestHTTP(t *testing.T) {
-	wtCmd.SetArgs([]string{
-		"serve",
-	})
+	resetFlags()
 
-	// No way to shut this down
-	go func() {
-		testMain()
-	}()
+	os.Args = []string{
+		os.Args[0],
+		"serve",
+	}
 
 	req, err := http.NewRequest("POST", "http://localhost:12345",
 		bytes.NewBufferString(`div { p { color: red; } }`))
@@ -59,6 +47,8 @@ func TestHTTP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	go main()
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -76,7 +66,7 @@ func TestHTTP(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	e := "/* line 1, stdin */\ndiv p {\n  color: red; }\n"
+	e := "div p {\n  color: red; }\n"
 	if e != r.Contents {
 		t.Errorf("got:\n%s\nwanted:\n%s", r.Contents, e)
 	}
@@ -88,6 +78,9 @@ func TestStdin_import(t *testing.T) {
 	resetFlags()
 
 	oldOut := os.Stdout
+	defer func() {
+		os.Stdout = oldOut
+	}()
 
 	r, w, _ := os.Pipe()
 	os.Stdout = w
@@ -97,10 +90,13 @@ func TestStdin_import(t *testing.T) {
 	}
 
 	includeDir := filepath.Join(pwd, "..", "test", "sass")
-	wtCmd.SetArgs([]string{
+	os.Args = []string{
+		os.Args[0],
 		"-p", includeDir,
-		"compile", "../test/sass/import.scss"})
-	testMain()
+		"compile", "../test/sass/import.scss",
+	}
+
+	main()
 
 	outC := make(chan string)
 
@@ -111,7 +107,6 @@ func TestStdin_import(t *testing.T) {
 	}()
 
 	w.Close()
-	os.Stdout = oldOut
 
 	out := <-outC
 	out = strings.Replace(out, includeDir, "", 1)
@@ -128,17 +123,23 @@ func TestStdin_import(t *testing.T) {
 
 func TestStdin_sprite(t *testing.T) {
 	resetFlags()
+	os.RemoveAll("../test/img/build")
 
 	oldStd := os.Stdin
-	var oldOut *os.File
-	oldOut = os.Stdout
+	oldOut := os.Stdout
+	defer func() {
+		os.Stdin = oldStd
+		os.Stdout = oldOut
+	}()
 
 	r, w, _ := os.Pipe()
 	os.Stdout = w
-	wtCmd.SetArgs([]string{
+	os.Args = []string{
+		os.Args[0],
 		"--dir", "../test/img",
 		"--gen", "../test/img/build",
-		"compile"})
+		"compile",
+	}
 
 	var err error
 	os.Stdin, err = os.Open("../test/sass/sprite.scss")
@@ -156,8 +157,6 @@ func TestStdin_sprite(t *testing.T) {
 	}()
 
 	w.Close()
-	os.Stdin = oldStd
-	os.Stdout = oldOut
 
 	out := <-outC
 
@@ -179,17 +178,21 @@ func TestFile(t *testing.T) {
 
 func TestFile_comprehensive(t *testing.T) {
 	resetFlags()
+	os.RemoveAll("../test/img/build")
 
-	oldStd := os.Stdin
 	oldOut := os.Stdout
+	defer func() {
+		os.Stdout = oldOut
+	}()
 
 	r, w, _ := os.Pipe()
 	os.Stdout = w
-	wtCmd.SetArgs([]string{
+	os.Args = []string{
+		os.Args[0],
 		"--dir", "../test/img",
 		"--gen", "../test/img/build",
-		"--comment=false",
-		"compile", "../test/comprehensive/compreh.scss"})
+		"compile", "../test/comprehensive/compreh.scss",
+	}
 	main()
 
 	outC := make(chan bytes.Buffer)
@@ -201,8 +204,6 @@ func TestFile_comprehensive(t *testing.T) {
 	}()
 
 	w.Close()
-	os.Stdin = oldStd
-	os.Stdout = oldOut
 
 	out := <-outC
 
@@ -218,16 +219,17 @@ func TestFile_comprehensive(t *testing.T) {
 }
 
 func TestWatch_comprehensive(t *testing.T) {
-	os.RemoveAll("../test/build/testwatch")
 	resetFlags()
 
-	wtCmd.SetArgs([]string{
+	os.RemoveAll("../test/build/testwatch")
+
+	os.Args = []string{
+		os.Args[0],
 		"--dir", "../test/img",
 		"-b", "../test/build/testwatch",
 		"--gen", "../test/build/testwatch/img",
-		"--comment=false",
 		"watch", "../test/comprehensive/compreh.scss",
-	})
+	}
 	main()
 	_, err := os.Stat("../test/build/testwatch/compreh.css")
 	if err != nil {

@@ -16,9 +16,9 @@ import (
 	"sync"
 	"time"
 
+	"gopkg.in/alecthomas/kingpin.v2"
+
 	"github.com/fatih/color"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	libsass "github.com/wellington/go-libsass"
 	"github.com/wellington/spritewell"
 	"github.com/wellington/wellington/payload"
@@ -29,168 +29,93 @@ import (
 )
 
 var (
-	proj                          string
-	includes                      []string
-	font, dir, gen                string
-	mainFile, style               string
-	comments, watch               bool
-	cpuprofile, buildDir          string
-	jsDir                         string
-	ishttp, showHelp, showVersion bool
-	httpPath                      string
-	timeB                         bool
-	config                        string
-	debug                         bool
-	cachebust                     string
+	proj                 string
+	includes             []string
+	font, dir, gen       string
+	style                string
+	comments             bool
+	cpuprofile, buildDir string
+	httpPath             string
+	timeB                bool
+	config               string
+	debug                bool
+	cachebust            string
 
 	// unused
 	relativeAssets bool
-	cssDir         string
+
+	paths []string
 )
 
 /*
    --app APP                    Tell compass what kind of application it is integrating with. E.g. rails
    --fonts-dir FONTS_DIR        The directory where you keep your fonts.
 */
-func init() {
 
-	// Interoperability args
-}
-
-func flags(set *pflag.FlagSet) {
+func flags(app *kingpin.Application) {
 	// Unused cli args
-	set.StringVarP(&buildDir, "build", "b", "",
-		"Path to target directory to place generated CSS, relative paths inside project directory are preserved")
-	set.BoolVarP(&comments, "comment", "", false, "Turn on source comments")
-	set.BoolVar(&debug, "debug", false, "Show detailed debug information")
+	app.Flag("build", "Path to target directory to place generated CSS, relative paths inside project directory are preserved").
+		Short('b').StringVar(&buildDir)
+	app.Flag("cachebust", "Defeat cache by appending timestamps to static assets ie. ts, sum, timestamp").StringVar(&cachebust)
+	app.Flag("comment", "Turn on source comments").BoolVar(&comments)
+	app.Flag("config", "Temporarily disabled: Location of the config file").Short('c').ExistingFileVar(&config)
+	app.Flag("cpuprofile", "Go runtime cpu profilling for debugging").StringVar(&cpuprofile)
+	app.Flag("css-dir", "Deprecated: Use -b instead").Hidden().ExistingDirVar(&buildDir)
+	app.Flag("debug", "Show detailed debug information").Hidden().BoolVar(&debug)
+	app.Flag("debug-info", "Deprecated: Use --debug instead").Hidden().BoolVar(&debug)
 
-	var nothingb bool
-	set.BoolVar(&debug, "debug-info", false, "")
-	set.MarkDeprecated("debug-info", "Use --debug instead")
-
-	set.StringVarP(&dir, "dir", "d", "",
-		"Path to locate images for spriting and image functions")
-	set.StringVar(&dir, "images-dir", "", "")
-	set.MarkDeprecated("images-dir", "Use -d instead")
-
-	set.StringVar(&font, "font", ".", "Path to directory containing fonts")
-	set.StringVar(&gen, "generated-images-path", "", "")
-	set.MarkDeprecated("generated-images-path", "Use --gen instead")
-	set.StringVar(&gen, "gen", ".", "Path to place generated images")
-
-	set.StringVarP(&proj, "proj", "p", "",
-		"Path to directory containing Sass stylesheets")
-	set.BoolVar(&nothingb, "no-line-comments", false, "UNSUPPORTED: Disable line comments, use comments")
-	set.MarkDeprecated("no-line-comments", "Use --comments instead")
-	set.BoolVar(&relativeAssets, "relative-assets", false, "UNSUPPORTED: Make compass asset helpers generate relative urls to assets.")
-
-	set.BoolVarP(&showVersion, "version", "v", false, "Show the app version")
-	set.StringVar(&cachebust, "cachebust", "", "Defeat cache by appending timestamps to static assets ie. ts, sum, timestamp")
-	set.StringVarP(&style, "style", "s", "nested",
-		`nested style of output CSS
-                        available options: nested, expanded, compact, compressed`)
-	set.StringVar(&style, "output-style", "nested", "")
-	set.MarkDeprecated("output-style", "Use --style instead")
-	set.BoolVar(&timeB, "time", false, "Retrieve timing information")
-
-	var nothing string
-	set.StringVar(&nothing, "require", "", "")
-	set.MarkDeprecated("require", "Compass backwards compat, Not supported")
-	set.MarkDeprecated("require", "Not supported")
-	set.StringVar(&nothing, "environment", "", "")
-	set.MarkDeprecated("environment", "Not supported")
-	set.StringSliceVar(&includes, "includes", nil, "Include Sass from additional directories")
-	set.StringSliceVarP(&includes, "", "I", nil, "")
-	set.MarkDeprecated("I", "Compass backwards compat, use --includes instead")
-	set.StringVar(&buildDir, "css-dir", "",
-		"Compass backwards compat. Reference locations relative to Sass project directory")
-	set.MarkDeprecated("css-dir", "Use -b instead")
-	set.StringVar(&jsDir, "javascripts-dir", "", "")
-	set.MarkDeprecated("javascripts-dir", "Compass backwards compat, ignored")
-	set.StringSliceVar(&includes, "sass-dir", nil,
-		"Compass backwards compat, use --includes instead")
-	set.StringVarP(&config, "config", "c", "",
-		"Temporarily disabled: Location of the config file")
-
-	set.StringVar(&cpuprofile, "cpuprofile", "", "Go runtime cpu profilling for debugging")
+	app.Flag("dir", "Path to locate images for spriting and image functions").Short('d').ExistingDirVar(&dir)
+	app.Flag("font", "Path to directory containing fonts").Default(".").ExistingDirVar(&font)
+	app.Flag("gen", "Path to place generated images").Default(".").StringVar(&gen)
+	app.Flag("generated-images-path", "Deprecated: Use --gen instead").Hidden().Default(".").ExistingDirVar(&gen)
+	app.Flag("images-dir", "Deprecated: Use -d instead").Hidden().ExistingDirVar(&dir)
+	app.Flag("includes", "Include Sass from additional directories").Short('I').ExistingDirsVar(&includes)
+	app.Flag("output-style", "Deprecated: Use --style instead").Hidden().Short('s').Default("nested").EnumVar(&style, "nested", "expanded", "compact", "compressed")
+	app.Flag("proj", "Path to directory containing Sass stylesheets").Short('p').ExistingDirVar(&proj)
+	app.Flag("relative-assets", "UNSUPPORTED: Make compass asset helpers generate relative urls to assets.").BoolVar(&relativeAssets)
+	app.Flag("sass-dir", "Deprecated: Use --includes instead").Hidden().ExistingDirsVar(&includes)
+	app.Flag("style", "Nested style of output CSS. Available options: nested, expanded, compact, compressed").Short('s').Default("nested").EnumVar(&style, "nested", "expanded", "compact", "compressed")
+	app.Flag("time", "Retrieve timing information").BoolVar(&timeB)
 }
 
-var compileCmd = &cobra.Command{
-	Use:   "compile",
-	Short: "Compile Sass stylesheets to CSS",
-	Long: `Fast compilation of Sass stylesheets to CSS. For usage consult
-the documentation at https://github.com/wellington/wellington#wellington`,
-	Run: Compile,
-}
-
-var watchCmd = &cobra.Command{
-	Use:   "watch",
-	Short: "Watch Sass files for changes and rebuild CSS",
-	Long:  ``,
-	Run:   Watch,
-}
-
-var httpCmd = &cobra.Command{
-	Use:   "serve",
-	Short: "Starts a http server that will convert Sass to CSS",
-	Long:  ``,
-	Run:   Serve,
-}
-
-func init() {
-	hostname := os.Getenv("HOSTNAME")
-	if len(hostname) > 0 {
-		if !strings.HasPrefix(hostname, "http") {
-			hostname = "http://" + hostname
+func hostname() string {
+	if host := os.Getenv("HOSTNAME"); len(host) > 0 {
+		if !strings.HasPrefix(host, "http") {
+			return "http://" + host
 		}
-	} else if host, err := os.Hostname(); err == nil {
-		hostname = "http://" + host
+		return host
 	}
-	httpCmd.Flags().StringVar(&httpPath, "httppath", hostname,
-		"Only for HTTP, overrides generated sprite paths to support http")
 
-}
+	if host, err := os.Hostname(); err == nil {
+		return "http://" + host
+	}
 
-func root() {
-	flags(wtCmd.PersistentFlags())
-}
-
-// AddCommands attaches the cli subcommands ie. http, compile to the
-// main cli entrypoint.
-func AddCommands() {
-	wtCmd.AddCommand(httpCmd)
-	wtCmd.AddCommand(compileCmd)
-	wtCmd.AddCommand(watchCmd)
-}
-
-var wtCmd = &cobra.Command{
-	Use:   "wt",
-	Short: "wt is a Sass project tool made to handle large projects. It uses the libSass compiler for efficiency and speed.",
-	Run:   Compile,
+	return ""
 }
 
 func main() {
-	AddCommands()
-	root()
-	wtCmd.Execute()
-}
+	app := kingpin.New("wt", "wt is a Sass project tool made to handle large projects. It uses the libSass compiler for efficiency and speed.").
+		Version(fmt.Sprintf("   libsass: %s\nWellington: %s", libsass.Version(), version.Version))
+	flags(app)
 
-func argExit() bool {
+	serveCmd := app.Command("serve", "Starts a http server that will convert Sass to CSS")
+	serveCmd.Flag("httppath", "Only for HTTP, overrides generated sprite paths to support http").Default(hostname()).StringVar(&httpPath)
 
-	if showVersion {
-		fmt.Printf("   libsass: %s\n", libsass.Version())
-		fmt.Printf("Wellington: %s\n", version.Version)
-		return true
+	compileCmd := app.Command("compile", "Fast compilation of Sass stylesheets to CSS. For usage consult the documentation at https://github.com/wellington/wellington#wellington").Alias("")
+	watchCmd := app.Command("watch", "Watch Sass files for changes and rebuild CSS")
+
+	for _, cmd := range []*kingpin.CmdClause{serveCmd, compileCmd, watchCmd} {
+		cmd.Arg("paths", "Target file or directories").ExistingFilesOrDirsVar(&paths)
 	}
 
-	if showHelp {
-		fmt.Println("Please specify input filepath.")
-		fmt.Println("\nAvailable options:")
-		//flag.PrintDefaults()
-		return true
+	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
+	case serveCmd.FullCommand():
+		Serve()
+	case compileCmd.FullCommand():
+		Compile()
+	case watchCmd.FullCommand():
+		Watch()
 	}
-	return false
-
 }
 
 func makeabs(wd string, path string) string {
@@ -200,7 +125,7 @@ func makeabs(wd string, path string) string {
 	return filepath.Join(wd, path)
 }
 
-func parseBuildArgs(paths []string) *wt.BuildArgs {
+func parseBuildArgs() *wt.BuildArgs {
 	style, ok := libsass.Style[style]
 
 	if !ok {
@@ -244,12 +169,7 @@ func parseBuildArgs(paths []string) *wt.BuildArgs {
 	return gba
 }
 
-func globalRun(paths []string) (*wt.SafePartialMap, *wt.BuildArgs) {
-	// fmt.Printf("paths: %s args: % #v\n", paths, pflag.Args())
-	if argExit() {
-		return nil, nil
-	}
-
+func globalRun() (*wt.SafePartialMap, *wt.BuildArgs) {
 	// Profiling code
 	if cpuprofile != "" {
 		f, err := os.Create(cpuprofile)
@@ -268,12 +188,6 @@ func globalRun(paths []string) (*wt.SafePartialMap, *wt.BuildArgs) {
 		}()
 	}
 
-	for _, v := range paths {
-		if strings.HasPrefix(v, "-") {
-			log.Fatalf("Please specify flags before other arguments: %s", v)
-		}
-	}
-
 	if gen != "" {
 		err := os.MkdirAll(gen, 0755)
 		if err != nil {
@@ -282,7 +196,7 @@ func globalRun(paths []string) (*wt.SafePartialMap, *wt.BuildArgs) {
 	}
 
 	pMap := wt.NewPartialMap()
-	gba := parseBuildArgs(paths)
+	gba := parseBuildArgs()
 	if debug {
 		log.Printf("      Font  Dir: %s\n", gba.Font)
 		log.Printf("      Image Dir: %s\n", gba.ImageDir)
@@ -296,8 +210,8 @@ func globalRun(paths []string) (*wt.SafePartialMap, *wt.BuildArgs) {
 }
 
 // Watch accepts a set of paths starting a recursive file watcher
-func Watch(cmd *cobra.Command, paths []string) {
-	pMap, gba := globalRun(paths)
+func Watch() {
+	pMap, gba := globalRun()
 	var err error
 	bOpts := wt.NewBuild(paths, gba, pMap)
 	err = bOpts.Run()
@@ -334,9 +248,8 @@ func Watch(cmd *cobra.Command, paths []string) {
 var lis net.Listener
 
 // Serve starts a web server accepting POST calls and return CSS
-func Serve(cmd *cobra.Command, paths []string) {
-
-	_, gba := globalRun(paths)
+func Serve() {
+	_, gba := globalRun()
 	if len(gba.Gen) == 0 {
 		log.Fatal("Must pass an image build directory to use HTTP")
 	}
@@ -359,9 +272,9 @@ func Serve(cmd *cobra.Command, paths []string) {
 }
 
 // Compile handles compile files and stdin operations.
-func Compile(cmd *cobra.Command, paths []string) {
+func Compile() {
 	start := time.Now()
-	pMap, gba := globalRun(paths)
+	pMap, gba := globalRun()
 	if gba == nil {
 		return
 	}
@@ -370,15 +283,14 @@ func Compile(cmd *cobra.Command, paths []string) {
 		log.Printf("Compilation took: %s\n", time.Since(start))
 	}()
 
-	run(paths, pMap, gba)
+	run(pMap, gba)
 }
 
 // Run is the main entrypoint for the cli.
-func run(paths []string, pMap *wt.SafePartialMap, gba *wt.BuildArgs) {
+func run(pMap *wt.SafePartialMap, gba *wt.BuildArgs) {
 
 	// No paths given, read from stdin and wait
 	if len(paths) == 0 {
-
 		log.Println("Reading from stdin, -h for help")
 		out := os.Stdout
 		in := os.Stdin
