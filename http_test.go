@@ -97,10 +97,10 @@ func TestHTTPHandler(t *testing.T) {
 	}
 
 	ehead := map[string][]string{
-		"Access-Control-Allow-Origin":      []string{"http://foo.com"},
-		"Access-Control-Allow-Methods":     []string{"POST, GET, OPTIONS, PUT, DELETE"},
-		"Access-Control-Allow-Headers":     []string{"Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token"},
-		"Access-Control-Allow-Credentials": []string{"true"},
+		"Access-Control-Allow-Origin":      {"http://foo.com"},
+		"Access-Control-Allow-Methods":     {"POST, GET, OPTIONS, PUT, DELETE"},
+		"Access-Control-Allow-Headers":     {"Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token"},
+		"Access-Control-Allow-Credentials": {"true"},
 	}
 
 	for i, h := range w.Header() {
@@ -154,10 +154,10 @@ div {
 	}
 
 	ehead := map[string][]string{
-		"Access-Control-Allow-Origin":      []string{"http://foo.com"},
-		"Access-Control-Allow-Methods":     []string{"POST, GET, OPTIONS, PUT, DELETE"},
-		"Access-Control-Allow-Headers":     []string{"Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token"},
-		"Access-Control-Allow-Credentials": []string{"true"},
+		"Access-Control-Allow-Origin":      {"http://foo.com"},
+		"Access-Control-Allow-Methods":     {"POST, GET, OPTIONS, PUT, DELETE"},
+		"Access-Control-Allow-Headers":     {"Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token"},
+		"Access-Control-Allow-Credentials": {"true"},
 	}
 
 	for i, h := range w.Header() {
