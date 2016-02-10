@@ -1,0 +1,8 @@
+runtime: custom
+api_version: go1
+vm: true
+# api_version: go1.6beta
+
+handlers:
+- url: /.*
+  script: _go_app

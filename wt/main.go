@@ -340,7 +340,7 @@ func Serve(cmd *cobra.Command, paths []string) {
 	if len(gba.Gen) == 0 {
 		log.Fatal("Must pass an image build directory to use HTTP")
 	}
-
+	fmt.Printf("% #v\n", gba)
 	http.Handle("/build/", wt.FileHandler(gba.Gen))
 	log.Println("Web server started on :12345")
 
