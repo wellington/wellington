@@ -28,6 +28,8 @@ func init() {
 	libsass.RegisterSassFunc("inline-image($path, $encode: false)", InlineImage)
 }
 
+// ErrPayloadNil prevents panics on invalid payload; nil check helps
+// find non-obvious dependency failures like mismatched dependencies.
 var ErrPayloadNil = errors.New("payload is nil")
 
 // ImageURL handles calls to resolve the path to a local image from the
