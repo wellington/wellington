@@ -1,11 +1,11 @@
 .PHONY: test build
-current_dir = $(shell pwd)
-rmnpath = $(RMN_BASE_PATH)
-guipath = $(rmnpath)/www/gui
-libsass_ver = $(shell cat \.libsass_version)
-wt_ver = $(shell cat version.txt)
-LASTGOPATH=$(shell python -c "import os; a=os.environ['GOPATH']; print a.split(':')[-1]")
-HOSTOSARCH = $(shell go env GOHOSTOS)_$(shell go env GOHOSTARCH)
+current_dir := $(shell pwd)
+rmnpath := $(RMN_BASE_PATH)
+guipath := $(rmnpath)/www/gui
+libsass_ver := $(shell cat \.libsass_version)
+wt_ver := $(shell cat version.txt)
+LASTGOPATH :=$(shell echo $(GOPATH) | tr ":" "\n" | tail -1 )
+HOSTOSARCH := $(shell go env GOHOSTOS)_$(shell go env GOHOSTARCH)
 
 export PKG_CONFIG_PATH=$(current_dir)/../go-libsass/lib/pkgconfig
 
