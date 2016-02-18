@@ -101,12 +101,16 @@ func TestHTTPHandler(t *testing.T) {
 		"Access-Control-Allow-Methods":     {"POST, GET, OPTIONS, PUT, DELETE"},
 		"Access-Control-Allow-Headers":     {"Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token"},
 		"Access-Control-Allow-Credentials": {"true"},
+		"Content-Type":                     {"text/plain; charset=utf-8"},
 	}
 
-	for i, h := range w.Header() {
-
-		if ehead[i][0] != h[0] {
-			t.Errorf("got:\n%q\nwanted:\n%q", h, ehead[i])
+	for k, h := range w.Header() {
+		e, ok := ehead[k]
+		if !ok {
+			t.Fatalf("key not found: %s", k)
+		}
+		if e[0] != h[0] {
+			t.Errorf("got:\n%q\nwanted:\n%q", h, e)
 		}
 	}
 
@@ -158,15 +162,18 @@ div {
 		"Access-Control-Allow-Methods":     {"POST, GET, OPTIONS, PUT, DELETE"},
 		"Access-Control-Allow-Headers":     {"Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token"},
 		"Access-Control-Allow-Credentials": {"true"},
+		"Content-Type":                     {"text/plain; charset=utf-8"},
 	}
 
-	for i, h := range w.Header() {
-
-		if ehead[i][0] != h[0] {
-			t.Errorf("got:\n%q\nwanted:\n%q", h, ehead[i])
+	for k, h := range w.Header() {
+		e, ok := ehead[k]
+		if !ok {
+			t.Fatalf("key not found: %s", k)
+		}
+		if e[0] != h[0] {
+			t.Errorf("got:\n%q\nwanted:\n%q", h, e)
 		}
 	}
-
 }
 
 func TestHTTPHandler_error(t *testing.T) {
