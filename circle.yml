@@ -9,28 +9,33 @@ machine:
     PKG_CONFIG_PATH: "$GO_LIBSASS/lib/pkgconfig"
     GIT_BRANCH: $CIRCLE_BRANCH
     GO15VENDOREXPERIMENT: 1
-  pre:
-    - go version
-    - go version | grep 1.5.1 || sudo rm -rf /usr/local/go
-    - wget https://storage.googleapis.com/golang/go1.5.1.linux-amd64.tar.gz
-    - sudo tar -C /usr/local -xzf go1.5.1.linux-amd64.tar.gz
-    - go version
+    GOVER: 1.6
+    GOTAR: /home/ubuntu/go${GOVER}.linux-amd64.tar.gz
   #bunch of bad stuff b/c circleci has issues with Go
   post:
     - mkdir -p ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}
     - rm -rf ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/*
     - ln -sf ~/${CIRCLE_PROJECT_REPONAME} ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
 general:
-  build_dir: ../.go_workspace/src/github.com/wellington/wellington
+  build_dir: ../.go_workspace/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
   artifacts:
     - "snapshot"
 dependencies:
-  #cache_directories:
-    #- libsass-src
+  cache_directories:
+    - ~/go1.6.linux-amd64.tar.gz
+  pre:
+    - echo "GOVER $GOVER"
+    - echo "GOTAR $GOTAR"
+    - go version
+    - test -e ${GOTAR} || wget https://storage.googleapis.com/golang/go${GOVER}.linux-amd64.tar.gz -O ${GOTAR}
+    - go version | grep "$GOVER " || (sudo rm -rf /usr/local/go; sudo tar -C /usr/local -xzf ${GOTAR})
+    - go version
   override:
     - echo "deps are vendored don't run go get"
     - go get golang.org/x/net/context
     - git submodule update --init --recursive
+  post:
+    - go env
 test:
   override:
     - make test:
