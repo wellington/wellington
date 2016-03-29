@@ -42,6 +42,7 @@ var (
 	config                        string
 	debug                         bool
 	cachebust                     string
+	sourceMap                     bool
 
 	// unused
 	relativeAssets bool
@@ -84,6 +85,7 @@ func flags(set *pflag.FlagSet) {
 	set.MarkDeprecated("no-line-comments", "Use --comments instead")
 	set.BoolVar(&relativeAssets, "relative-assets", false, "UNSUPPORTED: Make compass asset helpers generate relative urls to assets.")
 
+	set.BoolVar(&sourceMap, "source-map", false, "Enable emitting of source maps, must specify build directory to use this")
 	set.BoolVarP(&showVersion, "version", "v", false, "Show the app version")
 	set.StringVar(&cachebust, "cachebust", "", "Defeat cache by appending timestamps to static assets ie. ts, sum, timestamp")
 	set.StringVarP(&style, "style", "s", "nested",
@@ -239,6 +241,7 @@ func parseBuildArgs(paths []string) *wt.BuildArgs {
 		Gen:       gen,
 		Comments:  comments,
 		CacheBust: cachebust,
+		SourceMap: sourceMap,
 	}
 	gba.WithPaths(paths)
 	return gba
@@ -382,7 +385,7 @@ func run(paths []string, pMap *wt.SafePartialMap, gba *wt.BuildArgs) {
 		log.Println("Reading from stdin, -h for help")
 		out := os.Stdout
 		in := os.Stdin
-		comp, err := wt.FromBuildArgs(out, in, gba)
+		comp, err := wt.FromBuildArgs(out, nil, in, gba)
 		if err != nil {
 			log.Fatal(err)
 		}

@@ -40,6 +40,8 @@ type BuildArgs struct {
 	Style     int
 	Comments  bool
 	CacheBust string
+	// emit source map files alongside css files
+	SourceMap bool
 }
 
 // WithPaths creates a new BuildArgs with paths applied
@@ -160,12 +162,12 @@ func (b *Build) build(path string) error {
 		return errors.New("file does not end in .sass or .scss")
 	}
 
-	out, bdir, err := b.bArgs.getOut(path)
+	out, sout, bdir, err := b.bArgs.getOut(path)
 	if err != nil {
 		return err
 	}
 
-	return loadAndBuild(path, b.bArgs, b.partialMap, out, bdir)
+	return loadAndBuild(path, b.bArgs, b.partialMap, out, sout, bdir)
 }
 
 // Close shuts down the builder ensuring all go routines have properly
@@ -178,17 +180,17 @@ func (b *Build) Close() error {
 
 var inputFileTypes = []string{".scss", ".sass"}
 
-func (b *BuildArgs) getOut(path string) (io.WriteCloser, string, error) {
+func (b *BuildArgs) getOut(path string) (io.WriteCloser, io.WriteCloser, string, error) {
 	var (
 		out  io.WriteCloser
 		fout string
 	)
 	if b == nil {
-		return nil, "", errors.New("build args is nil")
+		return nil, nil, "", errors.New("build args is nil")
 	}
 	if len(b.BuildDir) == 0 {
 		out = os.Stdout
-		return out, "", nil
+		return out, nil, "", nil
 	}
 	rel := relative(b.paths, path)
 	filename := updateFileOutputType(filepath.Base(path))
@@ -197,14 +199,18 @@ func (b *BuildArgs) getOut(path string) (io.WriteCloser, string, error) {
 	// FIXME: do this once per Build instead of every file
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
-		return nil, "", fmt.Errorf("Failed to create directory: %s",
+		return nil, nil, "", fmt.Errorf("Failed to create directory: %s",
 			dir)
 	}
 	out, err = os.Create(fout)
 	if err != nil {
-		return nil, "", err
+		return nil, nil, "", err
 	}
-	return out, dir, nil
+	var smap *os.File
+	if b.SourceMap {
+		smap, err = os.Create(fout + ".map")
+	}
+	return out, smap, dir, err
 }
 
 // LoadAndBuild kicks off parser and compiling. It expands directories
@@ -217,18 +223,18 @@ func LoadAndBuild(path string, gba *BuildArgs, pMap *SafePartialMap) error {
 
 	// file detected!
 	if isImportable(path) {
-		out, bdir, err := gba.getOut(path)
+		out, sout, bdir, err := gba.getOut(path)
 		if err != nil {
 			return err
 		}
-		return loadAndBuild(path, gba, pMap, out, bdir)
+		return loadAndBuild(path, gba, pMap, out, sout, bdir)
 	}
 
-	out, bdir, err := gba.getOut(path)
+	out, sout, bdir, err := gba.getOut(path)
 	if err != nil {
 		return err
 	}
-	err = loadAndBuild(path, gba, pMap, out, bdir)
+	err = loadAndBuild(path, gba, pMap, out, sout, bdir)
 	if err != nil {
 		return err
 	}
@@ -237,15 +243,15 @@ func LoadAndBuild(path string, gba *BuildArgs, pMap *SafePartialMap) error {
 }
 
 // FromBuildArgs creates a compiler from BuildArgs
-func FromBuildArgs(dst io.Writer, src io.Reader, gba *BuildArgs) (libsass.Compiler, error) {
+func FromBuildArgs(dst io.Writer, dstmap io.Writer, src io.Reader, gba *BuildArgs) (libsass.Compiler, error) {
 	if gba == nil {
-		return libsass.New(dst, src)
+		return libsass.New(dst, dstmap, src)
 	}
 	if gba.Payload == nil {
 		gba.init()
 	}
 
-	comp, err := libsass.New(dst, src,
+	comp, err := libsass.New(dst, dstmap, src,
 		// Options overriding defaults
 		// libsass.Path(sassFile), what path should be provided?
 		libsass.ImgDir(gba.ImageDir),
@@ -261,7 +267,7 @@ func FromBuildArgs(dst io.Writer, src io.Reader, gba *BuildArgs) (libsass.Compil
 	return comp, err
 }
 
-func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, out io.WriteCloser, buildDir string) error {
+func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, out io.WriteCloser, sout io.WriteCloser, buildDir string) error {
 	defer func() {
 		// BuildDir lets us know if we should closer out. If no buildDir,
 		// specified out == os.Stdout and do not close. If buildDir != "",
@@ -270,6 +276,7 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 		// them could be race unsafe.
 		if len(buildDir) > 0 {
 			out.Close()
+			sout.Close()
 		}
 	}()
 
@@ -279,7 +286,7 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 		imgdir = filepath.Dir(sassFile)
 	}
 
-	comp, err := libsass.New(out, nil,
+	comp, err := libsass.New(out, sout, nil,
 		// Options overriding defaults
 		libsass.Path(sassFile),
 		libsass.ImgDir(imgdir),
@@ -290,6 +297,7 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 		libsass.FontDir(gba.Font),
 		libsass.ImgBuildDir(gba.Gen),
 		libsass.IncludePaths(gba.Includes),
+		libsass.SourceMap(gba.SourceMap),
 	)
 	// Start Sass transformation
 	err = comp.Run()
