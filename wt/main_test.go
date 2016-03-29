@@ -45,6 +45,7 @@ func testMain() {
 
 func TestHTTP(t *testing.T) {
 	wtCmd.SetArgs([]string{
+		"--comment",
 		"serve",
 	})
 
@@ -137,7 +138,8 @@ func TestStdin_sprite(t *testing.T) {
 	os.Stdout = w
 	wtCmd.SetArgs([]string{
 		"--dir", "../test/img",
-		"--gen", "../test/img/build",
+		"--build", "../test/build",
+		"--gen", "../test/build/img",
 		"compile"})
 
 	var err error
@@ -164,7 +166,7 @@ func TestStdin_sprite(t *testing.T) {
 	e := `div {
   height: 139px;
   width: 96px;
-  background: url("../test/img/build/f0a220.png") 0px 0px; }
+  background: url("img/13dd5c.png") 0px 0px; }
 `
 
 	if !bytes.Contains([]byte(out), []byte(e)) {
@@ -178,41 +180,40 @@ func TestFile(t *testing.T) {
 }
 
 func TestFile_comprehensive(t *testing.T) {
+	os.RemoveAll("../test/build/testfile")
 	resetFlags()
 
-	oldStd := os.Stdin
-	oldOut := os.Stdout
-
-	r, w, _ := os.Pipe()
-	os.Stdout = w
 	wtCmd.SetArgs([]string{
 		"--dir", "../test/img",
-		"--gen", "../test/img/build",
+		"--build", "../test/build/testfile",
+		"--gen", "../test/build/testfile/img",
 		"--comment=false",
 		"compile", "../test/comprehensive/compreh.scss"})
 	main()
 
-	outC := make(chan bytes.Buffer)
+	e := `div {
+  background: url("img/46339f.png") 0px -139px; }
 
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		outC <- buf
-	}()
+div {
+  background-file: "../img/*.png0, 140";
+  background-position: 0px, -139px; }
 
-	w.Close()
-	os.Stdin = oldStd
-	os.Stdout = oldOut
+div {
+  background: url('../../img/IgotImage.png');
+  height: 140px;
+  width: 96px; }
 
-	out := <-outC
+div.inline {
+  background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAMAAAAoyzS7AAAAA1BMVEX/TQBcNTh/AAAAAXRSTlMz/za5cAAAAA5JREFUeJxiYgAEAAD//wAGAAP60FmuAAAAAElFTkSuQmCC"); }
+`
 
-	e, err := ioutil.ReadFile("../test/comprehensive/expected.css")
+	o, err := ioutil.ReadFile("../test/build/testfile/compreh.css")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if bytes.Compare(out.Bytes(), e) != 0 {
-		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), string(e))
+	if bytes.Compare(o, []byte(e)) != 0 {
+		t.Errorf("got:\n%s\nwanted:\n%s", string(o), string(e))
 	}
 
 }

@@ -145,7 +145,7 @@ div {
 		t.Errorf("got: %d wanted: %d", w.Code, e)
 	}
 	e := `div {
-  file: url("http://foo.com/build/20185e.png") 0px -139px; }
+  file: url("http://foo.com/build/c25cda.png") 0px -139px; }
 `
 
 	resp := decResp(t, w.Body)

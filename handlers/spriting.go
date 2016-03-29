@@ -58,7 +58,7 @@ func SpritePosition(mainctx context.Context, usv libsass.SassValue) (rsv *libsas
 
 	if imgs.Lookup(name) == -1 {
 		err = fmt.Errorf("image %s not found\n"+
-			"   try one of these: %v", name, imgs.Paths)
+			"   try one of these: %v", name, imgs.Paths())
 		return
 	}
 
@@ -153,7 +153,7 @@ func Sprite(ctx context.Context, usv libsass.SassValue) (rsv *libsass.SassValue,
 
 	if imgs.Lookup(name) == -1 {
 		return nil, fmt.Errorf("image %s not found\n"+
-			"   try one of these: %v", name, imgs.Paths)
+			"   try one of these: %v", name, imgs.Paths())
 	}
 	// This is an odd name for what it does
 	pos := imgs.GetPack(imgs.Lookup(name))

@@ -21,12 +21,12 @@ func init() {
 }
 
 func TestFromBuildArgs(t *testing.T) {
-	_, err := FromBuildArgs(nil, nil, nil)
+	_, err := FromBuildArgs(nil, nil, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = FromBuildArgs(nil, nil, &BuildArgs{})
+	_, err = FromBuildArgs(nil, nil, nil, &BuildArgs{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,7 +197,7 @@ func TestBuild_error(t *testing.T) {
 	_, w, _ := os.Pipe()
 
 	err := loadAndBuild("test/sass/error.scss", &BuildArgs{},
-		NewPartialMap(), w, "")
+		NewPartialMap(), w, nil, "")
 
 	if err == nil {
 		t.Fatal("no error thrown")
@@ -217,7 +217,7 @@ func TestBuild_args(t *testing.T) {
 	}
 
 	err := loadAndBuild("test/sass/file.scss", bArgs,
-		NewPartialMap(), w, "")
+		NewPartialMap(), w, nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -242,7 +242,7 @@ func TestBuild_comply(t *testing.T) {
 		&BuildArgs{
 			Includes: []string{"test"},
 		},
-		NewPartialMap(), w, "")
+		NewPartialMap(), w, nil, "")
 	w.Close()
 	bs, err := ioutil.ReadAll(r)
 	if err != nil {

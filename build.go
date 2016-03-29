@@ -245,13 +245,13 @@ func LoadAndBuild(path string, gba *BuildArgs, pMap *SafePartialMap) error {
 // FromBuildArgs creates a compiler from BuildArgs
 func FromBuildArgs(dst io.Writer, dstmap io.Writer, src io.Reader, gba *BuildArgs) (libsass.Compiler, error) {
 	if gba == nil {
-		return libsass.New(dst, dstmap, src)
+		return libsass.New(dst, src)
 	}
 	if gba.Payload == nil {
 		gba.init()
 	}
 
-	comp, err := libsass.New(dst, dstmap, src,
+	comp, err := libsass.New(dst, src,
 		// Options overriding defaults
 		// libsass.Path(sassFile), what path should be provided?
 		libsass.ImgDir(gba.ImageDir),
@@ -263,6 +263,7 @@ func FromBuildArgs(dst io.Writer, dstmap io.Writer, src io.Reader, gba *BuildArg
 		libsass.FontDir(gba.Font),
 		libsass.IncludePaths(gba.Includes),
 		libsass.CacheBust(gba.CacheBust),
+		libsass.SourceMap(gba.SourceMap, dstmap),
 	)
 	return comp, err
 }
@@ -286,7 +287,7 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 		imgdir = filepath.Dir(sassFile)
 	}
 
-	comp, err := libsass.New(out, sout, nil,
+	comp, err := libsass.New(out, nil,
 		// Options overriding defaults
 		libsass.Path(sassFile),
 		libsass.ImgDir(imgdir),
@@ -297,8 +298,11 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 		libsass.FontDir(gba.Font),
 		libsass.ImgBuildDir(gba.Gen),
 		libsass.IncludePaths(gba.Includes),
-		libsass.SourceMap(gba.SourceMap),
+		libsass.SourceMap(gba.SourceMap, sout),
 	)
+	if err != nil {
+		return err
+	}
 	// Start Sass transformation
 	err = comp.Run()
 	if err != nil {

@@ -101,13 +101,13 @@ p {
 	if e != res {
 		t.Skipf("Mismatch expected:\n%s\nwas:\n%s", e, res)
 	}
-	p = Parser{PartialMap: NewPartialMap()}
+	pp := Parser{PartialMap: NewPartialMap()}
 	r = bytes.NewBufferString(`$name: foo;
 $attr: border;
 p.#{$name} {
   #{$attr}-color: blue;
 }`)
-	bs, _ = p.Start(r, "")
+	bs, _ = pp.Start(r, "")
 	res = string(bs)
 
 	e = `$rel: ".";

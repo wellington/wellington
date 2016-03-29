@@ -404,7 +404,7 @@ div {
 
 	// Output:
 	// div {
-	//   background: url("img/4f0c6e.png") 0px -149px; }
+	//   background: url("img/b9d55f.png") 0px -149px; }
 }
 
 func TestHandle_offset(t *testing.T) {
@@ -422,7 +422,7 @@ div {
 	}
 
 	e := `div {
-  background: url("img/4f0c6e.png") 10px -139px; }
+  background: url("img/b9d55f.png") 10px -139px; }
 `
 	if e != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
@@ -487,7 +487,7 @@ div {
 	}
 
 	e := `div {
-  background: url("http://foo.com/build/4f0c6e.png") 0px -149px; }
+  background: url("http://foo.com/build/b9d55f.png") 0px -149px; }
 `
 	if e != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
@@ -514,11 +514,11 @@ div {
 	}
 
 	e := `div {
-  background: url("img/744d97.png") 0px 0px;
-  background: url("img/744d97.png") 0px -150px;
-  background: url("img/744d97.png") 0px -300px;
-  background: url("img/744d97.png") 0px -450px;
-  background: url("img/744d97.png") 0px -600px; }
+  background: url("img/e15654.png") 0px 0px;
+  background: url("img/e15654.png") 0px -150px;
+  background: url("img/e15654.png") 0px -300px;
+  background: url("img/e15654.png") 0px -450px;
+  background: url("img/e15654.png") 0px -600px; }
 `
 
 	if out.String() != e {

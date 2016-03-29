@@ -226,8 +226,8 @@ func parseBuildArgs(paths []string) *wt.BuildArgs {
 	if len(buildDir) > 0 {
 		buildDir = makeabs(wd, buildDir)
 		// If buildDir specified, make relative to that
-		gen = makeabs(buildDir, gen)
-	} else {
+	}
+	if len(gen) > 0 {
 		gen = makeabs(wd, gen)
 	}
 	incs = append(incs, paths...)
@@ -243,6 +243,7 @@ func parseBuildArgs(paths []string) *wt.BuildArgs {
 		CacheBust: cachebust,
 		SourceMap: sourceMap,
 	}
+	fmt.Printf("% #v\n", gba)
 	gba.WithPaths(paths)
 	return gba
 }
