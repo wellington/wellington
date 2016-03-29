@@ -192,12 +192,13 @@ func BuildDir(path string) option {
 
 type option func(*sass) error
 
-func New(dst io.Writer, src io.Reader, opts ...option) (Compiler, error) {
+func New(dst io.Writer, dstmap io.Writer, src io.Reader, opts ...option) (Compiler, error) {
 
 	c := &sass{
-		dst: dst,
-		src: src,
-		ctx: newContext(),
+		dst:    dst,
+		dstmap: dstmap,
+		src:    src,
+		ctx:    newContext(),
 	}
 
 	c.ctx.in = src
@@ -213,6 +214,7 @@ func New(dst io.Writer, src io.Reader, opts ...option) (Compiler, error) {
 type sass struct {
 	ctx     *compctx
 	dst     io.Writer
+	dstmap  io.Writer
 	src     io.Reader
 	srcFile string
 
@@ -233,7 +235,7 @@ func (c *sass) run() error {
 	}()
 
 	if len(c.srcFile) > 0 {
-		return c.ctx.FileCompile(c.srcFile, c.dst)
+		return c.ctx.FileCompile(c.srcFile, c.dst, c.dstmap)
 	}
 	return c.ctx.Compile(c.src, c.dst)
 }

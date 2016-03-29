@@ -1,24 +1,28 @@
-general:
-  build_dir: ../.go_workspace/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
 machine:
   environment:
     CC: gcc
     CXX: g++
     GOPATH: /home/ubuntu/.go_workspace
+    GOVER: 1.6
+    GOTAR: /home/ubuntu/go${GOVER}.linux-amd64.tar.gz
   post:
+    - echo $GOVER
     - mkdir -p ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}
     - rm -rf ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/*
     - ln -sf ~/${CIRCLE_PROJECT_REPONAME} ${GOPATH%%:*}/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
-    # https://storage.googleapis.com/golang/go1.6beta1.linux-amd64.tar.gz
-    - sudo rm -rf /usr/local/go
-    - if [ ! -e go1.6beta1.linux-amd64.tar.gz ]; then curl -o go1.6beta1.linux-amd64.tar.gz https://storage.googleapis.com/golang/go1.6beta1.linux-amd64.tar.gz; fi
-    - sudo tar -C /usr/local -xzf go1.6beta1.linux-amd64.tar.gz
+general:
+  build_dir: ../.go_workspace/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
 dependencies:
   cache_directories:
-    - ~/go1.6beta1.linux-amd64.tar.gz
-dependencies:
-  post:
+    - ~/go1.6.linux-amd64.tar.gz
+  pre:
+    - echo "GOVER $GOVER"
+    - echo "GOTAR $GOTAR"
     - go version
+    - test -e ${GOTAR} || wget https://storage.googleapis.com/golang/go${GOVER}.linux-amd64.tar.gz -O ${GOTAR}
+    - go version | grep "$GOVER " || (sudo rm -rf /usr/local/go; sudo tar -C /usr/local -xzf ${GOTAR})
+    - go version
+  post:
     - go env
     - pwd
     - go get golang.org/x/net/context

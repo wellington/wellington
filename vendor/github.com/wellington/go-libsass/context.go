@@ -118,7 +118,7 @@ func (ctx *compctx) Init(goopts libs.SassOptions) libs.SassOptions {
 	return goopts
 }
 
-func (ctx *compctx) FileCompile(path string, out io.Writer) error {
+func (ctx *compctx) FileCompile(path string, out io.Writer, srcmap io.Writer) error {
 	defer ctx.Reset()
 	gofc := libs.SassMakeFileContext(path)
 	goopts := libs.SassFileContextGetOptions(gofc)
@@ -142,11 +142,21 @@ func (ctx *compctx) FileCompile(path string, out io.Writer) error {
 	defer libs.SassDeleteCompiler(gocompiler)
 
 	goout := libs.SassContextGetOutputString(gocc)
-	io.WriteString(out, goout)
+	_, err := io.WriteString(out, goout)
+	if err != nil {
+		return err
+	}
 	ctx.Status = libs.SassContextGetErrorStatus(gocc)
 	errJSON := libs.SassContextGetErrorJSON(gocc)
+	mapout := libs.SassContextGetSourceMapString(gocc)
+	if srcmap != nil {
+		_, err = io.WriteString(srcmap, mapout)
+		if err != nil {
+			return err
+		}
+	}
 	// Yet another property for storing errors
-	err := ctx.ProcessSassError([]byte(errJSON))
+	err = ctx.ProcessSassError([]byte(errJSON))
 	if err != nil {
 		return err
 	}
