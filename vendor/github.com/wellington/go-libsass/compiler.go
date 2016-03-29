@@ -119,9 +119,10 @@ func HTTPPath(u string) option {
 // SourceMap behaves differently depending on compiler used. For
 // compile, it will embed sourcemap into the source. For file compile,
 // it will include a separate file with the source map.
-func SourceMap(b bool) option {
+func SourceMap(b bool, w io.Writer) option {
 	return func(c *sass) error {
 		c.ctx.includeMap = b
+		c.dstmap = w
 		return nil
 	}
 }
@@ -192,13 +193,12 @@ func BuildDir(path string) option {
 
 type option func(*sass) error
 
-func New(dst io.Writer, dstmap io.Writer, src io.Reader, opts ...option) (Compiler, error) {
+func New(dst io.Writer, src io.Reader, opts ...option) (Compiler, error) {
 
 	c := &sass{
-		dst:    dst,
-		dstmap: dstmap,
-		src:    src,
-		ctx:    newContext(),
+		dst: dst,
+		src: src,
+		ctx: newContext(),
 	}
 
 	c.ctx.in = src

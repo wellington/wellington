@@ -127,11 +127,6 @@ func (ctx *compctx) FileCompile(path string, out io.Writer, srcmap io.Writer) er
 	incs := strings.Join(ctx.IncludePaths, string(os.PathListSeparator))
 	libs.SassOptionSetIncludePath(goopts, incs)
 
-	// libs.SassOptionSetSourceMapContents(goopts, true)
-	if ctx.includeMap {
-		libs.SassOptionSetSourceMapFile(goopts, "boom.map")
-	}
-
 	libs.SassFileContextSetOptions(gofc, goopts)
 	gocc := libs.SassFileContextGetContext(gofc)
 	ctx.context = gocc
@@ -142,6 +137,9 @@ func (ctx *compctx) FileCompile(path string, out io.Writer, srcmap io.Writer) er
 	defer libs.SassDeleteCompiler(gocompiler)
 
 	goout := libs.SassContextGetOutputString(gocc)
+	if out == nil {
+		return errors.New("out writer required")
+	}
 	_, err := io.WriteString(out, goout)
 	if err != nil {
 		return err
@@ -149,8 +147,9 @@ func (ctx *compctx) FileCompile(path string, out io.Writer, srcmap io.Writer) er
 	ctx.Status = libs.SassContextGetErrorStatus(gocc)
 	errJSON := libs.SassContextGetErrorJSON(gocc)
 	mapout := libs.SassContextGetSourceMapString(gocc)
-	if srcmap != nil {
-		_, err = io.WriteString(srcmap, mapout)
+
+	if srcmap != nil && ctx.includeMap && len(mapout) > 0 {
+		_, err := io.WriteString(srcmap, mapout)
 		if err != nil {
 			return err
 		}

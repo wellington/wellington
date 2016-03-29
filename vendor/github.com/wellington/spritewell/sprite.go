@@ -284,10 +284,21 @@ func (l *Sprite) OutputPath() (string, error) {
 	if path == "." {
 		path = "image"
 	}
+	relglobs := make([]string, len(globs))
+	for i := range globs {
+		if !filepath.IsAbs(globs[i]) {
+			relglobs[i] = globs[i]
+			continue
+		}
+		relglobs[i], err = filepath.Rel(l.opts.GenImgDir, globs[i])
+		if err != nil {
+			return "", err
+		}
 
+	}
 	hasher := md5.New()
 	seed := pack + strconv.Itoa(padding) + "|" +
-		filepath.ToSlash(path+strings.Join(globs, "|"))
+		filepath.ToSlash(path+"|"+strings.Join(relglobs, "|"))
 	hasher.Write([]byte(seed))
 	salt := hex.EncodeToString(hasher.Sum(nil))[:6]
 	outFile = filepath.Join(path, salt+".png")
