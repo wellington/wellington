@@ -103,7 +103,18 @@ Wellington can be installed via brew
 	brew install wellington
 	wt -h
 
-Or, you can run wellington in a docker container
+
+#### Building from source
+Install Go and add $GOPATH/bin to your $PATH. [Detailed instructions](https://golang.org/doc/install). Wellington requires Go 1.3.1+.
+
+```
+go get -u github.com/wellington/wellington/wt
+
+# You should not have wt in your path
+wt -h
+```
+
+Or, use wellington from a docker container
 
 	docker run -v $(pwd):/data -it drewwells/wellington wt compile proj.scss
 
@@ -116,16 +127,6 @@ Sass is a fantastic language. It adds a lot of power to standard CSS. If only ou
 There had to be a better way. Libsass was starting to gain some traction, but it didn't do everything we needed. So I wrote Wellington to be a drop in replacement for the spriting functions familar to those used to Compass. This makes it super simple to swap out Compass with Wellington in your Sass projects.
 
 ### See how the sausage is made
-
-#### Building from source
-Install Go and add $GOPATH/bin to your $PATH. [Detailed instructions](https://golang.org/doc/install). Wellington requires Go 1.3.1+.
-
-```
-go get -u github.com/wellington/wellington
-
-# You should not have wt in your path
-wt -h
-```
 
 Testing
 
