@@ -243,7 +243,6 @@ func parseBuildArgs(paths []string) *wt.BuildArgs {
 		CacheBust: cachebust,
 		SourceMap: sourceMap,
 	}
-	fmt.Printf("% #v\n", gba)
 	gba.WithPaths(paths)
 	return gba
 }
