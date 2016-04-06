@@ -92,7 +92,7 @@ func TestWatch(t *testing.T) {
 	if err == nil {
 		t.Error("No errors thrown for nil directories")
 	}
-	w.fw.Close()
+	// w.fw.Close()
 
 	watcherChan = make(chan string, 1)
 	w, err = NewWatcher(&WatchOptions{
