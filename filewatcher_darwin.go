@@ -1,4 +1,4 @@
-// +build !darwin
+// +build darwin
 
 package wellington
 
@@ -9,8 +9,9 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
-	"gopkg.in/fsnotify.v1"
+	"github.com/fsnotify/fsevents"
 )
 
 // MaxTopLevel sets the default size of the slice holding the top level
@@ -24,7 +25,8 @@ const MaxTopLevel int = 20
 // Dirs contains all directories that have top level files.
 // GlobalBuildArgs contains build args that apply to all sass files.
 type Watcher struct {
-	fw      *fsnotify.Watcher
+	es *fsevents.EventStream
+	// fw      *fsnotify.Watcher
 	opts    *WatchOptions
 	errChan chan error
 }
@@ -45,17 +47,15 @@ func NewWatchOptions() *WatchOptions {
 
 // NewWatcher returns a new watcher pointer
 func NewWatcher(opts *WatchOptions) (*Watcher, error) {
-	var fswatcher *fsnotify.Watcher
-	fswatcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		return nil, err
-	}
 	if opts == nil {
 		opts = &WatchOptions{}
 	}
 	w := &Watcher{
-		opts:    opts,
-		fw:      fswatcher,
+		opts: opts,
+		es: &fsevents.EventStream{
+			Latency: 500 * time.Millisecond,
+			Flags:   fsevents.FileEvents | fsevents.WatchRoot,
+		},
 		errChan: make(chan error),
 	}
 	// FIXME: this will leak routines, but watcher should only be
@@ -150,25 +150,35 @@ var watcherChan chan (string)
 
 func (w *Watcher) startWatching() {
 	go func() {
-		for {
-			select {
-			case event := <-w.fw.Events:
-				if watcherChan != nil {
-					watcherChan <- event.Name
-					return
-				}
-				if event.Op&fsnotify.Write == fsnotify.Write {
-					err := w.rebuild(event.Name)
-					if err != nil {
-						log.Println("rebuild error:", err)
-					}
-				}
-			case err := <-w.fw.Errors:
-				if err != nil {
-					log.Println("filewatcher error:", err)
-				}
+		log.Println("starting up...")
+		w.es.Start()
+		ec := w.es.Events
+		log.Println("watching", w.es.Paths)
+		for msg := range ec {
+			log.Println("msg", msg)
+			for _, event := range msg {
+				log.Printf("% #v\n", event)
 			}
 		}
+		// for {
+		// 	select {
+		// 	case event := <-w.fw.Events:
+		// 		if watcherChan != nil {
+		// 			watcherChan <- event.Name
+		// 			return
+		// 		}
+		// 		if event.Op&fsnotify.Write == fsnotify.Write {
+		// 			err := w.rebuild(event.Name)
+		// 			if err != nil {
+		// 				log.Println("rebuild error:", err)
+		// 			}
+		// 		}
+		// 	case err := <-w.fw.Errors:
+		// 		if err != nil {
+		// 			log.Println("filewatcher error:", err)
+		// 		}
+		// 	}
+		// }
 	}()
 }
 
@@ -206,9 +216,8 @@ func (w *Watcher) rebuild(eventFileName string) error {
 
 func (w *Watcher) watch(fpath string) error {
 	if len(fpath) > 0 {
-		if err := w.fw.Add(fpath); nil != err {
-			return err
-		}
+		log.Println("append", fpath)
+		w.es.Paths = appendUnique(w.es.Paths, fpath)
 	}
 	return nil
 }
