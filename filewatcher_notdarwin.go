@@ -22,9 +22,9 @@ const MaxTopLevel int = 20
 // Dirs contains all directories that have top level files.
 // GlobalBuildArgs contains build args that apply to all sass files.
 type Watcher struct {
-	FileWatcher *fsnotify.Watcher
-	opts        *WatchOptions
-	errChan     chan error
+	fw      *fsnotify.Watcher
+	opts    *WatchOptions
+	errChan chan error
 }
 
 // WatchOptions containers the necessary parameters to run the file watcher
@@ -52,9 +52,9 @@ func NewWatcher(opts *WatchOptions) (*Watcher, error) {
 		opts = &WatchOptions{}
 	}
 	w := &Watcher{
-		opts:        opts,
-		FileWatcher: fswatcher,
-		errChan:     make(chan error),
+		opts:    opts,
+		fw:      fswatcher,
+		errChan: make(chan error),
 	}
 	// FIXME: this will leak routines, but watcher should only be
 	// called once
@@ -150,7 +150,7 @@ func (w *Watcher) startWatching() {
 	go func() {
 		for {
 			select {
-			case event := <-w.FileWatcher.Events:
+			case event := <-w.fw.Events:
 				if watcherChan != nil {
 					watcherChan <- event.Name
 					return
@@ -161,7 +161,7 @@ func (w *Watcher) startWatching() {
 						log.Println("rebuild error:", err)
 					}
 				}
-			case err := <-w.FileWatcher.Errors:
+			case err := <-w.fw.Errors:
 				if err != nil {
 					log.Println("filewatcher error:", err)
 				}
@@ -204,7 +204,7 @@ func (w *Watcher) rebuild(eventFileName string) error {
 
 func (w *Watcher) watch(fpath string) error {
 	if len(fpath) > 0 {
-		if err := w.FileWatcher.Add(fpath); nil != err {
+		if err := w.fw.Add(fpath); nil != err {
 			return err
 		}
 	}
