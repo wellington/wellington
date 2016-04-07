@@ -139,7 +139,7 @@ func (w *Watcher) rebuild(eventFileName string) error {
 	if !ok {
 		// This isn't an error per say, so let's ignore it
 		return nil
-		return fmt.Errorf("partial map lookup failed: %s", eventFileName)
+		// return fmt.Errorf("partial map lookup failed: %s", eventFileName)
 	}
 
 	go func(paths []string) {
