@@ -7,25 +7,11 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-
-	"gopkg.in/fsnotify.v1"
 )
 
 // MaxTopLevel sets the default size of the slice holding the top level
 // files for a sass partial in SafePartialMap.M
 const MaxTopLevel int = 20
-
-// Watcher holds all data needed to kick off a build of the css when a
-// file changes.
-// FileWatcher is the object that triggers builds when a file changes.
-// PartialMap contains a mapping of partials to top level files.
-// Dirs contains all directories that have top level files.
-// GlobalBuildArgs contains build args that apply to all sass files.
-type Watcher struct {
-	FileWatcher *fsnotify.Watcher
-	opts        *WatchOptions
-	errChan     chan error
-}
 
 // WatchOptions containers the necessary parameters to run the file watcher
 type WatchOptions struct {
@@ -43,19 +29,14 @@ func NewWatchOptions() *WatchOptions {
 
 // NewWatcher returns a new watcher pointer
 func NewWatcher(opts *WatchOptions) (*Watcher, error) {
-	var fswatcher *fsnotify.Watcher
-	fswatcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		return nil, err
-	}
 	if opts == nil {
 		opts = &WatchOptions{}
 	}
 	w := &Watcher{
-		opts:        opts,
-		FileWatcher: fswatcher,
-		errChan:     make(chan error),
+		opts:    opts,
+		errChan: make(chan error),
 	}
+	w.Init()
 	// FIXME: this will leak routines, but watcher should only be
 	// called once
 	go func() {
@@ -107,6 +88,8 @@ func (p *SafePartialMap) AddRelation(mainfile string, subfile string) {
 	p.Add(subfile, appendUnique(existing, mainfile))
 }
 
+var watcherChan chan (string)
+
 // Watch is the main entry point into filewatcher and sets up the
 // SW object that begins monitoring for file changes and triggering
 // top level sass rebuilds.
@@ -144,32 +127,6 @@ func (w *Watcher) watchFiles() error {
 	return nil
 }
 
-var watcherChan chan (string)
-
-func (w *Watcher) startWatching() {
-	go func() {
-		for {
-			select {
-			case event := <-w.FileWatcher.Events:
-				if watcherChan != nil {
-					watcherChan <- event.Name
-					return
-				}
-				if event.Op&fsnotify.Write == fsnotify.Write {
-					err := w.rebuild(event.Name)
-					if err != nil {
-						log.Println("rebuild error:", err)
-					}
-				}
-			case err := <-w.FileWatcher.Errors:
-				if err != nil {
-					log.Println("filewatcher error:", err)
-				}
-			}
-		}
-	}()
-}
-
 var rebuildMu sync.RWMutex
 var rebuildChan chan ([]string)
 
@@ -180,7 +137,9 @@ var rebuildChan chan ([]string)
 func (w *Watcher) rebuild(eventFileName string) error {
 	paths, ok := w.opts.PartialMap.Get(eventFileName)
 	if !ok {
-		return fmt.Errorf("partial map lookup failed: %s", eventFileName)
+		// This isn't an error per say, so let's ignore it
+		return nil
+		// return fmt.Errorf("partial map lookup failed: %s", eventFileName)
 	}
 
 	go func(paths []string) {
@@ -199,15 +158,6 @@ func (w *Watcher) rebuild(eventFileName string) error {
 			}
 		}
 	}(paths)
-	return nil
-}
-
-func (w *Watcher) watch(fpath string) error {
-	if len(fpath) > 0 {
-		if err := w.FileWatcher.Add(fpath); nil != err {
-			return err
-		}
-	}
 	return nil
 }
 

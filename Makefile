@@ -90,7 +90,6 @@ TESTPATHS = $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' .
 
 .PHONY: gover.coverprofile
 gover.coverprofile:
-	go get golang.org/x/tools/cmd/vet
 	# retrieve lint and test deps
 	go get github.com/axw/gocov/gocov
 	go get github.com/mattn/goveralls
