@@ -5,6 +5,7 @@ package wellington
 import (
 	"log"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/fsnotify/fsevents"
@@ -36,11 +37,8 @@ func (w *Watcher) Init() {
 func (w *Watcher) startWatching() {
 
 	go func() {
-		log.Println("starting up...")
 		w.es.Start()
 		ec := w.es.Events
-		log.Println("watching", w.es.Paths)
-
 		for msg := range ec {
 			for _, event := range msg {
 				ext := filepath.Ext(event.Path)
@@ -49,8 +47,13 @@ func (w *Watcher) startWatching() {
 						log.Println("ignoring fsevent", event.Flags, "on", event.Path)
 						continue
 					}
-					log.Println("Path", event.Path)
-					log.Println("Flags", event.Flags)
+					if watcherChan != nil {
+						watcherChan <- event.Path
+						return
+					}
+					if strings.HasPrefix(event.Path, "/private") {
+						event.Path = strings.TrimPrefix(event.Path, "/private")
+					}
 					err := w.rebuild(event.Path)
 					if err != nil {
 						log.Println("rebuild error:", err)
@@ -86,6 +89,14 @@ func (w *Watcher) watch(fpath string) error {
 	if len(fpath) > 0 {
 		log.Println("append", fpath)
 		w.es.Paths = appendUnique(w.es.Paths, fpath)
+	}
+	return nil
+}
+
+// Close shuts down the fsevent stream
+func (w *Watcher) Close() error {
+	if w.es != nil {
+		w.es.Stop()
 	}
 	return nil
 }
