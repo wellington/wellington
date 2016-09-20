@@ -3,7 +3,6 @@
 package wellington
 
 import (
-	"fmt"
 	"log"
 
 	"gopkg.in/fsnotify.v1"
@@ -56,7 +55,6 @@ func (w *Watcher) startWatching() {
 
 func (w *Watcher) watch(fpath string) error {
 	if len(fpath) > 0 {
-		fmt.Println("append", fpath)
 		if err := w.fw.Add(fpath); nil != err {
 			return err
 		}

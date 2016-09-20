@@ -61,16 +61,26 @@ func TestRebuild(t *testing.T) {
 	}
 }
 
-func TestRebuild_watch(t *testing.T) {
+func testPartialRelation() (*os.File, string, string, error) {
 	tdir, err := ioutil.TempDir(os.TempDir(), "testwatch_")
 	if err != nil {
-		t.Fatal(err)
+		return nil, "", "", err
 	}
 	tfile := filepath.Join(tdir, "_new.scss")
 	fh, err := os.Create(tfile)
 	if err != nil {
+		return nil, "", "", err
+	}
+	return fh, tdir, tfile, nil
+}
+
+func TestRebuild_watch(t *testing.T) {
+
+	fh, tdir, tfile, err := testPartialRelation()
+	if err != nil {
 		t.Fatal(err)
 	}
+	defer fh.Close()
 
 	rebuildMu.Lock()
 	rebuildChan = make(chan []string, 1)
@@ -114,27 +124,29 @@ func TestRebuild_watch(t *testing.T) {
 }
 
 func TestWatch_success(t *testing.T) {
-	pmap := NewPartialMap()
-	path := "test/file1a.scss"
-	pmap.Add("file/event", []string{path})
-	opts := &WatchOptions{
-		Paths:      []string{"test"},
-		PartialMap: pmap,
-	}
-	w, err := NewWatcher(opts)
+	w, err := NewWatcher(&WatchOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	err = w.Watch()
 	if err == nil {
 		t.Error("No errors thrown for nil directories")
 	}
-	// w.fw.Close()
+	w.Close()
 
+	fh, tdir, tfile, err := testPartialRelation()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer fh.Close()
+
+	pmap := NewPartialMap()
+	pmap.AddRelation("file/event", tfile)
 	watcherChan = make(chan string, 1)
 	w, err = NewWatcher(&WatchOptions{
-		Paths:      []string{"test"},
-		PartialMap: NewPartialMap(),
+		Paths:      []string{tdir},
+		PartialMap: pmap,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -154,15 +166,15 @@ func TestWatch_success(t *testing.T) {
 
 	testFile := "test/watchfile.lock"
 	f, err := os.OpenFile(testFile, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		t.Fatalf("creating test file failed: %s", err)
+	}
 	defer func() {
 		// Give time for filesystem to sync before deleting file
 		time.Sleep(50 * time.Millisecond)
 		os.Remove(testFile)
 		f.Close()
 	}()
-	if err != nil {
-		t.Fatalf("creating test file failed: %s", err)
-	}
 	f.Sync()
 
 	// Test file modification event

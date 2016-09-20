@@ -87,7 +87,6 @@ func checkFlag(e fsevents.EventFlags) bool {
 
 func (w *Watcher) watch(fpath string) error {
 	if len(fpath) > 0 {
-		log.Println("append", fpath)
 		w.es.Paths = appendUnique(w.es.Paths, fpath)
 	}
 	return nil
