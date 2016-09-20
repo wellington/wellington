@@ -18,6 +18,7 @@ func TestRebuild(t *testing.T) {
 	pmap.Add("file/event", []string{path})
 	wc, err := NewWatcher(&WatchOptions{
 		PartialMap: pmap,
+		BArgs:      &BuildArgs{},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -53,7 +54,10 @@ func TestRebuild(t *testing.T) {
 	}(t)
 
 	// rebuild doesn't throw errors ever
-	wc.rebuild("file/event")
+	err = wc.rebuild("file/event")
+	if err != nil {
+		t.Error(err)
+	}
 
 	err = <-done
 	if err != nil {
@@ -96,29 +100,34 @@ func TestRebuild_watch(t *testing.T) {
 	w, err := NewWatcher(&WatchOptions{
 		Paths:      []string{tdir},
 		PartialMap: pMap,
+		BArgs:      &BuildArgs{},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	done := make(chan error)
+	go func(t *testing.T) {
+		select {
+		case err := <-w.errChan:
+			done <- err
+		case <-rebuildChan:
+			done <- nil
+		case <-time.After(2 * time.Second):
+			done <- fmt.Errorf("timeout waiting for rebuild")
+		}
+	}(t)
+
 	err = w.Watch()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	done := make(chan bool, 1)
-	go func(t *testing.T) {
-		select {
-		case <-rebuildChan:
-			done <- true
-		case <-time.After(2 * time.Second):
-			done <- false
-		}
-		done <- true
-	}(t)
 	fh.WriteString("boom")
-	success := <-done
-	if !success {
-		t.Fatal("Timeout waiting for rebuild")
+
+	err = <-done
+	if err != nil {
+		t.Fatal(err)
 	}
 
 }

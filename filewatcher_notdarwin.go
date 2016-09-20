@@ -64,7 +64,7 @@ func (w *Watcher) watch(fpath string) error {
 
 // Close shuts down the fsevent stream
 func (w *Watcher) Close() error {
-	if w.es != nil {
+	if w.fw != nil {
 		return w.fw.Close()
 	}
 	return nil
