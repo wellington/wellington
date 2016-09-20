@@ -1,4 +1,4 @@
-FROM drewwells/alpine-build:go1.5.1
+FROM drewwells/alpine-build:go1.7.1
 
 RUN go version
 
