@@ -76,8 +76,8 @@ func (p *SafePartialMap) Add(key string, paths []string) {
 // Get is a thread-safe way to access the partial map
 func (p *SafePartialMap) Get(key string) ([]string, bool) {
 	p.RLock()
-	defer p.RUnlock()
 	pm, ok := p.M[key]
+	p.RUnlock()
 	return pm, ok
 }
 

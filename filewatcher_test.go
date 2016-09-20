@@ -13,28 +13,52 @@ import (
 func TestRebuild(t *testing.T) {
 	var f *os.File
 	log.SetOutput(f)
+	pmap := NewPartialMap()
+	path := "test/file1a.scss"
+	pmap.Add("file/event", []string{path})
 	wc, err := NewWatcher(&WatchOptions{
-		PartialMap: NewPartialMap(),
+		PartialMap: pmap,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	rebuildMu.Lock()
+	rebuildChan = make(chan []string, 1)
+	rebuildMu.Unlock()
+	defer func() {
+		rebuildMu.Lock()
+		rebuildChan = nil
+		rebuildMu.Unlock()
+	}()
+
+	done := make(chan error)
 	go func(t *testing.T) {
 		select {
+		case p := <-rebuildChan:
+			if p[0] != path {
+				t.Errorf("got: %s wanted: %s", p[0], path)
+			}
+			done <- nil
 		case err := <-wc.errChan:
 			if err == nil {
-				t.Fatal(err)
+				done <- err
 			}
 			if e := fmt.Errorf("build args"); e != err {
-				t.Fatalf("got: %s wanted: %s", e, err)
+				done <- fmt.Errorf("got: %s wanted: %s", e, err)
 			}
-		case <-time.After(100 * time.Millisecond):
-			t.Fatal("timeout waiting for load error")
+		case <-time.After(5000 * time.Millisecond):
+			done <- fmt.Errorf("timeout waiting for load error")
 		}
 	}(t)
 
 	// rebuild doesn't throw errors ever
 	wc.rebuild("file/event")
+
+	err = <-done
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestRebuild_watch(t *testing.T) {
@@ -51,6 +75,12 @@ func TestRebuild_watch(t *testing.T) {
 	rebuildMu.Lock()
 	rebuildChan = make(chan []string, 1)
 	rebuildMu.Unlock()
+	defer func() {
+		rebuildMu.Lock()
+		rebuildChan = nil
+		rebuildMu.Unlock()
+	}()
+
 	pMap := NewPartialMap()
 	pMap.AddRelation("tswif", tfile)
 	w, err := NewWatcher(&WatchOptions{

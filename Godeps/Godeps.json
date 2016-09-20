@@ -1,6 +1,7 @@
 {
 	"ImportPath": "github.com/wellington/wellington",
 	"GoVersion": "go1.7.1",
+	"GodepVersion": "v74",
 	"Packages": [
 		"./..."
 	],
@@ -12,7 +13,7 @@
 		},
 		{
 			"ImportPath": "github.com/fsnotify/fsevents",
-			"Rev": "35369f6084abb3324e024bdd0865fd3b4a649170"
+			"Rev": "8b9e69e6c151001d0eb8a7cf37583265dfc6d6e4"
 		},
 		{
 			"ImportPath": "github.com/inconshreveable/mousetrap",
