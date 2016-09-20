@@ -6,4 +6,4 @@ COPY . /usr/src/github.com/wellington/wellington
 WORKDIR /usr/src/github.com/wellington/wellington
 
 RUN go get golang.org/x/net/context
-RUN go install -ldflags "-X github.com/wellington/wellington/version.Version $(cat version.txt)" github.com/wellington/wellington/wt
+RUN go install -ldflags "-X github.com/wellington/wellington/version.Version=$(cat version.txt)" github.com/wellington/wellington/wt
