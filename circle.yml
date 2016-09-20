@@ -9,7 +9,7 @@ machine:
     PKG_CONFIG_PATH: "$GO_LIBSASS/lib/pkgconfig"
     GIT_BRANCH: $CIRCLE_BRANCH
     GO15VENDOREXPERIMENT: 1
-    GOVER: 1.6
+    GOVER: 1.7.1
     GOTAR: /home/ubuntu/go${GOVER}.linux-amd64.tar.gz
   #bunch of bad stuff b/c circleci has issues with Go
   post:
@@ -22,7 +22,7 @@ general:
     - "snapshot"
 dependencies:
   cache_directories:
-    - ~/go1.6.linux-amd64.tar.gz
+    - ~/go1.7.1.linux-amd64.tar.gz
   pre:
     - echo "GOVER $GOVER"
     - echo "GOTAR $GOTAR"
