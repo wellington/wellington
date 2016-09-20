@@ -113,8 +113,15 @@ func TestRebuild_watch(t *testing.T) {
 
 }
 
-func TestWatch(t *testing.T) {
-	w, err := NewWatcher(NewWatchOptions())
+func TestWatch_success(t *testing.T) {
+	pmap := NewPartialMap()
+	path := "test/file1a.scss"
+	pmap.Add("file/event", []string{path})
+	opts := &WatchOptions{
+		Paths:      []string{"test"},
+		PartialMap: pmap,
+	}
+	w, err := NewWatcher(opts)
 	if err != nil {
 		t.Fatal(err)
 	}
