@@ -4,8 +4,39 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
+
+type stringSize []string
+
+type Interface interface {
+	// Len is the number of elements in the collection.
+	Len() int
+	// Less reports whether the element with
+	// index i should sort before the element with index j.
+	Less(i, j int) bool
+	// Swap swaps the elements with indexes i and j.
+	Swap(i, j int)
+}
+
+// Len returns length of stringSize
+func (s stringSize) Len() int {
+	return len(s)
+}
+
+// Less returns which string is shorter
+func (s stringSize) Less(i, j int) bool {
+	if len(s[i]) < len(s[j]) {
+		return true
+	}
+	return false
+}
+
+// Swap replaces the two items indicated by indexes
+func (s stringSize) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
 
 // relative takes the input paths and file one that file
 // can be made relative to. This creates a relative path useful for
@@ -14,17 +45,25 @@ import (
 // It is expected that a file is part of one of the path directories.
 // Otherwise, it will not match any of them.
 func relative(paths []string, file string) string {
+
 	if len(filepath.Ext(file)) > 0 {
 		file = filepath.Dir(file)
 	}
-	for _, path := range paths {
+
+	// sort paths prior to running to fix #187
+	sorted := stringSize(paths)
+	sort.Sort(sorted)
+
+	for _, path := range sorted {
 		if len(filepath.Ext(path)) > 0 {
 			path = filepath.Dir(path)
 		}
+
 		if !strings.HasPrefix(file, path) {
 			continue
 		}
 		rel, err := filepath.Rel(path, file)
+
 		if err == nil {
 			return rel
 		}

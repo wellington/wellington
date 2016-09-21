@@ -1,9 +1,6 @@
 package wellington
 
-import (
-	"fmt"
-	"testing"
-)
+import "testing"
 
 func TestPath_recurse(t *testing.T) {
 
@@ -38,13 +35,29 @@ func TestPath_files(t *testing.T) {
 func TestPath_underscore(t *testing.T) {
 
 	paths := []string{"a/a.scss"}
-	fmt.Println(relative(paths, paths[0]))
+	if e := "."; e != relative(paths, paths[0]) {
+		t.Errorf("got: %s wanted: %s", relative(paths, paths[0]), e)
+	}
 
 	paths = []string{"a/a.scss", "a/subdir/subdir.scss"}
-	fmt.Println(relative(paths, paths[1]))
+	if e := "subdir"; e != relative(paths, paths[1]) {
+		t.Errorf("got: %s wanted: %s", relative(paths, paths[1]), e)
+	}
 
 	paths = []string{"a/subdir/subdir.scss", "a/a.scss"}
-	fmt.Println(relative(paths, paths[1]))
+	if e := "subdir"; e != relative(paths, paths[0]) {
+		t.Errorf("got: %s wanted: %s", relative(paths, paths[0]), e)
+	}
+
+	paths = []string{"a/a.scss", "a/_underscore/underscore.scss"}
+	if e := "_underscore"; e != relative(paths, paths[1]) {
+		t.Errorf("got: %s wanted: %s", relative(paths, paths[1]), e)
+	}
+
+	paths = []string{"a/_underscore/underscore.scss", "a/a.scss"}
+	if e := "_underscore"; e != relative(paths, paths[0]) {
+		t.Errorf("got: %s wanted: %s", relative(paths, paths[0]), e)
+	}
 
 }
 
