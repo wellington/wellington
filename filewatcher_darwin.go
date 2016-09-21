@@ -38,7 +38,6 @@ func (w *Watcher) Init() {
 }
 
 func (w *Watcher) startWatching() {
-	w.closed = make(chan struct{})
 	w.es.Start()
 	for {
 		select {
@@ -103,11 +102,11 @@ func (w *Watcher) watch(fpath string) error {
 // Close shuts down the fsevent stream
 func (w *Watcher) Close() error {
 	close(w.closing)
-	if w.es != nil {
-		w.es.Stop()
-	}
 	if w.closed != nil {
 		<-w.closed
+	}
+	if w.es != nil {
+		w.es.Stop()
 	}
 	return nil
 }

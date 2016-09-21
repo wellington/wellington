@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 )
@@ -168,7 +169,16 @@ func TestWatch_success(t *testing.T) {
 
 	pmap := NewPartialMap()
 	pmap.AddRelation("file/event", tfile)
+
+	watcherChanMu.Lock()
 	watcherChan = make(chan string, 1)
+	watcherChanMu.Unlock()
+	defer func() {
+		watcherChanMu.Lock()
+		watcherChan = nil
+		watcherChanMu.Unlock()
+	}()
+
 	w, err = NewWatcher(&WatchOptions{
 		Paths:      []string{tdir},
 		PartialMap: pmap,
@@ -178,11 +188,17 @@ func TestWatch_success(t *testing.T) {
 	}
 	err = w.Watch()
 
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 	// Test file creation event
 	go func() {
+		defer wg.Done()
+
 		select {
-		case <-watcherChan:
-			break
+		case <-w.closing:
+		case name := <-watcherChan:
+			fmt.Println(name)
+			return
 		case <-time.After(5 * time.Second):
 			fmt.Printf("timeout %d\n", len(watcherChan))
 			t.Error("Timeout without creating file")
@@ -202,11 +218,16 @@ func TestWatch_success(t *testing.T) {
 	}()
 	f.Sync()
 
+	wg.Add(1)
 	// Test file modification event
 	go func() {
+		defer wg.Done()
+
 		select {
-		case <-watcherChan:
-			break
+		case <-w.closing:
+		case name := <-watcherChan:
+			fmt.Println(name)
+			return
 		case <-time.After(2 * time.Second):
 			fmt.Printf("timeout %d\n", len(watcherChan))
 			t.Error("Timeout without detecting write")
@@ -215,6 +236,8 @@ func TestWatch_success(t *testing.T) {
 
 	f.WriteString("data")
 	f.Sync()
+	w.Close()
+	wg.Wait()
 }
 
 func TestWatch_errors(t *testing.T) {

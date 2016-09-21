@@ -18,20 +18,27 @@ type Watcher struct {
 	fw      *fsnotify.Watcher
 	opts    *WatchOptions
 	errChan chan error
+	closing chan struct{}
+	closed  chan struct{}
 }
 
 // Init initializes the watcher with fsnotify watcher
 func (w *Watcher) Init() {
 	var err error
 	w.fw, err = fsnotify.NewWatcher()
+	w.closing = make(chan struct{})
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
 func (w *Watcher) startWatching() {
+
 	for {
 		select {
+		case <-w.closing:
+			close(w.closed)
+			return
 		case event := <-w.fw.Events:
 			if watcherChan != nil {
 				watcherChan <- event.Name
@@ -62,6 +69,10 @@ func (w *Watcher) watch(fpath string) error {
 
 // Close shuts down the fsevent stream
 func (w *Watcher) Close() error {
+	close(w.closing)
+	if w.closed != nil {
+		<-w.closed
+	}
 	if w.fw != nil {
 		return w.fw.Close()
 	}

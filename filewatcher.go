@@ -87,7 +87,8 @@ func (p *SafePartialMap) AddRelation(mainfile string, subfile string) {
 	p.Add(subfile, appendUnique(existing, mainfile))
 }
 
-var watcherChan chan (string)
+var watcherChanMu sync.RWMutex
+var watcherChan chan string
 
 // Watch is the main entry point into filewatcher and sets up the
 // SW object that begins monitoring for file changes and triggering
@@ -104,6 +105,8 @@ func (w *Watcher) Watch() error {
 	if err != nil {
 		return err
 	}
+
+	w.closed = make(chan struct{})
 	go w.startWatching()
 	return nil
 }
