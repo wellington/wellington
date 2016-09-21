@@ -1,6 +1,9 @@
 package wellington
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestPath_recurse(t *testing.T) {
 
@@ -30,6 +33,19 @@ func TestPath_files(t *testing.T) {
 	if e := 2; len(paths) != e {
 		t.Errorf("got: %d wanted: %d", len(paths), e)
 	}
+}
+
+func TestPath_underscore(t *testing.T) {
+
+	paths := []string{"a/a.scss"}
+	fmt.Println(relative(paths, paths[0]))
+
+	paths = []string{"a/a.scss", "a/subdir/subdir.scss"}
+	fmt.Println(relative(paths, paths[1]))
+
+	paths = []string{"a/subdir/subdir.scss", "a/a.scss"}
+	fmt.Println(relative(paths, paths[1]))
+
 }
 
 func TestRelative(t *testing.T) {
