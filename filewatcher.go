@@ -2,7 +2,6 @@ package wellington
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -105,7 +104,7 @@ func (w *Watcher) Watch() error {
 	if err != nil {
 		return err
 	}
-	w.startWatching()
+	go w.startWatching()
 	return nil
 }
 
@@ -127,8 +126,12 @@ func (w *Watcher) watchFiles() error {
 	return nil
 }
 
+// testing channels that are not used for production runtime
 var rebuildMu sync.RWMutex
 var rebuildChan chan ([]string)
+
+var doneChanMu sync.RWMutex
+var doneChan chan string
 
 // rebuild is notified about sass file updates and looks
 // for the file in the partial map.  It also checks
@@ -154,7 +157,10 @@ func (w *Watcher) rebuild(eventFileName string) error {
 			if err != nil {
 				w.errChan <- err
 			} else {
-				fmt.Printf("Rebuilt: %s\n", paths[i])
+				if doneChan != nil {
+					doneChan <- paths[i]
+				}
+				log.Printf("Rebuilt: %s\n", paths[i])
 			}
 		}
 	}(paths)

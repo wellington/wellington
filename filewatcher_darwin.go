@@ -21,6 +21,8 @@ type Watcher struct {
 	es      *fsevents.EventStream
 	opts    *WatchOptions
 	errChan chan error
+	closing chan struct{}
+	closed  chan struct{}
 }
 
 // Init initializes the watcher with fsevent watcher
@@ -28,6 +30,7 @@ func (w *Watcher) Init() {
 	if w.es != nil {
 		w.es.Stop()
 	}
+	w.closing = make(chan struct{})
 	w.es = &fsevents.EventStream{
 		Latency: 500 * time.Millisecond,
 		Flags:   fsevents.FileEvents,
@@ -35,11 +38,14 @@ func (w *Watcher) Init() {
 }
 
 func (w *Watcher) startWatching() {
-
-	go func() {
-		w.es.Start()
-		ec := w.es.Events
-		for msg := range ec {
+	w.closed = make(chan struct{})
+	w.es.Start()
+	for {
+		select {
+		case <-w.closing:
+			close(w.closed)
+			return
+		case msg := <-w.es.Events:
 			for _, event := range msg {
 				ext := filepath.Ext(event.Path)
 				if ext == ".scss" || ext == ".sass" {
@@ -54,6 +60,7 @@ func (w *Watcher) startWatching() {
 					if strings.HasPrefix(event.Path, "/private") {
 						event.Path = strings.TrimPrefix(event.Path, "/private")
 					}
+
 					err := w.rebuild(event.Path)
 					if err != nil {
 						log.Println("rebuild error:", err)
@@ -61,7 +68,7 @@ func (w *Watcher) startWatching() {
 				}
 			}
 		}
-	}()
+	}
 }
 
 var modEvts = []fsevents.EventFlags{
@@ -87,6 +94,7 @@ func checkFlag(e fsevents.EventFlags) bool {
 
 func (w *Watcher) watch(fpath string) error {
 	if len(fpath) > 0 {
+
 		w.es.Paths = appendUnique(w.es.Paths, fpath)
 	}
 	return nil
@@ -94,8 +102,12 @@ func (w *Watcher) watch(fpath string) error {
 
 // Close shuts down the fsevent stream
 func (w *Watcher) Close() error {
+	close(w.closing)
 	if w.es != nil {
 		w.es.Stop()
+	}
+	if w.closed != nil {
+		<-w.closed
 	}
 	return nil
 }

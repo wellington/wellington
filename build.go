@@ -153,7 +153,6 @@ func (b *Build) doBuild() {
 }
 
 func (b *Build) build(path string) error {
-
 	if len(path) == 0 {
 		return errors.New("invalid path given")
 	}
@@ -181,9 +180,9 @@ func (b *Build) Close() error {
 var inputFileTypes = []string{".scss", ".sass"}
 
 func (b *BuildArgs) getOut(path string) (io.WriteCloser, io.WriteCloser, string, error) {
+
 	var (
-		out  io.WriteCloser
-		fout string
+		out io.WriteCloser
 	)
 	if b == nil {
 		return nil, nil, "", errors.New("build args is nil")
@@ -194,22 +193,23 @@ func (b *BuildArgs) getOut(path string) (io.WriteCloser, io.WriteCloser, string,
 	}
 	rel := relative(b.paths, path)
 	filename := updateFileOutputType(filepath.Base(path))
-	fout = filepath.Join(b.BuildDir, rel, filename)
-	dir := filepath.Dir(fout)
+	name := filepath.Join(b.BuildDir, rel, filename)
+	dir := filepath.Dir(name)
 	// FIXME: do this once per Build instead of every file
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
 		return nil, nil, "", fmt.Errorf("Failed to create directory: %s",
 			dir)
 	}
-	out, err = os.Create(fout)
+	out, err = os.Create(name)
 	if err != nil {
 		return nil, nil, "", err
 	}
 	var smap *os.File
 	if b.SourceMap {
-		smap, err = os.Create(fout + ".map")
+		smap, err = os.Create(name + ".map")
 	}
+
 	return out, smap, dir, err
 }
 
@@ -300,15 +300,16 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 		libsass.IncludePaths(gba.Includes),
 		libsass.SourceMap(gba.SourceMap, sout),
 	)
+
 	if err != nil {
 		return err
 	}
+
 	// Start Sass transformation
 	err = comp.Run()
 	if err != nil {
 		return errors.New(color.RedString("%s", err))
 	}
-
 	for _, inc := range comp.Imports() {
 		partialMap.AddRelation(sassFile, inc)
 	}

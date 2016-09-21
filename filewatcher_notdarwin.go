@@ -30,27 +30,25 @@ func (w *Watcher) Init() {
 }
 
 func (w *Watcher) startWatching() {
-	go func() {
-		for {
-			select {
-			case event := <-w.fw.Events:
-				if watcherChan != nil {
-					watcherChan <- event.Name
-					return
-				}
-				if event.Op&fsnotify.Write == fsnotify.Write {
-					err := w.rebuild(event.Name)
-					if err != nil {
-						log.Println("rebuild error:", err)
-					}
-				}
-			case err := <-w.fw.Errors:
+	for {
+		select {
+		case event := <-w.fw.Events:
+			if watcherChan != nil {
+				watcherChan <- event.Name
+				return
+			}
+			if event.Op&fsnotify.Write == fsnotify.Write {
+				err := w.rebuild(event.Name)
 				if err != nil {
-					log.Println("filewatcher error:", err)
+					log.Println("rebuild error:", err)
 				}
 			}
+		case err := <-w.fw.Errors:
+			if err != nil {
+				log.Println("filewatcher error:", err)
+			}
 		}
-	}()
+	}
 }
 
 func (w *Watcher) watch(fpath string) error {

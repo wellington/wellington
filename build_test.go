@@ -85,6 +85,63 @@ func TestNewBuild(t *testing.T) {
 	b.Close()
 }
 
+func TestNewBuild_underscore(t *testing.T) {
+	tdir, _ := ioutil.TempDir("", "underscore")
+
+	sdir := filepath.Join(tdir, "_include")
+	bdir := filepath.Join(tdir, "build")
+	err := os.MkdirAll(sdir, 0744)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	main, err := os.Create(filepath.Join(tdir, "main.scss"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	inc, err := os.Create(filepath.Join(sdir, "include.scss"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ps := []string{inc.Name(), main.Name()}
+	bb := NewBuild(ps,
+		&BuildArgs{
+			paths:    ps,
+			BuildDir: bdir,
+		}, NewPartialMap())
+
+	err = bb.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	var matches []string
+	err = filepath.Walk(tdir, func(path string, _ os.FileInfo, _ error) error {
+		if filepath.Ext(path) == ".css" {
+			matches = append(matches, path)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if e := 2; len(matches) != e {
+		t.Errorf("got: %d wanted: %d", len(matches), e)
+	}
+
+	if filepath.Dir(matches[0]) == filepath.Dir(matches[1]) {
+		t.Errorf("files should not be in the same directory:\n%s\n%s", matches[0], matches[1])
+	}
+
+}
+
 func TestNewBuild_two(t *testing.T) {
 	tdir, _ := ioutil.TempDir("", "testnewbuild_two")
 	sdir := filepath.Join(tdir, "sass")

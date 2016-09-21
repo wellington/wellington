@@ -10,35 +10,43 @@ import (
 	"time"
 )
 
-func TestRebuild(t *testing.T) {
+func TestRebuild_error(t *testing.T) {
 	var f *os.File
 	log.SetOutput(f)
+
+	tdir, err := ioutil.TempDir("", "rebuild_error")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	pmap := NewPartialMap()
 	path := "test/file1a.scss"
 	pmap.Add("file/event", []string{path})
 	wc, err := NewWatcher(&WatchOptions{
 		PartialMap: pmap,
-		BArgs:      &BuildArgs{},
+		BArgs: &BuildArgs{
+			BuildDir: tdir,
+		},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	rebuildMu.Lock()
-	rebuildChan = make(chan []string, 1)
-	rebuildMu.Unlock()
+	doneChanMu.Lock()
+	doneChan = make(chan string, 1)
+	doneChanMu.Unlock()
 	defer func() {
-		rebuildMu.Lock()
-		rebuildChan = nil
-		rebuildMu.Unlock()
+		doneChanMu.Lock()
+		doneChan = nil
+		doneChanMu.Unlock()
 	}()
 
 	done := make(chan error)
 	go func(t *testing.T) {
 		select {
-		case p := <-rebuildChan:
-			if p[0] != path {
-				t.Errorf("got: %s wanted: %s", p[0], path)
+		case p := <-doneChan:
+			if p != path {
+				t.Errorf("got: %s wanted: %s", p, path)
 			}
 			done <- nil
 		case err := <-wc.errChan:
@@ -63,6 +71,11 @@ func TestRebuild(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if err := wc.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	time.Sleep(1 * time.Second)
 }
 
 func testPartialRelation() (*os.File, string, string, error) {
@@ -79,6 +92,8 @@ func testPartialRelation() (*os.File, string, string, error) {
 }
 
 func TestRebuild_watch(t *testing.T) {
+	var f *os.File
+	log.SetOutput(f)
 
 	fh, tdir, tfile, err := testPartialRelation()
 	if err != nil {
@@ -100,7 +115,9 @@ func TestRebuild_watch(t *testing.T) {
 	w, err := NewWatcher(&WatchOptions{
 		Paths:      []string{tdir},
 		PartialMap: pMap,
-		BArgs:      &BuildArgs{},
+		BArgs: &BuildArgs{
+			BuildDir: filepath.Join(tdir, "build"),
+		},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -117,7 +134,7 @@ func TestRebuild_watch(t *testing.T) {
 			done <- fmt.Errorf("timeout waiting for rebuild")
 		}
 	}(t)
-
+	defer w.Close()
 	err = w.Watch()
 	if err != nil {
 		t.Fatal(err)
@@ -129,7 +146,6 @@ func TestRebuild_watch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 }
 
 func TestWatch_success(t *testing.T) {
