@@ -4,21 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 )
 
 type stringSize []string
-
-type Interface interface {
-	// Len is the number of elements in the collection.
-	Len() int
-	// Less reports whether the element with
-	// index i should sort before the element with index j.
-	Less(i, j int) bool
-	// Swap swaps the elements with indexes i and j.
-	Swap(i, j int)
-}
 
 // Len returns length of stringSize
 func (s stringSize) Len() int {
@@ -50,11 +39,7 @@ func relative(paths []string, file string) string {
 		file = filepath.Dir(file)
 	}
 
-	// sort paths prior to running to fix #187
-	sorted := stringSize(paths)
-	sort.Sort(sorted)
-
-	for _, path := range sorted {
+	for _, path := range paths {
 		if len(filepath.Ext(path)) > 0 {
 			path = filepath.Dir(path)
 		}

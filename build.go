@@ -44,9 +44,19 @@ type BuildArgs struct {
 	SourceMap bool
 }
 
+// Paths retrieves the paths in the arguments
+func (b *BuildArgs) Paths() []string {
+	return b.paths
+}
+
 // WithPaths creates a new BuildArgs with paths applied
 func (b *BuildArgs) WithPaths(paths []string) {
-	b.paths = paths
+
+	// sort paths prior to running to fix #187
+	sorted := stringSize(paths)
+	sort.Sort(sorted)
+
+	b.paths = sorted
 }
 
 // Init initializes the payload, this should really go away
@@ -77,14 +87,11 @@ type work struct {
 }
 
 // NewBuild accepts arguments to reate a new Builder
-func NewBuild(paths []string, args *BuildArgs, pMap *SafePartialMap) *Build {
+func NewBuild(args *BuildArgs, pMap *SafePartialMap) *Build {
 	if args.Payload == nil {
 		args.init()
 	}
 
-	// paths should be sorted, so that the most specific relative path is
-	// used for relative build path in build directory
-	sort.Sort(sort.StringSlice(paths))
 	return &Build{
 		done:   make(chan error),
 		status: make(chan error),
@@ -92,7 +99,7 @@ func NewBuild(paths []string, args *BuildArgs, pMap *SafePartialMap) *Build {
 		queue:   make(chan work),
 		closing: make(chan struct{}),
 
-		paths:      paths,
+		paths:      args.Paths(),
 		bArgs:      args,
 		partialMap: pMap,
 	}

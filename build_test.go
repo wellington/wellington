@@ -60,9 +60,10 @@ func BenchmarkNewBuild(b *testing.B) {
 	ins := []string{"test/sass/file.scss"}
 	pmap := NewPartialMap()
 	args := &BuildArgs{}
+	args.WithPaths(ins)
 	// run the Fib function b.N times
 	for n := 0; n < b.N; n++ {
-		bld := NewBuild(ins, args, pmap)
+		bld := NewBuild(args, pmap)
 		err := bld.Run()
 		if err != nil {
 			b.Fatal(err)
@@ -73,7 +74,9 @@ func BenchmarkNewBuild(b *testing.B) {
 
 func TestNewBuild(t *testing.T) {
 
-	b := NewBuild([]string{"test/sass/error.scss"}, &BuildArgs{}, nil)
+	args := &BuildArgs{}
+	args.WithPaths([]string{"test/sass/error.scss"})
+	b := NewBuild(args, nil)
 	if b == nil {
 		t.Fatal("build is nil")
 	}
@@ -105,12 +108,11 @@ func TestNewBuild_underscore(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ps := []string{inc.Name(), main.Name()}
-	bb := NewBuild(ps,
-		&BuildArgs{
-			paths:    ps,
-			BuildDir: bdir,
-		}, NewPartialMap())
+	bargs := &BuildArgs{
+		BuildDir: bdir,
+	}
+	bargs.WithPaths([]string{inc.Name(), main.Name()})
+	bb := NewBuild(bargs, NewPartialMap())
 
 	err = bb.Run()
 	if err != nil {
@@ -159,11 +161,12 @@ func TestNewBuild_two(t *testing.T) {
 		t.Fatal(err)
 	}
 	ps := []string{sdir}
-	bb := NewBuild(ps,
-		&BuildArgs{
-			paths:    ps,
-			BuildDir: bdir,
-		}, NewPartialMap())
+	args := &BuildArgs{
+		paths:    ps,
+		BuildDir: bdir,
+	}
+	args.WithPaths(ps)
+	bb := NewBuild(args, NewPartialMap())
 
 	err = bb.Run()
 	if err != nil {
@@ -186,10 +189,9 @@ func TestNewBuild_two(t *testing.T) {
 func TestNewBuild_dir(t *testing.T) {
 	tdir, _ := ioutil.TempDir("", "testnewbuild_two")
 	ps := []string{"test/sass"}
-	bb := NewBuild(
-		ps,
-		&BuildArgs{BuildDir: tdir, paths: ps},
-		NewPartialMap())
+	args := &BuildArgs{BuildDir: tdir, paths: ps}
+	args.WithPaths(ps)
+	bb := NewBuild(args, NewPartialMap())
 	os.RemoveAll(filepath.Join(tdir, "*"))
 
 	err := bb.Run()
@@ -206,12 +208,12 @@ func TestNewBuild_dir(t *testing.T) {
 	}
 
 	ps = []string{"test/subdir"}
-	bb = NewBuild(ps,
-		&BuildArgs{
-			paths:    ps,
-			BuildDir: tdir,
-		},
-		NewPartialMap())
+	args = &BuildArgs{
+		paths:    ps,
+		BuildDir: tdir,
+	}
+	args.WithPaths(ps)
+	bb = NewBuild(args, NewPartialMap())
 	os.RemoveAll(filepath.Join(tdir, "test"))
 
 	err = bb.Run()
@@ -236,8 +238,9 @@ func TestNewBuild_dir(t *testing.T) {
 
 func ExampleNewBuild() {
 	ps := []string{"test/sass/file.scss"}
-	b := NewBuild(ps,
-		&BuildArgs{paths: ps}, NewPartialMap())
+	args := &BuildArgs{}
+	args.WithPaths(ps)
+	b := NewBuild(args, NewPartialMap())
 
 	err := b.Run()
 	if err != nil {

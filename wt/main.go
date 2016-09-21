@@ -301,9 +301,8 @@ func globalRun(paths []string) (*wt.SafePartialMap, *wt.BuildArgs) {
 // Watch accepts a set of paths starting a recursive file watcher
 func Watch(cmd *cobra.Command, paths []string) {
 	pMap, gba := globalRun(paths)
-	var err error
-	bOpts := wt.NewBuild(paths, gba, pMap)
-	err = bOpts.Run()
+	bOpts := wt.NewBuild(gba, pMap)
+	err := bOpts.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -373,14 +372,14 @@ func Compile(cmd *cobra.Command, paths []string) {
 		log.Printf("Compilation took: %s\n", time.Since(start))
 	}()
 
-	run(paths, pMap, gba)
+	run(pMap, gba)
 }
 
-// Run is the main entrypoint for the cli.
-func run(paths []string, pMap *wt.SafePartialMap, gba *wt.BuildArgs) {
+// run is the main entrypoint for the cli.
+func run(pMap *wt.SafePartialMap, gba *wt.BuildArgs) {
 
 	// No paths given, read from stdin and wait
-	if len(paths) == 0 {
+	if len(gba.Paths()) == 0 {
 
 		log.Println("Reading from stdin, -h for help")
 		out := os.Stdout
@@ -396,7 +395,7 @@ func run(paths []string, pMap *wt.SafePartialMap, gba *wt.BuildArgs) {
 		return
 	}
 
-	bOpts := wt.NewBuild(paths, gba, pMap)
+	bOpts := wt.NewBuild(gba, pMap)
 
 	err := bOpts.Run()
 	if err != nil {
