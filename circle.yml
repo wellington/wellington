@@ -57,6 +57,7 @@ deployment:
     branch: [master, feature/circleci]
     commands:
       - make release
+      - mv snapshot/* $CIRCLE_ARTIFACTS
       # goxc broken in GO15VENDOREXPERIMENT
       #- goxc -tasks='xc archive' -bc 'linux' -build-ldflags="-extldflags '-static' -X github.com/wellington/wellington/version.Version $WT_VERSION" -pv $WT_VERSION -arch 'amd64' -d $CIRCLE_ARTIFACTS -n wt -wd wt
       - make container
