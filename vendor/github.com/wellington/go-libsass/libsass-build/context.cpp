@@ -92,9 +92,9 @@ namespace Sass {
 
     // collect more paths from different options
     collect_include_paths(c_options.include_path);
-    // collect_include_paths(c_options.include_paths);
+    collect_include_paths(c_options.include_paths);
     collect_plugin_paths(c_options.plugin_path);
-    // collect_plugin_paths(c_options.plugin_paths);
+    collect_plugin_paths(c_options.plugin_paths);
 
     // load plugins and register custom behaviors
     for(auto plug : plugin_paths) plugins.load_plugins(plug);
@@ -162,7 +162,6 @@ namespace Sass {
 
   void Context::collect_include_paths(const char* paths_str)
   {
-
     if (paths_str) {
       const char* beg = paths_str;
       const char* end = Prelexer::find_first<PATH_SEP>(beg);
@@ -185,17 +184,17 @@ namespace Sass {
     }
   }
 
-  void Context::collect_include_paths(const char** paths_array)
+  void Context::collect_include_paths(string_list* paths_array)
   {
-    if (!paths_array) return;
-    for (size_t i = 0; paths_array[i]; i++) {
-      collect_include_paths(paths_array[i]);
+    while (paths_array)
+    {
+      collect_include_paths(paths_array->string);
+      paths_array = paths_array->next;
     }
   }
 
   void Context::collect_plugin_paths(const char* paths_str)
   {
-
     if (paths_str) {
       const char* beg = paths_str;
       const char* end = Prelexer::find_first<PATH_SEP>(beg);
@@ -218,14 +217,14 @@ namespace Sass {
     }
   }
 
-  void Context::collect_plugin_paths(const char** paths_array)
+  void Context::collect_plugin_paths(string_list* paths_array)
   {
-    if (!paths_array) return;
-    for (size_t i = 0; paths_array[i]; i++) {
-      collect_plugin_paths(paths_array[i]);
+    while (paths_array)
+    {
+      collect_plugin_paths(paths_array->string);
+      paths_array = paths_array->next;
     }
   }
-
 
   // resolve the imp_path in base_path or include_paths
   // looks for alternatives and returns a list from one directory
@@ -289,7 +288,7 @@ namespace Sass {
     const char* contents = resources[idx].contents;
     // keep a copy of the path around (for parserstates)
     // ToDo: we clean it, but still not very elegant!?
-    strings.push_back(sass_strdup(inc.abs_path.c_str()));
+    strings.push_back(sass_copy_c_string(inc.abs_path.c_str()));
     // create the initial parser state from resource
     ParserState pstate(strings.back(), contents, idx);
 
@@ -351,8 +350,9 @@ namespace Sass {
 
     // process the resolved entry
     else if (resolved.size() == 1) {
+      bool use_cache = c_importers.size() == 0;
       // use cache for the resource loading
-      if (sheets.count(resolved[0].abs_path)) return resolved[0];
+      if (use_cache && sheets.count(resolved[0].abs_path)) return resolved[0];
       // try to read the content of the resolved file entry
       // the memory buffer returned must be freed by us!
       if (char* contents = read_file(resolved[0].abs_path)) {
@@ -436,7 +436,7 @@ namespace Sass {
           // query data from the current include
           Sass_Import_Entry include = *it_includes;
           char* source = sass_import_take_source(include);
-          char* srcmap = sass_import_take_source(include);
+          char* srcmap = sass_import_take_srcmap(include);
           size_t line = sass_import_get_error_line(include);
           size_t column = sass_import_get_error_column(include);
           const char *abs_path = sass_import_get_abs_path(include);
@@ -518,7 +518,7 @@ namespace Sass {
     }
     // create a copy of the resulting buffer string
     // this must be freed or taken over by implementor
-    return sass_strdup(emitted.buffer.c_str());
+    return sass_copy_c_string(emitted.buffer.c_str());
   }
 
   void Context::apply_custom_headers(Block* root, const char* ctx_path, ParserState pstate)
@@ -605,7 +605,7 @@ namespace Sass {
 
     // ToDo: this may be resolved via custom importers
     std::string abs_path(rel2abs(entry_path));
-    char* abs_path_c_str = sass_strdup(abs_path.c_str());
+    char* abs_path_c_str = sass_copy_c_string(abs_path.c_str());
     strings.push_back(abs_path_c_str);
 
     // create entry only for the import stack
@@ -692,7 +692,7 @@ namespace Sass {
     if (source_map_file == "") return 0;
     char* result = 0;
     std::string map = emitter.render_srcmap(*this);
-    result = sass_strdup(map.c_str());
+    result = sass_copy_c_string(map.c_str());
     return result;
   }
 

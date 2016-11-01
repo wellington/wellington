@@ -115,10 +115,12 @@ func (ctx *compctx) Init(goopts libs.SassOptions) libs.SassOptions {
 	libs.SassOptionSetPrecision(goopts, ctx.Precision)
 	libs.SassOptionSetOutputStyle(goopts, ctx.OutputStyle)
 	libs.SassOptionSetSourceComments(goopts, ctx.Comments)
+
 	return goopts
 }
 
-func (ctx *compctx) FileCompile(path string, out io.Writer, srcmap io.Writer) error {
+func (ctx *compctx) fileCompile(path string, out io.Writer, mappath string) error {
+
 	defer ctx.Reset()
 	gofc := libs.SassMakeFileContext(path)
 	goopts := libs.SassFileContextGetOptions(gofc)
@@ -127,6 +129,15 @@ func (ctx *compctx) FileCompile(path string, out io.Writer, srcmap io.Writer) er
 	incs := strings.Join(ctx.IncludePaths, string(os.PathListSeparator))
 	libs.SassOptionSetIncludePath(goopts, incs)
 
+	// libSass won't create a source map unless you ask it to
+	// embed one or give it a file path. It won't actually write
+	// to this file, but it will add this filename into the
+	// css output.
+	if len(mappath) > 0 {
+		libs.SassOptionSetSourceMapFile(goopts, mappath)
+	}
+
+	// Set options to the sass context
 	libs.SassFileContextSetOptions(gofc, goopts)
 	gocc := libs.SassFileContextGetContext(gofc)
 	ctx.context = gocc
@@ -148,8 +159,8 @@ func (ctx *compctx) FileCompile(path string, out io.Writer, srcmap io.Writer) er
 	errJSON := libs.SassContextGetErrorJSON(gocc)
 	mapout := libs.SassContextGetSourceMapString(gocc)
 
-	if srcmap != nil && ctx.includeMap && len(mapout) > 0 {
-		_, err := io.WriteString(srcmap, mapout)
+	if len(mappath) > 0 && len(mapout) > 0 {
+		err := ioutil.WriteFile(mappath, []byte(mapout), 0666)
 		if err != nil {
 			return err
 		}
@@ -167,9 +178,9 @@ func (ctx *compctx) FileCompile(path string, out io.Writer, srcmap io.Writer) er
 	return nil
 }
 
-// Compile reads in and writes the libsass compiled result to out.
+// compile reads in and writes the libsass compiled result to out.
 // Options and custom functions are applied as specified in Context.
-func (ctx *compctx) Compile(in io.Reader, out io.Writer) error {
+func (ctx *compctx) compile(out io.Writer, in io.Reader) error {
 
 	defer ctx.Reset()
 	bs, err := ioutil.ReadAll(in)

@@ -3,7 +3,7 @@ machine:
     CC: gcc
     CXX: g++
     GOPATH: /home/ubuntu/.go_workspace
-    GOVER: 1.6
+    GOVER: 1.7.1
     GOTAR: /home/ubuntu/go${GOVER}.linux-amd64.tar.gz
   post:
     - echo $GOVER
@@ -14,7 +14,7 @@ general:
   build_dir: ../.go_workspace/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
 dependencies:
   cache_directories:
-    - ~/go1.6.linux-amd64.tar.gz
+    - ~/go1.7.1.linux-amd64.tar.gz
   pre:
     - echo "GOVER $GOVER"
     - echo "GOTAR $GOTAR"

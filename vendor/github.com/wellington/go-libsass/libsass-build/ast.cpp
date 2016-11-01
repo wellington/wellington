@@ -7,8 +7,11 @@
 #include "color_maps.hpp"
 #include <set>
 #include <iomanip>
-#include <algorithm>
 #include <iostream>
+#include <algorithm>
+#include <functional>
+#include <cctype>
+#include <locale>
 
 namespace Sass {
 
@@ -23,6 +26,80 @@ namespace Sass {
   bool Supports_Negation::needs_parens(Supports_Condition* cond) const {
     return dynamic_cast<Supports_Negation*>(cond) ||
           dynamic_cast<Supports_Operator*>(cond);
+  }
+
+  std::string & str_ltrim(std::string & str)
+  {
+    auto it2 =  std::find_if( str.begin() , str.end() , [](char ch){ return !std::isspace<char>(ch , std::locale::classic() ) ; } );
+    str.erase( str.begin() , it2);
+    return str;
+  }
+
+  std::string & str_rtrim(std::string & str)
+  {
+    auto it1 =  std::find_if( str.rbegin() , str.rend() , [](char ch){ return !std::isspace<char>(ch , std::locale::classic() ) ; } );
+    str.erase( it1.base() , str.end() );
+    return str;
+  }
+
+  void String_Constant::rtrim()
+  {
+    value_ = str_rtrim(value_);
+  }
+  void String_Constant::ltrim()
+  {
+    value_ = str_ltrim(value_);
+  }
+  void String_Constant::trim()
+  {
+    rtrim();
+    ltrim();
+  }
+
+  void String_Schema::rtrim()
+  {
+    if (!empty()) {
+      if (String* str = dynamic_cast<String*>(last())) str->rtrim();
+    }
+  }
+  void String_Schema::ltrim()
+  {
+    if (!empty()) {
+      if (String* str = dynamic_cast<String*>(first())) str->ltrim();
+    }
+  }
+  void String_Schema::trim()
+  {
+    rtrim();
+    ltrim();
+  }
+
+  bool At_Root_Query::exclude(std::string str)
+  {
+    bool with = feature() && unquote(feature()->to_string()).compare("with") == 0;
+    List* l = static_cast<List*>(value());
+    std::string v;
+
+    if (with)
+    {
+      if (!l || l->length() == 0) return str.compare("rule") != 0;
+      for (size_t i = 0, L = l->length(); i < L; ++i)
+      {
+        v = unquote((*l)[i]->to_string());
+        if (v.compare("all") == 0 || v == str) return false;
+      }
+      return true;
+    }
+    else
+    {
+      if (!l || !l->length()) return str.compare("rule") == 0;
+      for (size_t i = 0, L = l->length(); i < L; ++i)
+      {
+        v = unquote((*l)[i]->to_string());
+        if (v.compare("all") == 0 || v == str) return true;
+      }
+      return false;
+    }
   }
 
   void AST_Node::update_pstate(const ParserState& pstate)
@@ -60,7 +137,7 @@ namespace Sass {
   bool Compound_Selector::has_parent_ref()
   {
     for (Simple_Selector* s : *this) {
-      if (s->has_parent_ref()) return true;
+      if (s && s->has_parent_ref()) return true;
     }
     return false;
   }
@@ -209,6 +286,7 @@ namespace Sass {
 
   bool Simple_Selector::operator== (const Simple_Selector& rhs) const
   {
+    if (const Pseudo_Selector* lp = dynamic_cast<const Pseudo_Selector*>(this)) return *lp == rhs;
     if (const Wrapped_Selector* lw = dynamic_cast<const Wrapped_Selector*>(this)) return *lw == rhs;
     if (const Attribute_Selector* la = dynamic_cast<const Attribute_Selector*>(this)) return *la == rhs;
     if (is_ns_eq(ns(), rhs.ns()))
@@ -218,6 +296,7 @@ namespace Sass {
 
   bool Simple_Selector::operator< (const Simple_Selector& rhs) const
   {
+    if (const Pseudo_Selector* lp = dynamic_cast<const Pseudo_Selector*>(this)) return *lp == rhs;
     if (const Wrapped_Selector* lw = dynamic_cast<const Wrapped_Selector*>(this)) return *lw < rhs;
     if (const Attribute_Selector* la = dynamic_cast<const Attribute_Selector*>(this)) return *la < rhs;
     if (is_ns_eq(ns(), rhs.ns()))
@@ -479,6 +558,49 @@ namespace Sass {
     if (is_ns_eq(ns(), rhs.ns()))
     { return name() == rhs.name(); }
     return ns() == rhs.ns();
+  }
+
+  bool Pseudo_Selector::operator== (const Pseudo_Selector& rhs) const
+  {
+    if (is_ns_eq(ns(), rhs.ns()) && name() == rhs.name())
+    {
+      Expression* lhs_ex = expression();
+      Expression* rhs_ex = rhs.expression();
+      if (rhs_ex && lhs_ex) return *lhs_ex == *rhs_ex;
+      else return lhs_ex == rhs_ex;
+    }
+    else return false;
+  }
+
+  bool Pseudo_Selector::operator== (const Simple_Selector& rhs) const
+  {
+    if (const Pseudo_Selector* w = dynamic_cast<const Pseudo_Selector*>(&rhs))
+    {
+      return *this == *w;
+    }
+    if (is_ns_eq(ns(), rhs.ns()))
+    { return name() == rhs.name(); }
+    return ns() == rhs.ns();
+  }
+
+  bool Pseudo_Selector::operator< (const Pseudo_Selector& rhs) const
+  {
+    if (is_ns_eq(ns(), rhs.ns()) && name() == rhs.name())
+    { return *(expression()) < *(rhs.expression()); }
+    if (is_ns_eq(ns(), rhs.ns()))
+    { return name() < rhs.name(); }
+    return ns() < rhs.ns();
+  }
+
+  bool Pseudo_Selector::operator< (const Simple_Selector& rhs) const
+  {
+    if (const Pseudo_Selector* w = dynamic_cast<const Pseudo_Selector*>(&rhs))
+    {
+      return *this < *w;
+    }
+    if (is_ns_eq(ns(), rhs.ns()))
+    { return name() < rhs.name(); }
+    return ns() < rhs.ns();
   }
 
   bool Wrapped_Selector::operator== (const Wrapped_Selector& rhs) const
@@ -949,6 +1071,7 @@ namespace Sass {
 
   Selector_List* Selector_List::parentize(Selector_List* ps, Context& ctx)
   {
+    if (!this->has_parent_ref()) return this;
     Selector_List* ss = SASS_MEMORY_NEW(ctx.mem, Selector_List, pstate());
     for (size_t pi = 0, pL = ps->length(); pi < pL; ++pi) {
       Selector_List* list = SASS_MEMORY_NEW(ctx.mem, Selector_List, pstate());
@@ -1085,18 +1208,16 @@ namespace Sass {
   Complex_Selector* Complex_Selector::first()
   {
     // declare variables used in loop
-    Complex_Selector* cur = this->tail_;
-    const Compound_Selector* head = head_;
+    Complex_Selector* cur = this;
+    const Compound_Selector* head;
     // processing loop
     while (cur)
     {
       // get the head
       head = cur->head_;
-      // check for single parent ref
-      if (head && head->length() == 1)
-      {
-        // abort (and return) if it is not a parent selector
-        if (!dynamic_cast<Parent_Selector*>((*head)[0])) break;
+      // abort (and return) if it is not a parent selector
+      if (!head || head->length() != 1 || !dynamic_cast<Parent_Selector*>((*head)[0])) {
+        break;
       }
       // advance to next
       cur = cur->tail_;
@@ -1231,10 +1352,12 @@ namespace Sass {
       if ((*this)[i]->head()->is_empty_reference()) {
         // simply move to the next tail if we have "no" combinator
         if ((*this)[i]->combinator() == Complex_Selector::ANCESTOR_OF) {
-          if ((*this)[i]->tail() && (*this)[i]->has_line_feed()) {
-            (*this)[i]->tail()->has_line_feed(true);
+          if ((*this)[i]->tail() != NULL) {
+            if ((*this)[i]->has_line_feed()) {
+              (*this)[i]->tail()->has_line_feed(true);
+            }
+            (*this)[i] = (*this)[i]->tail();
           }
-          (*this)[i] = (*this)[i]->tail();
         }
         // otherwise remove the first item from head
         else {
@@ -1247,7 +1370,15 @@ namespace Sass {
   bool Selector_List::has_parent_ref()
   {
     for (Complex_Selector* s : *this) {
-      if (s->has_parent_ref()) return true;
+      if (s && s->has_parent_ref()) return true;
+    }
+    return false;
+  }
+
+  bool Selector_Schema::has_parent_ref()
+  {
+    if (String_Schema* schema = dynamic_cast<String_Schema*>(contents())) {
+      return schema->length() > 0 && dynamic_cast<Parent_Selector*>(schema->at(0)) != NULL;
     }
     return false;
   }
@@ -1897,6 +2028,10 @@ namespace Sass {
     return false;
   }
 
+  bool String_Constant::is_invisible() const {
+    return value_.empty() && quote_mark_ == 0;
+  }
+
   bool String_Constant::operator== (const Expression& rhs) const
   {
     if (const String_Quoted* qstr = dynamic_cast<const String_Quoted*>(&rhs)) {
@@ -2012,6 +2147,29 @@ namespace Sass {
   bool Binary_Expression::is_right_interpolant(void) const
   {
     return is_interpolant() || (right() && right()->is_right_interpolant());
+  }
+
+  // delay binary expressions in function arguments
+  // https://github.com/sass/libsass/issues/1417
+  bool Binary_Expression::can_delay(void) const
+  {
+    bool l_delay = false;
+    bool r_delay = false;
+    if (op().operand == Sass_OP::DIV) {
+      if (Textual* tl = dynamic_cast<Textual*>(left())) {
+        l_delay = tl->type() == Textual::NUMBER ||
+                  tl->type() == Textual::DIMENSION;
+      } else {
+        l_delay = dynamic_cast<Number*>(left()) != NULL;
+      }
+      if (Textual* tr = dynamic_cast<Textual*>(right())) {
+        r_delay = tr->type() == Textual::NUMBER ||
+                  tr->type() == Textual::DIMENSION;
+      } else {
+        r_delay = dynamic_cast<Number*>(right()) != NULL;
+      }
+    }
+    return l_delay && r_delay;
   }
 
   std::string AST_Node::to_string(Sass_Inspect_Options opt) const

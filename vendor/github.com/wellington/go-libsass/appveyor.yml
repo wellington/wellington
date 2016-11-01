@@ -25,7 +25,7 @@ install:
   - ps: |
       # $file = "go1.5.1.windows-amd64.zip"
       # $url  = "https://bintray.com/artifact/download/drewwells/generic/"
-      $file = "go1.6beta1.windows-amd64.zip"
+      $file = "go1.7.1.windows-amd64.zip"
       $url = "https://storage.googleapis.com/golang/"
       $url += $file
       $goAUTHOR="C:\go15\go\AUTHORS"

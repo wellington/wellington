@@ -33,6 +33,7 @@ namespace Sass {
     std::vector<AST_Node*> call_stack;
     std::vector<String*>   property_stack;
     std::vector<Selector_List*> selector_stack;
+    std::vector<Media_Block*> media_block_stack;
     std::vector<Backtrace*>backtrace_stack;
     bool              in_keyframes;
 
@@ -51,7 +52,7 @@ namespace Sass {
     Statement* operator()(Media_Block*);
     Statement* operator()(Supports_Block*);
     Statement* operator()(At_Root_Block*);
-    Statement* operator()(At_Rule*);
+    Statement* operator()(Directive*);
     Statement* operator()(Declaration*);
     Statement* operator()(Assignment*);
     Statement* operator()(Import*);

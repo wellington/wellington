@@ -96,7 +96,7 @@ namespace Sass {
     at_root_block->block()->perform(this);
   }
 
-  void Inspect::operator()(At_Rule* at_rule)
+  void Inspect::operator()(Directive* at_rule)
   {
     append_indentation();
     append_token(at_rule->keyword(), at_rule);
@@ -385,9 +385,12 @@ namespace Sass {
     bool was_space_array = in_space_array;
     bool was_comma_array = in_comma_array;
     // probably ruby sass eqivalent of element_needs_parens
-    if (output_style() == TO_SASS && list->length() == 1 &&
-      (!dynamic_cast<List*>((*list)[0]) &&
-       !dynamic_cast<Selector_List*>((*list)[0]))) {
+    if (output_style() == TO_SASS &&
+        list->length() == 1 &&
+        !list->from_selector() &&
+        !dynamic_cast<List*>((*list)[0]) &&
+        !dynamic_cast<List*>((*list)[0]) &&
+        !dynamic_cast<Selector_List*>((*list)[0])) {
       append_string("(");
     }
     else if (!in_declaration && (list->separator() == SASS_HASH ||
@@ -406,7 +409,10 @@ namespace Sass {
       Expression* list_item = (*list)[i];
       if (output_style() != TO_SASS) {
         if (list_item->is_invisible()) {
-          continue;
+          // this fixes an issue with "" in a list
+          if (!dynamic_cast<String_Constant*>(list_item)) {
+            continue;
+          }
         }
       }
       if (items_output) {
@@ -421,9 +427,12 @@ namespace Sass {
     in_comma_array = was_comma_array;
     in_space_array = was_space_array;
     // probably ruby sass eqivalent of element_needs_parens
-    if (output_style() == TO_SASS && list->length() == 1 &&
-      (!dynamic_cast<List*>((*list)[0]) &&
-       !dynamic_cast<Selector_List*>((*list)[0]))) {
+    if (output_style() == TO_SASS &&
+        list->length() == 1 &&
+        !list->from_selector() &&
+        !dynamic_cast<List*>((*list)[0]) &&
+        !dynamic_cast<List*>((*list)[0]) &&
+        !dynamic_cast<Selector_List*>((*list)[0])) {
       append_string(",)");
     }
     else if (!in_declaration && (list->separator() == SASS_HASH ||
@@ -803,20 +812,15 @@ namespace Sass {
     }
   }
 
-  void Inspect::operator()(At_Root_Expression* ae)
+  void Inspect::operator()(At_Root_Query* ae)
   {
-    if (ae->is_interpolated()) {
-      ae->feature()->perform(this);
+    append_string("(");
+    ae->feature()->perform(this);
+    if (ae->value()) {
+      append_colon_separator();
+      ae->value()->perform(this);
     }
-    else {
-      append_string("(");
-      ae->feature()->perform(this);
-      if (ae->value()) {
-        append_colon_separator();
-        ae->value()->perform(this);
-      }
-      append_string(")");
-    }
+    append_string(")");
   }
 
   void Inspect::operator()(Null* n)
@@ -970,6 +974,11 @@ namespace Sass {
     Compound_Selector*           head = c->head();
     Complex_Selector*            tail = c->tail();
     Complex_Selector::Combinator comb = c->combinator();
+
+    if (comb == Complex_Selector::ANCESTOR_OF && (!head || head->empty())) {
+      if (tail) tail->perform(this);
+      return;
+    }
 
     if (c->has_line_feed()) {
       if (!(c->has_parent_ref())) {

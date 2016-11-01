@@ -1,7 +1,6 @@
 {
 	"ImportPath": "github.com/wellington/wellington",
 	"GoVersion": "go1.7.1",
-	"GodepVersion": "v74",
 	"Packages": [
 		"./..."
 	],
@@ -37,8 +36,8 @@
 		},
 		{
 			"ImportPath": "github.com/wellington/go-libsass",
-			"Comment": "v0.9.0-243-g2302994",
-			"Rev": "23029943db8590483db881673c11510d000d2eaa"
+			"Comment": "v0.9.0-249-g69b59ad",
+			"Rev": "69b59ad5179a2e1d4800249aee85ef704caa0797"
 		},
 		{
 			"ImportPath": "github.com/wellington/spritewell",

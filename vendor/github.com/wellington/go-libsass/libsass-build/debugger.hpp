@@ -352,11 +352,13 @@ inline void debug_ast(AST_Node* node, std::string ind, Env* env)
     Content* block = dynamic_cast<Content*>(node);
     std::cerr << ind << "Content " << block;
     std::cerr << " (" << pstate_source_position(node) << ")";
+    std::cerr << " [@media:" << block->media_block() << "]";
     std::cerr << " " << block->tabs() << std::endl;
   } else if (dynamic_cast<Import_Stub*>(node)) {
     Import_Stub* block = dynamic_cast<Import_Stub*>(node);
     std::cerr << ind << "Import_Stub " << block;
     std::cerr << " (" << pstate_source_position(node) << ")";
+    std::cerr << " [" << block->imp_path() << "] ";
     std::cerr << " " << block->tabs() << std::endl;
   } else if (dynamic_cast<Import*>(node)) {
     Import* block = dynamic_cast<Import*>(node);
@@ -386,9 +388,9 @@ inline void debug_ast(AST_Node* node, std::string ind, Env* env)
     std::cerr << " " << has_block->tabs() << std::endl;
     if (has_block->selector()) debug_ast(has_block->selector(), ind + "@");
     if (has_block->block()) for(auto i : has_block->block()->elements()) { debug_ast(i, ind + " ", env); }
-  } else if (dynamic_cast<At_Rule*>(node)) {
-    At_Rule* block = dynamic_cast<At_Rule*>(node);
-    std::cerr << ind << "At_Rule " << block;
+  } else if (dynamic_cast<Directive*>(node)) {
+    Directive* block = dynamic_cast<Directive*>(node);
+    std::cerr << ind << "Directive " << block;
     std::cerr << " (" << pstate_source_position(node) << ")";
     std::cerr << " [" << block->keyword() << "] " << block->tabs() << std::endl;
     debug_ast(block->selector(), ind + "~", env);
@@ -555,6 +557,7 @@ inline void debug_ast(AST_Node* node, std::string ind, Env* env)
       (expression->separator() == SASS_COMMA ? "Comma " : expression->separator() == SASS_HASH ? "Map" : "Space ") <<
       " [delayed: " << expression->is_delayed() << "] " <<
       " [interpolant: " << expression->is_interpolant() << "] " <<
+      " [listized: " << expression->from_selector() << "] " <<
       " [arglist: " << expression->is_arglist() << "] " <<
       " [hash: " << expression->hash() << "] " <<
       std::endl;
@@ -563,6 +566,7 @@ inline void debug_ast(AST_Node* node, std::string ind, Env* env)
     Content* expression = dynamic_cast<Content*>(node);
     std::cerr << ind << "Content " << expression;
     std::cerr << " (" << pstate_source_position(node) << ")";
+    std::cerr << " [@media:" << expression->media_block() << "]";
     std::cerr << " [Statement]" << std::endl;
   } else if (dynamic_cast<Boolean*>(node)) {
     Boolean* expression = dynamic_cast<Boolean*>(node);

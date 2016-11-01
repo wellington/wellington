@@ -6,6 +6,7 @@
 #include "parser.hpp"
 #include "node.hpp"
 #include "sass_util.hpp"
+#include "remove_placeholders.hpp"
 #include "debug.hpp"
 #include <iostream>
 #include <deque>
@@ -1463,6 +1464,7 @@ namespace Sass {
       Node current = afters.collection()->front().clone(ctx);
       afters.collection()->pop_front();
       DEBUG_PRINTLN(WEAVE, "CURRENT: " << current)
+      if (current.collection()->size() == 0) continue;
 
       Node last_current = Node::createCollection();
       last_current.collection()->push_back(current.collection()->back());
@@ -1737,14 +1739,14 @@ namespace Sass {
         SubsetMapEntries entries = subset_map.get_v(pHead->to_str_vec());
         for (ExtensionPair ext : entries) {
           // check if both selectors have the same media block parent
-          if (ext.first->media_block() == pComplexSelector->media_block()) continue;
+          // if (ext.first->media_block() == pComplexSelector->media_block()) continue;
           if (ext.second->media_block() == 0) continue;
-          if (pComplexSelector->media_block() &&
+          if (pHead->media_block() &&
               ext.second->media_block()->media_queries() &&
-              pComplexSelector->media_block()->media_queries()
+              pHead->media_block()->media_queries()
           ) {
             std::string query_left(ext.second->media_block()->media_queries()->to_string(ctx.c_options));
-            std::string query_right(pComplexSelector->media_block()->media_queries()->to_string(ctx.c_options));
+            std::string query_right(pHead->media_block()->media_queries()->to_string(ctx.c_options));
             if (query_left == query_right) continue;
           }
 
@@ -1943,19 +1945,57 @@ namespace Sass {
       }
     }
 
-    for (Complex_Selector* cs : *pNewSelectors) {
-      while (cs) {
-        if (cs->head()) {
-        for (Simple_Selector* ss : *cs->head()) {
-          if (Wrapped_Selector* ws = dynamic_cast<Wrapped_Selector*>(ss)) {
-            if (Selector_List* sl = dynamic_cast<Selector_List*>(ws->selector())) {
-              bool extended = false;
-              ws->selector(extendSelectorList(sl, ctx, subset_map, false, extended));
+    Remove_Placeholders remove_placeholders(ctx);
+    // it seems that we have to remove the place holders early here
+    // normally we do this as the very last step (compare to ruby sass)
+    pNewSelectors = remove_placeholders.remove_placeholders(pNewSelectors);
+
+    // unwrap all wrapped selectors with inner lists
+    for (Complex_Selector* cur : *pNewSelectors) {
+      // process tails
+      while (cur) {
+        // process header
+        if (cur->head()) {
+          // create a copy since we add multiple items if stuff get unwrapped
+          Compound_Selector* cpy_head = SASS_MEMORY_NEW(ctx.mem, Compound_Selector, cur->pstate());
+          for (Simple_Selector* hs : *cur->head()) {
+            if (Wrapped_Selector* ws = dynamic_cast<Wrapped_Selector*>(hs)) {
+              if (Selector_List* sl = dynamic_cast<Selector_List*>(ws->selector())) {
+                // special case for ruby ass
+                if (sl->empty()) {
+                  // this seems inconsistent but it is how ruby sass seems to remove parentheses
+                  *cpy_head << SASS_MEMORY_NEW(ctx.mem, Type_Selector, hs->pstate(), ws->name());
+                }
+                // has wrapped selectors
+                else {
+                  // extend the inner list of wrapped selector
+                  Selector_List* ext_sl = extendSelectorList(sl, ctx, subset_map);
+                  for (size_t i = 0; i < ext_sl->length(); i += 1) {
+                    if (Complex_Selector* ext_cs = ext_sl->at(i)) {
+                      // create clones for wrapped selector and the inner list
+                      Wrapped_Selector* cpy_ws = SASS_MEMORY_NEW(ctx.mem, Wrapped_Selector, *ws);
+                      Selector_List* cpy_ws_sl = SASS_MEMORY_NEW(ctx.mem, Selector_List, sl->pstate());
+                      // remove parent selectors from inner selector
+                      if (ext_cs->first()) *cpy_ws_sl << ext_cs->first();
+                      // assign list to clone
+                      cpy_ws->selector(cpy_ws_sl);
+                      // append the clone
+                      *cpy_head << cpy_ws;
+                    }
+                  }
+                }
+              } else {
+                *cpy_head << hs;
+              }
+            } else {
+              *cpy_head << hs;
             }
           }
+          // replace header
+          cur->head(cpy_head);
         }
-        }
-        cs = cs->tail();
+        // process tail
+        cur = cur->tail();
       }
     }
     return pNewSelectors;
@@ -2068,7 +2108,7 @@ namespace Sass {
     pMediaBlock->block()->perform(this);
   }
 
-  void Extend::operator()(At_Rule* a)
+  void Extend::operator()(Directive* a)
   {
     // Selector_List* ls = dynamic_cast<Selector_List*>(a->selector());
     // selector_stack.push_back(ls);

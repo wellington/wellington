@@ -119,10 +119,10 @@ func HTTPPath(u string) option {
 // SourceMap behaves differently depending on compiler used. For
 // compile, it will embed sourcemap into the source. For file compile,
 // it will include a separate file with the source map.
-func SourceMap(b bool, w io.Writer) option {
+func SourceMap(b bool, path string) option {
 	return func(c *sass) error {
 		c.ctx.includeMap = b
-		c.dstmap = w
+		c.mappath = path
 		return nil
 	}
 }
@@ -214,7 +214,8 @@ func New(dst io.Writer, src io.Reader, opts ...option) (Compiler, error) {
 type sass struct {
 	ctx     *compctx
 	dst     io.Writer
-	dstmap  io.Writer
+	mappath string
+
 	src     io.Reader
 	srcFile string
 
@@ -235,9 +236,9 @@ func (c *sass) run() error {
 	}()
 
 	if len(c.srcFile) > 0 {
-		return c.ctx.FileCompile(c.srcFile, c.dst, c.dstmap)
+		return c.ctx.fileCompile(c.srcFile, c.dst, c.mappath)
 	}
-	return c.ctx.Compile(c.src, c.dst)
+	return c.ctx.compile(c.dst, c.src)
 }
 
 func (c *sass) CacheBust() string {

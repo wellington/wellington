@@ -44,6 +44,7 @@ namespace Sass {
     const char* xdigit(const char* src);
     const char* alnum(const char* src);
     const char* punct(const char* src);
+    const char* hyphen(const char* src);
     const char* unicode(const char* src);
     const char* nonascii(const char* src);
     const char* character(const char* src);
@@ -53,6 +54,7 @@ namespace Sass {
     // Match multiple ctype characters.
     const char* spaces(const char* src);
     const char* digits(const char* src);
+    const char* hyphens(const char* src);
 
     // Whitespace handling.
     const char* no_spaces(const char* src);
@@ -139,6 +141,25 @@ namespace Sass {
     const char* class_chars(const char* src) {
       const char* p = src;
       while (class_char<char_class>(p)) ++p;
+      return p == src ? 0 : p;
+    }
+
+    // Match for members of char class.
+    // Regex equivalent: /[^axy]/
+    template <const char* neg_char_class>
+    const char* neg_class_char(const char* src) {
+      if (*src == 0) return 0;
+      const char* cc = neg_char_class;
+      while (*cc && *src != *cc) ++cc;
+      return *cc ? 0 : src + 1;
+    }
+
+    // Match for members of char class.
+    // Regex equivalent: /[^axy]+/
+    template <const char* neg_char_class>
+    const char* neg_class_chars(const char* src) {
+      const char* p = src;
+      while (neg_class_char<neg_char_class>(p)) ++p;
       return p == src ? 0 : p;
     }
 
