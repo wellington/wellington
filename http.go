@@ -74,7 +74,7 @@ func HTTPHandler(gba *BuildArgs, httpPath string) func(w http.ResponseWriter, r 
 		}
 		defer r.Body.Close()
 
-		comp, err := FromBuildArgs(&pout, nil, r.Body, gba)
+		comp, err := FromBuildArgs(&pout, "", r.Body, gba)
 		if err != nil {
 			resp.Contents = ""
 			return

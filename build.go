@@ -186,17 +186,17 @@ func (b *Build) Close() error {
 
 var inputFileTypes = []string{".scss", ".sass"}
 
-func (b *BuildArgs) getOut(path string) (io.WriteCloser, io.WriteCloser, string, error) {
+func (b *BuildArgs) getOut(path string) (io.WriteCloser, string, string, error) {
 
 	var (
 		out io.WriteCloser
 	)
 	if b == nil {
-		return nil, nil, "", errors.New("build args is nil")
+		return nil, "", "", errors.New("build args is nil")
 	}
 	if len(b.BuildDir) == 0 {
 		out = os.Stdout
-		return out, nil, "", nil
+		return out, "", "", nil
 	}
 	rel := relative(b.paths, path)
 	filename := updateFileOutputType(filepath.Base(path))
@@ -205,16 +205,16 @@ func (b *BuildArgs) getOut(path string) (io.WriteCloser, io.WriteCloser, string,
 	// FIXME: do this once per Build instead of every file
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
-		return nil, nil, "", fmt.Errorf("Failed to create directory: %s",
+		return nil, "", "", fmt.Errorf("Failed to create directory: %s",
 			dir)
 	}
 	out, err = os.Create(name)
 	if err != nil {
-		return nil, nil, "", err
+		return nil, "", "", err
 	}
-	var smap *os.File
+	var smap string
 	if b.SourceMap {
-		smap, err = os.Create(name + ".map")
+		smap = name + ".map"
 	}
 
 	return out, smap, dir, err
@@ -250,7 +250,7 @@ func LoadAndBuild(path string, gba *BuildArgs, pMap *SafePartialMap) error {
 }
 
 // FromBuildArgs creates a compiler from BuildArgs
-func FromBuildArgs(dst io.Writer, dstmap io.Writer, src io.Reader, gba *BuildArgs) (libsass.Compiler, error) {
+func FromBuildArgs(dst io.Writer, dstmap string, src io.Reader, gba *BuildArgs) (libsass.Compiler, error) {
 	if gba == nil {
 		return libsass.New(dst, src)
 	}
@@ -275,7 +275,7 @@ func FromBuildArgs(dst io.Writer, dstmap io.Writer, src io.Reader, gba *BuildArg
 	return comp, err
 }
 
-func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, out io.WriteCloser, sout io.WriteCloser, buildDir string) error {
+func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, out io.WriteCloser, srcmap string, buildDir string) error {
 	defer func() {
 		// BuildDir lets us know if we should closer out. If no buildDir,
 		// specified out == os.Stdout and do not close. If buildDir != "",
@@ -284,7 +284,7 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 		// them could be race unsafe.
 		if len(buildDir) > 0 {
 			out.Close()
-			sout.Close()
+			// sout.Close()
 		}
 	}()
 
@@ -305,7 +305,7 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 		libsass.FontDir(gba.Font),
 		libsass.ImgBuildDir(gba.Gen),
 		libsass.IncludePaths(gba.Includes),
-		libsass.SourceMap(gba.SourceMap, sout),
+		libsass.SourceMap(gba.SourceMap, srcmap),
 	)
 
 	if err != nil {

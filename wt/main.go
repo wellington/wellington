@@ -384,7 +384,7 @@ func run(pMap *wt.SafePartialMap, gba *wt.BuildArgs) {
 		log.Println("Reading from stdin, -h for help")
 		out := os.Stdout
 		in := os.Stdin
-		comp, err := wt.FromBuildArgs(out, nil, in, gba)
+		comp, err := wt.FromBuildArgs(out, "", in, gba)
 		if err != nil {
 			log.Fatal(err)
 		}
