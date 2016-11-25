@@ -270,7 +270,7 @@ func FromBuildArgs(dst io.Writer, dstmap string, src io.Reader, gba *BuildArgs) 
 		libsass.FontDir(gba.Font),
 		libsass.IncludePaths(gba.Includes),
 		libsass.CacheBust(gba.CacheBust),
-		libsass.SourceMap(gba.SourceMap, dstmap),
+		libsass.SourceMap(gba.SourceMap, dstmap, ""),
 	)
 	return comp, err
 }
@@ -305,7 +305,7 @@ func loadAndBuild(sassFile string, gba *BuildArgs, partialMap *SafePartialMap, o
 		libsass.FontDir(gba.Font),
 		libsass.ImgBuildDir(gba.Gen),
 		libsass.IncludePaths(gba.Includes),
-		libsass.SourceMap(gba.SourceMap, srcmap),
+		libsass.SourceMap(gba.SourceMap, srcmap, ""),
 	)
 
 	if err != nil {

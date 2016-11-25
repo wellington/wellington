@@ -119,10 +119,13 @@ func HTTPPath(u string) option {
 // SourceMap behaves differently depending on compiler used. For
 // compile, it will embed sourcemap into the source. For file compile,
 // it will include a separate file with the source map.
-func SourceMap(b bool, path string) option {
+func SourceMap(b bool, path, sourceMapRoot string) option {
 	return func(c *sass) error {
 		c.ctx.includeMap = b
 		c.mappath = path
+		if len(sourceMapRoot) > 0 {
+			c.sourceMapRoot = sourceMapRoot
+		}
 		return nil
 	}
 }
@@ -219,11 +222,12 @@ type sass struct {
 	src     io.Reader
 	srcFile string
 
-	cachebust    string
-	httpPath     string
-	includePaths []string
-	imports      []string
-	cmt          bool
+	cachebust     string
+	httpPath      string
+	includePaths  []string
+	imports       []string
+	cmt           bool
+	sourceMapRoot string
 	// payload is passed around for handlers to have context
 	payload context.Context
 }
@@ -236,7 +240,7 @@ func (c *sass) run() error {
 	}()
 
 	if len(c.srcFile) > 0 {
-		return c.ctx.fileCompile(c.srcFile, c.dst, c.mappath)
+		return c.ctx.fileCompile(c.srcFile, c.dst, c.mappath, c.sourceMapRoot)
 	}
 	return c.ctx.compile(c.dst, c.src)
 }

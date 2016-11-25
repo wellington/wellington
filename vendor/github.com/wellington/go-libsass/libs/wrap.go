@@ -281,6 +281,14 @@ func SassOptionSetSourceComments(goopts SassOptions, b bool) {
 	C.sass_option_set_source_comments(goopts, C.bool(b))
 }
 
+// SassOptionSetOutputPath is used for output path.
+// Output path is used for source map generating. LibSass will
+// not write to this file, it is just used to create
+// information in source-maps etc.
+func SassOptionSetOutputPath(goopts SassOptions, path string) {
+	C.sass_option_set_output_path(goopts, C.CString(path))
+}
+
 // SassOptionSetIncludePaths adds additional paths to look for input Sass
 func SassOptionSetIncludePath(goopts SassOptions, path string) {
 	C.sass_option_set_include_path(goopts, C.CString(path))
@@ -296,6 +304,13 @@ func SassOptionSetSourceMapContents(goopts SassOptions, b bool) {
 
 func SassOptionSetSourceMapFile(goopts SassOptions, path string) {
 	C.sass_option_set_source_map_file(goopts, C.CString(path))
+}
+
+// SassOptionSetSourceMapRoot sets the sourceRoot in the resulting
+// source map. sourceRoot is prepended to the sources referenced
+// in the map. More Info: https://docs.google.com/document/d/1U1RGAehQwRypUTovF1KRlpiOFze0b-_2gc6fAH0KY0k/edit#heading=h.75yo6yoyk7x5
+func SassOptionSetSourceMapRoot(goopts SassOptions, path string) {
+	C.sass_option_set_source_map_root(goopts, C.CString(path))
 }
 
 func SassOptionSetOmitSourceMapURL(goopts SassOptions, b bool) {

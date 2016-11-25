@@ -119,8 +119,7 @@ func (ctx *compctx) Init(goopts libs.SassOptions) libs.SassOptions {
 	return goopts
 }
 
-func (ctx *compctx) fileCompile(path string, out io.Writer, mappath string) error {
-
+func (ctx *compctx) fileCompile(path string, out io.Writer, mappath, sourceMapRoot string) error {
 	defer ctx.Reset()
 	gofc := libs.SassMakeFileContext(path)
 	goopts := libs.SassFileContextGetOptions(gofc)
@@ -129,12 +128,28 @@ func (ctx *compctx) fileCompile(path string, out io.Writer, mappath string) erro
 	incs := strings.Join(ctx.IncludePaths, string(os.PathListSeparator))
 	libs.SassOptionSetIncludePath(goopts, incs)
 
+	var fpath string
 	// libSass won't create a source map unless you ask it to
 	// embed one or give it a file path. It won't actually write
 	// to this file, but it will add this filename into the
 	// css output.
 	if len(mappath) > 0 {
 		libs.SassOptionSetSourceMapFile(goopts, mappath)
+
+		// Output path must be set for libSass to build relative
+		// paths between the source map and the source files
+		if f, ok := out.(*os.File); ok {
+			fpath = f.Name()
+		}
+
+		// without this, the sourceMappingURL in the out file
+		// creates strange relative paths
+		libs.SassOptionSetOutputPath(goopts, fpath)
+	}
+
+	// write source map paths relative to this path
+	if len(sourceMapRoot) > 0 {
+		libs.SassOptionSetSourceMapRoot(goopts, sourceMapRoot)
 	}
 
 	// Set options to the sass context
