@@ -44,6 +44,43 @@ div.retina {
 	//   background-position: 10px -74px; }
 }
 
+func TestSpriteNames(t *testing.T) {
+	in := bytes.NewBufferString(`
+$map: sprite-map("*.png", 10px); // One argument
+@each $color in sprite_names($map) {
+        .#{$color} {
+          width:0px;
+        }
+      }
+`)
+
+	var out bytes.Buffer
+	comp, err := libsass.New(&out, in,
+		libsass.Payload(payload.New()),
+		libsass.ImgDir("../test/img"),
+		libsass.BuildDir("../test/build"),
+		libsass.ImgBuildDir("../test/build/img"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := comp.Run(); err != nil {
+		t.Fatal(err)
+	}
+
+	e := `.139 {
+  width: 0px; }
+
+.140 {
+  width: 0px; }
+`
+
+	if out.String() != e {
+		t.Errorf("got: %q\nwanted: %q\n", out.String(), e)
+	}
+}
+
 func TestFuncSpriteFile(t *testing.T) {
 
 	comp, err := libsass.New(nil, nil,

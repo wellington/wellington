@@ -21,6 +21,7 @@ func init() {
 	libsass.RegisterSassFunc("sprite-map($glob, $spacing: 0px)", SpriteMap)
 	libsass.RegisterSassFunc("sprite-file($map, $name)", SpriteFile)
 	libsass.RegisterSassFunc("sprite-position($map, $file)", SpritePosition)
+	libsass.RegisterSassFunc("sprite-names($map)", SpriteNames)
 }
 
 // SpritePosition returns the position of the image in the sprite-map.
@@ -87,6 +88,36 @@ func SpriteFile(ctx context.Context, usv libsass.SassValue) (rsv *libsass.SassVa
 	infs := []interface{}{glob, name}
 	res, err := libsass.Marshal(infs)
 	return &res, err
+}
+
+func fileName(path string) string {
+	return strings.TrimSuffix(path, filepath.Ext(path))
+}
+
+// SpriteNames returns the names of all images in a sprite map
+func SpriteNames(ctx context.Context, usv libsass.SassValue) (*libsass.SassValue, error) {
+	comp, err := libsass.CompFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	sprites := payload.Sprite(comp.Payload())
+
+	var glob string
+	if err := libsass.Unmarshal(usv, &glob); err != nil {
+		return nil, err
+	}
+
+	imgs := sprites.Get(glob)
+	if imgs == nil {
+		return nil, fmt.Errorf("sprite-map (%s) not found", glob)
+	}
+	paths := imgs.Paths()
+	for i := range paths {
+		paths[i] = fileName(paths[i])
+	}
+
+	lst, err := libsass.Marshal(paths)
+	return &lst, err
 }
 
 // Sprite returns the source and background position for an image in the
