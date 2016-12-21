@@ -33,8 +33,11 @@ type BuildArgs struct {
 	// BuildDir is the base build directory used. When recursive
 	// file matching is involved, this directory will be used as the
 	// parent.
-	BuildDir  string
-	Includes  []string
+	BuildDir string
+	Includes []string
+	// Project is the source for Sass files and is searched
+	// recursively for those files
+	Project   string
 	Font      string
 	Gen       string
 	Style     int
@@ -77,6 +80,7 @@ type Build struct {
 	status chan error
 	queue  chan work
 
+	proj       string
 	paths      []string
 	bArgs      *BuildArgs
 	partialMap *SafePartialMap
@@ -99,6 +103,7 @@ func NewBuild(args *BuildArgs, pMap *SafePartialMap) *Build {
 		queue:   make(chan work),
 		closing: make(chan struct{}),
 
+		proj:       args.Project,
 		paths:      args.Paths(),
 		bArgs:      args,
 		partialMap: pMap,
@@ -127,8 +132,47 @@ func (b *Build) Run() error {
 	return <-b.done
 }
 
+func (b *Build) findFiles() ([]string, error) {
+	defer func() {
+		// the rest of the system expects b.paths to have all
+		// input directories, so do that after processing proj
+		// filter
+		b.bArgs.paths = append([]string{b.proj}, b.paths...)
+	}()
+	// no project given just use path arguments
+	if len(b.proj) == 0 {
+		return pathsToFiles(b.paths, true), nil
+	}
+
+	if len(b.paths) == 0 {
+		return pathsToFiles([]string{b.proj}, true), nil
+	}
+
+	var absPaths []string
+	for _, path := range b.paths {
+		abs, err := filepath.Abs(path)
+		if err != nil {
+			return nil, err
+		}
+		absPaths = append(absPaths, abs)
+	}
+
+	// Project and paths passed, throw error if path outside of
+	// project path
+	for _, file := range absPaths {
+		if !strings.HasPrefix(file, b.proj) {
+			return nil, fmt.Errorf("%s not found in project path %s",
+				file, b.proj)
+		}
+	}
+	return pathsToFiles(b.paths, true), nil
+}
+
 func (b *Build) loadWork() {
-	files := pathsToFiles(b.paths, true)
+	files, err := b.findFiles()
+	if err != nil {
+		b.done <- err
+	}
 	for _, file := range files {
 		b.queue <- work{file: file}
 	}
