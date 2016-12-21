@@ -137,7 +137,9 @@ func (b *Build) findFiles() ([]string, error) {
 		// the rest of the system expects b.paths to have all
 		// input directories, so do that after processing proj
 		// filter
-		b.bArgs.paths = append([]string{b.proj}, b.paths...)
+		if len(b.proj) > 0 {
+			b.bArgs.paths = append([]string{b.proj}, b.paths...)
+		}
 	}()
 	// no project given just use path arguments
 	if len(b.proj) == 0 {
@@ -170,9 +172,12 @@ func (b *Build) findFiles() ([]string, error) {
 
 func (b *Build) loadWork() {
 	files, err := b.findFiles()
-	if err != nil {
+	if err != nil && false {
 		b.done <- err
+		close(b.queue)
+		return
 	}
+	files = pathsToFiles(b.paths, true)
 	for _, file := range files {
 		b.queue <- work{file: file}
 	}
