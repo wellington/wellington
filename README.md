@@ -114,7 +114,7 @@ Install Go and add $GOPATH/bin to your $PATH. [Detailed instructions](https://go
 ```
 go get -u github.com/wellington/wellington/wt
 
-# You should not have wt in your path
+# You should now have wt in your path
 wt -h
 ```
 
