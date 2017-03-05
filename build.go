@@ -138,15 +138,17 @@ func (b *Build) Run() error {
 // proj is deprecated, but should be combined with paths to form a list
 // of directories
 func (b *Build) findFiles() ([]string, error) {
-	fmt.Println("proj", b.proj)
-	fmt.Println("path", b.paths)
-	dirs := append(b.paths, b.proj)
+	var dirs []string
+	dirs = append(dirs, b.paths...)
+	if len(b.proj) > 0 {
+		dirs = append(dirs, b.proj)
+	}
 	if len(dirs) == 0 {
 		dirs = append(dirs, b.bArgs.WorkDir)
 	}
 	b.bArgs.paths = dirs
-	fmt.Println("paths", b.bArgs.paths)
-	return pathsToFiles(b.bArgs.paths, true), nil
+	files := pathsToFiles(b.bArgs.paths, true)
+	return files, nil
 }
 
 func (b *Build) _findFiles() ([]string, error) {
@@ -198,10 +200,9 @@ func (b *Build) loadWork() {
 		close(b.queue)
 		return
 	}
-	// files = pathsToFiles(b.paths, true)
+
 	for _, file := range files {
-		fmt.Println("file found", file)
-		//b.queue <- work{file: file}
+		b.queue <- work{file: file}
 	}
 	close(b.queue)
 }

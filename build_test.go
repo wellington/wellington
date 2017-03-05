@@ -135,7 +135,7 @@ func TestNewBuild_underscore(t *testing.T) {
 	}
 
 	if e := 2; len(matches) != e {
-		t.Errorf("got: %d wanted: %d", len(matches), e)
+		t.Fatalf("got: %d wanted: %d", len(matches), e)
 	}
 
 	if filepath.Dir(matches[0]) == filepath.Dir(matches[1]) {
