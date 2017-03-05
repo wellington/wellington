@@ -45,6 +45,8 @@ type BuildArgs struct {
 	CacheBust string
 	// emit source map files alongside css files
 	SourceMap bool
+	// indicates the working directory which wt is run in
+	WorkDir string
 }
 
 // Paths retrieves the paths in the arguments
@@ -132,7 +134,22 @@ func (b *Build) Run() error {
 	return <-b.done
 }
 
+// findFiles takes the input directories to locate files for building
+// proj is deprecated, but should be combined with paths to form a list
+// of directories
 func (b *Build) findFiles() ([]string, error) {
+	fmt.Println("proj", b.proj)
+	fmt.Println("path", b.paths)
+	dirs := append(b.paths, b.proj)
+	if len(dirs) == 0 {
+		dirs = append(dirs, b.bArgs.WorkDir)
+	}
+	b.bArgs.paths = dirs
+	fmt.Println("paths", b.bArgs.paths)
+	return pathsToFiles(b.bArgs.paths, true), nil
+}
+
+func (b *Build) _findFiles() ([]string, error) {
 	defer func() {
 		// the rest of the system expects b.paths to have all
 		// input directories, so do that after processing proj
@@ -141,6 +158,10 @@ func (b *Build) findFiles() ([]string, error) {
 			b.bArgs.paths = append([]string{b.proj}, b.paths...)
 		}
 	}()
+	fmt.Println("findFiles")
+	fmt.Println(b.proj)
+	fmt.Println(b.paths)
+	fmt.Println("=========")
 	// no project given just use path arguments
 	if len(b.proj) == 0 {
 		return pathsToFiles(b.paths, true), nil
@@ -172,14 +193,15 @@ func (b *Build) findFiles() ([]string, error) {
 
 func (b *Build) loadWork() {
 	files, err := b.findFiles()
-	if err != nil && false {
+	if err != nil {
 		b.done <- err
 		close(b.queue)
 		return
 	}
-	files = pathsToFiles(b.paths, true)
+	// files = pathsToFiles(b.paths, true)
 	for _, file := range files {
-		b.queue <- work{file: file}
+		fmt.Println("file found", file)
+		//b.queue <- work{file: file}
 	}
 	close(b.queue)
 }

@@ -218,7 +218,9 @@ func parseBuildArgs(paths []string) *wt.BuildArgs {
 		log.Fatal("could not find working directory", err)
 	}
 
-	proj = makeabs(wd, proj)
+	if len(proj) > 0 {
+		proj = makeabs(wd, proj)
+	}
 
 	incs := make([]string, len(includes))
 	for i := range includes {
@@ -237,6 +239,7 @@ func parseBuildArgs(paths []string) *wt.BuildArgs {
 	incs = append(incs, paths...)
 
 	gba := &wt.BuildArgs{
+		WorkDir:   wd,
 		ImageDir:  dir,
 		BuildDir:  buildDir,
 		Includes:  incs,
