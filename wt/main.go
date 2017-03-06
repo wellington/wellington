@@ -79,8 +79,14 @@ func flags(set *pflag.FlagSet) {
 	set.MarkDeprecated("generated-images-path", "Use --gen instead")
 	set.StringVar(&gen, "gen", ".", "Path to place generated images")
 
+	set.StringSliceVar(&includes, "sass-dir", nil,
+		"Compass backwards compat, use --proj instead")
+	set.MarkDeprecated("sass-dir", "recursive paths can be passed as argument ie. wt compile sass")
+
 	set.StringVarP(&proj, "proj", "p", "",
-		"Path to directory containing Sass stylesheets")
+		"Project root which is searched recursively for [^_]file.sass files to build")
+	set.MarkDeprecated("proj", "recursive paths can be passed as argument ie. wt compile sass")
+
 	set.BoolVar(&nothingb, "no-line-comments", false, "UNSUPPORTED: Disable line comments, use comments")
 	set.MarkDeprecated("no-line-comments", "Use --comments instead")
 	set.BoolVar(&relativeAssets, "relative-assets", false, "UNSUPPORTED: Make compass asset helpers generate relative urls to assets.")
@@ -109,8 +115,6 @@ func flags(set *pflag.FlagSet) {
 	set.MarkDeprecated("css-dir", "Use -b instead")
 	set.StringVar(&jsDir, "javascripts-dir", "", "")
 	set.MarkDeprecated("javascripts-dir", "Compass backwards compat, ignored")
-	set.StringSliceVar(&includes, "sass-dir", nil,
-		"Compass backwards compat, use --includes instead")
 	set.StringVarP(&config, "config", "c", "",
 		"Temporarily disabled: Location of the config file")
 
@@ -214,7 +218,9 @@ func parseBuildArgs(paths []string) *wt.BuildArgs {
 		log.Fatal("could not find working directory", err)
 	}
 
-	proj = makeabs(wd, proj)
+	if len(proj) > 0 {
+		proj = makeabs(wd, proj)
+	}
 
 	incs := make([]string, len(includes))
 	for i := range includes {
@@ -233,12 +239,14 @@ func parseBuildArgs(paths []string) *wt.BuildArgs {
 	incs = append(incs, paths...)
 
 	gba := &wt.BuildArgs{
+		WorkDir:   wd,
 		ImageDir:  dir,
 		BuildDir:  buildDir,
-		Includes:  append([]string{proj}, incs...),
+		Includes:  incs,
 		Font:      font,
 		Style:     style,
 		Gen:       gen,
+		Project:   proj,
 		Comments:  comments,
 		CacheBust: cachebust,
 		SourceMap: sourceMap,
@@ -291,6 +299,7 @@ func globalRun(paths []string) (*wt.SafePartialMap, *wt.BuildArgs) {
 		log.Printf("      Image Dir: %s\n", gba.ImageDir)
 		log.Printf("      Build Dir: %s\n", gba.BuildDir)
 		log.Printf("Build Image Dir: %s\n", gba.Gen)
+		log.Printf("    Project Dir: %s\n", gba.Project)
 		log.Printf(" Include Dir(s): %s\n", gba.Includes)
 		log.Println("===================================")
 	}
@@ -379,7 +388,7 @@ func Compile(cmd *cobra.Command, paths []string) {
 func run(pMap *wt.SafePartialMap, gba *wt.BuildArgs) {
 
 	// No paths given, read from stdin and wait
-	if len(gba.Paths()) == 0 {
+	if len(gba.Paths()) == 0 && len(gba.Project) == 0 {
 
 		log.Println("Reading from stdin, -h for help")
 		out := os.Stdout

@@ -135,13 +135,48 @@ func TestNewBuild_underscore(t *testing.T) {
 	}
 
 	if e := 2; len(matches) != e {
-		t.Errorf("got: %d wanted: %d", len(matches), e)
+		t.Fatalf("got: %d wanted: %d", len(matches), e)
 	}
 
 	if filepath.Dir(matches[0]) == filepath.Dir(matches[1]) {
 		t.Errorf("files should not be in the same directory:\n%s\n%s", matches[0], matches[1])
 	}
 
+}
+
+func testFiles(t *testing.T, bb *Build, num int) {
+	files, err := bb.findFiles()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if num != len(files) {
+		t.Errorf("got: %d wanted: %d", len(files), num)
+	}
+
+}
+
+func TestNewBuild_findFiles(t *testing.T) {
+	bargs := BuildArgs{}
+	bb := NewBuild(&bargs, NewPartialMap())
+	testFiles(t, bb, 0)
+
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	bb.bArgs.WorkDir = filepath.Join(wd, "test", "proj")
+	testFiles(t, bb, 2)
+
+	bb.bArgs = &BuildArgs{}
+	bb.paths = []string{"test/proj"}
+	testFiles(t, bb, 2)
+
+	bb.paths = []string{}
+	testFiles(t, bb, 0)
+
+	bb.proj = "test/proj"
+	testFiles(t, bb, 2)
 }
 
 func TestNewBuild_two(t *testing.T) {

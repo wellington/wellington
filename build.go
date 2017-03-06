@@ -33,8 +33,11 @@ type BuildArgs struct {
 	// BuildDir is the base build directory used. When recursive
 	// file matching is involved, this directory will be used as the
 	// parent.
-	BuildDir  string
-	Includes  []string
+	BuildDir string
+	Includes []string
+	// Project is the source for Sass files and is searched
+	// recursively for those files
+	Project   string
 	Font      string
 	Gen       string
 	Style     int
@@ -42,6 +45,8 @@ type BuildArgs struct {
 	CacheBust string
 	// emit source map files alongside css files
 	SourceMap bool
+	// indicates the working directory which wt is run in
+	WorkDir string
 }
 
 // Paths retrieves the paths in the arguments
@@ -77,6 +82,7 @@ type Build struct {
 	status chan error
 	queue  chan work
 
+	proj       string
 	paths      []string
 	bArgs      *BuildArgs
 	partialMap *SafePartialMap
@@ -99,6 +105,7 @@ func NewBuild(args *BuildArgs, pMap *SafePartialMap) *Build {
 		queue:   make(chan work),
 		closing: make(chan struct{}),
 
+		proj:       args.Project,
 		paths:      args.Paths(),
 		bArgs:      args,
 		partialMap: pMap,
@@ -127,8 +134,31 @@ func (b *Build) Run() error {
 	return <-b.done
 }
 
+// findFiles takes the input directories to locate files for building
+// proj is deprecated, but should be combined with paths to form a list
+// of directories
+func (b *Build) findFiles() ([]string, error) {
+	var dirs []string
+	dirs = append(dirs, b.paths...)
+	if len(b.proj) > 0 {
+		dirs = append(dirs, b.proj)
+	}
+	if len(dirs) == 0 {
+		dirs = append(dirs, b.bArgs.WorkDir)
+	}
+	b.bArgs.paths = dirs
+	files := pathsToFiles(b.bArgs.paths, true)
+	return files, nil
+}
+
 func (b *Build) loadWork() {
-	files := pathsToFiles(b.paths, true)
+	files, err := b.findFiles()
+	if err != nil {
+		b.done <- err
+		close(b.queue)
+		return
+	}
+
 	for _, file := range files {
 		b.queue <- work{file: file}
 	}
