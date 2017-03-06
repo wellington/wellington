@@ -144,6 +144,41 @@ func TestNewBuild_underscore(t *testing.T) {
 
 }
 
+func testFiles(t *testing.T, bb *Build, num int) {
+	files, err := bb.findFiles()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if num != len(files) {
+		t.Errorf("got: %d wanted: %d", len(files), num)
+	}
+
+}
+
+func TestNewBuild_findFiles(t *testing.T) {
+	bargs := BuildArgs{}
+	bb := NewBuild(&bargs, NewPartialMap())
+	testFiles(t, bb, 0)
+
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	bb.bArgs.WorkDir = filepath.Join(wd, "test", "proj")
+	testFiles(t, bb, 2)
+
+	bb.bArgs = &BuildArgs{}
+	bb.paths = []string{"test/proj"}
+	testFiles(t, bb, 2)
+
+	bb.paths = []string{}
+	testFiles(t, bb, 0)
+
+	bb.proj = "test/proj"
+	testFiles(t, bb, 2)
+}
+
 func TestNewBuild_two(t *testing.T) {
 	tdir, _ := ioutil.TempDir("", "testnewbuild_two")
 	sdir := filepath.Join(tdir, "sass")

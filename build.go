@@ -151,48 +151,6 @@ func (b *Build) findFiles() ([]string, error) {
 	return files, nil
 }
 
-func (b *Build) _findFiles() ([]string, error) {
-	defer func() {
-		// the rest of the system expects b.paths to have all
-		// input directories, so do that after processing proj
-		// filter
-		if len(b.proj) > 0 {
-			b.bArgs.paths = append([]string{b.proj}, b.paths...)
-		}
-	}()
-	fmt.Println("findFiles")
-	fmt.Println(b.proj)
-	fmt.Println(b.paths)
-	fmt.Println("=========")
-	// no project given just use path arguments
-	if len(b.proj) == 0 {
-		return pathsToFiles(b.paths, true), nil
-	}
-
-	if len(b.paths) == 0 {
-		return pathsToFiles([]string{b.proj}, true), nil
-	}
-
-	var absPaths []string
-	for _, path := range b.paths {
-		abs, err := filepath.Abs(path)
-		if err != nil {
-			return nil, err
-		}
-		absPaths = append(absPaths, abs)
-	}
-
-	// Project and paths passed, throw error if path outside of
-	// project path
-	for _, file := range absPaths {
-		if !strings.HasPrefix(file, b.proj) {
-			return nil, fmt.Errorf("%s not found in project path %s",
-				file, b.proj)
-		}
-	}
-	return pathsToFiles(b.paths, true), nil
-}
-
 func (b *Build) loadWork() {
 	files, err := b.findFiles()
 	if err != nil {
