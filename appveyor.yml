@@ -9,7 +9,7 @@ environment:
   WIN_VER: windows-na
   CGO_ENABLED: 1
   GOROOT_BOOTSTRAP: C:\go
-  GOROOT: C:\go15\go
+  GOROOT: C:\goroot\go
   GO15VENDOREXPERIMENT: 1
 
 install:
@@ -34,7 +34,7 @@ install:
       $url  = "https://github.com/wellington/binaries/blob/master/x86_64-4.9.2-release-win32-seh-rt_v4-rev3.7z?raw=true"
       Invoke-WebRequest -UserAgent wget -Uri $url -OutFile x86_64-4.9.2-release-win32-seh-rt_v3-rev0.7z
       &7z x -oC:\ x86_64-4.9.2-release-win32-seh-rt_v3-rev0.7z > $null
-  - set PATH=C:\mingw64\bin;C:\go15\go\bin;C:\gopath\bin;%PATH%
+  - set PATH=C:\mingw64\bin;C:\goroot\go\bin;C:\gopath\bin;%PATH%
   - set CC=gcc
   - set CXX=g++
   - echo %PATH%
@@ -42,12 +42,12 @@ install:
   - dir C:\mingw64\bin
   #retrieve go 1.5.1
   - ps: |
-      $file = "go1.5.1.windows-amd64.zip"
+      $file = "go1.7.4.windows-386.zip"
       $url  = "https://storage.googleapis.com/golang/"
       $url += $file
       Invoke-WebRequest -UserAgent wget -Uri $url -OutFile $file
-      &7z x -oC:\go15 $file > $null
-  - dir C:\go15
+      &7z x -oC:\goroot $file > $null
+  - dir C:\goroot
   - go version
   - go env
 
