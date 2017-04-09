@@ -1,0 +1,31 @@
+language: go
+go:
+  - 1.4.2
+os:
+  - linux
+  - osx
+  - windows
+env:
+  - GOARCH=amd64
+  - PKG_CONFIG_PATH=$(pwd)/libsass/lib/pkgconfig
+before_install:
+  - sed -E -i 's|git://github.com/([A-Za-z0-9_]+)/tsuru.git|https://github.com/\1/tsuru|g' .git/config
+  - cat .git/config
+  - sudo apt-get update -qq > apt-get.out 2>&1  || (cat apt-get.out && exit 1)
+  - sudo apt-get install bzr git -qq > apt-get.out 2>&1 || (cat apt-get.out && exit 1)
+install:
+  - export PATH="$HOME/gopath/bin:$PATH"
+before_script:
+  # Check baseline memory usage; for compare with after_failure when OOM occurs
+  - free
+  - vmstat
+script:
+  - make install test
+after_failure:
+after_success:
+notifications:
+  email:
+    recipients:
+      - drew.wells00@gmail.com
+    on_success: change
+    on_failure: always
