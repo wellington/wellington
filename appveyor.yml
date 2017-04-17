@@ -51,12 +51,21 @@ install:
   - go version
   - go env
 
+before_test:
+  #cache packages for much faster building
+  - go test -i -race ./...
+  - go test -i ./...
+
+after_test:
+  - go test -race ./...
+
 build_script:
   - dir /s /b
   - git submodule update --init --recursive
   - mingw32-make windows
 after_build:
   - 7z a wt_windows_amd64.zip wt.exe
+
 artifacts:
   - path: wt_windows_amd64.zip
     name: wt_windows_amd64.zip
