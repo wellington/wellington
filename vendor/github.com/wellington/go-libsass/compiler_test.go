@@ -20,17 +20,30 @@ func ExampleCompiler_stdin() {
 		log.Fatal(err)
 	}
 
-	// 	e := `div p {
-	//   color: red; }
-	// `
-	// 	if e != dst.String() {
-	// 		t.Errorf("got: %s wanted: %s", dst.String(), e)
-	// 	}
-
 	// Output:
 	// div p {
 	//   color: red; }
 	//
+
+}
+
+func ExampleComipler_sass() {
+	src := bytes.NewBufferString(`
+html
+  font-family: 'MonoSocial'
+`)
+	comp, err := New(os.Stdout, src, WithSyntax(SassSyntax))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = comp.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Output:
+	// html {
+	//   font-family: 'MonoSocial'; }
 
 }
 

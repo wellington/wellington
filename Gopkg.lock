@@ -38,9 +38,10 @@
   revision = "67cbc198fd11dab704b214c1e629a97af392c085"
 
 [[projects]]
+  branch = "master"
   name = "github.com/wellington/go-libsass"
   packages = [".","libs"]
-  revision = "64b2b96a6e8c6ae8760e10d64a135d5b16ececf9"
+  revision = "fd1a2294913da5d31ccc8eea2556ccd07f89a4c8"
 
 [[projects]]
   branch = "master"
