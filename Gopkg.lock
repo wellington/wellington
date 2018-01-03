@@ -7,9 +7,10 @@
   revision = "9aae6aaa22315390f03959adca2c4d395b02fcef"
 
 [[projects]]
+  branch = "master"
   name = "github.com/fsnotify/fsevents"
   packages = ["."]
-  revision = "8b9e69e6c151001d0eb8a7cf37583265dfc6d6e4"
+  revision = "3ceee05210c3babaa38cdc9181dabdcc83076a44"
 
 [[projects]]
   name = "github.com/inconshreveable/mousetrap"

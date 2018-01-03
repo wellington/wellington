@@ -4,6 +4,7 @@ package main
 
 import (
 	"bufio"
+	"io/ioutil"
 	"log"
 	"os"
 	"runtime"
@@ -13,17 +14,26 @@ import (
 )
 
 func main() {
-	dev, _ := fsevents.DeviceForPath("/tmp")
+	path, err := ioutil.TempDir("", "fsexample")
+	if err != nil {
+		log.Fatalf("Failed to create TempDir: %v", err)
+	}
+	dev, err := fsevents.DeviceForPath(path)
+	if err != nil {
+		log.Fatalf("Failed to retrieve device for path: %v", err)
+	}
 	log.Print(dev)
 	log.Println(fsevents.EventIDForDeviceBeforeTime(dev, time.Now()))
 
 	es := &fsevents.EventStream{
-		Paths:   []string{"/tmp"},
+		Paths:   []string{path},
 		Latency: 500 * time.Millisecond,
-		// Device:  dev,
-		Flags: fsevents.FileEvents | fsevents.WatchRoot}
+		Device:  dev,
+		Flags:   fsevents.FileEvents | fsevents.WatchRoot}
 	es.Start()
 	ec := es.Events
+
+	log.Println("Device UUID", fsevents.GetDeviceUUID(dev))
 
 	go func() {
 		for msg := range ec {
