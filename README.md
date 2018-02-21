@@ -13,7 +13,7 @@ Wellington adds spriting to the lightning fast [libsass](http://libsass.org/). N
 
 OS Support
 ============
-Binaries are provided for Linux and OS X. Building from source will work on any os libSass supports. Windows support has been dropped due to [https://github.com/wellington/wellington/issues/160](#160)
+Binaries are provided for Linux and OS X. Building from source will work on any os libSass supports. Windows support has been dropped due to Issue [#160](https://github.com/wellington/wellington/issues/160)
 
 #### Use with Grunt or Gulp
 
