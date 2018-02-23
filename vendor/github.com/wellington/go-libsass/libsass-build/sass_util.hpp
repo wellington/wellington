@@ -28,7 +28,7 @@ namespace Sass {
     #     #  [1, 4, 5],
     #     #  [2, 4, 5]]
   */
-  Node paths(const Node& arrs, Context& ctx);
+  Node paths(const Node& arrs);
 
 
   /*
@@ -139,7 +139,7 @@ namespace Sass {
   http://en.wikipedia.org/wiki/Longest_common_subsequence_problem
   */
   template<typename ComparatorType>
-  Node lcs(Node& x, Node& y, const ComparatorType& comparator, Context& ctx) {
+  Node lcs(Node& x, Node& y, const ComparatorType& comparator) {
     DEBUG_PRINTLN(LCS, "LCS: X=" << x << " Y=" << y)
 
     Node newX = Node::createCollection();
@@ -169,7 +169,7 @@ namespace Sass {
   # @param n [int] The number of levels to flatten
   # @return [NodeCollection] The flattened array
   */
-  Node flatten(Node& arr, Context& ctx, int n = -1);
+  Node flatten(Node& arr, int n = -1);
 
 
   /*
@@ -228,21 +228,21 @@ namespace Sass {
 
       KeyType key = keyFunc(e);
 
-      if (grouped.find(key.hash()) == grouped.end()) {
+      if (grouped.find(key->hash()) == grouped.end()) {
         order.insert(std::make_pair((unsigned int)order.size(), key));
 
         std::vector<EnumType> newCollection;
         newCollection.push_back(e);
-        grouped.insert(std::make_pair(key.hash(), newCollection));
+        grouped.insert(std::make_pair(key->hash(), newCollection));
       } else {
-        std::vector<EnumType>& collection = grouped.at(key.hash());
+        std::vector<EnumType>& collection = grouped.at(key->hash());
         collection.push_back(e);
       }
     }
 
     for (unsigned int index = 0; index < order.size(); index++) {
       KeyType& key = order.at(index);
-      std::vector<EnumType>& values = grouped.at(key.hash());
+      std::vector<EnumType>& values = grouped.at(key->hash());
 
       std::pair<KeyType, std::vector<EnumType> > grouping = std::make_pair(key, values);
 

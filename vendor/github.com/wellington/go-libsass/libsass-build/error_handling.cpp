@@ -21,7 +21,7 @@ namespace Sass {
     { }
 
 
-    InvalidParent::InvalidParent(Selector* parent, Selector* selector)
+    InvalidParent::InvalidParent(Selector_Ptr parent, Selector_Ptr selector)
     : Base(selector->pstate()), parent(parent), selector(selector)
     {
       msg = "Invalid parent selector for \"";
@@ -31,20 +31,39 @@ namespace Sass {
       msg += "\"";
     }
 
-    InvalidArgumentType::InvalidArgumentType(ParserState pstate, std::string fn, std::string arg, std::string type, const Value* value)
+    InvalidVarKwdType::InvalidVarKwdType(ParserState pstate, std::string name, const Argument_Ptr arg)
+    : Base(pstate), name(name), arg(arg)
+    {
+      msg = "Variable keyword argument map must have string keys.\n";
+      msg += name + " is not a string in " + arg->to_string() + ".";
+    }
+
+    InvalidArgumentType::InvalidArgumentType(ParserState pstate, std::string fn, std::string arg, std::string type, const Value_Ptr value)
     : Base(pstate), fn(fn), arg(arg), type(type), value(value)
     {
       msg  = arg + ": \"";
-      msg += value->to_string(Sass_Inspect_Options());
+      if (value) msg += value->to_string(Sass_Inspect_Options());
       msg += "\" is not a " + type;
       msg += " for `" + fn + "'";
+    }
+
+    MissingArgument::MissingArgument(ParserState pstate, std::string fn, std::string arg, std::string fntype)
+    : Base(pstate), fn(fn), arg(arg), fntype(fntype)
+    {
+      msg  = fntype + " " + fn;
+      msg += " is missing argument ";
+      msg += arg + ".";
     }
 
     InvalidSyntax::InvalidSyntax(ParserState pstate, std::string msg, std::vector<Sass_Import_Entry>* import_stack)
     : Base(pstate, msg, import_stack)
     { }
 
-    UndefinedOperation::UndefinedOperation(const Expression* lhs, const Expression* rhs, const std::string& op)
+    NestingLimitError::NestingLimitError(ParserState pstate, std::string msg, std::vector<Sass_Import_Entry>* import_stack)
+    : Base(pstate, msg, import_stack)
+    { }
+
+    UndefinedOperation::UndefinedOperation(Expression_Ptr_Const lhs, Expression_Ptr_Const rhs, const std::string& op)
     : lhs(lhs), rhs(rhs), op(op)
     {
       msg  = def_op_msg + ": \"";
@@ -54,7 +73,7 @@ namespace Sass {
       msg += "\".";
     }
 
-    InvalidNullOperation::InvalidNullOperation(const Expression* lhs, const Expression* rhs, const std::string& op)
+    InvalidNullOperation::InvalidNullOperation(Expression_Ptr_Const lhs, Expression_Ptr_Const rhs, const std::string& op)
     : UndefinedOperation(lhs, rhs, op)
     {
       msg  = def_op_null_msg + ": \"";
@@ -74,7 +93,6 @@ namespace Sass {
     : Base(org.pstate()), dup(dup), org(org)
     {
       msg  = "Duplicate key ";
-      dup.get_duplicate_key()->is_delayed(false);
       msg += dup.get_duplicate_key()->inspect();
       msg += " in map (";
       msg += org.inspect();
@@ -97,8 +115,13 @@ namespace Sass {
       msg += " isn't a valid CSS value.";
     }
 
-    IncompatibleUnits::IncompatibleUnits(const Number& lhs, const Number& rhs)
-    : lhs(lhs), rhs(rhs)
+    StackError::StackError(const AST_Node& node)
+    : Base(node.pstate()), node(node)
+    {
+      msg  = "stack level too deep";
+    }
+
+    IncompatibleUnits::IncompatibleUnits(const Units& lhs, const Units& rhs)
     {
       msg  = "Incompatible units: '";
       msg += rhs.unit();
@@ -107,7 +130,16 @@ namespace Sass {
       msg += "'.";
     }
 
-    AlphaChannelsNotEqual::AlphaChannelsNotEqual(const Expression* lhs, const Expression* rhs, const std::string& op)
+    IncompatibleUnits::IncompatibleUnits(const UnitType lhs, const UnitType rhs)
+    {
+      msg  = "Incompatible units: '";
+      msg += unit_to_string(rhs);
+      msg += "' and '";
+      msg += unit_to_string(lhs);
+      msg += "'.";
+    }
+
+    AlphaChannelsNotEqual::AlphaChannelsNotEqual(Expression_Ptr_Const lhs, Expression_Ptr_Const rhs, const std::string& op)
     : lhs(lhs), rhs(rhs), op(op)
     {
       msg  = "Alpha channels must be equal: ";
@@ -131,6 +163,17 @@ namespace Sass {
   void warn(std::string msg, ParserState pstate)
   {
     std::cerr << "Warning: " << msg<< std::endl;
+  }
+
+  void warning(std::string msg, ParserState pstate)
+  {
+    std::string cwd(Sass::File::get_cwd());
+    std::string abs_path(Sass::File::rel2abs(pstate.path, cwd, cwd));
+    std::string rel_path(Sass::File::abs2rel(pstate.path, cwd, cwd));
+    std::string output_path(Sass::File::path_for_console(rel_path, abs_path, pstate.path));
+
+    std::cerr << "WARNING on line " << pstate.line+1 << ", column " << pstate.column+1 << " of " << output_path << ":" << std::endl;
+    std::cerr << msg << std::endl << std::endl;
   }
 
   void warn(std::string msg, ParserState pstate, Backtrace* bt)

@@ -46,7 +46,7 @@ namespace Sass {
       src = exactly<beg>(src);
       if (!src) return 0;
       const char* stop;
-      while (1) {
+      while (true) {
         if (!*src) return 0;
         stop = exactly<end>(src);
         if (stop && (!esc || *(src - 1) != '\\')) return stop;
@@ -139,7 +139,7 @@ namespace Sass {
       src = exactly<beg>(src);
       if (!src) return 0;
       const char* stop;
-      while (1) {
+      while (true) {
         if (!*src) return 0;
         stop = exactly<end>(src);
         if (stop && (!esc || *(src - 1) != '\\')) return stop;
@@ -264,7 +264,6 @@ namespace Sass {
     const char* kwd_while_directive(const char* src);
 
     const char* re_nothing(const char* src);
-    const char* re_type_selector2(const char* src);
 
     const char* re_special_fun(const char* src);
 

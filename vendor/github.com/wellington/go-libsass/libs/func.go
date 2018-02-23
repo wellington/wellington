@@ -52,7 +52,7 @@ func BindFuncs(opts SassOptions, cookies []Cookie) []int {
 	sz := C.size_t(len(funcs))
 	cfuncs := C.sass_make_function_list(sz)
 	for i, cfn := range funcs {
-		C.sass_function_set_list_entry(cfuncs, C.size_t(i), cfn)
+		C.sass_function_set_list_entry(cfuncs, C.size_t(i), C.Sass_Function_Entry(cfn))
 	}
 	C.sass_option_set_c_functions(opts, cfuncs)
 	return ids

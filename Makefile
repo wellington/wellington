@@ -103,7 +103,7 @@ godeptest:
 	godep go test -race -i -v $(TESTPATHS)
 	godep go test -race $(TESTPATHS)
 
-test: godep lint
+test:
 	go test -i -v $(TESTPATHS)
 	go test -race -i -v $(TESTPATHS)
 	go test -race $(TESTPATHS)

@@ -33,7 +33,7 @@ func GoBridge(cargs UnionSassValue, cidx C.int) UnionSassValue {
 	idx := int(cidx)
 	ck, ok := globalFuncs.Get(idx).(Cookie)
 	if !ok {
-		fmt.Printf("failed to resolve Cookie %p\n", idx)
+		fmt.Printf("failed to resolve Cookie %d\n", idx)
 		return MakeNil()
 	}
 	// ck := *(*Cookie)(ptr)

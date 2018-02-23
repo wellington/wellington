@@ -12,7 +12,7 @@ To build, setup Go
 To test
 
     go test
-    
+
 Basic example more examples found in [examples](examples)
 
 ```
@@ -36,6 +36,15 @@ div p {
   color: red; }
 ```
 
+### Updating libsass
+
+```
+cd libsass-src; git fetch; git checkout vX.X.X
+git commit -m "updated libsass to vX.X.X"
+make update-libsass
+# iterate on includes and code changes until tests pass
+```
+
 ### FAQ
 
 * Compiling go-libsass is very slow, what can be done?
@@ -45,5 +54,3 @@ div p {
 * How do I cross compile?
 
     Since this package uses C bindings, you will need gcc for the target platform. For windows see, https://github.com/wellington/go-libsass/issues/37
-    
-    

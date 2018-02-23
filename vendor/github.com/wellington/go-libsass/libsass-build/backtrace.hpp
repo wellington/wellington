@@ -21,7 +21,7 @@ namespace Sass {
       caller(c)
     { }
 
-    std::string to_string(bool warning = false)
+    const std::string to_string(bool warning = false)
     {
       size_t i = -1;
       std::stringstream ss;
@@ -60,13 +60,13 @@ namespace Sass {
 
     size_t depth()
     {
-      size_t d = 0;
+      size_t d = std::string::npos;
       Backtrace* p = parent;
       while (p) {
         ++d;
         p = p->parent;
       }
-      return d-1;
+      return d;
     }
 
   };

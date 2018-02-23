@@ -25,9 +25,9 @@ namespace Sass {
       // proxy methods for source maps
       void add_source_index(size_t idx);
       void set_filename(const std::string& str);
-      void add_open_mapping(const AST_Node* node);
-      void add_close_mapping(const AST_Node* node);
-      void schedule_mapping(const AST_Node* node);
+      void add_open_mapping(const AST_Node_Ptr node);
+      void add_close_mapping(const AST_Node_Ptr node);
+      void schedule_mapping(const AST_Node_Ptr node);
       std::string render_srcmap(Context &ctx);
       ParserState remap(const ParserState& pstate);
 
@@ -37,7 +37,8 @@ namespace Sass {
       size_t scheduled_space;
       size_t scheduled_linefeed;
       bool scheduled_delimiter;
-      const AST_Node* scheduled_mapping;
+      AST_Node_Ptr scheduled_crutch;
+      AST_Node_Ptr scheduled_mapping;
 
     public:
       // output strings different in comments
@@ -66,11 +67,15 @@ namespace Sass {
       void prepend_output(const OutputBuffer& out);
       // append some text or token to the buffer
       void append_string(const std::string& text);
+      // append a single character to buffer
+      void append_char(const char chr);
       // append some white-space only text
       void append_wspace(const std::string& text);
       // append some text or token to the buffer
       // this adds source-mappings for node start and end
-      void append_token(const std::string& text, const AST_Node* node);
+      void append_token(const std::string& text, const AST_Node_Ptr node);
+      // query last appended character
+      char last_char();
 
     public: // syntax sugar
       void append_indentation();
@@ -79,8 +84,8 @@ namespace Sass {
       void append_special_linefeed(void);
       void append_optional_linefeed(void);
       void append_mandatory_linefeed(void);
-      void append_scope_opener(AST_Node* node = 0);
-      void append_scope_closer(AST_Node* node = 0);
+      void append_scope_opener(AST_Node_Ptr node = 0);
+      void append_scope_closer(AST_Node_Ptr node = 0);
       void append_comma_separator(void);
       void append_colon_separator(void);
       void append_delimiter(void);
