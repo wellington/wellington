@@ -40,7 +40,7 @@ func HeaderBridge(cint C.int) C.Sass_Import_List {
 	idx := int(cint)
 	entries, ok := globalHeaders.Get(idx).([]ImportEntry)
 	if !ok {
-		fmt.Printf("failed to resolve header slice: %p\n", idx)
+		fmt.Printf("failed to resolve header slice: %d\n", idx)
 		return C.sass_make_import_list(C.size_t(1))
 	}
 
@@ -85,7 +85,7 @@ func ImporterBridge(url *C.char, prev *C.char, cidx C.int) C.Sass_Import_List {
 	idx := int(cidx)
 	entries, ok := globalImports.Get(idx).([]ImportEntry)
 	if !ok {
-		fmt.Printf("failed to resolve import slice: %p\n", idx)
+		fmt.Printf("failed to resolve import slice: %d\n", idx)
 		entries = []ImportEntry{}
 	}
 
@@ -229,7 +229,7 @@ func SassDeleteCompiler(c SassCompiler) {
 
 // SassOptionSetCHeaders adds custom C headers to a SassOptions
 func SassOptionSetCHeaders(gofc SassOptions, goimp SassImporterList) {
-	C.sass_option_set_c_headers(gofc, goimp)
+	C.sass_option_set_c_headers(gofc, C.Sass_Importer_List(goimp))
 }
 
 // SassContextGetOutputString retrieves the final compiled CSS after
@@ -330,7 +330,7 @@ func SassMakeImport(path string, base string, source string, srcmap string) Sass
 type SassImporterFN C.Sass_Importer_Fn
 
 func SassImporterGetFunction(goimp SassImporter) SassImporterFN {
-	impfn := C.sass_importer_get_function(goimp)
+	impfn := C.sass_importer_get_function(C.Sass_Importer_Entry(goimp))
 	return (SassImporterFN)(impfn)
 }
 
@@ -344,18 +344,18 @@ func SassMakeImporter(fn SassImporterFN, priority int, v interface{}) (SassImpor
 		return nil, errors.New("can not take address of")
 	}
 	// TODO: this will leak memory, the interface must be freed manually
-	lst := C.sass_make_importer(fn, C.double(priority), unsafe.Pointer(vv.Addr().Pointer()))
+	lst := C.sass_make_importer(C.Sass_Importer_Fn(fn), C.double(priority), unsafe.Pointer(vv.Addr().Pointer()))
 	return (SassImporter)(lst), nil
 }
 
 // SassImporterSetListEntry updates an import list with a new entry. The
 // index must exist in the importer list.
 func SassImporterSetListEntry(golst SassImporterList, idx int, ent SassImporter) {
-	C.sass_importer_set_list_entry(golst, C.size_t(idx), ent)
+	C.sass_importer_set_list_entry(C.Sass_Importer_List(golst), C.size_t(idx), C.Sass_Importer_Entry(ent))
 }
 
 func SassOptionSetCImporters(goopts SassOptions, golst SassImporterList) {
-	C.sass_option_set_c_importers(goopts, golst)
+	C.sass_option_set_c_importers(goopts, C.Sass_Importer_List(golst))
 }
 
 func SassOptionSetCFunctions() {

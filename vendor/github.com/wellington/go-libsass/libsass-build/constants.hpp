@@ -11,7 +11,8 @@ namespace Sass {
     // The following list of selectors is by increasing specificity:
     extern const unsigned long Specificity_Star;
     extern const unsigned long Specificity_Universal;
-    extern const unsigned long Specificity_Type;
+    extern const unsigned long Specificity_Element;
+    extern const unsigned long Specificity_Base;
     extern const unsigned long Specificity_Class;
     extern const unsigned long Specificity_Attr;
     extern const unsigned long Specificity_Pseudo;
@@ -78,11 +79,11 @@ namespace Sass {
     extern const char supports_kwd[];
     extern const char keyframes_kwd[];
     extern const char only_kwd[];
-    extern const char rgb_kwd[];
+    extern const char rgb_fn_kwd[];
     extern const char url_kwd[];
-    // extern const char url_prefix_kwd[];
+    // extern const char url_prefix_fn_kwd[];
     extern const char important_kwd[];
-    extern const char pseudo_not_kwd[];
+    extern const char pseudo_not_fn_kwd[];
     extern const char even_kwd[];
     extern const char odd_kwd[];
     extern const char progid_kwd[];

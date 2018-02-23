@@ -10,39 +10,39 @@ fetch:
 
 libsass-src: fetch
 
-libsass-tmp: clean libsass-src $(SOURCES)
-	# generate version header from configure script
-	- cd libsass-src; $(MAKE) clean; autoreconf -fvi
-	mkdir -p libsass-tmp
-	# configure and install libsass
-	cd libsass-tmp; ../libsass-src/configure --disable-shared \
-			--prefix=$(shell pwd) --disable-silent-rules \
-			--disable-dependency-tracking
-
-CPSOURCES=libsass-build/*.cpp libsass-build/*.c libsass-build/*.h libsass-build/*.hpp
 
 libsass-src/Makefile.conf: fetch
 
 include libsass-src/Makefile.conf
 
+LIBSASS_VERSION:=$(shell cd libsass-src; ./version.sh)
+libsass-build/include/sass/version.h: libsass-src/include/sass/version.h.in
+	echo "Stamping version $(LIBSASS_VERSION)"
+	sed 's/@PACKAGE_VERSION@/$(LIBSASS_VERSION)/' libsass-src/include/sass/version.h.in > libsass-build/include/sass/version.h
+
 .PHONY: libsass-build
-libsass-build:
+SOURCES=libsass-build/*.cpp libsass-build/*.c libsass-build/*.h libsass-build/*.hpp
+libsass-build: libsass-src
 	mkdir -p libsass-build/include
-	rm -rf $(CPSOURCES)
-	echo $(CSOURCES)
-	cp -R $(addprefix libsass-src/src/,$(CSOURCES)) libsass-build
-	cp -R $(addprefix libsass-src/src/,$(SOURCES)) libsass-build
-	cp -R libsass-src/include libsass-build
+	rm -rf $(SOURCES)
+
 	# more stuff
-	cp -R libsass-src/src/*.hpp libsass-build
+	cp -R libsass-src/src/*.c libsass-build
+	cp -R libsass-src/src/*.cpp libsass-build
 	cp -R libsass-src/src/*.h libsass-build
+	cp -R libsass-src/src/*.hpp libsass-build
+
 	cp -R libsass-src/src/b64 libsass-build
+	cp -R libsass-src/include libsass-build
+	cp -R libsass-src/src/memory libsass-build
 	cp -R libsass-src/src/utf8 libsass-build
-	cp libsass-tmp/include/sass/version.h libsass-build/include/sass/version.h
+	# hack remove the [NA] version.h
+	rm libsass-build/include/sass/version.h
+
 	touch libs/*.go
 
-copy: libsass-tmp libsass-build
-	- echo "Success"
+update-libsass: libsass-build libsass-build/include/sass/version.h
+	@echo "Success"
 
 .PHONY: test
 test:

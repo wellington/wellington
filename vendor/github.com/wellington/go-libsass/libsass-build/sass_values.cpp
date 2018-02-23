@@ -218,6 +218,7 @@ extern "C" {
         case SASS_WARNING: {
                 free(val->error.message);
         }   break;
+        default: break;
     }
 
     free(val);
@@ -233,26 +234,26 @@ extern "C" {
     switch(val->unknown.tag) {
         case SASS_NULL: {
                 return sass_make_null();
-        }   break;
+        }
         case SASS_BOOLEAN: {
                 return sass_make_boolean(val->boolean.value);
-        }   break;
+        }
         case SASS_NUMBER: {
                 return sass_make_number(val->number.value, val->number.unit);
-        }   break;
+        }
         case SASS_COLOR: {
                 return sass_make_color(val->color.r, val->color.g, val->color.b, val->color.a);
-        }   break;
+        }
         case SASS_STRING: {
                 return sass_string_is_quoted(val) ? sass_make_qstring(val->string.value) : sass_make_string(val->string.value);
-        }   break;
+        }
         case SASS_LIST: {
                 union Sass_Value* list = sass_make_list(val->list.length, val->list.separator);
                 for (i = 0; i < list->list.length; i++) {
                     list->list.values[i] = sass_clone_value(val->list.values[i]);
                 }
                 return list;
-        }   break;
+        }
         case SASS_MAP: {
                 union Sass_Value* map = sass_make_map(val->map.length);
                 for (i = 0; i < val->map.length; i++) {
@@ -260,13 +261,14 @@ extern "C" {
                     map->map.pairs[i].value = sass_clone_value(val->map.pairs[i].value);
                 }
                 return map;
-        }   break;
+        }
         case SASS_ERROR: {
                 return sass_make_error(val->error.message);
-        }   break;
+        }
         case SASS_WARNING: {
                 return sass_make_warning(val->warning.message);
-        }   break;
+        }
+        default: break;
     }
 
     return 0;
@@ -275,8 +277,7 @@ extern "C" {
 
   union Sass_Value* ADDCALL sass_value_stringify (const union Sass_Value* v, bool compressed, int precision)
   {
-    Memory_Manager mem;
-    Value* val = sass_value_to_ast_node(mem, v);
+    Value_Obj val = sass_value_to_ast_node(v);
     Sass_Inspect_Options options(compressed ? COMPRESSED : NESTED, precision);
     std::string str(val->to_string(options));
     return sass_make_qstring(str.c_str());
@@ -285,13 +286,12 @@ extern "C" {
   union Sass_Value* ADDCALL sass_value_op (enum Sass_OP op, const union Sass_Value* a, const union Sass_Value* b)
   {
 
-    Sass::Value* rv = 0;
-    Memory_Manager mem;
+    Sass::Value_Ptr rv;
 
     try {
 
-      Value* lhs = sass_value_to_ast_node(mem, a);
-      Value* rhs = sass_value_to_ast_node(mem, b);
+      Value_Obj lhs = sass_value_to_ast_node(a);
+      Value_Obj rhs = sass_value_to_ast_node(b);
       struct Sass_Inspect_Options options(NESTED, 5);
 
       // see if it's a relational expression
@@ -302,33 +302,35 @@ extern "C" {
         case Sass_OP::GTE: return sass_make_boolean(!Eval::lt(lhs, rhs, "gte"));
         case Sass_OP::LT:  return sass_make_boolean(Eval::lt(lhs, rhs, "lt"));
         case Sass_OP::LTE: return sass_make_boolean(Eval::lt(lhs, rhs, "lte") || Eval::eq(lhs, rhs));
+        case Sass_OP::AND: return ast_node_to_sass_value(lhs->is_false() ? lhs : rhs);
+        case Sass_OP::OR:  return ast_node_to_sass_value(lhs->is_false() ? rhs : lhs);
         default:           break;
       }
 
       if (sass_value_is_number(a) && sass_value_is_number(b)) {
-        const Number* l_n = dynamic_cast<const Number*>(lhs);
-        const Number* r_n = dynamic_cast<const Number*>(rhs);
-        rv = Eval::op_numbers(mem, op, *l_n, *r_n, options);
+        Number_Ptr_Const l_n = Cast<Number>(lhs);
+        Number_Ptr_Const r_n = Cast<Number>(rhs);
+        rv = Eval::op_numbers(op, *l_n, *r_n, options, l_n->pstate());
       }
       else if (sass_value_is_number(a) && sass_value_is_color(a)) {
-        const Number* l_n = dynamic_cast<const Number*>(lhs);
-        const Color* r_c = dynamic_cast<const Color*>(rhs);
-        rv = Eval::op_number_color(mem, op, *l_n, *r_c, options);
+        Number_Ptr_Const l_n = Cast<Number>(lhs);
+        Color_Ptr_Const r_c = Cast<Color>(rhs);
+        rv = Eval::op_number_color(op, *l_n, *r_c, options, l_n->pstate());
       }
       else if (sass_value_is_color(a) && sass_value_is_number(b)) {
-        const Color* l_c = dynamic_cast<const Color*>(lhs);
-        const Number* r_n = dynamic_cast<const Number*>(rhs);
-        rv = Eval::op_color_number(mem, op, *l_c, *r_n, options);
+        Color_Ptr_Const l_c = Cast<Color>(lhs);
+        Number_Ptr_Const r_n = Cast<Number>(rhs);
+        rv = Eval::op_color_number(op, *l_c, *r_n, options, l_c->pstate());
       }
       else if (sass_value_is_color(a) && sass_value_is_color(b)) {
-        const Color* l_c = dynamic_cast<const Color*>(lhs);
-        const Color* r_c = dynamic_cast<const Color*>(rhs);
-        rv = Eval::op_colors(mem, op, *l_c, *r_c, options);
+        Color_Ptr_Const l_c = Cast<Color>(lhs);
+        Color_Ptr_Const r_c = Cast<Color>(rhs);
+        rv = Eval::op_colors(op, *l_c, *r_c, options, l_c->pstate());
       }
       else /* convert other stuff to string and apply operation */ {
-        Value* l_v = dynamic_cast<Value*>(lhs);
-        Value* r_v = dynamic_cast<Value*>(rhs);
-        rv = Eval::op_strings(mem, op, *l_v, *r_v, options);
+        Value_Ptr l_v = Cast<Value>(lhs);
+        Value_Ptr r_v = Cast<Value>(rhs);
+        rv = Eval::op_strings(op, *l_v, *r_v, options, l_v->pstate());
       }
 
       // ToDo: maybe we should should return null value?
@@ -346,9 +348,6 @@ extern "C" {
     catch (std::string& e) { return sass_make_error(e.c_str()); }
     catch (const char* e) { return sass_make_error(e); }
     catch (...) { return sass_make_error("unknown"); }
-
-    return 0;
-
   }
 
 }

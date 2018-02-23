@@ -5,7 +5,7 @@ package wellington
 import (
 	"log"
 
-	"gopkg.in/fsnotify.v1"
+	fsnotify "gopkg.in/fsnotify.v1"
 )
 
 // Watcher holds all data needed to kick off a build of the css when a

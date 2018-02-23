@@ -11,6 +11,7 @@ namespace Sass {
   class Offset {
 
     public: // c-tor
+      Offset(const char chr);
       Offset(const char* string);
       Offset(const std::string& text);
       Offset(const size_t line, const size_t column);
@@ -85,7 +86,7 @@ namespace Sass {
 
     size_t length()    const { return end - begin; }
     std::string ws_before() const { return std::string(prefix, begin); }
-    std::string to_string() const { return std::string(begin, end); }
+    const std::string to_string() const { return std::string(begin, end); }
     std::string time_wspace() const {
       std::string str(to_string());
       std::string whitespaces(" \t\f\v\n\r");

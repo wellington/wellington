@@ -2,7 +2,6 @@
 #include <string>
 #include <sstream>
 #include <iostream>
-#include <cstddef>
 #include <iomanip>
 
 #include "ast.hpp"
@@ -25,43 +24,54 @@ namespace Sass {
 
     json_append_member(json_srcmap, "version", json_mknumber(3));
 
+    const char *file_name = file.c_str();
+    JsonNode *json_file_name = json_mkstring(file_name);
+    json_append_member(json_srcmap, "file", json_file_name);
+
     // pass-through sourceRoot option
     if (!ctx.source_map_root.empty()) {
       JsonNode* root = json_mkstring(ctx.source_map_root.c_str());
       json_append_member(json_srcmap, "sourceRoot", root);
     }
 
-    const char *include = file.c_str();
-    JsonNode *json_include = json_mkstring(include);
-    json_append_member(json_srcmap, "file", json_include);
-
-    JsonNode *json_includes = json_mkarray();
+    JsonNode *json_sources = json_mkarray();
     for (size_t i = 0; i < source_index.size(); ++i) {
-      const char *include = links[source_index[i]].c_str();
-      JsonNode *json_include = json_mkstring(include);
-      json_append_element(json_includes, json_include);
+      std::string source(links[source_index[i]]);
+      if (ctx.c_options.source_map_file_urls) {
+        source = File::rel2abs(source);
+        // check for windows abs path
+        if (source[0] == '/') {
+          // ends up with three slashes
+          source = "file://" + source;
+        } else {
+          // needs an additional slash
+          source = "file:///" + source;
+        }
+      }
+      const char* source_name = source.c_str();
+      JsonNode *json_source_name = json_mkstring(source_name);
+      json_append_element(json_sources, json_source_name);
     }
-    json_append_member(json_srcmap, "sources", json_includes);
+    json_append_member(json_srcmap, "sources", json_sources);
 
-    if (include_sources) {
+    if (include_sources && source_index.size()) {
       JsonNode *json_contents = json_mkarray();
       for (size_t i = 0; i < source_index.size(); ++i) {
         const Resource& resource(sources[source_index[i]]);
         JsonNode *json_content = json_mkstring(resource.contents);
         json_append_element(json_contents, json_content);
       }
-      if (json_contents->children.head)
-        json_append_member(json_srcmap, "sourcesContent", json_contents);
+      json_append_member(json_srcmap, "sourcesContent", json_contents);
     }
-
-    std::string mappings = serialize_mappings();
-    JsonNode *json_mappings = json_mkstring(mappings.c_str());
-    json_append_member(json_srcmap, "mappings", json_mappings);
 
     JsonNode *json_names = json_mkarray();
     // so far we have no implementation for names
     // no problem as we do not alter any identifiers
     json_append_member(json_srcmap, "names", json_names);
+
+    std::string mappings = serialize_mappings();
+    JsonNode *json_mappings = json_mkstring(mappings.c_str());
+    json_append_member(json_srcmap, "mappings", json_mappings);
 
     char *str = json_stringify(json_srcmap, "\t");
     std::string result = std::string(str);
@@ -126,7 +136,7 @@ namespace Sass {
         }
       }
     }
-    // will adjust the offset
+    // adjust the buffer offset
     prepend(Offset(out.buffer));
     // now add the new mappings
     VECTOR_UNSHIFT(mappings, out.smap.mappings);
@@ -160,12 +170,12 @@ namespace Sass {
     current_position += offset;
   }
 
-  void SourceMap::add_open_mapping(const AST_Node* node)
+  void SourceMap::add_open_mapping(const AST_Node_Ptr node)
   {
     mappings.push_back(Mapping(node->pstate(), current_position));
   }
 
-  void SourceMap::add_close_mapping(const AST_Node* node)
+  void SourceMap::add_close_mapping(const AST_Node_Ptr node)
   {
     mappings.push_back(Mapping(node->pstate() + node->pstate().offset, current_position));
   }

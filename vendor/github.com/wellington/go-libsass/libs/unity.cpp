@@ -1,7 +1,11 @@
 #ifndef USE_LIBSASS
+
+
 #include "../libsass-build/ast.cpp"
+#include "../libsass-build/ast_fwd_decl.cpp"
 #include "../libsass-build/base64vlq.cpp"
 #include "../libsass-build/bind.cpp"
+#include "../libsass-build/check_nesting.cpp"
 #include "../libsass-build/color_maps.cpp"
 #include "../libsass-build/constants.cpp"
 #include "../libsass-build/context.cpp"
@@ -19,7 +23,6 @@
 #include "../libsass-build/lexer.cpp"
 #include "../libsass-build/listize.cpp"
 #include "../libsass-build/node.cpp"
-#include "../libsass-build/memory_manager.cpp"
 #include "../libsass-build/output.cpp"
 #include "../libsass-build/parser.cpp"
 #include "../libsass-build/plugins.cpp"
@@ -28,15 +31,17 @@
 #include "../libsass-build/remove_placeholders.cpp"
 #include "../libsass-build/sass2scss.cpp"
 #include "../libsass-build/sass_context.cpp"
+#include "../libsass-build/sass.cpp"
 #include "../libsass-build/sass_functions.cpp"
 #include "../libsass-build/sass_util.cpp"
-#include "../libsass-build/sass.cpp"
 #include "../libsass-build/sass_values.cpp"
 #include "../libsass-build/source_map.cpp"
+#include "../libsass-build/subset_map.cpp"
 #include "../libsass-build/to_c.cpp"
 #include "../libsass-build/to_value.cpp"
 #include "../libsass-build/units.cpp"
 #include "../libsass-build/utf8_string.cpp"
 #include "../libsass-build/util.cpp"
 #include "../libsass-build/values.cpp"
+#include "../libsass-build/memory/SharedPtr.cpp"
 #endif

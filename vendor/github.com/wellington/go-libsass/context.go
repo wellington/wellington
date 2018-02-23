@@ -111,7 +111,9 @@ func (ctx *compctx) Init(goopts libs.SassOptions) libs.SassOptions {
 	ctx.Imports.Bind(goopts)
 	ctx.Funcs.Bind(goopts)
 	libs.SassOptionSetSourceComments(goopts, ctx.compiler.LineComments())
-	libs.SetIncludePaths(goopts, ctx.IncludePaths)
+	//os.PathListSeparator
+	incs := strings.Join(ctx.IncludePaths, string(os.PathListSeparator))
+	libs.SassOptionSetIncludePath(goopts, incs)
 	libs.SassOptionSetPrecision(goopts, ctx.Precision)
 	libs.SassOptionSetOutputStyle(goopts, ctx.OutputStyle)
 	libs.SassOptionSetSourceComments(goopts, ctx.Comments)
@@ -124,9 +126,6 @@ func (ctx *compctx) fileCompile(path string, out io.Writer, mappath, sourceMapRo
 	gofc := libs.SassMakeFileContext(path)
 	goopts := libs.SassFileContextGetOptions(gofc)
 	ctx.Init(goopts)
-	//os.PathListSeparator
-	incs := strings.Join(ctx.IncludePaths, string(os.PathListSeparator))
-	libs.SassOptionSetIncludePath(goopts, incs)
 
 	var fpath string
 	// libSass won't create a source map unless you ask it to
@@ -198,11 +197,29 @@ func (ctx *compctx) fileCompile(path string, out io.Writer, mappath, sourceMapRo
 func (ctx *compctx) compile(out io.Writer, in io.Reader) error {
 
 	defer ctx.Reset()
-	bs, err := ioutil.ReadAll(in)
+	var (
+		bs  []byte
+		err error
+	)
 
-	if err != nil {
-		return err
+	// libSass will fail on Sass syntax given as non-file input
+	// convert the input on its behalf
+	if ctx.compiler.Syntax() == SassSyntax {
+		// this is memory intensive
+		var buf bytes.Buffer
+		err := ToScss(in, &buf)
+		if err != nil {
+			return err
+		}
+		bs = buf.Bytes()
+	} else {
+		// ScssSyntax
+		bs, err = ioutil.ReadAll(in)
+		if err != nil {
+			return err
+		}
 	}
+
 	if len(bs) == 0 {
 		return errors.New("No input provided")
 	}
@@ -212,6 +229,7 @@ func (ctx *compctx) compile(out io.Writer, in io.Reader) error {
 	libs.SassOptionSetSourceComments(goopts, true)
 
 	ctx.Init(goopts)
+
 	libs.SassDataContextSetOptions(godc, goopts)
 	goctx := libs.SassDataContextGetContext(godc)
 	ctx.context = goctx
@@ -229,7 +247,6 @@ func (ctx *compctx) compile(out io.Writer, in io.Reader) error {
 	ctx.Status = libs.SassContextGetErrorStatus(goctx)
 	errJSON := libs.SassContextGetErrorJSON(goctx)
 	err = ctx.ProcessSassError([]byte(errJSON))
-
 	if err != nil {
 		return err
 	}

@@ -9,12 +9,6 @@ import (
 	"unsafe"
 )
 
-func SetIncludePaths(goopts SassOptions, paths []string) {
-	for _, inc := range paths {
-		SassOptionSetIncludePath(goopts, inc)
-	}
-}
-
 func GetImportList(ctx SassContext) []string {
 	cctx := (*C.struct_Sass_Context)(ctx)
 	len := int(C.sass_context_get_included_files_size(cctx))

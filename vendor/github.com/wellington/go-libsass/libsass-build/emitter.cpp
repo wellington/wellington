@@ -14,6 +14,7 @@ namespace Sass {
     scheduled_space(0),
     scheduled_linefeed(0),
     scheduled_delimiter(false),
+    scheduled_crutch(0),
     scheduled_mapping(0),
     in_comment(false),
     in_wrapped(false),
@@ -45,11 +46,11 @@ namespace Sass {
   void Emitter::set_filename(const std::string& str)
   { wbuf.smap.file = str; }
 
-  void Emitter::schedule_mapping(const AST_Node* node)
+  void Emitter::schedule_mapping(const AST_Node_Ptr node)
   { scheduled_mapping = node; }
-  void Emitter::add_open_mapping(const AST_Node* node)
+  void Emitter::add_open_mapping(const AST_Node_Ptr node)
   { wbuf.smap.add_open_mapping(node); }
-  void Emitter::add_close_mapping(const AST_Node* node)
+  void Emitter::add_close_mapping(const AST_Node_Ptr node)
   { wbuf.smap.add_close_mapping(node); }
   ParserState Emitter::remap(const ParserState& pstate)
   { return wbuf.smap.remap(pstate); }
@@ -101,8 +102,28 @@ namespace Sass {
   // prepend some text or token to the buffer
   void Emitter::prepend_string(const std::string& text)
   {
-    wbuf.smap.prepend(Offset(text));
+    // do not adjust mappings for utf8 bom
+    // seems they are not counted in any UA
+    if (text.compare("\xEF\xBB\xBF") != 0) {
+      wbuf.smap.prepend(Offset(text));
+    }
     wbuf.buffer = text + wbuf.buffer;
+  }
+
+  char Emitter::last_char()
+  {
+    return wbuf.buffer.back();
+  }
+
+  // append a single char to the buffer
+  void Emitter::append_char(const char chr)
+  {
+    // write space/lf
+    flush_schedules();
+    // add to buffer
+    wbuf.buffer += chr;
+    // account for data in source-maps
+    wbuf.smap.append(Offset(chr));
   }
 
   // append some text or token to the buffer
@@ -139,15 +160,15 @@ namespace Sass {
 
   // append some text or token to the buffer
   // this adds source-mappings for node start and end
-  void Emitter::append_token(const std::string& text, const AST_Node* node)
+  void Emitter::append_token(const std::string& text, const AST_Node_Ptr node)
   {
     flush_schedules();
     add_open_mapping(node);
     // hotfix for browser issues
     // this is pretty ugly indeed
-    if (scheduled_mapping) {
-      add_open_mapping(scheduled_mapping);
-      scheduled_mapping = 0;
+    if (scheduled_crutch) {
+      add_open_mapping(scheduled_crutch);
+      scheduled_crutch = 0;
     }
     append_string(text);
     add_close_mapping(node);
@@ -206,7 +227,9 @@ namespace Sass {
     if ((output_style() != COMPRESSED) && buffer().size()) {
       unsigned char lst = buffer().at(buffer().length() - 1);
       if (!isspace(lst) || scheduled_delimiter) {
-        append_mandatory_space();
+        if (last_char() != '(') {
+          append_mandatory_space();
+        }
       }
     }
   }
@@ -239,7 +262,7 @@ namespace Sass {
     }
   }
 
-  void Emitter::append_scope_opener(AST_Node* node)
+  void Emitter::append_scope_opener(AST_Node_Ptr node)
   {
     scheduled_linefeed = 0;
     append_optional_space();
@@ -250,7 +273,7 @@ namespace Sass {
     // append_optional_space();
     ++ indentation;
   }
-  void Emitter::append_scope_closer(AST_Node* node)
+  void Emitter::append_scope_closer(AST_Node_Ptr node)
   {
     -- indentation;
     scheduled_linefeed = 0;
