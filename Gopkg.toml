@@ -31,8 +31,11 @@
 
 [[constraint]]
   name = "github.com/wellington/go-libsass"
-  revision = "4271b0e669862e59ef55a22935c1fed6b146d183"
+  revision = "7fdbc0078146a8b006ace6f3f7dc7ea618090241"
 
+[[constraint]]
+  name = "gopkg.in/fsnotify.v1"
+  version = "v1.4.7"
 
 [prune]
   go-tests = true
