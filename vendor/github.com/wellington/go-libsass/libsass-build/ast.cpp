@@ -837,7 +837,7 @@ namespace Sass {
         return lhs_list->is_superselector_of(rhs_list);
       }
     }
-    error("is_superselector expected a Selector_List", sub->pstate());
+    coreError("is_superselector expected a Selector_List", sub->pstate());
     return false;
   }
 
@@ -1171,7 +1171,7 @@ namespace Sass {
   // check if we need to append some headers
   // then we need to check for the combinator
   // only then we can safely set the new tail
-  void Complex_Selector::append(Complex_Selector_Obj ss)
+  void Complex_Selector::append(Complex_Selector_Obj ss, Backtraces& traces)
   {
 
     Complex_Selector_Obj t = ss->tail();
@@ -1185,7 +1185,8 @@ namespace Sass {
     // append old headers
     if (h && h->length()) {
       if (last()->combinator() != ANCESTOR_OF && c != ANCESTOR_OF) {
-        error("Invalid parent selector", pstate_);
+        traces.push_back(Backtrace(pstate()));
+        throw Exception::InvalidParent(this, traces, ss);
       } else if (last()->head_ && last()->head_->length()) {
         Compound_Selector_Obj rh = last()->head();
         size_t i;
@@ -1258,21 +1259,21 @@ namespace Sass {
     return list;
   }
 
-  Selector_List_Ptr Selector_List::resolve_parent_refs(std::vector<Selector_List_Obj>& pstack, bool implicit_parent)
+  Selector_List_Ptr Selector_List::resolve_parent_refs(std::vector<Selector_List_Obj>& pstack, Backtraces& traces, bool implicit_parent)
   {
     if (!this->has_parent_ref()) return this;
     Selector_List_Ptr ss = SASS_MEMORY_NEW(Selector_List, pstate());
     Selector_List_Ptr ps = pstack.back();
     for (size_t pi = 0, pL = ps->length(); pi < pL; ++pi) {
       for (size_t si = 0, sL = this->length(); si < sL; ++si) {
-        Selector_List_Obj rv = at(si)->resolve_parent_refs(pstack, implicit_parent);
+        Selector_List_Obj rv = at(si)->resolve_parent_refs(pstack, traces, implicit_parent);
         ss->concat(rv);
       }
     }
     return ss;
   }
 
-  Selector_List_Ptr Complex_Selector::resolve_parent_refs(std::vector<Selector_List_Obj>& pstack, bool implicit_parent)
+  Selector_List_Ptr Complex_Selector::resolve_parent_refs(std::vector<Selector_List_Obj>& pstack, Backtraces& traces, bool implicit_parent)
   {
     Complex_Selector_Obj tail = this->tail();
     Compound_Selector_Obj head = this->head();
@@ -1285,7 +1286,7 @@ namespace Sass {
     }
 
     // first resolve_parent_refs the tail (which may return an expanded list)
-    Selector_List_Obj tails = tail ? tail->resolve_parent_refs(pstack, implicit_parent) : 0;
+    Selector_List_Obj tails = tail ? tail->resolve_parent_refs(pstack, traces, implicit_parent) : 0;
 
     if (head && head->length() > 0) {
 
@@ -1331,7 +1332,7 @@ namespace Sass {
                 // keep old parser state
                 s->pstate(pstate());
                 // append new tail
-                s->append(ss);
+                s->append(ss, traces);
                 retval->append(s);
               }
             }
@@ -1346,7 +1347,8 @@ namespace Sass {
               // this is only if valid if the parent has no trailing op
               // otherwise we cannot append more simple selectors to head
               if (parent->last()->combinator() != ANCESTOR_OF) {
-                throw Exception::InvalidParent(parent, ss);
+                traces.push_back(Backtrace(pstate()));
+                throw Exception::InvalidParent(parent, traces, ss);
               }
               ss->tail(tail ? SASS_MEMORY_CLONE(tail) : NULL);
               Compound_Selector_Obj h = SASS_MEMORY_COPY(head_);
@@ -1369,7 +1371,7 @@ namespace Sass {
               // keep old parser state
               s->pstate(pstate());
               // append new tail
-              s->append(ss);
+              s->append(ss, traces);
               retval->append(s);
             }
           }
@@ -1406,7 +1408,7 @@ namespace Sass {
       for (Simple_Selector_Obj ss : head->elements()) {
         if (Wrapped_Selector_Ptr ws = Cast<Wrapped_Selector>(ss)) {
           if (Selector_List_Ptr sl = Cast<Selector_List>(ws->selector())) {
-            if (parents) ws->selector(sl->resolve_parent_refs(pstack, implicit_parent));
+            if (parents) ws->selector(sl->resolve_parent_refs(pstack, traces, implicit_parent));
           }
         }
       }
@@ -1690,7 +1692,7 @@ namespace Sass {
       }
 
       if (!pIter->head() || pIter->tail()) {
-        error("nested selectors may not be extended", c->pstate());
+        coreError("nested selectors may not be extended", c->pstate());
       }
 
       compound_sel->is_optional(extendee->is_optional());
@@ -1766,31 +1768,31 @@ namespace Sass {
   {
     if (!a->name().empty()) {
       if (has_keyword_argument()) {
-        error("named arguments must precede variable-length argument", a->pstate());
+        coreError("named arguments must precede variable-length argument", a->pstate());
       }
       has_named_arguments(true);
     }
     else if (a->is_rest_argument()) {
       if (has_rest_argument()) {
-        error("functions and mixins may only be called with one variable-length argument", a->pstate());
+        coreError("functions and mixins may only be called with one variable-length argument", a->pstate());
       }
       if (has_keyword_argument_) {
-        error("only keyword arguments may follow variable arguments", a->pstate());
+        coreError("only keyword arguments may follow variable arguments", a->pstate());
       }
       has_rest_argument(true);
     }
     else if (a->is_keyword_argument()) {
       if (has_keyword_argument()) {
-        error("functions and mixins may only be called with one keyword argument", a->pstate());
+        coreError("functions and mixins may only be called with one keyword argument", a->pstate());
       }
       has_keyword_argument(true);
     }
     else {
       if (has_rest_argument()) {
-        error("ordinal arguments must precede variable-length arguments", a->pstate());
+        coreError("ordinal arguments must precede variable-length arguments", a->pstate());
       }
       if (has_named_arguments()) {
-        error("ordinal arguments must precede named arguments", a->pstate());
+        coreError("ordinal arguments must precede named arguments", a->pstate());
       }
     }
   }
@@ -1907,6 +1909,7 @@ namespace Sass {
     l.normalize(); r.normalize();
     Units &lhs_unit = l, &rhs_unit = r;
     if (!(lhs_unit == rhs_unit)) {
+      /* ToDo: do we always get usefull backtraces? */
       throw Exception::IncompatibleUnits(rhs, *this);
     }
     return lhs_unit < rhs_unit ||
@@ -1985,6 +1988,7 @@ namespace Sass {
     if (List_Ptr_Const r = Cast<List>(&rhs)) {
       if (length() != r->length()) return false;
       if (separator() != r->separator()) return false;
+      if (is_bracketed() != r->is_bracketed()) return false;
       for (size_t i = 0, L = length(); i < L; ++i) {
         Expression_Obj rv = r->at(i);
         Expression_Obj lv = this->at(i);
@@ -2014,6 +2018,16 @@ namespace Sass {
   bool Null::operator== (const Expression& rhs) const
   {
     return rhs.concrete_type() == NULL_VAL;
+  }
+
+  bool Function::operator== (const Expression& rhs) const
+  {
+    if (Function_Ptr_Const r = Cast<Function>(&rhs)) {
+      Definition_Ptr_Const d1 = Cast<Definition>(definition());
+      Definition_Ptr_Const d2 = Cast<Definition>(r->definition());
+      return d1 && d2 && d1 == d2 && is_css() == r->is_css();
+    }
+    return false;
   }
 
   size_t List::size() const {
@@ -2069,6 +2083,13 @@ namespace Sass {
   std::string String_Constant::inspect() const
   {
     return quote(value_, '*');
+  }
+
+  bool Declaration::is_invisible() const
+  {
+    if (is_custom_property()) return false;
+
+    return !(value_ && value_->concrete_type() != Expression::NULL_VAL);
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -2151,6 +2172,7 @@ namespace Sass {
   IMPLEMENT_AST_OPERATORS(Custom_Error);
   IMPLEMENT_AST_OPERATORS(List);
   IMPLEMENT_AST_OPERATORS(Map);
+  IMPLEMENT_AST_OPERATORS(Function);
   IMPLEMENT_AST_OPERATORS(Number);
   IMPLEMENT_AST_OPERATORS(Binary_Expression);
   IMPLEMENT_AST_OPERATORS(String_Schema);
@@ -2201,5 +2223,4 @@ namespace Sass {
   IMPLEMENT_AST_OPERATORS(Placeholder_Selector);
   IMPLEMENT_AST_OPERATORS(Definition);
   IMPLEMENT_AST_OPERATORS(Declaration);
-
 }

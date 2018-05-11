@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "memory/SharedPtr.hpp"
+#include "sass/functions.h"
 
 /////////////////////////////////////////////
 // Forward declarations for the AST visitors.
@@ -132,6 +133,9 @@ namespace Sass {
   class Map;
   typedef Map* Map_Ptr;
   typedef Map const* Map_Ptr_Const;
+  class Function;
+  typedef Function* Function_Ptr;
+  typedef Function const* Function_Ptr_Const;
 
   class Mixin_Call;
   typedef Mixin_Call* Mixin_Call_Ptr;
@@ -311,6 +315,7 @@ namespace Sass {
   IMPL_MEM_OBJ(Expression);
   IMPL_MEM_OBJ(List);
   IMPL_MEM_OBJ(Map);
+  IMPL_MEM_OBJ(Function);
   IMPL_MEM_OBJ(Binary_Expression);
   IMPL_MEM_OBJ(Unary_Expression);
   IMPL_MEM_OBJ(Function_Call);
@@ -413,6 +418,8 @@ namespace Sass {
   typedef std::set<Complex_Selector_Obj, OrderNodes> ComplexSelectorSet;
   typedef std::set<Compound_Selector_Obj, OrderNodes> CompoundSelectorSet;
   typedef std::unordered_set<Simple_Selector_Obj, HashNodes, CompareNodes> SimpleSelectorDict;
+
+  typedef std::vector<Sass_Import_Entry>* ImporterStack;
 
   // only to switch implementations for testing
   #define environment_map std::map
