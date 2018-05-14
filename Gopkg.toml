@@ -26,12 +26,12 @@
 
 
 [[constraint]]
-  branch = "master"
   name = "github.com/wellington/spritewell"
+  version = "v0.5.0"
 
 [[constraint]]
   name = "github.com/wellington/go-libsass"
-  revision = "7fdbc0078146a8b006ace6f3f7dc7ea618090241"
+  version = "v0.9.1"
 
 [[constraint]]
   name = "gopkg.in/fsnotify.v1"
