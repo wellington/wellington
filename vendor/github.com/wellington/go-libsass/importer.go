@@ -33,13 +33,21 @@ type Imports struct {
 	wg      sync.WaitGroup
 	closing chan struct{}
 	sync.RWMutex
-	m   map[string]Import
-	idx int
+	m        map[string]Import
+	resolver libs.ImportResolver
+	idx      int
 }
 
 func NewImports() *Imports {
 	return &Imports{
 		closing: make(chan struct{}),
+	}
+}
+
+func NewImportsWithResolver(resolver libs.ImportResolver) *Imports {
+	return &Imports{
+		closing:  make(chan struct{}),
+		resolver: resolver,
 	}
 }
 
@@ -124,6 +132,20 @@ func (p *Imports) Bind(opts libs.SassOptions) {
 	}
 	p.RUnlock()
 
+	resolver := func(url string, prev string) (newURL string, body string, resolved bool) {
+		if p.resolver != nil {
+			newURL, body, resolved = p.resolver(url, prev)
+			if resolved {
+				return
+			}
+		}
+		entry, err := libs.GetEntry(entries, prev, url)
+		if err == nil {
+			return url, entry, true
+		}
+		return "", "", false
+	}
+
 	// set entries somewhere so GC doesn't collect it
-	p.idx = libs.BindImporter(opts, entries)
+	p.idx = libs.BindImporter(opts, resolver)
 }

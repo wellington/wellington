@@ -26,13 +26,16 @@
 
 
 [[constraint]]
-  branch = "master"
   name = "github.com/wellington/spritewell"
+  revision = "v0.5.0"
 
 [[constraint]]
   name = "github.com/wellington/go-libsass"
-  revision = "4271b0e669862e59ef55a22935c1fed6b146d183"
+  revision = "0a1f17e219ef0e90b264c1f28a2e314f034f6f58"
 
+[[constraint]]
+  source = "https://github.com/fsnotify/fsnotify/archive/v1.4.7.tar.gz"
+  name = "gopkg.in/fsnotify.v1"
 
 [prune]
   go-tests = true

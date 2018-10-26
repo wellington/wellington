@@ -60,7 +60,8 @@ namespace Sass {
                                l->pstate(),
                                l->length(),
                                l->separator(),
-                               l->is_arglist());
+                               l->is_arglist(),
+                               l->is_bracketed());
     for (size_t i = 0, L = l->length(); i < L; ++i) {
       ll->append((*l)[i]->perform(this));
     }
@@ -75,6 +76,12 @@ namespace Sass {
 
   // Null is a valid value
   Value_Ptr To_Value::operator()(Null_Ptr n)
+  {
+    return n;
+  }
+
+  // Function is a valid value
+  Value_Ptr To_Value::operator()(Function_Ptr n)
   {
     return n;
   }

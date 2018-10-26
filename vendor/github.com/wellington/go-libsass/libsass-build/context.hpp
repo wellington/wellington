@@ -15,6 +15,7 @@
 #include "environment.hpp"
 #include "source_map.hpp"
 #include "subset_map.hpp"
+#include "backtrace.hpp"
 #include "output.hpp"
 #include "plugins.hpp"
 #include "file.hpp"
@@ -54,6 +55,7 @@ namespace Sass {
     Subset_Map subset_map;
     std::vector<Sass_Import_Entry> import_stack;
     std::vector<Sass_Callee> callee_stack;
+    std::vector<Backtrace> traces;
 
     struct Sass_Compiler* c_compiler;
 
@@ -65,6 +67,7 @@ namespace Sass {
 
     std::vector<std::string> plugin_paths; // relative paths to load plugins
     std::vector<std::string> include_paths; // lookup paths for includes
+    std::vector<std::string> extensions; // lookup extensions for imports`
 
 
 
@@ -94,7 +97,8 @@ namespace Sass {
     virtual char* render(Block_Obj root);
     virtual char* render_srcmap();
 
-    void register_resource(const Include&, const Resource&, ParserState* = 0);
+    void register_resource(const Include&, const Resource&);
+    void register_resource(const Include&, const Resource&, ParserState&);
     std::vector<Include> find_includes(const Importer& import);
     Include load_import(const Importer&, ParserState pstate);
 
@@ -106,6 +110,8 @@ namespace Sass {
     void collect_plugin_paths(string_list* paths_array);
     void collect_include_paths(const char* paths_str);
     void collect_include_paths(string_list* paths_array);
+    void collect_extensions(const char* extensions_str);
+    void collect_extensions(string_list* extensions_array);
     std::string format_embedded_source_map();
     std::string format_source_mapping_url(const std::string& out_path);
 

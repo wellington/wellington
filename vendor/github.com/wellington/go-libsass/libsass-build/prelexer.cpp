@@ -1047,7 +1047,7 @@ namespace Sass {
     const char* hexa(const char* src) {
       const char* p = sequence< exactly<'#'>, one_plus<xdigit> >(src);
       ptrdiff_t len = p - src;
-      return (len != 4 && len != 7 && len != 9) ? 0 : p;
+      return (len != 5 && len != 9) ? 0 : p;
     }
     const char* hex0(const char* src) {
       const char* p = sequence< exactly<'0'>, exactly<'x'>, one_plus<xdigit> >(src);
@@ -1279,7 +1279,7 @@ namespace Sass {
             optional_css_whitespace,
             exactly<'='>,
             optional_css_whitespace,
-            alternatives< variable, identifier_schema, identifier, quoted_string, number, hexa >,
+            alternatives< variable, identifier_schema, identifier, quoted_string, number, hex, hexa >,
             zero_plus< sequence<
               optional_css_whitespace,
               exactly<','>,
@@ -1289,7 +1289,7 @@ namespace Sass {
                 optional_css_whitespace,
                 exactly<'='>,
                 optional_css_whitespace,
-                alternatives< variable, identifier_schema, identifier, quoted_string, number, hexa >
+                alternatives< variable, identifier_schema, identifier, quoted_string, number, hex, hexa >
               >
             > >
           > >,
@@ -1324,6 +1324,7 @@ namespace Sass {
           identifier,
           quoted_string,
           number,
+          hex,
           hexa,
           sequence <
             exactly < '(' >,
@@ -1430,6 +1431,28 @@ namespace Sass {
       >(src);
     }
 
+    const char* list_terminator(const char* src) {
+      return alternatives <
+        exactly<';'>,
+        exactly<'}'>,
+        exactly<'{'>,
+        exactly<')'>,
+        exactly<']'>,
+        exactly<':'>,
+        end_of_file,
+        exactly<ellipsis>,
+        default_flag,
+        global_flag
+      >(src);
+    };
+
+    const char* space_list_terminator(const char* src) {
+      return alternatives <
+        exactly<','>,
+        list_terminator
+      >(src);
+    };
+
 
     // const char* real_uri_prefix(const char* src) {
     //   return alternatives<
@@ -1437,6 +1460,16 @@ namespace Sass {
     //     exactly< url_prefix_kwd >
     //   >(src);
     // }
+
+    const char* real_uri(const char* src) {
+      return sequence<
+        exactly< url_kwd >,
+        exactly< '(' >,
+        W,
+        real_uri_value,
+        exactly< ')' >
+      >(src);
+    }
 
     const char* real_uri_suffix(const char* src) {
       return sequence< W, exactly< ')' > >(src);
@@ -1488,6 +1521,7 @@ namespace Sass {
                            static_string,
                            percentage,
                            hex,
+                           hexa,
                            exactly<'|'>,
                            // exactly<'+'>,
                            sequence < number, unit_identifier >,
@@ -1553,6 +1587,40 @@ namespace Sass {
                        zero_plus < spaces >,
                        alternatives< exactly<';'>, exactly<'}'> >
                       >(src);
+    }
+
+    extern const char css_variable_url_negates[] = "()[]{}\"'#/";
+    const char* css_variable_value(const char* src) {
+      return sequence<
+        alternatives<
+          sequence<
+            negate< exactly< url_fn_kwd > >,
+            one_plus< neg_class_char< css_variable_url_negates > >
+          >,
+          sequence< exactly<'#'>, negate< exactly<'{'> > >,
+          sequence< exactly<'/'>, negate< exactly<'*'> > >,
+          static_string,
+          real_uri,
+          block_comment
+        >
+      >(src);
+    }
+
+    extern const char css_variable_url_top_level_negates[] = "()[]{}\"'#/;";
+    const char* css_variable_top_level_value(const char* src) {
+      return sequence<
+        alternatives<
+          sequence<
+            negate< exactly< url_fn_kwd > >,
+            one_plus< neg_class_char< css_variable_url_top_level_negates > >
+          >,
+          sequence< exactly<'#'>, negate< exactly<'{'> > >,
+          sequence< exactly<'/'>, negate< exactly<'*'> > >,
+          static_string,
+          real_uri,
+          block_comment
+        >
+      >(src);
     }
 
     const char* parenthese_scope(const char* src) {

@@ -336,10 +336,6 @@ div {
 	e := `Error > stdin:3
 error in C function inline-image: open ../test/img/pixel/nofile.png: no such file or directory
 
-Backtrace:
-	stdin:3, in function ` + "`inline-image`" + `
-	stdin:3
-
 div {
     background: inline-image("pixel/nofile.png");
 }
@@ -441,10 +437,6 @@ div {
 
 	e := `Error > stdin:4
 error in C function sprite: Please specify unit for offset ie. (2px)
-
-Backtrace:
-	stdin:4, in function ` + "`sprite`" + `
-	stdin:4
 
 $map: sprite-map("*.png", 10px);
 div {

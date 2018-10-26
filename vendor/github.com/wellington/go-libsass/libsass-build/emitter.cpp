@@ -16,6 +16,7 @@ namespace Sass {
     scheduled_delimiter(false),
     scheduled_crutch(0),
     scheduled_mapping(0),
+    in_custom_property(false),
     in_comment(false),
     in_wrapped(false),
     in_media_block(false),
@@ -214,7 +215,7 @@ namespace Sass {
   {
     scheduled_space = 0;
     append_string(":");
-    append_optional_space();
+    if (!in_custom_property) append_optional_space();
   }
 
   void Emitter::append_mandatory_space()

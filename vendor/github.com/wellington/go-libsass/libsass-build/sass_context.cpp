@@ -35,7 +35,6 @@ namespace Sass {
     catch (Exception::Base& e) {
       std::stringstream msg_stream;
       std::string cwd(Sass::File::get_cwd());
-
       std::string msg_prefix(e.errtype());
       bool got_newline = false;
       msg_stream << msg_prefix << ": ";
@@ -55,19 +54,16 @@ namespace Sass {
         ++msg;
       }
       if (!got_newline) msg_stream << "\n";
-      if (e.import_stack) {
-        for (size_t i = 1; i < e.import_stack->size() - 1; ++i) {
-          std::string path((*e.import_stack)[i]->imp_path);
-          std::string rel_path(Sass::File::abs2rel(path, cwd, cwd));
-          msg_stream << std::string(msg_prefix.size() + 2, ' ');
-          msg_stream << (i == 1 ? " on line " : " from line ");
-          msg_stream << e.pstate.line + 1 << " of " << rel_path << "\n";
-        }
-      }
-      else {
+
+      if (e.traces.empty()) {
+        // we normally should have some traces, still here as a fallback
         std::string rel_path(Sass::File::abs2rel(e.pstate.path, cwd, cwd));
         msg_stream << std::string(msg_prefix.size() + 2, ' ');
         msg_stream << " on line " << e.pstate.line + 1 << " of " << rel_path << "\n";
+      }
+      else {
+        std::string rel_path(Sass::File::abs2rel(e.pstate.path, cwd, cwd));
+        msg_stream << traces_to_string(e.traces, "        ");
       }
 
       // now create the code trace (ToDo: maybe have util functions?)
@@ -78,14 +74,14 @@ namespace Sass {
         // move line_beg pointer to line start
         while (line_beg && *line_beg && lines != 0) {
           if (*line_beg == '\n') --lines;
-          utf8::unchecked::next(line_beg); 
+          utf8::unchecked::next(line_beg);
         }
         const char* line_end = line_beg;
         // move line_end before next newline character
         while (line_end && *line_end && *line_end != '\n') {
           if (*line_end == '\n') break;
           if (*line_end == '\r') break;
-          utf8::unchecked::next(line_end); 
+          utf8::unchecked::next(line_end);
         }
         if (line_end && *line_end != 0) ++ line_end;
         size_t line_len = line_end - line_beg;
@@ -528,6 +524,7 @@ extern "C" {
     options->c_headers = 0;
     options->plugin_paths = 0;
     options->include_paths = 0;
+    options->extensions = 0;
   }
 
   // helper function, not exported, only accessible locally
@@ -562,6 +559,18 @@ extern "C" {
         cur = next;
       }
     }
+    // Deallocate extension
+    if (options->extensions) {
+      struct string_list* cur;
+      struct string_list* next;
+      cur = options->extensions;
+      while (cur) {
+        next = cur->next;
+        free(cur->string);
+        free(cur);
+        cur = next;
+      }
+    }
     // Free options strings
     free(options->input_path);
     free(options->output_path);
@@ -581,6 +590,7 @@ extern "C" {
     options->c_headers = 0;
     options->plugin_paths = 0;
     options->include_paths = 0;
+    options->extensions = 0;
   }
 
   // helper function, not exported, only accessible locally
@@ -716,6 +726,22 @@ extern "C" {
   IMPLEMENT_SASS_CONTEXT_TAKER(char*, output_string);
   IMPLEMENT_SASS_CONTEXT_TAKER(char*, source_map_string);
   IMPLEMENT_SASS_CONTEXT_TAKER(char**, included_files);
+
+  // Push function for import extenions
+  void ADDCALL sass_option_push_import_extension(struct Sass_Options* options, const char* ext)
+  {
+    struct string_list* extension = (struct string_list*) calloc(1, sizeof(struct string_list));
+    if (extension == 0) return;
+    extension->string = ext ? sass_copy_c_string(ext) : 0;
+    struct string_list* last = options->extensions;
+    if (!options->extensions) {
+      options->extensions = extension;
+    } else {
+      while (last->next)
+        last = last->next;
+      last->next = extension;
+    }
+  }
 
   // Push function for include paths (no manipulation support for now)
   void ADDCALL sass_option_push_include_path(struct Sass_Options* options, const char* path)

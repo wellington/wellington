@@ -4,6 +4,7 @@
 #include "util.hpp"
 #include "eval.hpp"
 #include "values.hpp"
+#include "operators.hpp"
 #include "sass/values.h"
 #include "sass_values.hpp"
 
@@ -54,6 +55,8 @@ extern "C" {
   size_t ADDCALL sass_list_get_length(const union Sass_Value* v) { return v->list.length; }
   enum Sass_Separator ADDCALL sass_list_get_separator(const union Sass_Value* v) { return v->list.separator; }
   void ADDCALL sass_list_set_separator(union Sass_Value* v, enum Sass_Separator separator) { v->list.separator = separator; }
+  bool ADDCALL sass_list_get_is_bracketed(const union Sass_Value* v) { return v->list.is_bracketed; }
+  void ADDCALL sass_list_set_is_bracketed(union Sass_Value* v, bool is_bracketed) { v->list.is_bracketed = is_bracketed; }
   // Getters and setters for Sass_List values
   union Sass_Value* ADDCALL sass_list_get_value(const union Sass_Value* v, size_t i) { return v->list.values[i]; }
   void ADDCALL sass_list_set_value(union Sass_Value* v, size_t i, union Sass_Value* value) { v->list.values[i] = value; }
@@ -130,13 +133,14 @@ extern "C" {
     return v;
   }
 
-  union Sass_Value* ADDCALL sass_make_list(size_t len, enum Sass_Separator sep)
+  union Sass_Value* ADDCALL sass_make_list(size_t len, enum Sass_Separator sep, bool is_bracketed)
   {
     union Sass_Value* v = (Sass_Value*) calloc(1, sizeof(Sass_Value));
     if (v == 0) return 0;
     v->list.tag = SASS_LIST;
     v->list.length = len;
     v->list.separator = sep;
+    v->list.is_bracketed = is_bracketed;
     v->list.values = (union Sass_Value**) calloc(len, sizeof(union Sass_Value*));
     if (v->list.values == 0) { free(v); return 0; }
     return v;
@@ -248,7 +252,7 @@ extern "C" {
                 return sass_string_is_quoted(val) ? sass_make_qstring(val->string.value) : sass_make_string(val->string.value);
         }
         case SASS_LIST: {
-                union Sass_Value* list = sass_make_list(val->list.length, val->list.separator);
+                union Sass_Value* list = sass_make_list(val->list.length, val->list.separator, val->list.is_bracketed);
                 for (i = 0; i < list->list.length; i++) {
                     list->list.values[i] = sass_clone_value(val->list.values[i]);
                 }
@@ -296,41 +300,41 @@ extern "C" {
 
       // see if it's a relational expression
       switch(op) {
-        case Sass_OP::EQ:  return sass_make_boolean(Eval::eq(lhs, rhs));
-        case Sass_OP::NEQ: return sass_make_boolean(!Eval::eq(lhs, rhs));
-        case Sass_OP::GT:  return sass_make_boolean(!Eval::lt(lhs, rhs, "gt") && !Eval::eq(lhs, rhs));
-        case Sass_OP::GTE: return sass_make_boolean(!Eval::lt(lhs, rhs, "gte"));
-        case Sass_OP::LT:  return sass_make_boolean(Eval::lt(lhs, rhs, "lt"));
-        case Sass_OP::LTE: return sass_make_boolean(Eval::lt(lhs, rhs, "lte") || Eval::eq(lhs, rhs));
+        case Sass_OP::EQ:  return sass_make_boolean(Operators::eq(lhs, rhs));
+        case Sass_OP::NEQ: return sass_make_boolean(Operators::neq(lhs, rhs));
+        case Sass_OP::GT:  return sass_make_boolean(Operators::gt(lhs, rhs));
+        case Sass_OP::GTE: return sass_make_boolean(Operators::gte(lhs, rhs));
+        case Sass_OP::LT:  return sass_make_boolean(Operators::lt(lhs, rhs));
+        case Sass_OP::LTE: return sass_make_boolean(Operators::lte(lhs, rhs));
         case Sass_OP::AND: return ast_node_to_sass_value(lhs->is_false() ? lhs : rhs);
         case Sass_OP::OR:  return ast_node_to_sass_value(lhs->is_false() ? rhs : lhs);
-        default:           break;
+        default: break;
       }
 
       if (sass_value_is_number(a) && sass_value_is_number(b)) {
         Number_Ptr_Const l_n = Cast<Number>(lhs);
         Number_Ptr_Const r_n = Cast<Number>(rhs);
-        rv = Eval::op_numbers(op, *l_n, *r_n, options, l_n->pstate());
+        rv = Operators::op_numbers(op, *l_n, *r_n, options, l_n->pstate());
       }
       else if (sass_value_is_number(a) && sass_value_is_color(a)) {
         Number_Ptr_Const l_n = Cast<Number>(lhs);
         Color_Ptr_Const r_c = Cast<Color>(rhs);
-        rv = Eval::op_number_color(op, *l_n, *r_c, options, l_n->pstate());
+        rv = Operators::op_number_color(op, *l_n, *r_c, options, l_n->pstate());
       }
       else if (sass_value_is_color(a) && sass_value_is_number(b)) {
         Color_Ptr_Const l_c = Cast<Color>(lhs);
         Number_Ptr_Const r_n = Cast<Number>(rhs);
-        rv = Eval::op_color_number(op, *l_c, *r_n, options, l_c->pstate());
+        rv = Operators::op_color_number(op, *l_c, *r_n, options, l_c->pstate());
       }
       else if (sass_value_is_color(a) && sass_value_is_color(b)) {
         Color_Ptr_Const l_c = Cast<Color>(lhs);
         Color_Ptr_Const r_c = Cast<Color>(rhs);
-        rv = Eval::op_colors(op, *l_c, *r_c, options, l_c->pstate());
+        rv = Operators::op_colors(op, *l_c, *r_c, options, l_c->pstate());
       }
       else /* convert other stuff to string and apply operation */ {
         Value_Ptr l_v = Cast<Value>(lhs);
         Value_Ptr r_v = Cast<Value>(rhs);
-        rv = Eval::op_strings(op, *l_v, *r_v, options, l_v->pstate());
+        rv = Operators::op_strings(op, *l_v, *r_v, options, l_v->pstate());
       }
 
       // ToDo: maybe we should should return null value?

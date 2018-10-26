@@ -73,7 +73,7 @@ func MakeColor(c color.RGBA) UnionSassValue {
 
 // MakeList creates a Sass List
 func MakeList(len int) UnionSassValue {
-	return C.sass_make_list(C.size_t(len), C.SASS_COMMA)
+	return C.sass_make_list(C.size_t(len), C.SASS_COMMA, false)
 }
 
 // MakeMap cretes a new Sass Map

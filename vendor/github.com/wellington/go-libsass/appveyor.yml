@@ -1,43 +1,13 @@
-version: "{build}"
-
-os: Windows Server 2012 R2
+build: off
 
 clone_folder: c:\gopath\src\github.com\wellington\go-libsass
 
 environment:
   GOPATH: c:\gopath
-  CGO_ENABLED: 1
-  GOROOT_BOOTSTRAP: C:\go
-  GOROOT: C:\go15\go
-  GO15VENDOREXPERIMENT: 1
 
-cache:
-  - C:\mingw64 -> appveyor.yml
-  - C:\go15 -> appveyor.yml
+stack: go 1.10.0
 
 install:
-  # install nodejs and npm
-  # - ps: Install-Product node $env:nodejs_version
-  # install gcc (needed for sqlite3)
-  #- choco install -y mingw
-  - set PATH=C:\mingw64\bin;C:\go15\go\bin;C:\gopath\bin;%PATH%
-  #retrieve go 1.5
-  - ps: |
-      # $file = "go1.5.1.windows-amd64.zip"
-      # $url  = "https://bintray.com/artifact/download/drewwells/generic/"
-      $file = "go1.7.1.windows-amd64.zip"
-      $url = "https://storage.googleapis.com/golang/"
-      $url += $file
-      $goAUTHOR="C:\go15\go\AUTHORS"
-      If (Test-Path $goAUTHOR){
-        Write-Host "Using cached Go"
-      }Else{
-        Write-Host "Fetching Go"
-        Invoke-WebRequest -UserAgent wget -Uri $url -OutFile $file
-        &7z x -oC:\go15 $file > $null
-      }
-  - dir C:\go15
-  - go version
   - ps: |
       # Install MinGW.
       $url = "https://bintray.com/artifact/download/drewwells/generic/x86_64-5.1.0-release-win32-seh-rt_v4-rev0.7z"
@@ -51,9 +21,13 @@ install:
       }
   - set CC=gcc
   - set CXX=g++
+  # why is this necessary
+  - set PATH=%PATH%;C:\mingw-w64\x86_64-7.3.0-posix-seh-rt_v5-rev0\mingw64\bin
   - echo %PATH%
   - echo %GOPATH%
-  - dir C:\mingw64\bin
+  - dir C:\mingw-w64
+  - dir C:\mingw-w64\x86_64-7.3.0-posix-seh-rt_v5-rev0\mingw64
+  - dir C:\mingw-w64\x86_64-7.3.0-posix-seh-rt_v5-rev0\mingw64\bin
   - go get golang.org/x/net/context
 
 build_script:

@@ -2,82 +2,116 @@
 
 
 [[projects]]
+  digest = "1:ade392a843b2035effb4b4a2efa2c3bab3eb29b992e98bacf9c898b0ecb54e45"
   name = "github.com/fatih/color"
   packages = ["."]
-  revision = "507f6050b8568533fb3f5504de8e5205fa62a114"
-  version = "v1.6.0"
+  pruneopts = "NUT"
+  revision = "5b77d2a35fb0ede96d138fc9a99f5c9b6aef11b4"
+  version = "v1.7.0"
 
 [[projects]]
-  branch = "master"
+  digest = "1:fe213a6c2d8b0d2a104fd6f60405dcf7cbb278631252331cb8d1527de93f6c69"
   name = "github.com/fsnotify/fsevents"
   packages = ["."]
-  revision = "ed9a50f8badcd11817e4fa3044b6765bb54219db"
+  pruneopts = "NUT"
+  revision = "07395359b3b58afc5ba6e17fa163705f6f8070e3"
+  version = "v0.1.0"
 
 [[projects]]
+  digest = "1:406338ad39ab2e37b7f4452906442a3dbf0eb3379dd1f06aafb5c07e769a5fbb"
   name = "github.com/inconshreveable/mousetrap"
   packages = ["."]
+  pruneopts = "NUT"
   revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
   version = "v1.0"
 
 [[projects]]
+  digest = "1:08c231ec84231a7e23d67e4b58f975e1423695a32467a362ee55a803f9de8061"
   name = "github.com/mattn/go-colorable"
   packages = ["."]
+  pruneopts = "NUT"
   revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
   version = "v0.0.9"
 
 [[projects]]
+  digest = "1:bffa444ca07c69c599ae5876bc18b25bfd5fa85b297ca10a25594d284a7e9c5d"
   name = "github.com/mattn/go-isatty"
   packages = ["."]
-  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
+  pruneopts = "NUT"
+  revision = "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c"
+  version = "v0.0.4"
+
+[[projects]]
+  digest = "1:343d44e06621142ab09ae0c76c1799104cdfddd3ffb445d78b1adf8dc3ffaf3d"
+  name = "github.com/spf13/cobra"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "ef82de70bb3f60c65fb8eebacbb2d122ef517385"
   version = "v0.0.3"
 
 [[projects]]
-  name = "github.com/spf13/cobra"
-  packages = ["."]
-  revision = "7b2c5ac9fc04fc5efafb60700713d4fa609b777b"
-  version = "v0.0.1"
-
-[[projects]]
+  digest = "1:9d8420bbf131d1618bde6530af37c3799340d3762cc47210c1d9532a4c3a2779"
   name = "github.com/spf13/pflag"
   packages = ["."]
-  revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
-  version = "v1.0.0"
+  pruneopts = "NUT"
+  revision = "298182f68c66c05229eb03ac171abe6e309ee79a"
+  version = "v1.0.3"
 
 [[projects]]
+  digest = "1:596b50d1f1b8101f6b6d18bc98f462be44145ffd6b06bb05117eed4aaeef1ed5"
   name = "github.com/wellington/go-libsass"
   packages = [
     ".",
-    "libs"
+    "libs",
   ]
-  revision = "4271b0e669862e59ef55a22935c1fed6b146d183"
+  pruneopts = "T"
+  revision = "0a1f17e219ef0e90b264c1f28a2e314f034f6f58"
 
 [[projects]]
-  branch = "master"
+  digest = "1:fc1277a4c9b5ad4e43c5d3bd9acce277ae7c6ea31bd480a743fb58598881753a"
   name = "github.com/wellington/spritewell"
   packages = ["."]
-  revision = "da08877d33fc78eecf40cf3b40c5f5e296e0acf1"
+  pruneopts = "NUT"
+  revision = "v0.5.0"
 
 [[projects]]
   branch = "master"
+  digest = "1:76ee51c3f468493aff39dbacc401e8831fbb765104cbf613b89bef01cf4bad70"
   name = "golang.org/x/net"
   packages = ["context"]
-  revision = "cbe0f9307d0156177f9dd5dc85da1a31abc5f2fb"
+  pruneopts = "NUT"
+  revision = "9b4f9f5ad5197c79fd623a3638e70d8b26cef344"
 
 [[projects]]
   branch = "master"
+  digest = "1:80947d9ae9919af170f738a8bf17bfbd0779597fdffd10092a77fa6d6410c9be"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "c1138c84af3a9927aee1a1b8b7ce06c9b7ea52bc"
+  pruneopts = "NUT"
+  revision = "d989b31c87461dc8ab2f1cac6792814e27fadea9"
 
 [[projects]]
+  digest = "1:1b91ae0dc69a41d4c2ed23ea5cffb721ea63f5037ca4b81e6d6771fbb8f45129"
   name = "gopkg.in/fsnotify.v1"
   packages = ["."]
+  pruneopts = "NUT"
   revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
+  source = "https://github.com/fsnotify/fsnotify/archive/v1.4.7.tar.gz"
   version = "v1.4.7"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "49b77213ccb2b21f3504cecabc4cbf3517a0952a2071fda86d1708d658a63194"
+  input-imports = [
+    "github.com/fatih/color",
+    "github.com/fsnotify/fsevents",
+    "github.com/spf13/cobra",
+    "github.com/spf13/pflag",
+    "github.com/wellington/go-libsass",
+    "github.com/wellington/go-libsass/libs",
+    "github.com/wellington/spritewell",
+    "golang.org/x/net/context",
+    "gopkg.in/fsnotify.v1",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1
