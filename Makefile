@@ -80,8 +80,9 @@ container: container-build
 	cp Dockerfile.scratch build/Dockerfile
 	cd build; docker build -t drewwells/wellington .
 
-push: build
+push: container
 	docker push drewwells/wellington:latest
+
 docker:
 	docker run -e HOST=http://$(shell boot2docker ip):8080 -it -p 8080:12345 -v $(current_dir):/usr/src/myapp -v $(current_dir)/test:/data drewwells/wellington
 
