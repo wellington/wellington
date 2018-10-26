@@ -9,7 +9,9 @@ workflows:
             - go-111
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - feature/circleci
 jobs:
   deploy:
     docker:
