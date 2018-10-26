@@ -3,18 +3,17 @@ workflows:
   version: 2
   build-and-deploy:
     jobs:
-      - go-110
-      - go-1.9
+      - go-111
       - deploy:
           requires:
-            - go-110
+            - go-111
           filters:
             branches:
               only: master
 jobs:
   deploy:
     docker:
-      - image: circleci/golang:1.10
+      - image: circleci/golang:1.11
     working_directory: /go/src/github.com/wellington/wellington
     steps:
       - checkout
@@ -23,27 +22,10 @@ jobs:
           mv snapshot/* $CIRCLE_ARTIFACTS
           docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
           docker push drewwells/wellington
-  "go-110":
+  "go-111":
     docker:
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
-      - image: circleci/golang:1.10
-    working_directory: /go/src/github.com/wellington/wellington
-    #environment:
-    #  TEST_RESULTS: /tmp/test-results
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - v1-pkg-cache
-      - run: make test
-      - save_cache:
-          key: v1-pkg-cache
-          paths:
-            - "/go/pkg"
-  "go-1.9":
-    docker:
-      # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
-      - image: circleci/golang:1.9
+      - image: circleci/golang:1.11
     working_directory: /go/src/github.com/wellington/wellington
     #environment:
     #  TEST_RESULTS: /tmp/test-results
