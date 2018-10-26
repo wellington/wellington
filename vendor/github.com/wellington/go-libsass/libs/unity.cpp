@@ -3,6 +3,7 @@
 
 #include "../libsass-build/ast.cpp"
 #include "../libsass-build/ast_fwd_decl.cpp"
+#include "../libsass-build/backtrace.cpp"
 #include "../libsass-build/base64vlq.cpp"
 #include "../libsass-build/bind.cpp"
 #include "../libsass-build/check_nesting.cpp"
@@ -23,6 +24,7 @@
 #include "../libsass-build/lexer.cpp"
 #include "../libsass-build/listize.cpp"
 #include "../libsass-build/node.cpp"
+#include "../libsass-build/operators.cpp"
 #include "../libsass-build/output.cpp"
 #include "../libsass-build/parser.cpp"
 #include "../libsass-build/plugins.cpp"

@@ -81,12 +81,14 @@ func GetEntry(es []ImportEntry, parent string, path string) (string, error) {
 //
 //export ImporterBridge
 func ImporterBridge(url *C.char, prev *C.char, cidx C.int) C.Sass_Import_List {
+	var importResolver ImportResolver
+
 	// Retrieve the index
 	idx := int(cidx)
-	entries, ok := globalImports.Get(idx).([]ImportEntry)
+	importResolver, ok := globalImports.Get(idx).(ImportResolver)
+
 	if !ok {
-		fmt.Printf("failed to resolve import slice: %d\n", idx)
-		entries = []ImportEntry{}
+		fmt.Printf("failed to resolve import handler: %d\n", idx)
 	}
 
 	parent := C.GoString(prev)
@@ -98,11 +100,24 @@ func ImporterBridge(url *C.char, prev *C.char, cidx C.int) C.Sass_Import_List {
 	}
 
 	golist := *(*[]C.Sass_Import_Entry)(unsafe.Pointer(&hdr))
-	if body, err := GetEntry(entries, parent, rel); err == nil {
-		ent := C.sass_make_import_entry(url, C.CString(body), nil)
-		cent := (C.Sass_Import_Entry)(ent)
-		golist[0] = cent
-	} else if strings.HasPrefix(rel, "compass") {
+
+	if importResolver != nil {
+		newURL, body, resolved := importResolver(rel, parent)
+		if resolved {
+			// Passing a nil as body is a signal to load the import from the URL.
+			var bodyv *C.char
+			if body != "" {
+				bodyv = C.CString(body)
+			}
+			ent := C.sass_make_import_entry(C.CString(newURL), bodyv, nil)
+			cent := (C.Sass_Import_Entry)(ent)
+			golist[0] = cent
+
+			return list
+		}
+	}
+
+	if strings.HasPrefix(rel, "compass") {
 		ent := C.sass_make_import_entry(url, C.CString(""), nil)
 		cent := (C.Sass_Import_Entry)(ent)
 		golist[0] = cent
@@ -287,6 +302,14 @@ func SassOptionSetSourceComments(goopts SassOptions, b bool) {
 // information in source-maps etc.
 func SassOptionSetOutputPath(goopts SassOptions, path string) {
 	C.sass_option_set_output_path(goopts, C.CString(path))
+}
+
+// SassOptionSetInputPath is used for input path.
+// The input path is used for source map generating. It can be used to define
+// something with string compilation or to overload the input file path. It is
+// set to "stdin" for data contexts and to the input file on file contexts.
+func SassOptionSetInputPath(goopts SassOptions, path string) {
+	C.sass_option_set_input_path(goopts, C.CString(path))
 }
 
 // SassOptionSetIncludePaths adds additional paths to look for input Sass

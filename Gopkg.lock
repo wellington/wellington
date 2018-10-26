@@ -58,14 +58,14 @@
   version = "v1.0.3"
 
 [[projects]]
-  digest = "1:c35179c9c9a64628460243ebf4abb821ec63b34bf47b27ea194412ac5056b838"
+  digest = "1:596b50d1f1b8101f6b6d18bc98f462be44145ffd6b06bb05117eed4aaeef1ed5"
   name = "github.com/wellington/go-libsass"
   packages = [
     ".",
     "libs",
   ]
   pruneopts = "T"
-  revision = "4271b0e669862e59ef55a22935c1fed6b146d183"
+  revision = "0a1f17e219ef0e90b264c1f28a2e314f034f6f58"
 
 [[projects]]
   digest = "1:fc1277a4c9b5ad4e43c5d3bd9acce277ae7c6ea31bd480a743fb58598881753a"

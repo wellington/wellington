@@ -47,8 +47,11 @@ func CompFromCtx(ctx context.Context) (Compiler, error) {
 	return comp, nil
 }
 
+// SassFunc describes func for handling Sass Values
 type SassFunc func(ctx context.Context, in SassValue) (*SassValue, error)
 
+// SassHandler contains callback context for running code within
+// a libsass handler
 func SassHandler(h SassFunc) libs.SassCallback {
 	return func(v interface{}, usv libs.UnionSassValue, rsv *libs.UnionSassValue) error {
 		if *rsv == nil {

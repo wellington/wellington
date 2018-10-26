@@ -30,14 +30,18 @@ import "unsafe"
 
 var globalImports SafeMap
 
+// ImportResolver can be used as a custom import resolver. Return an empty body to
+// signal loading the import body from the URL.
+type ImportResolver func(url string, prev string) (newURL string, body string, resolved bool)
+
 func init() {
 	globalImports.init()
 }
 
 // BindImporter attaches a custom importer Go function to an import in Sass
-func BindImporter(opts SassOptions, entries []ImportEntry) int {
+func BindImporter(opts SassOptions, resolver ImportResolver) int {
 
-	idx := globalImports.Set(entries)
+	idx := globalImports.Set(resolver)
 	ptr := unsafe.Pointer(idx)
 
 	imper := C.sass_make_importer(

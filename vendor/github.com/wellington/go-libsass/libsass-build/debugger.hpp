@@ -79,7 +79,7 @@ inline void debug_ast(AST_Node_Ptr node, std::string ind, Env* env)
     Trace_Ptr trace = Cast<Trace>(node);
     std::cerr << ind << "Trace " << trace;
     std::cerr << " (" << pstate_source_position(node) << ")"
-    << " [name:" << trace->name() << "]"
+    << " [name:" << trace->name() << ", type: " << trace->type() << "]"
     << std::endl;
     debug_ast(trace->block(), ind + " ", env);
   } else if (Cast<At_Root_Block>(node)) {
@@ -415,6 +415,7 @@ inline void debug_ast(AST_Node_Ptr node, std::string ind, Env* env)
     Declaration_Ptr block = Cast<Declaration>(node);
     std::cerr << ind << "Declaration " << block;
     std::cerr << " (" << pstate_source_position(node) << ")";
+    std::cerr << " [is_custom_property: " << block->is_custom_property() << "] ";
     std::cerr << " " << block->tabs() << std::endl;
     debug_ast(block->property(), ind + " prop: ", env);
     debug_ast(block->value(), ind + " value: ", env);
@@ -512,8 +513,17 @@ inline void debug_ast(AST_Node_Ptr node, std::string ind, Env* env)
     std::cerr << " [" << expression->name() << "]";
     if (expression->is_delayed()) std::cerr << " [delayed]";
     if (expression->is_interpolant()) std::cerr << " [interpolant]";
+    if (expression->is_css()) std::cerr << " [css]";
     std::cerr << std::endl;
     debug_ast(expression->arguments(), ind + " args: ", env);
+    debug_ast(expression->func(), ind + " func: ", env);
+  } else if (Cast<Function>(node)) {
+    Function_Ptr expression = Cast<Function>(node);
+    std::cerr << ind << "Function " << expression;
+    std::cerr << " (" << pstate_source_position(node) << ")";
+    if (expression->is_css()) std::cerr << " [css]";
+    std::cerr << std::endl;
+    debug_ast(expression->definition(), ind + " definition: ", env);
   } else if (Cast<Arguments>(node)) {
     Arguments_Ptr expression = Cast<Arguments>(node);
     std::cerr << ind << "Arguments " << expression;
@@ -584,11 +594,13 @@ inline void debug_ast(AST_Node_Ptr node, std::string ind, Env* env)
     std::cerr << ind << "List " << expression;
     std::cerr << " (" << pstate_source_position(node) << ")";
     std::cerr << " (" << expression->length() << ") " <<
-      (expression->separator() == SASS_COMMA ? "Comma " : expression->separator() == SASS_HASH ? "Map" : "Space ") <<
+      (expression->separator() == SASS_COMMA ? "Comma " : expression->separator() == SASS_HASH ? "Map " : "Space ") <<
       " [delayed: " << expression->is_delayed() << "] " <<
       " [interpolant: " << expression->is_interpolant() << "] " <<
       " [listized: " << expression->from_selector() << "] " <<
       " [arglist: " << expression->is_arglist() << "] " <<
+      " [bracketed: " << expression->is_bracketed() << "] " <<
+      " [expanded: " << expression->is_expanded() << "] " <<
       " [hash: " << expression->hash() << "] " <<
       std::endl;
     for(const auto& i : expression->elements()) { debug_ast(i, ind + " ", env); }
@@ -615,6 +627,7 @@ inline void debug_ast(AST_Node_Ptr node, std::string ind, Env* env)
     Number_Ptr expression = Cast<Number>(node);
     std::cerr << ind << "Number " << expression;
     std::cerr << " (" << pstate_source_position(node) << ")";
+    std::cerr << " [delayed: " << expression->is_delayed() << "] ";
     std::cerr << " [interpolant: " << expression->is_interpolant() << "] ";
     std::cerr << " [" << expression->value() << expression->unit() << "]" <<
       " [hash: " << expression->hash() << "] " <<
@@ -652,6 +665,7 @@ inline void debug_ast(AST_Node_Ptr node, std::string ind, Env* env)
     std::cerr << " (" << pstate_source_position(expression) << ")";
     std::cerr << " " << expression->concrete_type();
     std::cerr << " (" << pstate_source_position(node) << ")";
+    if (expression->css()) std::cerr << " [css]";
     if (expression->is_delayed()) std::cerr << " [delayed]";
     if (expression->is_interpolant()) std::cerr << " [is interpolant]";
     if (expression->has_interpolant()) std::cerr << " [has interpolant]";
