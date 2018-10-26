@@ -1,6 +1,6 @@
 FROM gliderlabs/alpine:latest
 
-COPY lib64 /usr/lib
+RUN apk add libstdc++
 
 COPY wt /usr/bin/wt
 # commenting this line cut the image size in half
