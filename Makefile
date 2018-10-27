@@ -75,7 +75,8 @@ container-build:
 	rm -f profile.cov
 	docker build --no-cache -t wt-build .
 	docker run -v $(PWD)/build:/tmp -e EUID=$(shell id -u) -e EGID=$(shell id -g) wt-build sh scripts/copyout.sh
-	ls build
+	pwd
+	ls $(pwd)/build
 
 container: container-build
 	cp Dockerfile.scratch build/Dockerfile
