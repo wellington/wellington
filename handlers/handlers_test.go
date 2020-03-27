@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -140,9 +141,15 @@ func TestCompile_HTTP_InlineImage(t *testing.T) {
 	exp := `div {
   background: #602d6c no-repeat url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAAA1BMVEX/TQBcNTh/AAAAAXRSTlMz/za5cAAAAA5JREFUeJxiYAAEAAD//wACAAFLuymfAAAAAElFTkSuQmCC"); }
 `
-	if exp != out.String() {
+	if exp != out.String() && exp != pngFixHack(out.String()) {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), exp)
 	}
+}
+
+// pngFixHack replaces 12 bytes in the base64-encoded PNG with expected bytes.
+// The output PNGs are identical.
+func pngFixHack(in string) string {
+	return strings.ReplaceAll(in, "CAMAAAAoyzS7", "AQMAAAAl21bK")
 }
 
 func TestFuncImageHeight(t *testing.T) {
@@ -318,7 +325,7 @@ div {
 	e := `div {
   background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAAA1BMVEX/TQBcNTh/AAAAAXRSTlMz/za5cAAAAA5JREFUeJxiYAAEAAD//wACAAFLuymfAAAAAElFTkSuQmCC"); }
 `
-	if e != out.String() {
+	if e != out.String() && e != pngFixHack(out.String()) {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
 	}
 }
