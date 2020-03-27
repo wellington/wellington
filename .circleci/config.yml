@@ -27,6 +27,8 @@ jobs:
     docker:
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
       - image: circleci/golang:1.11
+    environment:
+      GO111MODULE: "on"
     # working_directory: /go/src/github.com/wellington/wellington
     #environment:
     #  TEST_RESULTS: /tmp/test-results
@@ -43,6 +45,8 @@ jobs:
   "go-114":
     docker:
       - image: circleci/golang:1.14
+    environment:
+      GO111MODULE: "on"
     steps:
       - checkout
       - restore_cache:
