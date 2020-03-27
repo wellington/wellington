@@ -204,7 +204,7 @@ div {
   width: 96px; }
 
 div.inline {
-  background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAMAAAAoyzS7AAAAA1BMVEX/TQBcNTh/AAAAAXRSTlMz/za5cAAAAA5JREFUeJxiYgAEAAD//wAGAAP60FmuAAAAAElFTkSuQmCC"); }
+  background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAAA1BMVEX/TQBcNTh/AAAAAXRSTlMz/za5cAAAAA5JREFUeJxiYAAEAAD//wACAAFLuymfAAAAAElFTkSuQmCC"); }
 `
 
 	o, err := ioutil.ReadFile("../test/build/testfile/compreh.css")
