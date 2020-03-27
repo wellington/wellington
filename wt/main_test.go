@@ -222,7 +222,7 @@ div.inline {
 // pngFixHack replaces 12 bytes in the base64-encoded PNG with expected bytes.
 // The output PNGs are identical.
 func pngFixHack(in string) string {
-	return strings.ReplaceAll(in, "CAMAAAAoyzS7", "AQMAAAAl21bK")
+	return strings.Replace(in, "CAMAAAAoyzS7", "AQMAAAAl21bK", 1)
 }
 
 func TestWatch_comprehensive(t *testing.T) {
