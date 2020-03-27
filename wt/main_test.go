@@ -99,7 +99,7 @@ func TestStdin_import(t *testing.T) {
 
 	includeDir := filepath.Join(pwd, "..", "test", "sass")
 	wtCmd.SetArgs([]string{
-		"-p", includeDir,
+		// "-p", includeDir,
 		"compile", "../test/sass/import.scss"})
 	testMain()
 

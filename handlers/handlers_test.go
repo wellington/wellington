@@ -138,7 +138,7 @@ func TestCompile_HTTP_InlineImage(t *testing.T) {
 		t.Error(err)
 	}
 	exp := `div {
-  background: #602d6c no-repeat url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAMAAAAoyzS7AAAAA1BMVEX/TQBcNTh/AAAAAXRSTlMz/za5cAAAAA5JREFUeJxiYAAEAAD//wACAAFLuymfAAAAAElFTkSuQmCC"); }
+  background: #602d6c no-repeat url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAAA1BMVEX/TQBcNTh/AAAAAXRSTlMz/za5cAAAAA5JREFUeJxiYAAEAAD//wACAAFLuymfAAAAAElFTkSuQmCC"); }
 `
 	if exp != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), exp)
@@ -316,7 +316,7 @@ div {
 		t.Error(err)
 	}
 	e := `div {
-  background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAMAAAAoyzS7AAAAA1BMVEX/TQBcNTh/AAAAAXRSTlMz/za5cAAAAA5JREFUeJxiYAAEAAD//wACAAFLuymfAAAAAElFTkSuQmCC"); }
+  background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAAA1BMVEX/TQBcNTh/AAAAAXRSTlMz/za5cAAAAA5JREFUeJxiYAAEAAD//wACAAFLuymfAAAAAElFTkSuQmCC"); }
 `
 	if e != out.String() {
 		t.Errorf("got:\n%s\nwanted:\n%s", out.String(), e)
