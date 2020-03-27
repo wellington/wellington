@@ -40,3 +40,16 @@ jobs:
           key: v1-pkg-cache
           paths:
             - "/go/pkg"
+  "go-114":
+    docker:
+      - image: circleci/golang:1.14
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-pkg-cache
+      - run: make test
+      - save_cache:
+          key: v1-pkg-cache
+          paths:
+            - "/go/pkg"
