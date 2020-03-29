@@ -14,6 +14,7 @@ func main() {
 	tdir, _ := ioutil.TempDir("basic", "")
 	args := &wellington.BuildArgs{}
 	args.BuildDir = tdir
+	args.WithPaths([]string{sassFile})
 	pmap := wellington.NewPartialMap()
 
 	wg := sync.WaitGroup{}
@@ -21,7 +22,7 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			b := wellington.NewBuild([]string{sassFile}, args, pmap)
+			b := wellington.NewBuild(args, pmap)
 			err := b.Run()
 			if err != nil {
 				log.Println(i, err)
