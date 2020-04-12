@@ -9,7 +9,9 @@ workflows:
             - go-111
           filters:
             branches:
-              only: master
+              only:
+                - master
+                - feature/circleci
 jobs:
   deploy:
     docker:
@@ -17,12 +19,14 @@ jobs:
     working_directory: /go/src/github.com/wellington/wellington
     steps:
       - checkout
+      - setup_remote_docker
       - run: |
           make release
-          docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
-          docker push drewwells/wellington
       - store_artifacts:
           path: snapshot/
+      - run: |
+          docker login -u $DOCKER_USER -p $DOCKER_PASS
+          make push
   "go-111":
     docker:
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
