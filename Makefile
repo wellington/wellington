@@ -6,11 +6,12 @@ libsass_ver := $(shell cat \.libsass_version)
 wt_ver := $(shell cat version.txt)
 LASTGOPATH :=$(shell echo $(GOPATH) | tr ":" "\n" | tail -1 )
 HOSTOSARCH := $(shell go env GOHOSTOS)_$(shell go env GOHOSTARCH)
+GO_FLAGS = ""
 
 export PKG_CONFIG_PATH=$(current_dir)/../go-libsass/lib/pkgconfig
 
 install:
-	go install -ldflags "-X github.com/wellington/wellington/version.Version=$(wt_ver)" github.com/wellington/wellington/wt
+	go install ${GO_FLAGS} -ldflags "-X github.com/wellington/wellington/version.Version=$(wt_ver)" github.com/wellington/wellington/wt
 
 brew: godep
 	godep restore
@@ -24,13 +25,13 @@ $(LASTGOPATH)/bin/goxc:
 goxc: $(LASTGOPATH)/bin/goxc
 
 darwin:
-	cd wt; go build -ldflags '-X github.com/wellington/wellington/version.Version=$(wt_ver)' -o ../snapshot/$(wt_ver)/$(HOSTOSARCH)/wt
+	cd wt; go build -ldflags '-X github.com/wellington/wellington/version.Version=$(wt_ver)' -o ../snapshot/$(wt_ver)/$(HOSTOSARCH)/wt ${GO_FLAGS}
 	tar -cvzf snapshot/$(wt_ver)/wt_$(wt_ver)_$(HOSTOSARCH).tar.gz -C snapshot/$(wt_ver)/$(HOSTOSARCH)/ wt
 
 release:
 	# disabled goxc, it is incompatible with go vendoring
 	#goxc -tasks='xc archive' -build-ldflags "-X github.com/wellington/wellington/version.Version $(wt_ver)" -bc='darwin' -arch='amd64' -wd=wt -d=snapshot -pv $(wt_ver) -n wt
-	cd wt; go build -ldflags '-extldflags "-static" -X github.com/wellington/wellington/version.Version=$(wt_ver)' -o ../snapshot/$(wt_ver)/$(HOSTOSARCH)/wt
+	cd wt; go build -ldflags '-extldflags "-static" -X github.com/wellington/wellington/version.Version=$(wt_ver)' -o ../snapshot/$(wt_ver)/$(HOSTOSARCH)/wt  ${GO_FLAGS}
 	tar -cvzf snapshot/$(wt_ver)/wt_$(wt_ver)_$(HOSTOSARCH).tar.gz -C snapshot/$(wt_ver)/$(HOSTOSARCH)/ wt
 
 windows:
@@ -94,9 +95,6 @@ gover.coverprofile:
 	go get golang.org/x/tools/cmd/cover
 	go list -f '{{if len .TestGoFiles}}"go test -covermode=count -short -coverprofile={{.Dir}}/.coverprofile {{.ImportPath}}"{{end}}' ./... | grep -v /vendor/ | grep -v /wt$ | xargs -L 1 sh -c
 	gover . gover.coverprofile
-
-godeptest:
-	godep go test -race ./...
 
 test:
 	go test -race -v ./...
