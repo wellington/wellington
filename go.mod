@@ -10,6 +10,6 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/wellington/go-libsass v0.9.3-0.20181026013837-0a1f17e219ef
 	github.com/wellington/spritewell v0.5.0
-	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
+	golang.org/x/net v0.7.0
 	gopkg.in/fsnotify.v1 v1.4.7
 )
